@@ -1,0 +1,7 @@
+title="starkRelay config file"
+
+[btc-client]
+host="localhost"
+port="18332"
+user="YOURUSERNAME"
+psw="YOURPASSWORD"
