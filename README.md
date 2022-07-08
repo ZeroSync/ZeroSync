@@ -47,5 +47,5 @@ sha256 code adopted from Lior Goldberg: https://github.com/starkware-libs/cairo-
 zkRelay by Martin Westerkamp: https://github.com/informartin/zkRelay/
 
 ## Old Repository
-The initial repository contains benchmarks, which I will revisit before adding them here. If you are interested in them anyway, you can some inspiration here:
+The initial repository contains benchmarks, which I will revisit before adding them here. If you are interested in them anyway, you can get some inspiration (and even a few results) here:
 https://git.tu-berlin.de/luckylee/starkrelay
