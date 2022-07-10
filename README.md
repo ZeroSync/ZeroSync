@@ -45,3 +45,7 @@ You currently have to deploy the contract on your own and send the output of the
 sha256 code adopted from Lior Goldberg: https://github.com/starkware-libs/cairo-examples/tree/master/sha256
 
 zkRelay by Martin Westerkamp: https://github.com/informartin/zkRelay/
+
+## Old Repository
+The initial repository contains benchmarks, which I will revisit before adding them here. If you are interested in them anyway, you can get some inspiration (and even a few results) here:
+https://git.tu-berlin.de/luckylee/starkrelay
