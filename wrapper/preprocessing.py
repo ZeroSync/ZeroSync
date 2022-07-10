@@ -56,7 +56,8 @@ def unpackTarget(bits: str):  # TODO remove or keep for tests
 
 
 # includes block i, exludes block j
-def dumpCairoInput(ctx, fileStr, i, j):
+def dumpCairoInput(ctx, i, j):
+    fileStr = ctx.obj['inputFile']
     cairo_input = open(fileStr, "w") if fileStr else sys.stdout
     dump = {"Blocks": []}
     blocks = getBlockHeadersInRange(ctx, i, j)
@@ -74,7 +75,8 @@ def dumpCairoInput(ctx, fileStr, i, j):
     return
 
 
-def dumpMerkleProofInput(ctx, fileStr, i, j, intermediaryIndex):
+def dumpMerkleProofInput(ctx, i, j, intermediaryIndex):
+    fileStr = ctx.obj['inputFile']
     cairo_input = open(fileStr, "w") if fileStr else sys.stdout
     dump = {"Blocks": []}
     blocks = getBlockHeadersInRange(ctx, i, j)

@@ -15,6 +15,8 @@ import os
 TMP_DIR = "tmp_work/"
 
 
+#TODO: setup function to compile the files and create toml config (allow changing the tmp_work dir and store config in there as well)
+
 @click.group()
 @click.option(
     "--configfile",
@@ -25,10 +27,11 @@ TMP_DIR = "tmp_work/"
 @click.pass_context
 def starkRelay_cli(ctx, configfile):
     ctx.obj = toml.load(configfile)
+    ctx.ensure_object(dict)
     if not os.path.exists(TMP_DIR):
         os.makedirs(TMP_DIR)
     if not checkClientRunning(ctx):
-        print("Warning: There might be no accesible bitcoin-client running")
+        print("Warning: There might be no accessible bitcoin-client running")
     return ctx
 
 
@@ -73,14 +76,14 @@ def validateBatch(ctx, cairoprogram, batchrange, submit, raw, info, giza_prove):
     """This validates blocks in the range BATCHRANGE using the provided compiled CAIROPROGRAM. Range includes the starting and ending block number and consists of two block numbers seperated by '-', e.g.: 1-10"""
     start = int(batchrange.split("-")[0])
     end = int(batchrange.split("-")[1]) + 1
-    inputfile = TMP_DIR + "validateInput_" + batchrange + ".json"
-    dumpCairoInput(ctx, inputfile, start, end)
+    ctx.obj['inputFile'] = TMP_DIR + "validateInput_" + batchrange + ".json"
+    dumpCairoInput(ctx, start, end)
     if info:
-        cairoOutput = runCairoPrintInfo(cairoProg=cairoprogram, inputFile=inputfile)
+        cairoOutput = runCairoPrintInfo(cairoProg=cairoprogram, inputFile=ctx.obj['inputFile'])
     else:
         cairoOutput = runCairo(
             cairoProg=cairoprogram,
-            inputFile=inputfile,
+            inputFile=ctx.obj['inputFile'],
             traceFile=TMP_DIR + "trace_" + batchrange + ".bin",
             memoryFile=TMP_DIR + "memory_" + batchrange + ".bin",
         )
@@ -137,11 +140,11 @@ def merkleProof(
 ):
     start = int(batchrange.split("-")[0])
     end = int(batchrange.split("-")[1]) + 1
-    inputfile = TMP_DIR + "merkleInput_" + batchrange + ".json"
-    dumpMerkleProofInput(ctx, inputfile, start, end, int(intermediary_index))
-    cairoOutput = cairoOutput = runCairo(
+    ctx.obj['inputFile'] = TMP_DIR + "merkleInput_" + batchrange + ".json"
+    dumpMerkleProofInput(ctx, start, end, int(intermediary_index))
+    cairoOutput = runCairo(
         cairoProg=cairoprogram,
-        inputFile=inputfile,
+        inputFile=ctx.obj['inputFile'],
         traceFile=TMP_DIR + "merkle_trace_" + batchrange + ".bin",
         memoryFile=TMP_DIR + "merkle_memory_" + batchrange + ".bin",
     )
