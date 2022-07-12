@@ -7,7 +7,7 @@ The submitted batches and their proofs are only verified on-chain and the last b
 To enable SPV for every Bitcoin block one can submit intermediary headers of an already submitted batch.
 Note that every epoch's first block has to be submitted publicly, meaning it has to be the last block of a submitted batch. You can, however, skip an entire epoch if your proof creation capabilities allow for it. Keep in mind that I was not able to test this yet.
 
-**In general all of this is experimental research code and not to be used in production!**
+**In general, all of this is experimental research code and not to be used in production!**
 
 ## Requirements
 
