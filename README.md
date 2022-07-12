@@ -18,26 +18,25 @@ Note that every epoch's first block has to be submitted publicly, meaning it has
 
 ## Installation
 
+- clone this repository and cd into it
 - ` pip3 install -r python-requirements`
-- add RPC information to conf/starkRelay.toml
-- compile cairo/validate.cairo and cairo/merkleProof.cairo with cairo-compile
+- starkRelay will prompt you for setup info when you first run it
 
 ## Usage
 
 - Valdiate a batch:
 
 ```
-starkRelay validate-batch [START]-[END] [COMPILED_VALIDATION_PROGRAM] -s
+starkRelay validate-batch [START]-[END] -s
 ```
 
 - Proof inclusion of an intermediary header at position `X` in a batch:
 
 ```
-starkRelay [X] [START]-[END] [COMPILED_MERKLE_PROGRAM] -s
+starkRelay [X] [START]-[END] -s
 ```
 
 You currently have to deploy the contract on your own and send the output of the off-chain program with a transaction. I will work on providing commands to automate that in the near future.
-
 
 
 ## Credits
