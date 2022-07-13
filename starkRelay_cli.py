@@ -26,7 +26,7 @@ MERKLE_PROG = "merkleProof_compiled.json"
         )
 @click.option(
         "--source",
-        default="cairo",
+        default="cairo/src",
         help="Source directory of the Cairo programs",
         )
 @click.pass_context
