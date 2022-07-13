@@ -1,5 +1,19 @@
-import subprocess, resource, time
+import os, subprocess, resource, time, sys
 
+
+def compileCairo(src, output):
+    #switch into the directory of src because of dependencies
+    originalPath = os.getcwd()
+    outputFile = os.path.abspath(output)
+    abspath = os.path.abspath(src)
+    dname = os.path.dirname(abspath)
+    os.chdir(dname)
+    program = f"cairo-compile {abspath} --output {outputFile}".split(" ")
+    proc = subprocess.run(program)
+    os.chdir(originalPath)
+    if proc.returncode != 0:
+        return False
+    return True
 
 def runCairo(cairoProg, inputFile, traceFile, memoryFile):
     program = f"cairo-run --program={cairoProg} --layout=all --print_output --program_input={inputFile} --memory_file={memoryFile} --trace_file={traceFile} --cairo_pie_output={cairoProg.replace('.json','') + '.pie'}".split(

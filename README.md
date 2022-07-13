@@ -7,7 +7,7 @@ The submitted batches and their proofs are only verified on-chain and the last b
 To enable SPV for every Bitcoin block one can submit intermediary headers of an already submitted batch.
 Note that every epoch's first block has to be submitted publicly, meaning it has to be the last block of a submitted batch. You can, however, skip an entire epoch if your proof creation capabilities allow for it. Keep in mind that I was not able to test this yet.
 
-**In general all of this is experimental research code and not to be used in production!**
+**In general, all of this is experimental research code and not to be used in production!**
 
 ## Requirements
 
@@ -18,26 +18,25 @@ Note that every epoch's first block has to be submitted publicly, meaning it has
 
 ## Installation
 
+- clone this repository and cd into it
 - ` pip3 install -r python-requirements`
-- add RPC information to conf/starkRelay.toml
-- compile cairo/validate.cairo and cairo/merkleProof.cairo with cairo-compile
+- starkRelay will prompt you for setup info when you first run it
 
 ## Usage
 
 - Valdiate a batch:
 
 ```
-starkRelay validate-batch [START]-[END] [COMPILED_VALIDATION_PROGRAM] -s
+starkRelay validate-batch [START]-[END] -s
 ```
 
 - Proof inclusion of an intermediary header at position `X` in a batch:
 
 ```
-starkRelay [X] [START]-[END] [COMPILED_MERKLE_PROGRAM] -s
+starkRelay [X] [START]-[END] -s
 ```
 
 You currently have to deploy the contract on your own and send the output of the off-chain program with a transaction. I will work on providing commands to automate that in the near future.
-
 
 
 ## Credits
