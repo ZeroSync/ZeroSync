@@ -1,4 +1,4 @@
-%builtins pedersen range_check ecdsa bitwise  # some may not be used but are required for the cairo-run layout
+%builtins output pedersen range_check ecdsa bitwise  # some may not be used but are required for the cairo-run layout
 
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.serialize import serialize_word
