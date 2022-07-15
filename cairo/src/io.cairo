@@ -20,7 +20,7 @@ struct Block:
 end
 
 # From 80 Byte block input
-# TODO: This could allow 256 bit targets by seperating the target value into 2 felts and changing the target calculation
+# TODO: This could allow 256 bit targets by seperating the target value into 2 felts and changing the target calculation - aka use Uint256 library, as for everything
 func targetToHash{bitwise_ptr : BitwiseBuiltin*}(target) -> (targetHash : felt*):
     let (targetHash) = alloc()
     # bitwise_and only allows up to 251-bit unsigned integers

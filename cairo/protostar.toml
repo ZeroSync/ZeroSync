@@ -1,5 +1,5 @@
 ["protostar.config"]
-protostar_version = "0.2.5"
+protostar_version = "0.2.6"
 
 ["protostar.project"]
 libs_path = "lib"
