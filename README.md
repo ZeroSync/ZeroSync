@@ -54,7 +54,7 @@ protostar test ./tests --cairo-path=./src
 
 **Note: Remove the output builtin from the first line of validate.cairo and/or merkle_proof.cairo to run the tests**
 
-We might provide a script to run all tests that removes the output builtin automatically and adds it again after the tests are run.
+We might provide a script to run all tests that removes the output builtin automatically and adds it again after the tests were run.
 
 ## Credits
 
