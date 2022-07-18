@@ -15,7 +15,7 @@ import os
 
 INIT_WORK_DIR = "work/"
 VALIDATE_PROG = "validate_compiled.json"
-MERKLE_PROG = "merkleProof_compiled.json"
+MERKLE_PROG = "merkle_proof_compiled.json"
 
 @click.group()
 @click.option(
@@ -81,7 +81,7 @@ def starkRelay_cli(ctx, configfile, source):
         print("ERROR: Source directory " + source + " does not exist. Specify a source directory using --source.")
         exit(3)
     validateSrcFile = source + "/validate.cairo"
-    merkleSrcFile = source + "/merkleProof.cairo"
+    merkleSrcFile = source + "/merkle_proof.cairo"
     #compile the files and store in our work_dir
     if not os.path.exists(workDir + VALIDATE_PROG):
         print("Compiling " + validateSrcFile + "...")

@@ -1,4 +1,4 @@
-%builtins output pedersen range_check ecdsa bitwise  # some may not be used but are required for the cairo-run layout
+%builtins output pedersen range_check ecdsa bitwise  
 
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.serialize import serialize_word
@@ -8,9 +8,18 @@ from starkware.cairo.common.math import assert_le
 from starkware.cairo.common.pow import pow
 
 from sha256.sha256 import compute_sha256
-from merkle import createMerkleTree, prepareMerkleTree
+from merkle import (
+    createMerkleTree,
+    prepareMerkleTree
+)
 
-from io import nBytesBlock, nBytesHash, feBlockHashLen, feBlockLen, outputHash
+from io import (
+    N_BYTES_BLOCK,
+    N_BYTES_HASH,
+    FELT_HASH_LEN,
+    FELT_BLOCK_LEN,
+    outputHash
+)
 
 func main{
     output_ptr : felt*,
@@ -67,10 +76,10 @@ func main{
     serialize_word([intermediaryHeader + 19])
 
     let (hash_first) = compute_sha256(
-        input_len=feBlockLen, input=intermediaryHeader, n_bytes=nBytesBlock
+        input_len=FELT_BLOCK_LEN, input=intermediaryHeader, n_bytes=N_BYTES_BLOCK
     )
     let (hash_second) = compute_sha256(
-        input_len=feBlockHashLen, input=hash_first, n_bytes=nBytesHash
+        input_len=FELT_HASH_LEN, input=hash_first, n_bytes=N_BYTES_HASH
     )
     outputHash(hash_second)
 

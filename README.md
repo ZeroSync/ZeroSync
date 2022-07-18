@@ -39,6 +39,23 @@ starkRelay [X] [START]-[END] -s
 You currently have to deploy the contract on your own and send the output of the off-chain program with a transaction. I will work on providing commands to automate that in the near future.
 
 
+## Tests
+
+### Cairo
+
+We provide tests using [protostar](https://github.com/software-mansion/protostar).
+
+Run all Cairo tests from within the cairo dir (starkRelay/cairo):
+
+```
+protostar test ./tests --cairo-path=./src
+
+```
+
+**Note: Remove the output builtin from the first line of validate.cairo and/or merkle_proof.cairo to run the tests**
+
+We might provide a script to run all tests that removes the output builtin automatically and adds it again after the tests are run.
+
 ## Credits
 
 sha256 code adopted from Lior Goldberg: https://github.com/starkware-libs/cairo-examples/tree/master/sha256

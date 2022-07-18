@@ -5,10 +5,10 @@ from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.math import unsigned_div_rem
 from starkware.cairo.common.pow import pow
 from starkware.cairo.common.math import assert_le
-const feBlockLen = 20
-const nBytesBlock = 80
-const feBlockHashLen = 8
-const nBytesHash = 32
+const FELT_BLOCK_LEN = 20
+const N_BYTES_BLOCK = 80
+const FELT_HASH_LEN = 8
+const N_BYTES_HASH = 32
 
 struct Block:
     member time : felt
