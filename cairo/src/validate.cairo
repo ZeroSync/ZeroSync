@@ -25,7 +25,7 @@ from io import (
     bigEndian,
 )
 from sha256.sha256 import compute_sha256
-from merkle import createMerkleTree, prepareMerkleTree
+from merkle import createMerkleTree, prepareMerkleTree, calculateHeight
 
 const EXPECTED_MINING_TIME = 1209600  # seconds for mining 2016 blocks
 
@@ -42,22 +42,12 @@ func main{
     alloc_locals
     local blocksLen : felt
     local numberInEpoch : felt
-    local height : felt
     %{
         ids.blocksLen = len(program_input["Blocks"]) 
         ids.numberInEpoch = program_input["blockNrThisEpoch"]
-        import math
-        ids.height = math.ceil(math.log2(ids.blocksLen))
     %}
-    if height == 0:
-        tempvar range_check_ptr = range_check_ptr
-    else:
-        let (lenLowerBound) = pow(2, height - 1)
-        assert_le(lenLowerBound, blocksLen - 1)  # checks that the calculated height is correct : len > 2**(h-1)
-        tempvar range_check_ptr = range_check_ptr
-    end
-    let (lenUpperBound) = pow(2, height)
-    assert_le(blocksLen, lenUpperBound)  # len <= 2 ** h
+
+    let (height) = calculateHeight(blocksLen)
 
     assert_le(numberInEpoch, 2015)
     assert_le(0, blocksLen)  # just in case

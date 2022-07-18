@@ -4,11 +4,9 @@ from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.serialize import serialize_word
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.cairo_builtins import HashBuiltin
-from starkware.cairo.common.math import assert_le
-from starkware.cairo.common.pow import pow
 
 from sha256.sha256 import compute_sha256
-from merkle import createMerkleTree, prepareMerkleTree
+from merkle import createMerkleTree, prepareMerkleTree, calculateHeight
 
 from io import N_BYTES_BLOCK, N_BYTES_HASH, FELT_HASH_LEN, FELT_BLOCK_LEN, outputHash
 
@@ -30,29 +28,14 @@ func main{
     alloc_locals
     local blocksLen : felt
     local intermediaryIndex : felt
-    local height : felt
     let (firstPrevHash) = alloc()
     let (blocks : felt**) = alloc()
     %{
         ids.blocksLen = len(program_input["Blocks"])
         ids.intermediaryIndex = program_input["blockToHash"]
         segments.write_arg(ids.blocks, program_input["Blocks"])
-        import math
-        ids.height = math.ceil(math.log2(ids.blocksLen))
     %}
-
-    # check that the calculated height is correct
-    # len > 2**(h-1)
-    if height == 0:
-        tempvar range_check_ptr = range_check_ptr
-    else:
-        let (lenLowerBound) = pow(2, height - 1)
-        assert_le(lenLowerBound, blocksLen - 1)
-        tempvar range_check_ptr = range_check_ptr
-    end
-    # len <= 2 ** h
-    let (lenUpperBound) = pow(2, height)
-    assert_le(blocksLen, lenUpperBound)
+    let (height) = calculateHeight(blocksLen)
     let intermediaryHeader = [blocks + intermediaryIndex]
 
     # output the specified header -> TODO IMPROVEMENT: This could be compressed to lesser uint128's (If you change it here do it in the contract and validate.cairo too <3 )

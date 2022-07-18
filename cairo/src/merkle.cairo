@@ -4,6 +4,7 @@ from starkware.cairo.common.math_cmp import is_le_felt
 from starkware.cairo.common.pow import pow
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.hash import hash2
+from starkware.cairo.common.math import assert_le
 
 ###
 #
@@ -103,4 +104,27 @@ func createMerkleTree{pedersen_ptr : HashBuiltin*, range_check_ptr}(
         let root = n
     end
     return (root)
+end
+
+func calculateHeight{range_check_ptr}(len) -> (height : felt):
+    alloc_locals
+    local height : felt
+    %{
+        import math
+        ids.height = math.ceil(math.log2(ids.len))
+    %}
+    # check that the calculated height is correct
+    # len > 2**(h-1)
+    if height == 0:
+        tempvar range_check_ptr = range_check_ptr
+    else:
+        let (lenLowerBound) = pow(2, height - 1)
+        assert_le(lenLowerBound, len - 1)
+        tempvar range_check_ptr = range_check_ptr
+    end
+    # len <= 2 ** h
+    let (lenUpperBound) = pow(2, height)
+    assert_le(len, lenUpperBound)
+
+    return (height)
 end
