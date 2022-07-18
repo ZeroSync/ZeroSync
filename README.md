@@ -12,7 +12,7 @@ Note that every epoch's first block has to be submitted publicly, meaning it has
 ## Requirements
 
 - Python3.7
-- [Cairo v0.8.2.1](https://github.com/starkware-libs/cairo-lang/releases/tag/v0.8.2.1) - [installation guide](https://www.cairo-lang.org/docs/quickstart.html)
+- [Cairo](https://github.com/starkware-libs/cairo-lang) - [installation guide](https://www.cairo-lang.org/docs/quickstart.html)
 - Bitcoin client, e.g. [bitcoincore](https://bitcoincore.org/en/download/)
 - If you want to create STARK-proofs without SHARP you need [giza](https://github.com/maxgillett/giza) (Keep the Cairo [license](https://github.com/starkware-libs/cairo-lang/blob/master/LICENSE.txt) in mind)
 
@@ -49,7 +49,6 @@ Run all Cairo tests from within the cairo dir (starkRelay/cairo):
 
 ```
 protostar test ./tests --cairo-path=./src
-
 ```
 
 **Note: Remove the output builtin from the first line of validate.cairo and/or merkle_proof.cairo to run the tests**
