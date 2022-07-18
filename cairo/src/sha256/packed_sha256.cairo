@@ -82,7 +82,8 @@ func compute_message_schedule{bitwise_ptr : BitwiseBuiltin*}(message : felt*):
 end
 
 func sha2_compress{bitwise_ptr : BitwiseBuiltin*}(
-        state : felt*, message : felt*, round_constants : felt*) -> (new_state : felt*):
+    state : felt*, message : felt*, round_constants : felt*
+) -> (new_state : felt*):
     alloc_locals
 
     # Defining the following constants as local variables saves some instructions.

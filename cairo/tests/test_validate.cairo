@@ -2,7 +2,6 @@
 
 from starkware.cairo.common.alloc import alloc
 
-
 from src.validate import assertHashesEqual
 
 @external
@@ -19,7 +18,6 @@ func test_assertHashesEqual():
     assert hash_a[6] = 0x06
     assert hash_a[7] = 0x07
 
-    
     assert hash_b[0] = 0x01
     assert hash_b[1] = 0x01
     assert hash_b[2] = 0x02
@@ -30,5 +28,5 @@ func test_assertHashesEqual():
     assert hash_b[7] = 0x07
     %{ expect_revert() %}
     assertHashesEqual(hash_a, hash_b)
-    return()
+    return ()
 end

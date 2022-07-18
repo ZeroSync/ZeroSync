@@ -1,4 +1,4 @@
-%builtins output pedersen range_check ecdsa bitwise  
+%builtins output pedersen range_check ecdsa bitwise
 # some builtins may not be used but are required for the cairo-run layout
 # for a full node implementation we will need them all anyways
 
@@ -29,7 +29,7 @@ from merkle import createMerkleTree, prepareMerkleTree
 
 const EXPECTED_MINING_TIME = 1209600  # seconds for mining 2016 blocks
 
-#const twoHoursSecs = 60 * 60 * 2 UNUSED (do not know network time -> check eg btc-blocks 14-15)
+# const twoHoursSecs = 60 * 60 * 2 UNUSED (do not know network time -> check eg btc-blocks 14-15)
 const MAX_TARGET = 0x00000000FFFF0000000000000000000000000000000000000000000000000000
 
 func main{
@@ -143,7 +143,7 @@ func getTimeMedian{range_check_ptr}(blocks_ptr : Block*, index) -> (timeMedian :
     let (max3) = findMaxBelowX(blocks_ptr, index + 11, index, -1, max2)
     let (max4) = findMaxBelowX(blocks_ptr, index + 11, index, -1, max3)
     let (max5) = findMaxBelowX(blocks_ptr, index + 11, index, -1, max4)
-    let (timeMedian) = findMaxBelowX(blocks_ptr, index + 11, index, index, max5)    #TODO might be bug - why index instead of -1??
+    let (timeMedian) = findMaxBelowX(blocks_ptr, index + 11, index, index, max5)  # TODO might be bug - why index instead of -1??
     return (blocks_ptr[timeMedian].time)
 end
 
