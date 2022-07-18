@@ -12,6 +12,14 @@ from merkle import createMerkleTree, prepareMerkleTree
 
 from io import N_BYTES_BLOCK, N_BYTES_HASH, FELT_HASH_LEN, FELT_BLOCK_LEN, outputHash
 
+###
+#       This Program proofs the inclusion of an intermediary header
+#       at position [X] in the given batch. To do so, we calculate the
+#       Merkle root over all block headers again. The resulting root
+#       will be compared to the original root that was calculated
+#       while validating the blocks and is now stored in the contract.
+###
+
 func main{
     output_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
@@ -33,18 +41,21 @@ func main{
         ids.height = math.ceil(math.log2(ids.blocksLen))
     %}
 
+    # check that the calculated height is correct
+    # len > 2**(h-1)
     if height == 0:
         tempvar range_check_ptr = range_check_ptr
     else:
         let (lenLowerBound) = pow(2, height - 1)
-        assert_le(lenLowerBound, blocksLen - 1)  # checks that the calculated height is correct : len > 2**(h-1)
+        assert_le(lenLowerBound, blocksLen - 1)
         tempvar range_check_ptr = range_check_ptr
     end
+    # len <= 2 ** h
     let (lenUpperBound) = pow(2, height)
-    assert_le(blocksLen, lenUpperBound)  # len <= 2 ** h
-
+    assert_le(blocksLen, lenUpperBound)
     let intermediaryHeader = [blocks + intermediaryIndex]
-    # output the header -> TODO IMPROVEMENT: This could be compressed to lesser "uint128's" (If you change it here do it in the contract and validate.cairo too <3 )
+
+    # output the specified header -> TODO IMPROVEMENT: This could be compressed to lesser uint128's (If you change it here do it in the contract and validate.cairo too <3 )
     serialize_word([intermediaryHeader])
     serialize_word([intermediaryHeader + 1])
     serialize_word([intermediaryHeader + 2])
@@ -66,6 +77,7 @@ func main{
     serialize_word([intermediaryHeader + 18])
     serialize_word([intermediaryHeader + 19])
 
+    # calculate the block hash and output it
     let (hash_first) = compute_sha256(
         input_len=FELT_BLOCK_LEN, input=intermediaryHeader, n_bytes=N_BYTES_BLOCK
     )
@@ -73,7 +85,7 @@ func main{
         input_len=FELT_HASH_LEN, input=hash_first, n_bytes=N_BYTES_HASH
     )
     outputHash(hash_second)
-
+    # calculate and output the merkle root of the batch
     let (leaves_ptr) = alloc()
     prepareMerkleTree(leaves_ptr, blocks, blocksLen, 0)
     let (merkleRoot) = createMerkleTree(leaves_ptr, 0, blocksLen, height)

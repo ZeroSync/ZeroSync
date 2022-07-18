@@ -5,11 +5,31 @@ from starkware.cairo.common.pow import pow
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.hash import hash2
 
-# felt array representation of the block header to its pedersen hash
-# NOTE: I do not use the block hash here because calculating all hashes again for every merkle proof sounds infeasable
-# Assumtion: Input is 80 bytes spread over 20 felts
+###
+#
+#           Create a Merkle tree over block headers
+#       1. Block headers are hashed with Pedersen
+#       2. hashes are stored in array
+#       3. calculate the Merkle root
+#           -> in every level the previous hashes are sorted before hashed (a < b <=> hash(a,b))
+#           -> if a sub-tree is missing a second entry to calculate the parent hash
+#              it will just return the current hash
+#               e.g.
+#
+#                   A              A              A
+#                 /   \          /   \         /     \
+#                B     C        B     5       B       C
+#               / \    |       / \    |      / \    /   \
+#              D   E   C      C   D   5     D   E   F   7
+#             / \ / \ / \    / \ / \  |    / \ / \ / \  |
+#             1 2 3 4 5 6    1 2 3 4  5    1 2 3 4 5 6  7
+###
+
+# Pedersen hash of the felt array representation of a block header
+# NOTE: I do not use the sha256 block hash here because calculating all hashes again for every merkle proof sounds infeasable
+# Assumption: Input is 80 bytes spread over 20 felts
 func headerPedersenHash{pedersen_ptr : HashBuiltin*}(header : felt*) -> (pedersenHash : felt):
-    # It could be cleverer to compress the block header into 5 128bit felts, but I'll just throw the hammer and calculate a huge hash chain
+    # TODO It could be cleverer to compress the block header into 5 128bit felts, but I'll just throw the hammer and calculate a huge hash chain
     let (a1) = hash2{hash_ptr=pedersen_ptr}(header[0], header[1])
     let (a2) = hash2{hash_ptr=pedersen_ptr}(header[2], header[3])
     let (a3) = hash2{hash_ptr=pedersen_ptr}(header[4], header[5])
@@ -37,14 +57,14 @@ end
 
 # create array of all block headers' pedersen hashes
 func prepareMerkleTree{pedersen_ptr : HashBuiltin*}(
-    leaves_ptr : felt*, blockData : felt**, size, step
+    leaves_ptr : felt*, blockData : felt**, len, step
 ):
     let (tmp) = headerPedersenHash(blockData[step])
     assert leaves_ptr[step] = tmp
-    if step + 1 == size:
+    if step + 1 == len:
         return ()
     end
-    prepareMerkleTree(leaves_ptr, blockData, size, step + 1)
+    prepareMerkleTree(leaves_ptr, blockData, len, step + 1)
     return ()
 end
 
@@ -54,13 +74,12 @@ func createMerkleTree{pedersen_ptr : HashBuiltin*, range_check_ptr}(
 ) -> (root : felt):
     alloc_locals
     if height == 0:
-        let tmp = leaves_ptr[left_index]
         return (leaves_ptr[left_index])
     end
     local curr1
     local curr2
     let (tmp) = createMerkleTree(leaves_ptr, left_index, leaves_ptr_len, height - 1)
-    curr1 = tmp
+    assert curr1 = tmp
     let (intervalSize) = pow(2, height)
     let right_index = left_index + intervalSize - 1
     let (rightSubTreeLeftIndex, r) = unsigned_div_rem(left_index + right_index, 2)

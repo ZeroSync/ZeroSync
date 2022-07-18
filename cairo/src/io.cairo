@@ -14,12 +14,12 @@ struct Block:
     member time : felt
     member bits : felt
     member target : felt  # assumption: smaller than 2**246 might overflow otherwise, but wrong targets will be detected in the relay contract
-    member feTarget : felt*
+    member feTarget : felt*  # the hex representation of the target to compare it to the block hash -> can be changed to uint256/removed
     member fePrevHash : felt*
     member feBlock : felt*  # list of field elements representing the block hex
 end
 
-# From 80 Byte block input
+# Returns the block hash-like representation of a target value (stored as felt) in a felt* of len 8
 # TODO: This could allow 256 bit targets by seperating the target value into 2 felts and changing the target calculation - aka use Uint256 library, as for everything
 func targetToHash{bitwise_ptr : BitwiseBuiltin*}(target) -> (targetHash : felt*):
     let (targetHash) = alloc()
@@ -60,7 +60,10 @@ func targetToHash{bitwise_ptr : BitwiseBuiltin*}(target) -> (targetHash : felt*)
     return (targetHash)
 end
 
-# grabs the block to be validated from the input
+# get block at position index from the program input
+# if firstEpochBlock is 1 will instead return the first block of the batch's epoch
+#
+# time and bits are stored in bigEndian
 func getBlock{bitwise_ptr : BitwiseBuiltin*, range_check_ptr}(
     index : felt, firstEpochBlock : felt
 ) -> (block : Block):
@@ -115,6 +118,9 @@ func getBlock{bitwise_ptr : BitwiseBuiltin*, range_check_ptr}(
     return (block)
 end
 
+# fills the blocks_ptr with blocks from the program_input and the first block of the epoch for this batch
+# blocks_ptr[0..len-1]: corresponding block of the batch
+# blocks_ptr[len]: firstEpochBlock
 func getBlocks{bitwise_ptr : BitwiseBuiltin*, range_check_ptr}(blocks_ptr : Block*, index, len):
     if index == len:
         let (tmpBlock : Block) = getBlock(0, 1)  # first epoch block saved at blocks[len]
@@ -127,6 +133,7 @@ func getBlocks{bitwise_ptr : BitwiseBuiltin*, range_check_ptr}(blocks_ptr : Bloc
     return ()
 end
 
+# Only for 4 Bytes
 func bigEndian{bitwise_ptr : BitwiseBuiltin*}(a : felt) -> (result : felt):
     let (byteOne) = bitwise_and(a, 0x000000FF)
     let (byteTwo) = bitwise_and(a, 0x0000FF00)
