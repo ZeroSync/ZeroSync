@@ -45,6 +45,11 @@ You currently have to deploy the contract on your own and send the output of the
 
 We provide tests using [protostar](https://github.com/software-mansion/protostar).
 
+Initial setup from withing the cairo directory (the suggested standard lib directory is perfectly fine):
+```
+protostar init --existing
+```
+
 Run all Cairo tests from within the cairo dir (starkRelay/cairo):
 
 ```
