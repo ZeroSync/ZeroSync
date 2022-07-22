@@ -15,7 +15,7 @@ import os
 
 INIT_WORK_DIR = "work/"
 VALIDATE_PROG = "validate_compiled.json"
-MERKLE_PROG = "merkleProof_compiled.json"
+MERKLE_PROG = "merkle_proof_compiled.json"
 
 @click.group()
 @click.option(
@@ -29,8 +29,16 @@ MERKLE_PROG = "merkleProof_compiled.json"
         default="cairo/src",
         help="Source directory of the Cairo programs",
         )
+@click.option(
+        "--force-compile",
+        "-c",
+        default=False,
+        show_default=True,
+        is_flag=True,
+        help="Force to recompile all Cairo sources."
+        )
 @click.pass_context
-def starkRelay_cli(ctx, configfile, source):
+def starkRelay_cli(ctx, configfile, source, force_compile):
 
     if not os.path.exists(configfile):
         while (1):
@@ -76,20 +84,20 @@ def starkRelay_cli(ctx, configfile, source):
         os.makedirs(ctx.obj['work']['dir'])
     workDir = ctx.obj['work']['dir']
     
-    if not os.path.exists(source) and not (os.path.exists(workDir + VALIDATE_PROG) or not os.path.exists(workDir + MERKLE_PROG)) :
+    if (not os.path.exists(source) and not (os.path.exists(workDir + VALIDATE_PROG) or not os.path.exists(workDir + MERKLE_PROG))):
         source = os.path.abspath(source)
         print("ERROR: Source directory " + source + " does not exist. Specify a source directory using --source.")
         exit(3)
     validateSrcFile = source + "/validate.cairo"
-    merkleSrcFile = source + "/merkleProof.cairo"
+    merkleSrcFile = source + "/merkle_proof.cairo"
     #compile the files and store in our work_dir
-    if not os.path.exists(workDir + VALIDATE_PROG):
+    if not os.path.exists(workDir + VALIDATE_PROG) or force_compile:
         print("Compiling " + validateSrcFile + "...")
         if not compileCairo(validateSrcFile, workDir + VALIDATE_PROG):
             print("ERROR: Unable to compile validate source file.")
             exit(1)
         print("Done.")
-    if not os.path.exists(workDir + MERKLE_PROG):
+    if not os.path.exists(workDir + MERKLE_PROG) or force_compile:
         print("Compiling " + merkleSrcFile + "...")
         if not compileCairo(merkleSrcFile,  workDir + MERKLE_PROG):
             print("ERROR: Unable to compile merkleProof source file.")
