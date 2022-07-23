@@ -1,9 +1,5 @@
 from sha256.packed_sha256 import (
-    BLOCK_SIZE,
-    compute_message_schedule,
-    sha2_compress,
-    get_round_constants,
-)
+    BLOCK_SIZE, compute_message_schedule, sha2_compress, get_round_constants)
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.registers import get_fp_and_pc
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
@@ -97,8 +93,7 @@ func sha256{range_check_ptr, sha256_ptr : felt*}(input : felt*, n_bytes : felt) 
         _sha256_input_zeroes(n_bytes=56, n_words=SHA256_INPUT_CHUNK_SIZE_FELTS - 2)
     else:
         _sha256_input(
-            input=input + 16, n_bytes=n_bytes - 64, n_words=SHA256_INPUT_CHUNK_SIZE_FELTS - 2
-        )  # incresases sha256_ptr
+            input=input + 16, n_bytes=n_bytes - 64, n_words=SHA256_INPUT_CHUNK_SIZE_FELTS - 2)  # incresases sha256_ptr
     end
     assert sha256_ptr[0] = 0
     assert sha256_ptr[1] = n_bytes * 8  # padding - bytestring size is attached at the end
@@ -135,8 +130,7 @@ func sha256{range_check_ptr, sha256_ptr : felt*}(input : felt*, n_bytes : felt) 
 end
 
 func _sha256_input_nopad{range_check_ptr, sha256_ptr : felt*}(
-    input : felt*, n_bytes : felt, n_words : felt
-):
+        input : felt*, n_bytes : felt, n_words : felt):
     if n_bytes == 0:
         assert sha256_ptr = sha256_ptr + n_words
         return ()
@@ -157,8 +151,7 @@ func _sha256_input_zeroes{range_check_ptr, sha256_ptr : felt*}(n_bytes : felt, n
 end
 
 func _sha256_input{range_check_ptr, sha256_ptr : felt*}(
-    input : felt*, n_bytes : felt, n_words : felt
-):
+        input : felt*, n_bytes : felt, n_words : felt):
     alloc_locals
 
     local full_word
@@ -192,8 +185,7 @@ end
 
 # Handles n blocks of BLOCK_SIZE SHA256 instances.
 func _finalize_sha256_inner{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
-    sha256_ptr : felt*, n : felt, round_constants : felt*
-):
+        sha256_ptr : felt*, n : felt, round_constants : felt*):
     if n == 0:
         return ()
     end
@@ -332,14 +324,12 @@ func _finalize_sha256_inner{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
     return _finalize_sha256_inner(
         sha256_ptr=sha256_start + SHA256_INSTANCE_SIZE * BLOCK_SIZE,
         n=n - 1,
-        round_constants=round_constants,
-    )
+        round_constants=round_constants)
 end
 
 # Verifies that the results of sha256() are valid.
 func finalize_sha256{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
-    sha256_ptr_start : felt*, sha256_ptr_end : felt*
-):
+        sha256_ptr_start : felt*, sha256_ptr_end : felt*):
     alloc_locals
 
     let (__fp__, _) = get_fp_and_pc()
@@ -375,8 +365,7 @@ func finalize_sha256{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
 end
 
 func compute_sha256{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
-    input_len : felt, input : felt*, n_bytes : felt
-) -> (sha : felt*):
+        input_len : felt, input : felt*, n_bytes : felt) -> (sha : felt*):
     alloc_locals
 
     let (local sha256_ptr_start : felt*) = alloc()

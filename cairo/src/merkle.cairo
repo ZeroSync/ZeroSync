@@ -58,8 +58,7 @@ end
 
 # create array of all block headers' pedersen hashes
 func prepareMerkleTree{pedersen_ptr : HashBuiltin*}(
-    leaves_ptr : felt*, blockData : felt**, len, step
-):
+        leaves_ptr : felt*, blockData : felt**, len, step):
     let (tmp) = headerPedersenHash(blockData[step])
     assert leaves_ptr[step] = tmp
     if step + 1 == len:
@@ -71,27 +70,23 @@ end
 
 # start with left_index = 0 and right_index is 2**Height-1 -> can calc the height with a hint
 func createMerkleTree{pedersen_ptr : HashBuiltin*, range_check_ptr}(
-    leaves_ptr : felt*, left_index : felt, leaves_ptr_len : felt, height : felt
-) -> (root : felt):
+        leaves_ptr : felt*, left_index : felt, leaves_ptr_len : felt, height : felt) -> (
+        root : felt):
     alloc_locals
     if height == 0:
         return (leaves_ptr[left_index])
     end
-    local curr1
-    local curr2
-    let (tmp) = createMerkleTree(leaves_ptr, left_index, leaves_ptr_len, height - 1)
-    assert curr1 = tmp
+    let (curr1) = createMerkleTree(leaves_ptr, left_index, leaves_ptr_len, height - 1)
     let (intervalSize) = pow(2, height)
     let right_index = left_index + intervalSize - 1
-    let (rightSubTreeLeftIndex, r) = unsigned_div_rem(left_index + right_index, 2)
+    let (rightSubTreeLeftIndex, _) = unsigned_div_rem(left_index + right_index, 2)
 
     let (outOfBounds) = is_le_felt(leaves_ptr_len, rightSubTreeLeftIndex + 1)
     if outOfBounds == 1:
         return (curr1)
     else:
         let (curr2) = createMerkleTree(
-            leaves_ptr, rightSubTreeLeftIndex + 1, leaves_ptr_len, height - 1
-        )
+            leaves_ptr, rightSubTreeLeftIndex + 1, leaves_ptr_len, height - 1)
     end
 
     let (le) = is_le_felt(curr1, curr2)

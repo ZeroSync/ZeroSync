@@ -13,17 +13,8 @@ from starkware.cairo.common.math_cmp import is_le, is_le_felt
 from starkware.cairo.common.pow import pow
 
 from io import (
-    getBlocks,
-    outputBlock,
-    outputHash,
-    Block,
-    FELT_BLOCK_LEN,
-    N_BYTES_BLOCK,
-    FELT_HASH_LEN,
-    N_BYTES_HASH,
-    targetToHash,
-    bigEndian,
-)
+    getBlocks, outputBlock, outputHash, Block, FELT_BLOCK_LEN, N_BYTES_BLOCK, FELT_HASH_LEN,
+    N_BYTES_HASH, targetToHash, bigEndian)
 from sha256.sha256 import compute_sha256
 from merkle import createMerkleTree, prepareMerkleTree, calculateHeight
 
@@ -33,12 +24,8 @@ const EXPECTED_MINING_TIME = 1209600  # seconds for mining 2016 blocks
 const MAX_TARGET = 0x00000000FFFF0000000000000000000000000000000000000000000000000000
 
 func main{
-    output_ptr : felt*,
-    pedersen_ptr : HashBuiltin*,
-    range_check_ptr,
-    ecdsa_ptr : felt*,
-    bitwise_ptr : BitwiseBuiltin*,
-}():
+        output_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, ecdsa_ptr : felt*,
+        bitwise_ptr : BitwiseBuiltin*}():
     alloc_locals
     local blocksLen : felt
     local numberInEpoch : felt
@@ -66,8 +53,7 @@ func main{
         blocksLen,
         blocks[0].fePrevHash,
         numberInEpoch,
-        0x0000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF,
-    )  # just a high number, that is not output negative by cairo
+        0x0000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)  # just a high number, that is not output negative by cairo
 
     let (feBlocks : felt**) = alloc()
     blocksToFe(feBlocks, blocks, 0, blocksLen)
@@ -89,8 +75,7 @@ func blocksToFe(feBlocks : felt**, blocks : Block*, index, len):
 end
 
 func findMaxBelowX{range_check_ptr}(blocks_ptr : Block*, len, index, currMaxIndex, currXIndex) -> (
-    maxIndex : felt
-):
+        maxIndex : felt):
     alloc_locals
     if len == index:
         return (currMaxIndex)
@@ -151,8 +136,7 @@ end
 
 # idea: has to be correct in the bits representation so set everything up to 2 ** (8 * (index - 3)) 0 and then compare
 func assertTargetsAlmostEqual{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
-    blockTarget, calculatedTarget, bitsIndex
-):
+        blockTarget, calculatedTarget, bitsIndex):
     let (andTmp) = pow(2, (8 * (bitsIndex - 3)))
     let (truncTarget) = bitwise_and(calculatedTarget, 0xFFFFFF * andTmp)
     assert blockTarget = truncTarget
@@ -160,8 +144,7 @@ func assertTargetsAlmostEqual{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
 end
 
 func assertTargetLe{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
-    hash : felt*, target : felt*, step, len
-):
+        hash : felt*, target : felt*, step, len):
     if step == len:
         return ()  # the values are equal
     end
@@ -180,8 +163,6 @@ func isHashLe{range_check_ptr}(hash1 : felt*, hash2 : felt*, step, len) -> (isLe
         return (1)
     end
     if hash1[step] != hash2[step]:
-        let currHash1 = hash1[step]
-        let currHash2 = hash2[step]
         let (isLe) = is_le(hash1[step], hash2[step])
         return (isLe)
     end
@@ -189,18 +170,16 @@ func isHashLe{range_check_ptr}(hash1 : felt*, hash2 : felt*, step, len) -> (isLe
 end
 
 func calculateNextTarget{output_ptr : felt*, range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
-    currTarget : felt, delta_t
-) -> (newTarget : felt):
+        currTarget : felt, delta_t) -> (newTarget : felt):
     # calculate delta_t/(theta * L)
     alloc_locals
     local returnTarget
     local ratio
 
-    let (q, r) = unsigned_div_rem(delta_t * 2 ** 32, EXPECTED_MINING_TIME)
+    let (q, _) = unsigned_div_rem(delta_t * 2 ** 32, EXPECTED_MINING_TIME)
 
     let (nulledTarget) = bitwise_and(
-        currTarget, 0x0000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000
-    )
+        currTarget, 0x0000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000)
     # 0x000000000000000000092F9AE4CAA13600000000000000000000000000000000
 
     let reducedTarget = nulledTarget / 2 ** 32
@@ -231,14 +210,8 @@ func calculateNextTarget{output_ptr : felt*, range_check_ptr, bitwise_ptr : Bitw
 end
 
 func validateBlocks{output_ptr : felt*, range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
-    blocks : Block*,
-    index,
-    len,
-    firstEpochBlockIndex : felt,
-    prevFeHash : felt*,
-    numberInCurrEpoch,
-    targetChanged,
-):
+        blocks : Block*, index, len, firstEpochBlockIndex : felt, prevFeHash : felt*,
+        numberInCurrEpoch, targetChanged):
     alloc_locals
     # one recursion step after the last block got validated
     if index == len:
@@ -260,11 +233,9 @@ func validateBlocks{output_ptr : felt*, range_check_ptr, bitwise_ptr : BitwiseBu
     end
     tempvar prevBlock = prevBlock
     let (output_first) = compute_sha256(
-        input_len=FELT_BLOCK_LEN, input=block.feBlock, n_bytes=N_BYTES_BLOCK
-    )
+        input_len=FELT_BLOCK_LEN, input=block.feBlock, n_bytes=N_BYTES_BLOCK)
     let (feBlockHash) = compute_sha256(
-        input_len=FELT_HASH_LEN, input=output_first, n_bytes=N_BYTES_HASH
-    )
+        input_len=FELT_HASH_LEN, input=output_first, n_bytes=N_BYTES_HASH)
 
     # check that this blocks previous hash equals previous block's calculated hash
     assertHashesEqual(hash1=prevFeHash, hash2=block.fePrevHash)
@@ -291,8 +262,7 @@ func validateBlocks{output_ptr : felt*, range_check_ptr, bitwise_ptr : BitwiseBu
         end
         # recalculate target and check if it is roughly the same as the blocks saved target
         let (compareTarget) = calculateNextTarget(
-            firstEpochBlock.target, prevBlock.time - firstEpochBlock.time
-        )
+            firstEpochBlock.target, prevBlock.time - firstEpochBlock.time)
         let (bitsIndexTmp) = bitwise_and(block.bits, 0xFF000000)
         let bitsIndex = bitsIndexTmp / 2 ** 24
         assertTargetsAlmostEqual(block.target, compareTarget, bitsIndex)
@@ -319,8 +289,7 @@ func validateBlocks{output_ptr : felt*, range_check_ptr, bitwise_ptr : BitwiseBu
             firstEpochBlockIndex,
             feBlockHash,
             numberInCurrEpoch + 1,
-            targetChanged,
-        )
+            targetChanged)
     end
     return ()
 end

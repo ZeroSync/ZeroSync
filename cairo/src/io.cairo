@@ -2,7 +2,6 @@ from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.serialize import serialize_word
 from starkware.cairo.common.bitwise import bitwise_and
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
-from starkware.cairo.common.math import unsigned_div_rem
 from starkware.cairo.common.pow import pow
 from starkware.cairo.common.math import assert_le
 const FELT_BLOCK_LEN = 20
@@ -26,36 +25,28 @@ func targetToHash{bitwise_ptr : BitwiseBuiltin*}(target) -> (targetHash : felt*)
     # bitwise_and only allows up to 251-bit unsigned integers
     # valid target always smaller than 2**246
     let (feTarget0) = bitwise_and(
-        0x0000FFFF00000000000000000000000000000000000000000000000000000000, target
-    )
+        0x0000FFFF00000000000000000000000000000000000000000000000000000000, target)
     assert targetHash[0] = feTarget0 / (2 ** 224)
     let (feTarget1) = bitwise_and(
-        target, 0x00000000FFFFFFFF000000000000000000000000000000000000000000000000
-    )
+        target, 0x00000000FFFFFFFF000000000000000000000000000000000000000000000000)
     assert targetHash[1] = feTarget1 / (2 ** 192)
     let (feTarget2) = bitwise_and(
-        target, 0x0000000000000000FFFFFFFF0000000000000000000000000000000000000000
-    )
+        target, 0x0000000000000000FFFFFFFF0000000000000000000000000000000000000000)
     assert targetHash[2] = feTarget2 / (2 ** 160)
     let (feTarget3) = bitwise_and(
-        target, 0x000000000000000000000000FFFFFFFF00000000000000000000000000000000
-    )
+        target, 0x000000000000000000000000FFFFFFFF00000000000000000000000000000000)
     assert targetHash[3] = feTarget3 / (2 ** 128)
     let (feTarget4) = bitwise_and(
-        target, 0x00000000000000000000000000000000FFFFFFFF000000000000000000000000
-    )
+        target, 0x00000000000000000000000000000000FFFFFFFF000000000000000000000000)
     assert targetHash[4] = feTarget4 / (2 ** 96)
     let (feTarget5) = bitwise_and(
-        target, 0x0000000000000000000000000000000000000000FFFFFFFF0000000000000000
-    )
+        target, 0x0000000000000000000000000000000000000000FFFFFFFF0000000000000000)
     assert targetHash[5] = feTarget5 / (2 ** 64)
     let (feTarget6) = bitwise_and(
-        target, 0x000000000000000000000000000000000000000000000000FFFFFFFF00000000
-    )
+        target, 0x000000000000000000000000000000000000000000000000FFFFFFFF00000000)
     assert targetHash[6] = feTarget6 / (2 ** 32)
     let (feTarget7) = bitwise_and(
-        target, 0x00000000000000000000000000000000000000000000000000000000FFFFFFFF
-    )
+        target, 0x00000000000000000000000000000000000000000000000000000000FFFFFFFF)
     assert targetHash[7] = feTarget7
     return (targetHash)
 end
@@ -65,8 +56,7 @@ end
 #
 # time and bits are stored in bigEndian
 func getBlock{bitwise_ptr : BitwiseBuiltin*, range_check_ptr}(
-    index : felt, firstEpochBlock : felt
-) -> (block : Block):
+        index : felt, firstEpochBlock : felt) -> (block : Block):
     alloc_locals
     local block : Block
     let (feBlockIn) = alloc()

@@ -1,10 +1,8 @@
 %lang starknet
 
-from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
-
 from tests.utils import fillInputSingleBlock
-from src.io import Block, targetToHash, getBlock, bigEndian
+from src.io import Block, targetToHash, getBlock
 
 # TODO obsolete once I change the target and sha hash from felt* to uint256
 @external

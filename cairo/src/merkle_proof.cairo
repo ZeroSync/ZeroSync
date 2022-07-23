@@ -19,16 +19,11 @@ from io import N_BYTES_BLOCK, N_BYTES_HASH, FELT_HASH_LEN, FELT_BLOCK_LEN, outpu
 ###
 
 func main{
-    output_ptr : felt*,
-    pedersen_ptr : HashBuiltin*,
-    range_check_ptr,
-    ecdsa_ptr : felt*,
-    bitwise_ptr : BitwiseBuiltin*,
-}():
+        output_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, ecdsa_ptr : felt*,
+        bitwise_ptr : BitwiseBuiltin*}():
     alloc_locals
     local blocksLen : felt
     local intermediaryIndex : felt
-    let (firstPrevHash) = alloc()
     let (blocks : felt**) = alloc()
     %{
         ids.blocksLen = len(program_input["Blocks"])
@@ -62,11 +57,9 @@ func main{
 
     # calculate the block hash and output it
     let (hash_first) = compute_sha256(
-        input_len=FELT_BLOCK_LEN, input=intermediaryHeader, n_bytes=N_BYTES_BLOCK
-    )
+        input_len=FELT_BLOCK_LEN, input=intermediaryHeader, n_bytes=N_BYTES_BLOCK)
     let (hash_second) = compute_sha256(
-        input_len=FELT_HASH_LEN, input=hash_first, n_bytes=N_BYTES_HASH
-    )
+        input_len=FELT_HASH_LEN, input=hash_first, n_bytes=N_BYTES_HASH)
     outputHash(hash_second)
     # calculate and output the merkle root of the batch
     let (leaves_ptr) = alloc()
