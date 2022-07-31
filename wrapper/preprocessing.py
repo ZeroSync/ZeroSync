@@ -1,24 +1,28 @@
-# taken from https://github.com/informartin/zkRelay/blob/master/preprocessing/create_input.py
+# taken from
+# https://github.com/informartin/zkRelay/blob/master/preprocessing/create_input.py
 from binascii import hexlify, unhexlify
 from typing import List
 
 from wrapper.btcrpc import getBlockHeadersInRange
 from json import dumps as jsonDumps
-import re, sys
+import re
+import sys
 
 
 def littleEndian(string):
-    splited = [str(string)[i : i + 2] for i in range(0, len(str(string)), 2)]
+    splited = [str(string)[i: i + 2] for i in range(0, len(str(string)), 2)]
     splited.reverse()
     return "".join(splited)
 
 
-# adopted from https://github.com/informartin/zkRelay/blob/master/preprocessing/create_input.py
+# adopted from
+# https://github.com/informartin/zkRelay/blob/master/preprocessing/create_input.py
 def createCairoInputFromBlock(block):
     version = littleEndian(block["versionHex"])
     little_endian_previousHash = (
-        littleEndian(block["previousblockhash"]) if block["height"] > 0 else 64 * "0"
-    )
+        littleEndian(
+            block["previousblockhash"]) if block["height"] > 0 else 64 *
+        "0")
     little_endian_merkleRoot = littleEndian(block["merkleroot"])
     little_endian_time = littleEndian(hex(block["time"])[2:])
     little_endian_difficultyBits = littleEndian(block["bits"])
@@ -34,20 +38,18 @@ def createCairoInputFromBlock(block):
         + little_endian_difficultyBits
         + little_endian_nonce
     )
-    # print("createCairoHeader --> ", header)
     return header
 
 
 def binToFelt(str: str) -> List[int]:
     feltFormat = re.findall(".?.?.?.?.?.?.?.", str)
-    # print([hexlify(x).decode("utf-8") for x in feltFormat])
     while len(feltFormat[-1]) != 8:
-        # print("ACHTUNG")  # TODO
         feltFormat[-1] += "0"
     return [int(x, 16) for x in feltFormat]
 
 
-# formula: https://medium.com/@dongha.sohn/bitcoin-6-target-and-difficulty-ee3bc9cc5962
+# formula:
+# https://medium.com/@dongha.sohn/bitcoin-6-target-and-difficulty-ee3bc9cc5962
 def unpackTarget(bits: str):  # TODO remove or keep for tests
     coefficient = int(bits[2:8], 16)
     index = int(bits[0:2], 16)
@@ -67,7 +69,8 @@ def dumpCairoInput(ctx, i, j):
     firstEpochBlock = getBlockHeadersInRange(
         ctx, ((i - 1) // 2016 * 2016), ((i - 1) // 2016 * 2016) + 1
     )[0]
-    dump["firstEpochBlock"] = binToFelt(createCairoInputFromBlock(firstEpochBlock))
+    dump["firstEpochBlock"] = binToFelt(
+        createCairoInputFromBlock(firstEpochBlock))
     dump["blockNrThisEpoch"] = i - ((i // 2016) * 2016)
     cairo_input.write(jsonDumps(dump))
     if cairo_input is not sys.stdout:
