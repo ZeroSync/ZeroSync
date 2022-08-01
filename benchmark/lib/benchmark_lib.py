@@ -14,15 +14,16 @@ from wrapper.setup import ctxConfigSetup
 # fills the config with likely values
 # they can still be overwritten
 # different setup can be used by calling ctxConfigSetup directly
-# TODO remove .. from the paths when the benchmark scripts location is known
 def benchmarkInit():
-    return ctxConfigSetup("../../work/starkRelay.toml", "../../cairo", False)
+    return ctxConfigSetup("../work/starkRelay.toml", "../cairo", False)
 
 
 def benchmarkBatch(ctx, batchStart, batchEnd):
-    dumpCairoInput(ctx, batchStart, batchEnd)
+    ctx.obj['inputFile'] = ctx.obj['work']['dir'] + \
+        "validateInput_" + str(batchStart) + "-" + str(batchEnd) + ".json"
+    dumpCairoInput(ctx, batchStart, batchEnd + 1)
     cairoOutput, secs, memory = runCairoBenchmark(
-        cairoProg=ctx.obj['cairoProgram'], inputFile=ctx.obj['inputFile']
+        cairoProg=ctx.obj['validate'], inputFile=ctx.obj['inputFile']
     )
     if [line for line in cairoOutput.split("\n")][
         0
@@ -64,10 +65,11 @@ def benchmarkWindowOfBatches(ctx, initBatchStart, batchSize, n, step):
 def benchmarkMerkleProof(
     ctx, batchStart, batchEnd, intermediaryIndex
 ):
-
-    cairoprogram = obj.ctx['cairoProgram']
+    ctx.obj['inputFile'] = ctx.obj['work']['dir'] + \
+        "merkleInput_" + str(batchStart) + "-" + str(batchEnd) + ".json"
+    cairoprogram = obj.ctx['merkle']
     inputfile = obj.ctx['inputFile']
-    dumpMerkleProofInput(ctx, batchStart, batchEnd, intermediaryIndex)
+    dumpMerkleProofInput(ctx, batchStart, batchEnd + 1, intermediaryIndex)
     cairoOutput, secs, memory = runCairoBenchmark(
         cairoProg=cairoprogram, inputFile=inputfile
     )

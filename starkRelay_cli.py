@@ -100,7 +100,7 @@ def validateBatch(ctx, batchrange, submit, raw, info, giza_prove):
             memoryFile=ctx.obj['work']['dir'] +
             "memory_" +
             batchrange +
-            ".bin",
+            ".bin"
         )
     if raw or info:
         print(cairoOutput)
