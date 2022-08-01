@@ -24,6 +24,5 @@ bigBatches = [(1, 252), (2015, 2267)]
 ctx = Ctx()
 ctx.obj = benchmarkInit()
 results = benchmarkBatches(ctx, smallBatches)
-
 # TODO print table of results with prettytable or other package
 # TODO maybe change benchmarkRunCairo to run with --print_info to get the steps
