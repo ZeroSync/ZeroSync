@@ -1,4 +1,4 @@
-%builtins output pedersen range_check ecdsa bitwise
+# %builtins output pedersen range_check ecdsa bitwise
 # some builtins may not be used but are required for the cairo-run layout
 # for a full node implementation we will need them all anyways
 
@@ -169,7 +169,7 @@ func isHashLe{range_check_ptr}(hash1 : felt*, hash2 : felt*, step, len) -> (isLe
     return isHashLe(hash1, hash2, step + 1, len)
 end
 
-func calculateNextTarget{output_ptr : felt*, range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
+func calculateNextTarget{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
         currTarget : felt, delta_t) -> (newTarget : felt):
     # calculate delta_t/(theta * L)
     alloc_locals
