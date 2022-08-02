@@ -1,3 +1,5 @@
 bin/
 tmp_work/
 conf/starkRelay.toml
+build
+starkRelay.egg-info
