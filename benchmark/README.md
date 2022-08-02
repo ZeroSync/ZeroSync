@@ -7,8 +7,8 @@ pip install prettytable
 ```
 
 ## Usage
-
-You can run the benchmark script from the benchmark folder using
+Make sure to run starkRelay once and create the working directory and config in the parent folder (so there exists starkRelay/work/starkRelay.toml).
+You can then run the benchmark script from the benchmark folder using
 ```
 python benchmarks.py [SETS] [CSV_FILE]
 ```
