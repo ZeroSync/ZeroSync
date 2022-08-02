@@ -13,7 +13,7 @@ For now SETS can be one of three values:
 - 2: Runs medium and small batch size sets
 - 3: Runs large, medium and small batch size sets
 
-New batches to benchmark can be added to the specified batch sets in (```benchmarks.py```)[https://github.com/lucidLuckylee/starkRelay/blob/main/benchmark/benchmarks.py]
+New batches to benchmark can be added to the specified batch sets in [```benchmarks.py```](https://github.com/lucidLuckylee/starkRelay/blob/main/benchmark/benchmarks.py)
 
 ## Baseline results
 
