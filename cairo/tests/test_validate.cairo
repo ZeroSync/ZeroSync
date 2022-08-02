@@ -10,11 +10,15 @@ from src.validate import (
     assertTargetLe, 
     assertTargetsAlmostEqual, 
     calculateNextTarget,
-    getTimeMedian
+    getTimeMedian,
+    compute_double_sha256
 )
 
-
-from io import (Block,getBlock)
+from io import (
+    Block, 
+    getBlock, 
+    getBlocks
+)
 
 @external
 func test_assertHashesEqual_true():
@@ -180,39 +184,45 @@ func test_calculateNextTarget{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
 end
 
 
-
 @external
 func test_getTimeMedian{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
     alloc_locals
+    
     fillInputMultipleBlocks()
     
     let (blocks : Block*) = alloc()
 
-    let (block0 : Block) = getBlock(0, 0)
-    assert blocks[0] = block0
-    let (block1 : Block) = getBlock(1, 0)
-    assert blocks[1] = block1
-    let (block2 : Block) = getBlock(2, 0)
-    assert blocks[2] = block2
-    let (block3 : Block) = getBlock(3, 0)
-    assert blocks[3] = block3
-    let (block4 : Block) = getBlock(4, 0)
-    assert blocks[4] = block4
-    let (block5 : Block) = getBlock(5, 0)
-    assert blocks[5] = block5
-    let (block6 : Block) = getBlock(6, 0)
-    assert blocks[6] = block6
-    let (block7 : Block) = getBlock(7, 0)
-    assert blocks[7] = block7
-    let (block8 : Block) = getBlock(8, 0)
-    assert blocks[8] = block8
-    let (block9 : Block) = getBlock(9, 0)
-    assert blocks[9] = block9
-    let (block10 : Block) = getBlock(10, 0)
-    assert blocks[10] = block10
+    getBlocks(blocks, 0, 11)
 
-    let (result) = getTimeMedian(blocks, 0)
+    let (median_time) = getTimeMedian(blocks, 0)
+
+    assert median_time = 1231471789
 
     return ()
 end
 
+
+@external
+func test_compute_double_sha256{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
+    let input_len = 3
+
+    # Set input to "Hello World"
+    let (input:felt*) = alloc()
+    assert input[0] = 1214606444
+    assert input[1] = 1864398703
+    assert input[2] = 1919706112
+
+    let n_bytes = 12
+    let (hash) = compute_double_sha256(input_len, input, n_bytes)
+    
+    assert hash[0] = 2071273689
+    assert hash[1] = 2609998137
+    assert hash[2] = 1431478754
+    assert hash[3] = 1539016163
+    assert hash[4] = 1575216353
+    assert hash[5] = 1278868074
+    assert hash[6] = 1552882899
+    assert hash[7] = 1467368322
+
+    return() 
+end

@@ -209,6 +209,16 @@ func calculateNextTarget{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
     return (returnTarget)
 end
 
+func compute_double_sha256{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
+        input_len : felt, input : felt*, n_bytes : felt) -> (sha : felt*):
+    alloc_locals
+    let (output_first) = compute_sha256(
+        input_len, input=input, n_bytes=n_bytes)
+    let (output_second) = compute_sha256(
+        input_len=FELT_HASH_LEN, input=output_first, n_bytes=N_BYTES_HASH)
+    return (output_second)
+end    
+
 func validateBlocks{output_ptr : felt*, range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
         blocks : Block*, index, len, firstEpochBlockIndex : felt, prevFeHash : felt*,
         numberInCurrEpoch, targetChanged):
@@ -232,10 +242,9 @@ func validateBlocks{output_ptr : felt*, range_check_ptr, bitwise_ptr : BitwiseBu
         tempvar prevBlock = blocks[index - 1]
     end
     tempvar prevBlock = prevBlock
-    let (output_first) = compute_sha256(
+
+    let (feBlockHash) = compute_double_sha256(
         input_len=FELT_BLOCK_LEN, input=block.feBlock, n_bytes=N_BYTES_BLOCK)
-    let (feBlockHash) = compute_sha256(
-        input_len=FELT_HASH_LEN, input=output_first, n_bytes=N_BYTES_HASH)
 
     # check that this blocks previous hash equals previous block's calculated hash
     assertHashesEqual(hash1=prevFeHash, hash2=block.fePrevHash)
