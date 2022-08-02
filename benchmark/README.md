@@ -1,5 +1,11 @@
 # VM Benchmarks
 
+# Additional requirements
+- [prettytable](https://pypi.org/project/prettytable/) to print out the results: 
+```
+pip install prettytable
+```
+
 ## Usage
 
 You can run the benchmark script from the benchmark folder using
