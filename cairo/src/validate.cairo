@@ -1,4 +1,4 @@
-# %builtins output pedersen range_check ecdsa bitwise
+%builtins output pedersen range_check ecdsa bitwise
 # some builtins may not be used but are required for the cairo-run layout
 # for a full node implementation we will need them all anyways
 
@@ -186,11 +186,9 @@ func isHashLe{range_check_ptr}(hash1 : felt*, hash2 : felt*, step, len) -> (isLe
     return isHashLe(hash1, hash2, step + 1, len)
 end
 
-
 func calculateNextTarget{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
     currTarget : felt, delta_t
 ) -> (newTarget : felt):
-
     # calculate delta_t/(theta * L)
     alloc_locals
     local returnTarget
@@ -231,14 +229,15 @@ func calculateNextTarget{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
 end
 
 func compute_double_sha256{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
-        input_len : felt, input : felt*, n_bytes : felt) -> (sha : felt*):
+    input_len : felt, input : felt*, n_bytes : felt
+) -> (sha : felt*):
     alloc_locals
-    let (output_first) = compute_sha256(
-        input_len, input=input, n_bytes=n_bytes)
+    let (output_first) = compute_sha256(input_len, input=input, n_bytes=n_bytes)
     let (output_second) = compute_sha256(
-        input_len=FELT_HASH_LEN, input=output_first, n_bytes=N_BYTES_HASH)
+        input_len=FELT_HASH_LEN, input=output_first, n_bytes=N_BYTES_HASH
+    )
     return (output_second)
-end    
+end
 
 func validateBlocks{output_ptr : felt*, range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
     blocks : Block*,
@@ -271,7 +270,8 @@ func validateBlocks{output_ptr : felt*, range_check_ptr, bitwise_ptr : BitwiseBu
     tempvar prevBlock = prevBlock
 
     let (feBlockHash) = compute_double_sha256(
-        input_len=FELT_BLOCK_LEN, input=block.feBlock, n_bytes=N_BYTES_BLOCK)
+        input_len=FELT_BLOCK_LEN, input=block.feBlock, n_bytes=N_BYTES_BLOCK
+    )
 
     # check that this blocks previous hash equals previous block's calculated hash
     assertHashesEqual(hash1=prevFeHash, hash2=block.fePrevHash)
@@ -307,14 +307,10 @@ func validateBlocks{output_ptr : felt*, range_check_ptr, bitwise_ptr : BitwiseBu
         let bitsIndex = bitsIndexTmp / 2 ** 24
         assertTargetsAlmostEqual(block.target, compareTarget, bitsIndex)
         validateBlocks(blocks, index + 1, len, index, feBlockHash, numberInCurrEpoch + 1, index)
-        tempvar output_ptr = output_ptr
-        tempvar bitwise_ptr = bitwise_ptr
         return ()
     else:
         # normal target check
         assert block.target = firstEpochBlock.target
-        tempvar output_ptr = output_ptr
-        tempvar bitwise_ptr = bitwise_ptr
     end
 
     # validate next block using this blocks hash, timestamp and target
