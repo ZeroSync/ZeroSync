@@ -3,6 +3,7 @@ import subprocess
 import resource
 import time
 import sys
+import re
 
 P = 2**251 + 17 * 2**192 + 2
 
@@ -31,7 +32,7 @@ def runCairo(cairoProg, inputFile, traceFile, memoryFile):
 
 
 def runCairoPrintInfo(cairoProg, inputFile):
-    program = f"cairo-run --program={cairoProg} --layout=all --print_info --program_input={inputFile} --cairo_pie_output={cairoProg.replace('.json','') + '.pie'}".split(
+    program = f"cairo-run --program={cairoProg} --layout=all --print_info --print_output --program_input={inputFile} --cairo_pie_output={cairoProg.replace('.json','') + '.pie'}".split(
         " "
     )
     proc = subprocess.run(program, stdout=subprocess.PIPE)
@@ -80,9 +81,13 @@ def formatCairoOutput(output):
 
 def runCairoBenchmark(cairoProg, inputFile):
     startTime = time.time()
-    result = runCairo(cairoProg, inputFile, "/dev/null", "/dev/null")
+    result = runCairoPrintInfo(cairoProg, inputFile)
     endTime = time.time()
     # index 2 is maximum resident set size in KBytes:
     # https://docs.python.org/3/library/resource.html#resource.getrusage
     memory = resource.getrusage(resource.RUSAGE_CHILDREN)
-    return result, endTime - startTime, memory[2]
+
+    # check cairo output for steps and memory cells used
+    steps = re.search("(?<=Number of steps: )(\\d+)", result).group(0)
+    cells = re.search("(?<=Used memory cells: )(\\d+)", result).group(0)
+    return result, endTime - startTime, memory[2], steps, cells

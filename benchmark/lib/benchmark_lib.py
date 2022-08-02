@@ -9,11 +9,13 @@ from wrapper.cairo import(
 )
 
 from wrapper.setup import ctxConfigSetup
-
+import sys
 
 # fills the config with likely values
 # they can still be overwritten
 # different setup can be used by calling ctxConfigSetup directly
+
+
 def benchmarkInit():
     return ctxConfigSetup("../work/starkRelay.toml", "../cairo", False)
 
@@ -22,21 +24,23 @@ def benchmarkBatch(ctx, batchStart, batchEnd):
     ctx.obj['inputFile'] = ctx.obj['work']['dir'] + \
         "validateInput_" + str(batchStart) + "-" + str(batchEnd) + ".json"
     dumpCairoInput(ctx, batchStart, batchEnd + 1)
-    cairoOutput, secs, memory = runCairoBenchmark(
+    cairoOutput, secs, memory, steps, cells = runCairoBenchmark(
         cairoProg=ctx.obj['validate'], inputFile=ctx.obj['inputFile']
     )
-    if [line for line in cairoOutput.split("\n")][
-        0
-    ] != "Program output:":  # check first line is not an error output
-        print("Error: Cairo program errored:", file=STDERR)
-        print(cairoOutput, file=STDERR, flush=True)
+    firstLine = [line for line in cairoOutput.split("\n")][0]
+    # check first line is not an error output
+    if firstLine != "Program output:" and firstLine[0:15] != "Number of steps":
+        print("Error: Cairo program errored:", file=sys.stderr)
+        print(cairoOutput, file=sys.stderr, flush=True)
     else:
         return (
             batchStart,
-            batchEnd - 1,
-            secs,
+            batchEnd,
+            round(secs, 4),
             memory,
-            formatCairoOutput(cairoOutput))
+            steps,
+            cells,
+        )
 
 
 # batches is a list of tuples (start, end)
@@ -70,18 +74,19 @@ def benchmarkMerkleProof(
     cairoprogram = obj.ctx['merkle']
     inputfile = obj.ctx['inputFile']
     dumpMerkleProofInput(ctx, batchStart, batchEnd + 1, intermediaryIndex)
-    cairoOutput, secs, memory = runCairoBenchmark(
+    cairoOutput, secs, memory, steps, cells = runCairoBenchmark(
         cairoProg=cairoprogram, inputFile=inputfile
     )
-    if [line for line in cairoOutput.split("\n")][
-        0
-    ] != "Program output:":  # check first line is not an error output
-        print("Error: Cairo program errored:", file=STDERR)
-        print(cairoOutput, file=STDERR, flush=True)
+    firstLine = [line for line in cairoOutput.split("\n")][0]
+    # check first line is not an error output
+    if firstLine != "Program output:" and firstLine[0:15] != "Number of steps":
+        print("Error: Cairo program errored:", file=sys.stderr)
+        print(cairoOutput, file=sys.stderr, flush=True)
     else:
         return (
             batchStart,
-            batchEnd - 1,
-            secs,
+            batchEnd,
+            round(secs, 4),
             memory,
-            formatCairoOutput(cairoOutput))
+            steps,
+            cells)
