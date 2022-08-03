@@ -173,7 +173,7 @@ func assert_target_le{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
     return assert_target_le(hash, target, step + 1, len)
 end
 
-# return 1 if Hash1 <= Hash2
+# return 1 if hash1 <= hash2
 # return 0 otherwise
 func is_hash_le{range_check_ptr}(hash1 : felt*, hash2 : felt*, step, len) -> (result):
     if step == len:

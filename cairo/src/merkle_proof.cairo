@@ -10,6 +10,8 @@ from merkle import create_merkle_tree, prepare_merkle_tree, calculate_height
 
 from io import N_BYTES_BLOCK, N_BYTES_HASH, FELT_HASH_LEN, FELT_BLOCK_LEN, output_hash
 
+from validate import compute_double_sha256
+
 ###
 #       This Program proofs the inclusion of an intermediary header
 #       at position [X] in the given batch. To do so, we calculate the
@@ -33,7 +35,9 @@ func main{
     let (height) = calculate_height(blocks_len)
     let intermediary_header = [blocks + intermediary_index]
 
-    # output the specified header -> TODO IMPROVEMENT: This could be compressed to lesser uint128's (If you change it here do it in the contract and validate.cairo too <3 )
+    # output the specified header
+    # TODO IMPROVEMENT: This could be compressed to lesser uint128's 
+    # (If you change it here do it in the contract and validate.cairo too <3 )
     serialize_word([intermediary_header])
     serialize_word([intermediary_header + 1])
     serialize_word([intermediary_header + 2])
@@ -56,11 +60,10 @@ func main{
     serialize_word([intermediary_header + 19])
 
     # calculate the block hash and output it
-    let (hash_first) = compute_sha256(
+    let (hash) = compute_double_sha256(
         input_len=FELT_BLOCK_LEN, input=intermediary_header, n_bytes=N_BYTES_BLOCK)
-    let (hash_second) = compute_sha256(
-        input_len=FELT_HASH_LEN, input=hash_first, n_bytes=N_BYTES_HASH)
-    output_hash(hash_second)
+    
+    output_hash(hash)
     # calculate and output the merkle root of the batch
     let (leaves_ptr) = alloc()
     prepare_merkle_tree(leaves_ptr, blocks, blocks_len, 0)

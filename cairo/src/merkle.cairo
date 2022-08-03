@@ -27,10 +27,12 @@ from starkware.cairo.common.math import assert_le
 ###
 
 # Pedersen hash of the felt array representation of a block header
-# NOTE: I do not use the sha256 block hash here because calculating all hashes again for every merkle proof sounds infeasable
+# NOTE: I do not use the sha256 block hash here 
+# because calculating all hashes again for every merkle proof sounds infeasable
 # Assumption: Input is 80 bytes spread over 20 felts
 func header_pedersen_hash{pedersen_ptr : HashBuiltin*}(header : felt*) -> (pedersen_hash : felt):
-    # TODO It could be cleverer to compress the block header into 5 128bit felts, but I'll just throw the hammer and calculate a huge hash chain
+    # TODO It could be cleverer to compress the block header into 5 128bit felts, 
+    # but I'll just throw the hammer and calculate a huge hash chain
     let (a1) = hash2{hash_ptr=pedersen_ptr}(header[0], header[1])
     let (a2) = hash2{hash_ptr=pedersen_ptr}(header[2], header[3])
     let (a3) = hash2{hash_ptr=pedersen_ptr}(header[4], header[5])
@@ -68,7 +70,8 @@ func prepare_merkle_tree{pedersen_ptr : HashBuiltin*}(
     return ()
 end
 
-# start with left_index = 0 and right_index is 2**Height-1 -> can calc the height with a hint
+# start with left_index = 0 and right_index is 2**Height-1 
+# -> can calc the height with a hint
 func create_merkle_tree{pedersen_ptr : HashBuiltin*, range_check_ptr}(
         leaves_ptr : felt*, left_index : felt, leaves_ptr_len : felt, height : felt) -> (
         root : felt):
