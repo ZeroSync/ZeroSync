@@ -17,7 +17,7 @@ import sys
 
 
 def benchmarkInit():
-    return ctxConfigSetup("../work/starkRelay.toml", "../cairo", False)
+    return ctxConfigSetup("../work/starkRelay.toml", "../cairo/src", False)
 
 
 def benchmarkBatch(ctx, batchStart, batchEnd):
@@ -34,6 +34,7 @@ def benchmarkBatch(ctx, batchStart, batchEnd):
         print(cairoOutput, file=sys.stderr, flush=True)
     else:
         return (
+            batchEnd + 1 - batchStart,
             batchStart,
             batchEnd,
             round(secs, 4),
@@ -71,8 +72,8 @@ def benchmarkMerkleProof(
 ):
     ctx.obj['inputFile'] = ctx.obj['work']['dir'] + \
         "merkleInput_" + str(batchStart) + "-" + str(batchEnd) + ".json"
-    cairoprogram = obj.ctx['merkle']
-    inputfile = obj.ctx['inputFile']
+    cairoprogram = ctx.obj['merkle']
+    inputfile = ctx.obj['inputFile']
     dumpMerkleProofInput(ctx, batchStart, batchEnd + 1, intermediaryIndex)
     cairoOutput, secs, memory, steps, cells = runCairoBenchmark(
         cairoProg=cairoprogram, inputFile=inputfile
@@ -84,9 +85,17 @@ def benchmarkMerkleProof(
         print(cairoOutput, file=sys.stderr, flush=True)
     else:
         return (
+            batchEnd + 1 - batchStart,
             batchStart,
             batchEnd,
             round(secs, 4),
             memory,
             steps,
             cells)
+
+
+def benchmarkMerkleProofs(ctx, batches):
+    results = []
+    for batch in batches:
+        results.append(benchmarkMerkleProof(ctx, batch[0], batch[1], 0))
+    return results
