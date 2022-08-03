@@ -50,3 +50,4 @@ Gathered on a PC with Ryzen 5 3600 processor @ 3.6GHz
 | 252  |  2015 | 2266 | 18.5993  |   10688384  | 140048 | 151856 |
 +------+-------+------+----------+-------------+--------+--------+
 ```
+TODO the memory value for the merkle proof is way off
