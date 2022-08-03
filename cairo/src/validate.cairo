@@ -11,18 +11,17 @@ from starkware.cairo.common.math import unsigned_div_rem
 from starkware.cairo.common.bitwise import bitwise_and
 from starkware.cairo.common.math_cmp import is_le, is_le_felt
 from starkware.cairo.common.pow import pow
-
 from io import (
-    get_blocks,
-    output_block,
-    output_hash,
-    Block,
     FELT_BLOCK_LEN,
     N_BYTES_BLOCK,
     FELT_HASH_LEN,
     N_BYTES_HASH,
+    Block,
+    get_blocks,
+    output_block,
+    output_hash,
     target_to_hash,
-    big_endian,
+    big_endian
 )
 from sha256.sha256 import compute_sha256
 from merkle import create_merkle_tree, prepare_merkle_tree, calculate_height
@@ -316,7 +315,15 @@ func validate_blocks{output_ptr : felt*, range_check_ptr, bitwise_ptr : BitwiseB
     # validate next block using this blocks hash, timestamp and target
     if index_in_curr_epoch == 2015:
         # last block of this epoch
-        validate_blocks(blocks, index + 1, len, first_epoch_block_index, fe_block_hash, 0, target_changed)
+        validate_blocks(
+            blocks, 
+            index + 1, 
+            len, 
+            first_epoch_block_index, 
+            fe_block_hash, 
+            0, 
+            target_changed
+        )
     else:
         validate_blocks(
             blocks,
@@ -325,7 +332,7 @@ func validate_blocks{output_ptr : felt*, range_check_ptr, bitwise_ptr : BitwiseB
             first_epoch_block_index,
             fe_block_hash,
             index_in_curr_epoch + 1,
-            target_changed,
+            target_changed
         )
     end
     return ()

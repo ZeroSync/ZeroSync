@@ -21,7 +21,7 @@ end
 
 # Returns the block hash-like representation of a target value (stored as felt) in a felt* of len 8
 # TODO: This could allow 256 bit targets by seperating the target value into 2 felts and changing the target calculation - aka use Uint256 library, as for everything
-func target_to_hash{bitwise_ptr : BitwiseBuiltin*}(target) -> (targetHash : felt*):
+func target_to_hash{bitwise_ptr : BitwiseBuiltin*}(target) -> (target_hash : felt*):
     let (target_hash) = alloc()
     # bitwise_and only allows up to 251-bit unsigned integers
     # valid target always smaller than 2**246
@@ -61,26 +61,26 @@ func get_block{bitwise_ptr : BitwiseBuiltin*, range_check_ptr}(
     alloc_locals
     local block : Block
     let (fe_block_in) = alloc()
-    let (tmpfe_prev_hash) = alloc()
+    let (tmp_fe_prev_hash) = alloc()
     %{
         block = None
         if ids.first_epoch_block == 1:
-            block = program_input['firstEpochBlock']
+            block = program_input["firstEpochBlock"]
         else:
-            block = program_input['Blocks'][ids.index]
+            block = program_input["Blocks"][ids.index]
         segments.write_arg(ids.fe_block_in, block)
     %}
     assert block.fe_block = fe_block_in
-    assert tmpfe_prev_hash[0] = block.fe_block[1]
-    assert tmpfe_prev_hash[1] = block.fe_block[2]
-    assert tmpfe_prev_hash[2] = block.fe_block[3]
-    assert tmpfe_prev_hash[3] = block.fe_block[4]
-    assert tmpfe_prev_hash[4] = block.fe_block[5]
-    assert tmpfe_prev_hash[5] = block.fe_block[6]
-    assert tmpfe_prev_hash[6] = block.fe_block[7]
-    assert tmpfe_prev_hash[7] = block.fe_block[8]
+    assert tmp_fe_prev_hash[0] = block.fe_block[1]
+    assert tmp_fe_prev_hash[1] = block.fe_block[2]
+    assert tmp_fe_prev_hash[2] = block.fe_block[3]
+    assert tmp_fe_prev_hash[3] = block.fe_block[4]
+    assert tmp_fe_prev_hash[4] = block.fe_block[5]
+    assert tmp_fe_prev_hash[5] = block.fe_block[6]
+    assert tmp_fe_prev_hash[6] = block.fe_block[7]
+    assert tmp_fe_prev_hash[7] = block.fe_block[8]
 
-    assert block.fe_prev_hash = tmpfe_prev_hash
+    assert block.fe_prev_hash = tmp_fe_prev_hash
 
     let (time_big_endian) = big_endian(block.fe_block[17])
     assert block.time = time_big_endian
@@ -103,8 +103,8 @@ func get_block{bitwise_ptr : BitwiseBuiltin*, range_check_ptr}(
     let (tmp) = pow(2, 8 * (bits_index - 3))
     let target = coefficient * tmp
 
-    let (tmpfe_target) = target_to_hash(target)
-    block.fe_target = tmpfe_target
+    let (tmp_fe_target) = target_to_hash(target)
+    block.fe_target = tmp_fe_target
     block.target = target
     return (block)
 end
