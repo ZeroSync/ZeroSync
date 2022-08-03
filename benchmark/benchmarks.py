@@ -11,7 +11,7 @@ import sys
 import atexit
 import csv
 from prettytable import PrettyTable
-from lib.benchmark_lib import benchmarkInit, benchmarkBatches
+from lib.benchmark_lib import benchmarkInit, benchmarkBatches, benchmarkMerkleProofs
 
 
 # Imitating the ctx object from click allows to share code base
@@ -30,27 +30,23 @@ batches = [smallBatches, mediumBatches, largeBatches]
 
 results = []
 resTable = PrettyTable()
+merkleResTable = PrettyTable()
 resTable.field_names = [
+    "size",
     "start",
     "end",
     "time (s)",
     "memory (KB)",
     "steps",
     "cells"]
+merkleResTable.field_names = resTable.field_names
 
 
 def printResults():
-    print()
-    print(
-        resTable.get_string(
-            fields=[
-                "start",
-                "end",
-                "time (s)",
-                "memory (KB)",
-                "steps",
-                "cells",
-            ]))
+    print("\n--- Batch Validation Results ---")
+    print(resTable)
+    print("\n--- Inclusion Merkle Proof Results ---")
+    print(merkleResTable)
 
 
 # If the program is stopped still output the results up to this point
@@ -70,14 +66,22 @@ if len(sys.argv) >= 2:
 
 for i in range(0, batchesToRun):
     print(
-        f"\rRunning batch set {i + 1}/{batchesToRun}... (batch size increases with every batch set)",
+        f"Running batch set {i + 1}/{batchesToRun}... (batch size increases with every batch set)\r",
         end="")
     results = benchmarkBatches(ctx, batches[i])
+    merkleResults = benchmarkMerkleProofs(ctx, batches[i])
     resTable.add_rows(results)
-
+    merkleResTable.add_rows(merkleResults)
 
 if len(sys.argv) == 3:
     with open(sys.argv[2], 'w') as resFile:
         wr = csv.writer(resFile)
-        wr.writerow(("start", "end", "time", "memory", "steps", "cells"))
+        wr.writerow(
+            ("batchsize",
+             "start",
+             "end",
+             "time",
+             "memory",
+             "steps",
+             "cells"))
         wr.writerows(results)
