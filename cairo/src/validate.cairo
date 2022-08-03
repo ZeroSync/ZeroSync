@@ -1,4 +1,4 @@
-%builtins output pedersen range_check ecdsa bitwise
+# %builtins output pedersen range_check ecdsa bitwise
 # some builtins may not be used but are required for the cairo-run layout
 # for a full node implementation we will need them all anyways
 
@@ -13,19 +13,19 @@ from starkware.cairo.common.math_cmp import is_le, is_le_felt
 from starkware.cairo.common.pow import pow
 
 from io import (
-    getBlocks,
-    outputBlock,
-    outputHash,
+    get_blocks,
+    output_block,
+    output_hash,
     Block,
     FELT_BLOCK_LEN,
     N_BYTES_BLOCK,
     FELT_HASH_LEN,
     N_BYTES_HASH,
-    targetToHash,
-    bigEndian,
+    target_to_hash,
+    big_endian,
 )
 from sha256.sha256 import compute_sha256
-from merkle import createMerkleTree, prepareMerkleTree, calculateHeight
+from merkle import create_merkle_tree, prepare_merkle_tree, calculate_height
 
 const EXPECTED_MINING_TIME = 1209600  # seconds for mining 2016 blocks
 
@@ -40,104 +40,104 @@ func main{
     bitwise_ptr : BitwiseBuiltin*,
 }():
     alloc_locals
-    local blocksLen : felt
-    local numberInEpoch : felt
+    local blocks_len : felt
+    local index_in_epoch : felt
     %{
-        ids.blocksLen = len(program_input["Blocks"]) 
-        ids.numberInEpoch = program_input["blockNrThisEpoch"]
+        ids.blocks_len = len(program_input["Blocks"]) 
+        ids.index_in_epoch = program_input["blockNrThisEpoch"]
     %}
 
-    let (height) = calculateHeight(blocksLen)
+    let (height) = calculate_height(blocks_len)
 
-    assert_le(numberInEpoch, 2015)
-    assert_le(0, blocksLen)  # just in case
+    assert_le(index_in_epoch, 2015)
+    assert_le(0, blocks_len)  # just in case
 
     let (blocks : Block*) = alloc()  # first epoch block is at blocks[len]
-    getBlocks(blocks, 0, blocksLen)
+    get_blocks(blocks, 0, blocks_len)
 
-    serialize_word(blocksLen)
-    outputBlock(blocks[blocksLen])
-    outputBlock(blocks[0])
+    serialize_word(blocks_len)
+    output_block(blocks[blocks_len])
+    output_block(blocks[0])
 
-    validateBlocks(
+    validate_blocks(
         blocks,
         0,
-        blocksLen,
-        blocksLen,
-        blocks[0].fePrevHash,
-        numberInEpoch,
+        blocks_len,
+        blocks_len,
+        blocks[0].fe_prev_hash,
+        index_in_epoch,
         0x0000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF,
     )  # just a high number, that is not output negative by cairo
 
-    let (feBlocks : felt**) = alloc()
-    blocksToFe(feBlocks, blocks, 0, blocksLen)
+    let (fe_blocks : felt**) = alloc()
+    blocks_to_fe(fe_blocks, blocks, 0, blocks_len)
     let (leaves_ptr) = alloc()
-    prepareMerkleTree(leaves_ptr, feBlocks, blocksLen, 0)
-    let (merkleRoot) = createMerkleTree(leaves_ptr, 0, blocksLen, height)
-    serialize_word(merkleRoot)
+    prepare_merkle_tree(leaves_ptr, fe_blocks, blocks_len, 0)
+    let (merkle_root) = create_merkle_tree(leaves_ptr, 0, blocks_len, height)
+    serialize_word(merkle_root)
 
     return ()
 end
 
-func blocksToFe(feBlocks : felt**, blocks : Block*, index, len):
+func blocks_to_fe(fe_blocks : felt**, blocks : Block*, index, len):
     if index == len:
         return ()
     end
-    assert feBlocks[index] = blocks[index].feBlock
-    blocksToFe(feBlocks, blocks, index + 1, len)
+    assert fe_blocks[index] = blocks[index].fe_block
+    blocks_to_fe(fe_blocks, blocks, index + 1, len)
     return ()
 end
 
-func findMaxBelowX{range_check_ptr}(blocks_ptr : Block*, len, index, currMaxIndex, currXIndex) -> (
+func find_max_below_x{range_check_ptr}(blocks_ptr : Block*, len, index, curr_max_index, curr_x_index) -> (
     maxIndex : felt
 ):
     alloc_locals
     if len == index:
-        return (currMaxIndex)
+        return (curr_max_index)
     end
     # don't select same index again
-    if index == currXIndex:
-        return findMaxBelowX(blocks_ptr, len, index + 1, currMaxIndex, currXIndex)
+    if index == curr_x_index:
+        return find_max_below_x(blocks_ptr, len, index + 1, curr_max_index, curr_x_index)
     end
-    if currXIndex == -1:
+    if curr_x_index == -1:
         # search for normal maximum
-        if currMaxIndex == -1:
-            return findMaxBelowX(blocks_ptr, len, index + 1, index, currXIndex)
+        if curr_max_index == -1:
+            return find_max_below_x(blocks_ptr, len, index + 1, index, curr_x_index)
         end
-        let (newMax) = is_le(blocks_ptr[currMaxIndex].time, blocks_ptr[index].time)
-        if newMax == 1:
-            return findMaxBelowX(blocks_ptr, len, index + 1, index, currXIndex)
+        let (new_max) = is_le(blocks_ptr[curr_max_index].time, blocks_ptr[index].time)
+        if new_max == 1:
+            return find_max_below_x(blocks_ptr, len, index + 1, index, curr_x_index)
         end
-        return findMaxBelowX(blocks_ptr, len, index + 1, currMaxIndex, currXIndex)
+        return find_max_below_x(blocks_ptr, len, index + 1, curr_max_index, curr_x_index)
     end
 
-    let (belowX) = is_le(blocks_ptr[index].time, blocks_ptr[currXIndex].time)
-    if belowX == 1:
+    let (below_x) = is_le(blocks_ptr[index].time, blocks_ptr[curr_x_index].time)
+    if below_x == 1:
         # this could be the next maximum below or equal to X
-        if currMaxIndex == -1:
-            return findMaxBelowX(blocks_ptr, len, index + 1, index, currXIndex)
+        if curr_max_index == -1:
+            return find_max_below_x(blocks_ptr, len, index + 1, index, curr_x_index)
         end
-        let (newMax) = is_le(blocks_ptr[currMaxIndex].time, blocks_ptr[index].time)
-        if newMax == 1:
-            return findMaxBelowX(blocks_ptr, len, index + 1, index, currXIndex)
+        let (new_max) = is_le(blocks_ptr[curr_max_index].time, blocks_ptr[index].time)
+        if new_max == 1:
+            return find_max_below_x(blocks_ptr, len, index + 1, index, curr_x_index)
         end
     end
-    return findMaxBelowX(blocks_ptr, len, index + 1, currMaxIndex, currXIndex)
+    return find_max_below_x(blocks_ptr, len, index + 1, curr_max_index, curr_x_index)
 end
 
-func getTimeMedian{range_check_ptr}(blocks_ptr : Block*, index) -> (timeMedian : felt):
-    let (max1) = findMaxBelowX(blocks_ptr, index + 11, index, -1, -1)
+func get_time_median{range_check_ptr}(blocks_ptr : Block*, index) -> (time_median : felt):
+    let (max1) = find_max_below_x(blocks_ptr, index + 11, index, -1, -1)
     # let max1time = blocks_ptr[max1].time
     # %{ print("max1: ", ids.max1time) %}
-    let (max2) = findMaxBelowX(blocks_ptr, index + 11, index, -1, max1)
-    let (max3) = findMaxBelowX(blocks_ptr, index + 11, index, -1, max2)
-    let (max4) = findMaxBelowX(blocks_ptr, index + 11, index, -1, max3)
-    let (max5) = findMaxBelowX(blocks_ptr, index + 11, index, -1, max4)
-    let (timeMedian) = findMaxBelowX(blocks_ptr, index + 11, index, index, max5)  # TODO might be bug - why index instead of -1??
-    return (blocks_ptr[timeMedian].time)
+    let (max2) = find_max_below_x(blocks_ptr, index + 11, index, -1, max1)
+    let (max3) = find_max_below_x(blocks_ptr, index + 11, index, -1, max2)
+    let (max4) = find_max_below_x(blocks_ptr, index + 11, index, -1, max3)
+    let (max5) = find_max_below_x(blocks_ptr, index + 11, index, -1, max4)
+    let (time_median) = find_max_below_x(blocks_ptr, index + 11, index, index, max5)  # TODO might be bug - why index instead of -1??
+    return (blocks_ptr[time_median].time)
 end
 
-func assertHashesEqual(hash1 : felt*, hash2 : felt*):
+func assert_hashes_equal(hash1 : felt*, hash2 : felt*):
     assert hash1[0] = hash2[0]
     assert hash1[1] = hash2[1]
     assert hash1[2] = hash2[2]
@@ -150,82 +150,82 @@ func assertHashesEqual(hash1 : felt*, hash2 : felt*):
 end
 
 # idea: has to be correct in the bits representation so set everything up to 2 ** (8 * (index - 3)) 0 and then compare
-func assertTargetsAlmostEqual{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
-    blockTarget, calculatedTarget, bitsIndex
+func assert_targets_almost_equal{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
+    block_target, calculated_target, bits_index
 ):
-    let (andTmp) = pow(2, (8 * (bitsIndex - 3)))
-    let (truncTarget) = bitwise_and(calculatedTarget, 0xFFFFFF * andTmp)
-    assert blockTarget = truncTarget
+    let (and_tmp) = pow(2, (8 * (bits_index - 3)))
+    let (trunc_target) = bitwise_and(calculated_target, 0xFFFFFF * and_tmp)
+    assert block_target = trunc_target
     return ()
 end
 
-func assertTargetLe{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
+func assert_target_le{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
     hash : felt*, target : felt*, step, len
 ):
     if step == len:
         return ()  # the values are equal
     end
-    let (currHashFe) = bigEndian(hash[len - step - 1])
-    if currHashFe != target[step]:
-        assert_le(currHashFe, target[step])
+    let (curr_hash_fe) = big_endian(hash[len - step - 1])
+    if curr_hash_fe != target[step]:
+        assert_le(curr_hash_fe, target[step])
         return ()
     end
-    return assertTargetLe(hash, target, step + 1, len)
+    return assert_target_le(hash, target, step + 1, len)
 end
 
 # return 1 if Hash1 <= Hash2
 # return 0 otherwise
-func isHashLe{range_check_ptr}(hash1 : felt*, hash2 : felt*, step, len) -> (isLe):
+func is_hash_le{range_check_ptr}(hash1 : felt*, hash2 : felt*, step, len) -> (result):
     if step == len:
         return (1)
     end
     if hash1[step] != hash2[step]:
-        let (isLe) = is_le(hash1[step], hash2[step])
-        return (isLe)
+        let (result) = is_le(hash1[step], hash2[step])
+        return (result)
     end
-    return isHashLe(hash1, hash2, step + 1, len)
+    return is_hash_le(hash1, hash2, step + 1, len)
 end
 
-func calculateNextTarget{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
-    currTarget : felt, delta_t
-) -> (newTarget : felt):
+func calculate_next_target{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
+    curr_target : felt, delta_t
+) -> (new_target : felt):
     # calculate delta_t/(theta * L)
     alloc_locals
-    local returnTarget
+    local return_target
     local ratio
 
     let (q, _) = unsigned_div_rem(delta_t * 2 ** 32, EXPECTED_MINING_TIME)
 
-    let (nulledTarget) = bitwise_and(
-        currTarget, 0x0000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000
+    let (nulled_target) = bitwise_and(
+        curr_target, 0x0000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000
     )
     # 0x000000000000000000092F9AE4CAA13600000000000000000000000000000000
 
-    let reducedTarget = nulledTarget / 2 ** 32
-    let (belowMaxRatio) = is_le_felt(q, 4 * 2 ** 32)
-    let (aboveMinRatio) = is_le_felt(2 ** 30, q)  # 2 ** 30 = 0.25 * 2** 32
+    let reduced_target = nulled_target / 2 ** 32
+    let (below_max_ratio) = is_le_felt(q, 4 * 2 ** 32)
+    let (above_min_ratio) = is_le_felt(2 ** 30, q)  # 2 ** 30 = 0.25 * 2** 32
 
-    if belowMaxRatio == 0:
+    if below_max_ratio == 0:
         # q > 4
         ratio = 4 * 2 ** 32
     else:
-        if aboveMinRatio == 0:
+        if above_min_ratio == 0:
             ratio = 2 ** 30
         else:
             ratio = q
         end
     end
-    let newTarget = reducedTarget * ratio
-    let (newTargetArr) = targetToHash(newTarget)
-    let (maxTargetArr) = targetToHash(MAX_TARGET)
-    let (belowMax) = isHashLe(newTargetArr, maxTargetArr, 0, 8)
-    if belowMax == 0:
+    let new_target = reduced_target * ratio
+    let (new_target_arr) = target_to_hash(new_target)
+    let (max_target_arr) = target_to_hash(MAX_TARGET)
+    let (below_max) = is_hash_le(new_target_arr, max_target_arr, 0, 8)
+    if below_max == 0:
         # target calculated is bigger than the max target -> overflow should be prevented, as MAX_TARGET * 4 does not create an overflow
-        returnTarget = MAX_TARGET
+        return_target = MAX_TARGET
     else:
-        returnTarget = newTarget
+        return_target = new_target
     end
-    return (returnTarget)
+    return (return_target)
 end
 
 func compute_double_sha256{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
@@ -239,59 +239,59 @@ func compute_double_sha256{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
     return (output_second)
 end
 
-func validateBlocks{output_ptr : felt*, range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
+func validate_blocks{output_ptr : felt*, range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
     blocks : Block*,
     index,
     len,
-    firstEpochBlockIndex : felt,
-    prevFeHash : felt*,
-    numberInCurrEpoch,
-    targetChanged,
+    first_epoch_block_index : felt,
+    prev_fe_hash : felt*,
+    index_in_curr_epoch,
+    target_changed,
 ):
     alloc_locals
     # one recursion step after the last block got validated
     if index == len:
         # return latest block of a batch
-        serialize_word(targetChanged)
-        outputBlock(blocks[len - 1])
-        outputHash(prevFeHash)
+        serialize_word(target_changed)
+        output_block(blocks[len - 1])
+        output_hash(prev_fe_hash)
         serialize_word(blocks[len - 1].target)
         return ()
     end
 
     let block : Block = blocks[index]
-    let firstEpochBlock = blocks[firstEpochBlockIndex]
+    let first_epoch_block = blocks[first_epoch_block_index]
     # this blocks hash calculation
     if index == 0:
-        tempvar prevBlock = blocks[0]
+        tempvar prev_block = blocks[0]
     else:
-        tempvar prevBlock = blocks[index - 1]
+        tempvar prev_block = blocks[index - 1]
     end
-    tempvar prevBlock = prevBlock
+    tempvar prev_block = prev_block
 
-    let (feBlockHash) = compute_double_sha256(
-        input_len=FELT_BLOCK_LEN, input=block.feBlock, n_bytes=N_BYTES_BLOCK
+    let (fe_block_hash) = compute_double_sha256(
+        input_len=FELT_BLOCK_LEN, input=block.fe_block, n_bytes=N_BYTES_BLOCK
     )
 
     # check that this blocks previous hash equals previous block's calculated hash
-    assertHashesEqual(hash1=prevFeHash, hash2=block.fePrevHash)
+    assert_hashes_equal(hash1=prev_fe_hash, hash2=block.fe_prev_hash)
     # this blocks hash has to be below its target
-    assertTargetLe(hash=feBlockHash, target=block.feTarget, step=0, len=FELT_HASH_LEN)
+    assert_target_le(hash=fe_block_hash, target=block.fe_target, step=0, len=FELT_HASH_LEN)
 
     # validate that time is always bigger than previous 11 block average (obviously is not possible if there are no previous eleven blocks :( )
-    let (leEleven) = is_le(11, index)
-    if leEleven == 1:
-        let (prevElevenTime) = getTimeMedian(blocks, index - 11)
-        assert_le(prevElevenTime, block.time)
+    let (le_eleven) = is_le(11, index)
+    if le_eleven == 1:
+        let (prev_eleven_time) = get_time_median(blocks, index - 11)
+        assert_le(prev_eleven_time, block.time)
         tempvar range_check_ptr = range_check_ptr
     else:
         tempvar range_check_ptr = range_check_ptr
     end
     tempvar range_check_ptr = range_check_ptr
 
-    # assert_le(block.time, prevBlock.time + twoHoursSecs)  # removed this check, because we cant know the network time
+    # assert_le(block.time, prev_block.time + twoHoursSecs)  # removed this check, because we cant know the network time
 
-    if numberInCurrEpoch == 0:
+    if index_in_curr_epoch == 0:
         # we need the correct prevBock if we want to recalculate the target, if the first block of the next epoch is the first block in the batch we are missing the correct previous block
         if index == 0:
             with_attr error_message(
@@ -300,32 +300,32 @@ func validateBlocks{output_ptr : felt*, range_check_ptr, bitwise_ptr : BitwiseBu
             end
         end
         # recalculate target and check if it is roughly the same as the blocks saved target
-        let (compareTarget) = calculateNextTarget(
-            firstEpochBlock.target, prevBlock.time - firstEpochBlock.time
+        let (compare_target) = calculate_next_target(
+            first_epoch_block.target, prev_block.time - first_epoch_block.time
         )
-        let (bitsIndexTmp) = bitwise_and(block.bits, 0xFF000000)
-        let bitsIndex = bitsIndexTmp / 2 ** 24
-        assertTargetsAlmostEqual(block.target, compareTarget, bitsIndex)
-        validateBlocks(blocks, index + 1, len, index, feBlockHash, numberInCurrEpoch + 1, index)
+        let (bits_index_tmp) = bitwise_and(block.bits, 0xFF000000)
+        let bits_index = bits_index_tmp / 2 ** 24
+        assert_targets_almost_equal(block.target, compare_target, bits_index)
+        validate_blocks(blocks, index + 1, len, index, fe_block_hash, index_in_curr_epoch + 1, index)
         return ()
     else:
         # normal target check
-        assert block.target = firstEpochBlock.target
+        assert block.target = first_epoch_block.target
     end
 
     # validate next block using this blocks hash, timestamp and target
-    if numberInCurrEpoch == 2015:
+    if index_in_curr_epoch == 2015:
         # last block of this epoch
-        validateBlocks(blocks, index + 1, len, firstEpochBlockIndex, feBlockHash, 0, targetChanged)
+        validate_blocks(blocks, index + 1, len, first_epoch_block_index, fe_block_hash, 0, target_changed)
     else:
-        validateBlocks(
+        validate_blocks(
             blocks,
             index + 1,
             len,
-            firstEpochBlockIndex,
-            feBlockHash,
-            numberInCurrEpoch + 1,
-            targetChanged,
+            first_epoch_block_index,
+            fe_block_hash,
+            index_in_curr_epoch + 1,
+            target_changed,
         )
     end
     return ()

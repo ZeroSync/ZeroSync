@@ -2,26 +2,26 @@
 
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
-from tests.utils import fillInputSingleBlock, fillInputMultipleBlocks
+from tests.utils import fill_input_single_block, fill_input_multiple_blocks
 
 from src.validate import (
-    assertHashesEqual, 
-    isHashLe, 
-    assertTargetLe, 
-    assertTargetsAlmostEqual, 
-    calculateNextTarget,
-    getTimeMedian,
+    assert_hashes_equal, 
+    is_hash_le, 
+    assert_target_le, 
+    assert_targets_almost_equal, 
+    calculate_next_target,
+    get_time_median,
     compute_double_sha256
 )
 
 from io import (
     Block, 
-    getBlock, 
-    getBlocks
+    get_block, 
+    get_blocks
 )
 
 @external
-func test_assertHashesEqual_true():
+func test_assert_hashes_equal_true():
     let (hash_a) = alloc()
     let (hash_b) = alloc()
 
@@ -42,12 +42,12 @@ func test_assertHashesEqual_true():
     assert hash_b[5] = 0x05
     assert hash_b[6] = 0x06
     assert hash_b[7] = 0x07
-    assertHashesEqual(hash_a, hash_b)
+    assert_hashes_equal(hash_a, hash_b)
     return ()
 end
 
 @external
-func test_assertHashesEqual_false():
+func test_assert_hashes_equal_false():
     let (hash_a) = alloc()
     let (hash_b) = alloc()
 
@@ -69,13 +69,13 @@ func test_assertHashesEqual_false():
     assert hash_b[6] = 0x06
     assert hash_b[7] = 0x07
     %{ expect_revert() %}
-    assertHashesEqual(hash_a, hash_b)
+    assert_hashes_equal(hash_a, hash_b)
     return ()
 end
 
 
 @external
-func test_isHashLe_true{range_check_ptr}():
+func test_is_hash_le_true{range_check_ptr}():
     let (hash_a) = alloc()
     let (hash_b) = alloc()
 
@@ -97,13 +97,13 @@ func test_isHashLe_true{range_check_ptr}():
     assert hash_b[6] = 0x06
     assert hash_b[7] = 0x07
 
-    let (result) = isHashLe(hash_a, hash_b, 0, 8)
+    let (result) = is_hash_le(hash_a, hash_b, 0, 8)
     assert result = 1
     return ()
 end
 
 @external
-func test_isHashLe_false{range_check_ptr}():
+func test_is_hash_le_false{range_check_ptr}():
     let (hash_a) = alloc()
     let (hash_b) = alloc()
 
@@ -125,25 +125,25 @@ func test_isHashLe_false{range_check_ptr}():
     assert hash_b[6] = 0x06
     assert hash_b[7] = 0x07
 
-    let (result) = isHashLe(hash_b, hash_a, 0, 8)
+    let (result) = is_hash_le(hash_b, hash_a, 0, 8)
     assert result = 0
     return ()
 end
 
 
 @external
-func test_assertTargetsAlmostEqual{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
-    let blockTarget = 0xff000000
-    let calculatedTarget = 0xffaaaaaa
-    let bitsIndex = 6
+func test_assert_targets_almost_equal{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
+    let block_target = 0xff000000
+    let calculated_target = 0xffaaaaaa
+    let bits_index = 6
 
-    assertTargetsAlmostEqual(blockTarget, calculatedTarget, bitsIndex)
+    assert_targets_almost_equal(block_target, calculated_target, bits_index)
 
     return ()
 end 
 
 @external
-func test_assertTargetLe{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
+func test_assert_target_le{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
     let (hash) = alloc()
 
     assert hash[0] = 0x0000000000000000
@@ -165,18 +165,18 @@ func test_assertTargetLe{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
     assert target[6] = 0x07 
     assert target[7] = 0x07 
 
-    assertTargetLe(hash, target, step=0, len=8)
+    assert_target_le(hash, target, step=0, len=8)
 
     return ()
 end 
 
 
 @external
-func test_calculateNextTarget{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
+func test_calculate_next_target{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
     let target = 0xffffffffff
     let delta_t = 1209600 # 2016 * 60 * 10 
     
-    let (result) = calculateNextTarget(target, delta_t)
+    let (result) = calculate_next_target(target, delta_t)
 
     assert result = 0xff00000000
 
@@ -185,16 +185,16 @@ end
 
 
 @external
-func test_getTimeMedian{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
+func test_get_time_median{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
     alloc_locals
     
-    fillInputMultipleBlocks()
+    fill_input_multiple_blocks()
     
     let (blocks : Block*) = alloc()
 
-    getBlocks(blocks, 0, 11)
+    get_blocks(blocks, 0, 11)
 
-    let (median_time) = getTimeMedian(blocks, 0)
+    let (median_time) = get_time_median(blocks, 0)
 
     assert median_time = 1231471789
 

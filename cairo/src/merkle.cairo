@@ -29,7 +29,7 @@ from starkware.cairo.common.math import assert_le
 # Pedersen hash of the felt array representation of a block header
 # NOTE: I do not use the sha256 block hash here because calculating all hashes again for every merkle proof sounds infeasable
 # Assumption: Input is 80 bytes spread over 20 felts
-func headerPedersenHash{pedersen_ptr : HashBuiltin*}(header : felt*) -> (pedersenHash : felt):
+func header_pedersen_hash{pedersen_ptr : HashBuiltin*}(header : felt*) -> (pedersen_hash : felt):
     # TODO It could be cleverer to compress the block header into 5 128bit felts, but I'll just throw the hammer and calculate a huge hash chain
     let (a1) = hash2{hash_ptr=pedersen_ptr}(header[0], header[1])
     let (a2) = hash2{hash_ptr=pedersen_ptr}(header[2], header[3])
@@ -52,41 +52,41 @@ func headerPedersenHash{pedersen_ptr : HashBuiltin*}(header : felt*) -> (pederse
     let (c2) = hash2{hash_ptr=pedersen_ptr}(b3, b4)
 
     let (d1) = hash2{hash_ptr=pedersen_ptr}(c1, c2)
-    let (pedersenHash) = hash2{hash_ptr=pedersen_ptr}(d1, b5)
-    return (pedersenHash)
+    let (pedersen_hash) = hash2{hash_ptr=pedersen_ptr}(d1, b5)
+    return (pedersen_hash)
 end
 
 # create array of all block headers' pedersen hashes
-func prepareMerkleTree{pedersen_ptr : HashBuiltin*}(
-        leaves_ptr : felt*, blockData : felt**, len, step):
-    let (tmp) = headerPedersenHash(blockData[step])
+func prepare_merkle_tree{pedersen_ptr : HashBuiltin*}(
+        leaves_ptr : felt*, block_data : felt**, len, step):
+    let (tmp) = header_pedersen_hash(block_data[step])
     assert leaves_ptr[step] = tmp
     if step + 1 == len:
         return ()
     end
-    prepareMerkleTree(leaves_ptr, blockData, len, step + 1)
+    prepare_merkle_tree(leaves_ptr, block_data, len, step + 1)
     return ()
 end
 
 # start with left_index = 0 and right_index is 2**Height-1 -> can calc the height with a hint
-func createMerkleTree{pedersen_ptr : HashBuiltin*, range_check_ptr}(
+func create_merkle_tree{pedersen_ptr : HashBuiltin*, range_check_ptr}(
         leaves_ptr : felt*, left_index : felt, leaves_ptr_len : felt, height : felt) -> (
         root : felt):
     alloc_locals
     if height == 0:
         return (leaves_ptr[left_index])
     end
-    let (curr1) = createMerkleTree(leaves_ptr, left_index, leaves_ptr_len, height - 1)
-    let (intervalSize) = pow(2, height)
-    let right_index = left_index + intervalSize - 1
-    let (rightSubTreeLeftIndex, _) = unsigned_div_rem(left_index + right_index, 2)
+    let (curr1) = create_merkle_tree(leaves_ptr, left_index, leaves_ptr_len, height - 1)
+    let (interval_size) = pow(2, height)
+    let right_index = left_index + interval_size - 1
+    let (right_subtree_left_index, _) = unsigned_div_rem(left_index + right_index, 2)
 
-    let (outOfBounds) = is_le_felt(leaves_ptr_len, rightSubTreeLeftIndex + 1)
-    if outOfBounds == 1:
+    let (out_of_bounds) = is_le_felt(leaves_ptr_len, right_subtree_left_index + 1)
+    if out_of_bounds == 1:
         return (curr1)
     else:
-        let (curr2) = createMerkleTree(
-            leaves_ptr, rightSubTreeLeftIndex + 1, leaves_ptr_len, height - 1)
+        let (curr2) = create_merkle_tree(
+            leaves_ptr, right_subtree_left_index + 1, leaves_ptr_len, height - 1)
     end
 
     let (le) = is_le_felt(curr1, curr2)
@@ -101,7 +101,7 @@ func createMerkleTree{pedersen_ptr : HashBuiltin*, range_check_ptr}(
     return (root)
 end
 
-func calculateHeight{range_check_ptr}(len) -> (height : felt):
+func calculate_height{range_check_ptr}(len) -> (height : felt):
     alloc_locals
     local height : felt
     %{
@@ -113,13 +113,13 @@ func calculateHeight{range_check_ptr}(len) -> (height : felt):
     if height == 0:
         tempvar range_check_ptr = range_check_ptr
     else:
-        let (lenLowerBound) = pow(2, height - 1)
-        assert_le(lenLowerBound, len - 1)
+        let (len_lower_bound) = pow(2, height - 1)
+        assert_le(len_lower_bound, len - 1)
         tempvar range_check_ptr = range_check_ptr
     end
     # len <= 2 ** h
-    let (lenUpperBound) = pow(2, height)
-    assert_le(len, lenUpperBound)
+    let (len_upper_bound) = pow(2, height)
+    assert_le(len, len_upper_bound)
 
     return (height)
 end

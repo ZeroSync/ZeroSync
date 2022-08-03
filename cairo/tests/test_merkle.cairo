@@ -2,10 +2,10 @@
 
 from starkware.cairo.common.cairo_builtins import (BitwiseBuiltin, HashBuiltin)
 from starkware.cairo.common.alloc import alloc
-from src.merkle import createMerkleTree
+from src.merkle import create_merkle_tree
 
 @external
-func test_createMerkleTree{pedersen_ptr : HashBuiltin*, range_check_ptr}():
+func test_create_merkle_tree{pedersen_ptr : HashBuiltin*, range_check_ptr}():
     let (leaves_ptr : felt*) = alloc()
     assert leaves_ptr[0] = 0x00112233445566778899aabbccddee00112233445566778899aabbccddee00
     assert leaves_ptr[1] = 0x01112233445566778899aabbccddee00112233445566778899aabbccddee00
@@ -20,7 +20,7 @@ func test_createMerkleTree{pedersen_ptr : HashBuiltin*, range_check_ptr}():
     let leaves_ptr_len = 8
     let height = 3
 
-    let (merkle_root) = createMerkleTree(leaves_ptr, left_index, leaves_ptr_len, height)
+    let (merkle_root) = create_merkle_tree(leaves_ptr, left_index, leaves_ptr_len, height)
     
     assert merkle_root = 0x15968b1d75b3e322a059fd23bc859c97ec647dc00f858eaf13ea2199abb77aa
 

@@ -1,6 +1,6 @@
 %lang starknet
 
-func fillInputSingleBlock():
+func fill_input_single_block():
     %{
         #adds block 1 from the bitcoin TESTNET
         program_input = {
@@ -12,7 +12,7 @@ func fillInputSingleBlock():
     return ()
 end
 
-func fillInputMultipleBlocks():
+func fill_input_multiple_blocks():
     %{
         # adds first 11 blocks from the bitcoin MAINNET
         program_input = {

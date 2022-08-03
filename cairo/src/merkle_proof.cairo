@@ -6,9 +6,9 @@ from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 
 from sha256.sha256 import compute_sha256
-from merkle import createMerkleTree, prepareMerkleTree, calculateHeight
+from merkle import create_merkle_tree, prepare_merkle_tree, calculate_height
 
-from io import N_BYTES_BLOCK, N_BYTES_HASH, FELT_HASH_LEN, FELT_BLOCK_LEN, outputHash
+from io import N_BYTES_BLOCK, N_BYTES_HASH, FELT_HASH_LEN, FELT_BLOCK_LEN, output_hash
 
 ###
 #       This Program proofs the inclusion of an intermediary header
@@ -22,50 +22,50 @@ func main{
         output_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, ecdsa_ptr : felt*,
         bitwise_ptr : BitwiseBuiltin*}():
     alloc_locals
-    local blocksLen : felt
-    local intermediaryIndex : felt
+    local blocks_len : felt
+    local intermediary_index : felt
     let (blocks : felt**) = alloc()
     %{
-        ids.blocksLen = len(program_input["Blocks"])
-        ids.intermediaryIndex = program_input["blockToHash"]
+        ids.blocks_len = len(program_input["Blocks"])
+        ids.intermediary_index = program_input["blockToHash"]
         segments.write_arg(ids.blocks, program_input["Blocks"])
     %}
-    let (height) = calculateHeight(blocksLen)
-    let intermediaryHeader = [blocks + intermediaryIndex]
+    let (height) = calculate_height(blocks_len)
+    let intermediary_header = [blocks + intermediary_index]
 
     # output the specified header -> TODO IMPROVEMENT: This could be compressed to lesser uint128's (If you change it here do it in the contract and validate.cairo too <3 )
-    serialize_word([intermediaryHeader])
-    serialize_word([intermediaryHeader + 1])
-    serialize_word([intermediaryHeader + 2])
-    serialize_word([intermediaryHeader + 3])
-    serialize_word([intermediaryHeader + 4])
-    serialize_word([intermediaryHeader + 5])
-    serialize_word([intermediaryHeader + 6])
-    serialize_word([intermediaryHeader + 7])
-    serialize_word([intermediaryHeader + 8])
-    serialize_word([intermediaryHeader + 9])
-    serialize_word([intermediaryHeader + 10])
-    serialize_word([intermediaryHeader + 11])
-    serialize_word([intermediaryHeader + 12])
-    serialize_word([intermediaryHeader + 13])
-    serialize_word([intermediaryHeader + 14])
-    serialize_word([intermediaryHeader + 15])
-    serialize_word([intermediaryHeader + 16])
-    serialize_word([intermediaryHeader + 17])
-    serialize_word([intermediaryHeader + 18])
-    serialize_word([intermediaryHeader + 19])
+    serialize_word([intermediary_header])
+    serialize_word([intermediary_header + 1])
+    serialize_word([intermediary_header + 2])
+    serialize_word([intermediary_header + 3])
+    serialize_word([intermediary_header + 4])
+    serialize_word([intermediary_header + 5])
+    serialize_word([intermediary_header + 6])
+    serialize_word([intermediary_header + 7])
+    serialize_word([intermediary_header + 8])
+    serialize_word([intermediary_header + 9])
+    serialize_word([intermediary_header + 10])
+    serialize_word([intermediary_header + 11])
+    serialize_word([intermediary_header + 12])
+    serialize_word([intermediary_header + 13])
+    serialize_word([intermediary_header + 14])
+    serialize_word([intermediary_header + 15])
+    serialize_word([intermediary_header + 16])
+    serialize_word([intermediary_header + 17])
+    serialize_word([intermediary_header + 18])
+    serialize_word([intermediary_header + 19])
 
     # calculate the block hash and output it
     let (hash_first) = compute_sha256(
-        input_len=FELT_BLOCK_LEN, input=intermediaryHeader, n_bytes=N_BYTES_BLOCK)
+        input_len=FELT_BLOCK_LEN, input=intermediary_header, n_bytes=N_BYTES_BLOCK)
     let (hash_second) = compute_sha256(
         input_len=FELT_HASH_LEN, input=hash_first, n_bytes=N_BYTES_HASH)
-    outputHash(hash_second)
+    output_hash(hash_second)
     # calculate and output the merkle root of the batch
     let (leaves_ptr) = alloc()
-    prepareMerkleTree(leaves_ptr, blocks, blocksLen, 0)
-    let (merkleRoot) = createMerkleTree(leaves_ptr, 0, blocksLen, height)
-    serialize_word(merkleRoot)
+    prepare_merkle_tree(leaves_ptr, blocks, blocks_len, 0)
+    let (merkle_root) = create_merkle_tree(leaves_ptr, 0, blocks_len, height)
+    serialize_word(merkle_root)
 
     return ()
 end

@@ -1,14 +1,14 @@
 %lang starknet
 
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
-from tests.utils import fillInputSingleBlock
-from src.io import Block, targetToHash, getBlock
+from tests.utils import fill_input_single_block
+from src.io import Block, target_to_hash, get_block
 
 # TODO obsolete once I change the target and sha hash from felt* to uint256
 @external
-func test_targetToHash{bitwise_ptr : BitwiseBuiltin*}():
+func test_target_to_hash{bitwise_ptr : BitwiseBuiltin*}():
     let target = 2 ** 224 + 2 ** 192 + 2 ** 160 + 2 ** 128 + 2 ** 96 + 2 ** 64 + 2 ** 32 + 1
-    let (hash) = targetToHash(target)
+    let (hash) = target_to_hash(target)
     assert hash[0] = 0x01
     assert hash[1] = 0x01
     assert hash[2] = 0x01
@@ -21,9 +21,9 @@ func test_targetToHash{bitwise_ptr : BitwiseBuiltin*}():
 end
 
 @external
-func test_getBlock{bitwise_ptr : BitwiseBuiltin*, range_check_ptr}():
-    fillInputSingleBlock()
-    let (block : Block) = getBlock(0, 0)
+func test_get_block{bitwise_ptr : BitwiseBuiltin*, range_check_ptr}():
+    fill_input_single_block()
+    let (block : Block) = get_block(0, 0)
     assert block.time = 1296688928
     assert block.bits = 0x1D00FFFF
     assert block.target = 0xffff * 2 ** 208
