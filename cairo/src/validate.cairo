@@ -1,4 +1,4 @@
-# %builtins output pedersen range_check ecdsa bitwise
+%builtins output pedersen range_check ecdsa bitwise
 # some builtins may not be used but are required for the cairo-run layout
 # for a full node implementation we will need them all anyways
 
@@ -11,25 +11,24 @@ from starkware.cairo.common.math import unsigned_div_rem
 from starkware.cairo.common.bitwise import bitwise_and
 from starkware.cairo.common.math_cmp import is_le, is_le_felt
 from starkware.cairo.common.pow import pow
-
 from io import (
-    get_blocks,
-    output_block,
-    output_hash,
-    Block,
     FELT_BLOCK_LEN,
     N_BYTES_BLOCK,
     FELT_HASH_LEN,
     N_BYTES_HASH,
+    Block,
+    get_blocks,
+    output_block,
+    output_hash,
     target_to_hash,
-    big_endian,
+    big_endian
 )
 from sha256.sha256 import compute_sha256
 from merkle import create_merkle_tree, prepare_merkle_tree, calculate_height
 
 const EXPECTED_MINING_TIME = 1209600  # seconds for mining 2016 blocks
 
-# const twoHoursSecs = 60 * 60 * 2 UNUSED (do not know network time -> check eg btc-blocks 14-15)
+# const TWO_HOURS_SECS = 60 * 60 * 2 UNUSED (do not know network time -> check eg btc-blocks 14-15)
 const MAX_TARGET = 0x00000000FFFF0000000000000000000000000000000000000000000000000000
 
 func main{
@@ -149,7 +148,8 @@ func assert_hashes_equal(hash1 : felt*, hash2 : felt*):
     return ()
 end
 
-# idea: has to be correct in the bits representation so set everything up to 2 ** (8 * (index - 3)) 0 and then compare
+# idea: has to be correct in the bits representation 
+# so set everything up to 2 ** (8 * (index - 3)) 0 and then compare
 func assert_targets_almost_equal{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
     block_target, calculated_target, bits_index
 ):
@@ -220,7 +220,8 @@ func calculate_next_target{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
     let (max_target_arr) = target_to_hash(MAX_TARGET)
     let (below_max) = is_hash_le(new_target_arr, max_target_arr, 0, 8)
     if below_max == 0:
-        # target calculated is bigger than the max target -> overflow should be prevented, as MAX_TARGET * 4 does not create an overflow
+        # target calculated is bigger than the max target 
+        # -> overflow should be prevented, as MAX_TARGET * 4 does not create an overflow
         return_target = MAX_TARGET
     else:
         return_target = new_target
@@ -278,7 +279,8 @@ func validate_blocks{output_ptr : felt*, range_check_ptr, bitwise_ptr : BitwiseB
     # this blocks hash has to be below its target
     assert_target_le(hash=fe_block_hash, target=block.fe_target, step=0, len=FELT_HASH_LEN)
 
-    # validate that time is always bigger than previous 11 block average (obviously is not possible if there are no previous eleven blocks :( )
+    # validate that time is always bigger than previous 11 block average 
+    # (obviously is not possible if there are no previous eleven blocks :( )
     let (le_eleven) = is_le(11, index)
     if le_eleven == 1:
         let (prev_eleven_time) = get_time_median(blocks, index - 11)
@@ -292,7 +294,9 @@ func validate_blocks{output_ptr : felt*, range_check_ptr, bitwise_ptr : BitwiseB
     # assert_le(block.time, prev_block.time + twoHoursSecs)  # removed this check, because we cant know the network time
 
     if index_in_curr_epoch == 0:
-        # we need the correct prevBock if we want to recalculate the target, if the first block of the next epoch is the first block in the batch we are missing the correct previous block
+        # we need the correct prev_block if we want to recalculate the target, 
+        # if the first block of the next epoch is the first block in the batch 
+        # we are missing the correct previous block
         if index == 0:
             with_attr error_message(
                     "Missing previous block: Batches that introduce an epoch change have to include the last block of the current epoch."):
@@ -316,7 +320,15 @@ func validate_blocks{output_ptr : felt*, range_check_ptr, bitwise_ptr : BitwiseB
     # validate next block using this blocks hash, timestamp and target
     if index_in_curr_epoch == 2015:
         # last block of this epoch
-        validate_blocks(blocks, index + 1, len, first_epoch_block_index, fe_block_hash, 0, target_changed)
+        validate_blocks(
+            blocks, 
+            index + 1, 
+            len, 
+            first_epoch_block_index, 
+            fe_block_hash, 
+            0, 
+            target_changed
+        )
     else:
         validate_blocks(
             blocks,
@@ -325,7 +337,7 @@ func validate_blocks{output_ptr : felt*, range_check_ptr, bitwise_ptr : BitwiseB
             first_epoch_block_index,
             fe_block_hash,
             index_in_curr_epoch + 1,
-            target_changed,
+            target_changed
         )
     end
     return ()
