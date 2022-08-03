@@ -1,8 +1,14 @@
 # VM Benchmarks
 
-## Usage
+# Additional requirements
+- [prettytable](https://pypi.org/project/prettytable/) to print out the results: 
+```
+pip install prettytable
+```
 
-You can run the benchmark script from the benchmark folder using
+## Usage
+Make sure to run starkRelay once and create the working directory and config in the parent folder (so there exists starkRelay/work/starkRelay.toml).
+You can then run the benchmark script from the benchmark folder using
 ```
 python benchmarks.py [SETS] [CSV_FILE]
 ```
@@ -13,6 +19,7 @@ For now SETS can be one of three values:
 - 2: Runs medium and small batch size sets
 - 3: Runs large, medium and small batch size sets
 
+New batches to benchmark can be added to the specified batch sets in [```benchmarks.py```](https://github.com/lucidLuckylee/starkRelay/blob/main/benchmark/benchmarks.py)
 
 ## Baseline results
 
