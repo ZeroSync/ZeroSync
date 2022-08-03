@@ -211,10 +211,11 @@ func test_compute_double_sha256{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
     assert input[0] = 1214606444
     assert input[1] = 1864398703
     assert input[2] = 1919706112
-
     let n_bytes = 12
+    
     let (hash) = compute_double_sha256(input_len, input, n_bytes)
     
+    # Compare result
     assert hash[0] = 2071273689
     assert hash[1] = 2609998137
     assert hash[2] = 1431478754
