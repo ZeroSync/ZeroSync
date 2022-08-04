@@ -1,4 +1,4 @@
-%builtins output pedersen range_check ecdsa bitwise
+# %builtins output pedersen range_check ecdsa bitwise
 # some builtins may not be used but are required for the cairo-run layout
 # for a full node implementation we will need them all anyways
 
@@ -14,17 +14,18 @@ from starkware.cairo.common.pow import pow
 from io import (
     FELT_BLOCK_LEN,
     N_BYTES_BLOCK,
-    FELT_HASH_LEN,
-    N_BYTES_HASH,
     Block,
     get_blocks,
     output_block,
     output_hash,
-    target_to_hash,
     big_endian
 )
-from sha256.sha256 import compute_sha256
+
+from utils import (compute_double_sha256, felt_to_uint256)
+
 from merkle import create_merkle_tree, prepare_merkle_tree, calculate_height
+
+from starkware.cairo.common.uint256 import (Uint256, uint256_eq, uint256_le)
 
 const EXPECTED_MINING_TIME = 1209600  # seconds for mining 2016 blocks
 
@@ -63,9 +64,9 @@ func main{
         0,
         blocks_len,
         blocks_len,
-        blocks[0].fe_prev_hash,
+        blocks[0].prev_hash,
         index_in_epoch,
-        0x0000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF,
+        0x0000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
     )  # just a high number, that is not output negative by cairo
 
     let (fe_blocks : felt**) = alloc()
@@ -136,15 +137,9 @@ func get_time_median{range_check_ptr}(blocks_ptr : Block*, index) -> (time_media
     return (blocks_ptr[time_median].time)
 end
 
-func assert_hashes_equal(hash1 : felt*, hash2 : felt*):
-    assert hash1[0] = hash2[0]
-    assert hash1[1] = hash2[1]
-    assert hash1[2] = hash2[2]
-    assert hash1[3] = hash2[3]
-    assert hash1[4] = hash2[4]
-    assert hash1[5] = hash2[5]
-    assert hash1[6] = hash2[6]
-    assert hash1[7] = hash2[7]
+func assert_hashes_equal{range_check_ptr}(hash1 : Uint256, hash2 : Uint256):
+    let (result) = uint256_eq(hash1, hash2) 
+    assert result = 1
     return ()
 end
 
@@ -159,32 +154,6 @@ func assert_targets_almost_equal{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}
     return ()
 end
 
-func assert_target_le{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
-    hash : felt*, target : felt*, step, len
-):
-    if step == len:
-        return ()  # the values are equal
-    end
-    let (curr_hash_fe) = big_endian(hash[len - step - 1])
-    if curr_hash_fe != target[step]:
-        assert_le(curr_hash_fe, target[step])
-        return ()
-    end
-    return assert_target_le(hash, target, step + 1, len)
-end
-
-# return 1 if hash1 <= hash2
-# return 0 otherwise
-func is_hash_le{range_check_ptr}(hash1 : felt*, hash2 : felt*, step, len) -> (result):
-    if step == len:
-        return (1)
-    end
-    if hash1[step] != hash2[step]:
-        let (result) = is_le(hash1[step], hash2[step])
-        return (result)
-    end
-    return is_hash_le(hash1, hash2, step + 1, len)
-end
 
 func calculate_next_target{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
     curr_target : felt, delta_t
@@ -216,9 +185,7 @@ func calculate_next_target{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
         end
     end
     let new_target = reduced_target * ratio
-    let (new_target_arr) = target_to_hash(new_target)
-    let (max_target_arr) = target_to_hash(MAX_TARGET)
-    let (below_max) = is_hash_le(new_target_arr, max_target_arr, 0, 8)
+    let (below_max) = is_le_felt(new_target, MAX_TARGET)
     if below_max == 0:
         # target calculated is bigger than the max target 
         # -> overflow should be prevented, as MAX_TARGET * 4 does not create an overflow
@@ -229,23 +196,13 @@ func calculate_next_target{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
     return (return_target)
 end
 
-func compute_double_sha256{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
-    input_len : felt, input : felt*, n_bytes : felt
-) -> (sha : felt*):
-    alloc_locals
-    let (output_first) = compute_sha256(input_len, input=input, n_bytes=n_bytes)
-    let (output_second) = compute_sha256(
-        input_len=FELT_HASH_LEN, input=output_first, n_bytes=N_BYTES_HASH
-    )
-    return (output_second)
-end
 
 func validate_blocks{output_ptr : felt*, range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
     blocks : Block*,
     index,
     len,
     first_epoch_block_index : felt,
-    prev_fe_hash : felt*,
+    prev_hash : Uint256,
     index_in_curr_epoch,
     target_changed,
 ):
@@ -255,14 +212,14 @@ func validate_blocks{output_ptr : felt*, range_check_ptr, bitwise_ptr : BitwiseB
         # return latest block of a batch
         serialize_word(target_changed)
         output_block(blocks[len - 1])
-        output_hash(prev_fe_hash)
+        output_hash(prev_hash)
         serialize_word(blocks[len - 1].target)
         return ()
     end
 
     let block : Block = blocks[index]
     let first_epoch_block = blocks[first_epoch_block_index]
-    # this blocks hash calculation
+    # This blocks hash calculation
     if index == 0:
         tempvar prev_block = blocks[0]
     else:
@@ -270,17 +227,18 @@ func validate_blocks{output_ptr : felt*, range_check_ptr, bitwise_ptr : BitwiseB
     end
     tempvar prev_block = prev_block
 
-    let (fe_block_hash) = compute_double_sha256(
-        input_len=FELT_BLOCK_LEN, input=block.fe_block, n_bytes=N_BYTES_BLOCK
-    )
+    let (block_hash) = compute_double_sha256(FELT_BLOCK_LEN, block.fe_block, N_BYTES_BLOCK)
 
-    # check that this blocks previous hash equals previous block's calculated hash
-    assert_hashes_equal(hash1=prev_fe_hash, hash2=block.fe_prev_hash)
-    # this blocks hash has to be below its target
-    assert_target_le(hash=fe_block_hash, target=block.fe_target, step=0, len=FELT_HASH_LEN)
+    # Check that this block's previous hash equals previous block's calculated hash
+    assert_hashes_equal(prev_hash, block.prev_hash)
+    
+    # Ensure this block's proof-of-work is valid
+    let (target) = felt_to_uint256(block.target)
+    let (is_block_hash_le) = uint256_le(block_hash, target)
+    assert is_block_hash_le = 1
 
-    # validate that time is always bigger than previous 11 block average 
-    # (obviously is not possible if there are no previous eleven blocks :( )
+    # Validate that this block's time is bigger than the median of the previous 11 blocks.
+    # (Obviously, this is not possible if there are no previous eleven blocks.)
     let (le_eleven) = is_le(11, index)
     if le_eleven == 1:
         let (prev_eleven_time) = get_time_median(blocks, index - 11)
@@ -303,29 +261,37 @@ func validate_blocks{output_ptr : felt*, range_check_ptr, bitwise_ptr : BitwiseB
                 assert 0 = 1
             end
         end
-        # recalculate target and check if it is roughly the same as the blocks saved target
+        # Recalculate the target and check if it is roughly the same as the block's saved target
         let (compare_target) = calculate_next_target(
             first_epoch_block.target, prev_block.time - first_epoch_block.time
         )
         let (bits_index_tmp) = bitwise_and(block.bits, 0xFF000000)
         let bits_index = bits_index_tmp / 2 ** 24
         assert_targets_almost_equal(block.target, compare_target, bits_index)
-        validate_blocks(blocks, index + 1, len, index, fe_block_hash, index_in_curr_epoch + 1, index)
+        validate_blocks(
+            blocks, 
+            index + 1, 
+            len, 
+            index, 
+            block_hash, 
+            index_in_curr_epoch + 1, 
+            index
+        )
         return ()
     else:
         # normal target check
         assert block.target = first_epoch_block.target
     end
 
-    # validate next block using this blocks hash, timestamp and target
+    # Validate next block using this block's hash, timestamp and target
     if index_in_curr_epoch == 2015:
-        # last block of this epoch
+        # This is the last block of the current epoch
         validate_blocks(
             blocks, 
             index + 1, 
             len, 
             first_epoch_block_index, 
-            fe_block_hash, 
+            block_hash, 
             0, 
             target_changed
         )
@@ -335,7 +301,7 @@ func validate_blocks{output_ptr : felt*, range_check_ptr, bitwise_ptr : BitwiseB
             index + 1,
             len,
             first_epoch_block_index,
-            fe_block_hash,
+            block_hash,
             index_in_curr_epoch + 1,
             target_changed
         )
