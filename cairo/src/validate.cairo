@@ -17,11 +17,10 @@ from io import (
     Block,
     get_blocks,
     output_block,
-    output_hash,
-    big_endian
+    output_hash
 )
 
-from utils import (compute_double_sha256, felt_to_uint256)
+from utils import (compute_double_sha256, to_uint256, to_big_endian)
 
 from merkle import create_merkle_tree, prepare_merkle_tree, calculate_height
 
@@ -43,8 +42,8 @@ func main{
     local blocks_len : felt
     local index_in_epoch : felt
     %{
-        ids.blocks_len = len(program_input["Blocks"]) 
-        ids.index_in_epoch = program_input["blockNrThisEpoch"]
+        ids.blocks_len = len(program_input["blocks"]) 
+        ids.index_in_epoch = program_input["blockIndexInEpoch"]
     %}
 
     let (height) = calculate_height(blocks_len)
@@ -69,22 +68,22 @@ func main{
         0x0000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
     )  # just a high number, that is not output negative by cairo
 
-    let (fe_blocks : felt**) = alloc()
-    blocks_to_fe(fe_blocks, blocks, 0, blocks_len)
+    let (raw_datas : felt**) = alloc()
+    blocks_to_fe(raw_datas, blocks, 0, blocks_len)
     let (leaves_ptr) = alloc()
-    prepare_merkle_tree(leaves_ptr, fe_blocks, blocks_len, 0)
+    prepare_merkle_tree(leaves_ptr, raw_datas, blocks_len, 0)
     let (merkle_root) = create_merkle_tree(leaves_ptr, 0, blocks_len, height)
     serialize_word(merkle_root)
 
     return ()
 end
 
-func blocks_to_fe(fe_blocks : felt**, blocks : Block*, index, len):
+func blocks_to_fe(raw_datas : felt**, blocks : Block*, index, len):
     if index == len:
         return ()
     end
-    assert fe_blocks[index] = blocks[index].fe_block
-    blocks_to_fe(fe_blocks, blocks, index + 1, len)
+    assert raw_datas[index] = blocks[index].raw_data
+    blocks_to_fe(raw_datas, blocks, index + 1, len)
     return ()
 end
 
@@ -146,11 +145,11 @@ end
 # idea: has to be correct in the bits representation 
 # so set everything up to 2 ** (8 * (index - 3)) 0 and then compare
 func assert_targets_almost_equal{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
-    block_target, calculated_target, bits_index
+    block_target, calculated_target, exponent
 ):
-    let (and_tmp) = pow(2, (8 * (bits_index - 3)))
-    let (trunc_target) = bitwise_and(calculated_target, 0xFFFFFF * and_tmp)
-    assert block_target = trunc_target
+    let (and_tmp) = pow(256, exponent - 3)
+    let (truncated_target) = bitwise_and(calculated_target, 0xFFFFFF * and_tmp)
+    assert block_target = truncated_target
     return ()
 end
 
@@ -201,7 +200,7 @@ func validate_blocks{output_ptr : felt*, range_check_ptr, bitwise_ptr : BitwiseB
     blocks : Block*,
     index,
     len,
-    first_epoch_block_index : felt,
+    first_block_in_epoch_index : felt,
     prev_hash : Uint256,
     index_in_curr_epoch,
     target_changed,
@@ -218,7 +217,7 @@ func validate_blocks{output_ptr : felt*, range_check_ptr, bitwise_ptr : BitwiseB
     end
 
     let block : Block = blocks[index]
-    let first_epoch_block = blocks[first_epoch_block_index]
+    let first_block_in_epoch = blocks[first_block_in_epoch_index]
     # This blocks hash calculation
     if index == 0:
         tempvar prev_block = blocks[0]
@@ -227,13 +226,13 @@ func validate_blocks{output_ptr : felt*, range_check_ptr, bitwise_ptr : BitwiseB
     end
     tempvar prev_block = prev_block
 
-    let (block_hash) = compute_double_sha256(FELT_BLOCK_LEN, block.fe_block, N_BYTES_BLOCK)
+    let (block_hash) = compute_double_sha256(FELT_BLOCK_LEN, block.raw_data, N_BYTES_BLOCK)
 
     # Check that this block's previous hash equals previous block's calculated hash
     assert_hashes_equal(prev_hash, block.prev_hash)
     
     # Ensure this block's proof-of-work is valid
-    let (target) = felt_to_uint256(block.target)
+    let (target) = to_uint256(block.target)
     let (is_block_hash_le) = uint256_le(block_hash, target)
     assert is_block_hash_le = 1
 
@@ -263,11 +262,11 @@ func validate_blocks{output_ptr : felt*, range_check_ptr, bitwise_ptr : BitwiseB
         end
         # Recalculate the target and check if it is roughly the same as the block's saved target
         let (compare_target) = calculate_next_target(
-            first_epoch_block.target, prev_block.time - first_epoch_block.time
+            first_block_in_epoch.target, prev_block.time - first_block_in_epoch.time
         )
-        let (bits_index_tmp) = bitwise_and(block.bits, 0xFF000000)
-        let bits_index = bits_index_tmp / 2 ** 24
-        assert_targets_almost_equal(block.target, compare_target, bits_index)
+        let (exponent_tmp) = bitwise_and(block.bits, 0xFF000000)
+        let exponent = exponent_tmp / 2 ** 24
+        assert_targets_almost_equal(block.target, compare_target, exponent)
         validate_blocks(
             blocks, 
             index + 1, 
@@ -280,7 +279,7 @@ func validate_blocks{output_ptr : felt*, range_check_ptr, bitwise_ptr : BitwiseB
         return ()
     else:
         # normal target check
-        assert block.target = first_epoch_block.target
+        assert block.target = first_block_in_epoch.target
     end
 
     # Validate next block using this block's hash, timestamp and target
@@ -290,7 +289,7 @@ func validate_blocks{output_ptr : felt*, range_check_ptr, bitwise_ptr : BitwiseB
             blocks, 
             index + 1, 
             len, 
-            first_epoch_block_index, 
+            first_block_in_epoch_index, 
             block_hash, 
             0, 
             target_changed
@@ -300,7 +299,7 @@ func validate_blocks{output_ptr : felt*, range_check_ptr, bitwise_ptr : BitwiseB
             blocks,
             index + 1,
             len,
-            first_epoch_block_index,
+            first_block_in_epoch_index,
             block_hash,
             index_in_curr_epoch + 1,
             target_changed

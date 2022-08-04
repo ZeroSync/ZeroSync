@@ -61,17 +61,17 @@ def unpackTarget(bits: str):  # TODO remove or keep for tests
 def dumpCairoInput(ctx, i, j):
     fileStr = ctx.obj['inputFile']
     cairo_input = open(fileStr, "w") if fileStr else sys.stdout
-    dump = {"Blocks": []}
+    dump = {"blocks": []}
     blocks = getBlockHeadersInRange(ctx, i, j)
     for k, _ in enumerate(range(i, j)):
         block = binToFelt(createCairoInputFromBlock(blocks[k]))
-        dump["Blocks"].append(block)
-    firstEpochBlock = getBlockHeadersInRange(
+        dump["blocks"].append(block)
+    firstBlockInEpoch = getBlockHeadersInRange(
         ctx, ((i - 1) // 2016 * 2016), ((i - 1) // 2016 * 2016) + 1
     )[0]
-    dump["firstEpochBlock"] = binToFelt(
-        createCairoInputFromBlock(firstEpochBlock))
-    dump["blockNrThisEpoch"] = i - ((i // 2016) * 2016)
+    dump["firstBlockInEpoch"] = binToFelt(
+        createCairoInputFromBlock(firstBlockInEpoch))
+    dump["blockIndexInEpoch"] = i - ((i // 2016) * 2016)
     cairo_input.write(jsonDumps(dump))
     if cairo_input is not sys.stdout:
         cairo_input.close()
@@ -81,11 +81,11 @@ def dumpCairoInput(ctx, i, j):
 def dumpMerkleProofInput(ctx, i, j, intermediaryIndex):
     fileStr = ctx.obj['inputFile']
     cairo_input = open(fileStr, "w") if fileStr else sys.stdout
-    dump = {"Blocks": []}
+    dump = {"blocks": []}
     blocks = getBlockHeadersInRange(ctx, i, j)
     for k, _ in enumerate(range(i, j)):
         block = binToFelt(createCairoInputFromBlock(blocks[k]))
-        dump["Blocks"].append(block)
+        dump["blocks"].append(block)
     dump["blockToHash"] = intermediaryIndex
     cairo_input.write(jsonDumps(dump))
     if cairo_input is not sys.stdout:

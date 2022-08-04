@@ -10,7 +10,7 @@ from merkle import create_merkle_tree, prepare_merkle_tree, calculate_height
 
 from io import N_BYTES_BLOCK, N_BYTES_HASH, FELT_HASH_LEN, FELT_BLOCK_LEN, output_hash
 
-from validate import compute_double_sha256
+from utils import compute_double_sha256
 
 ###
 #       This Program proofs the inclusion of an intermediary header
@@ -28,9 +28,9 @@ func main{
     local intermediary_index : felt
     let (blocks : felt**) = alloc()
     %{
-        ids.blocks_len = len(program_input["Blocks"])
+        ids.blocks_len = len(program_input["blocks"])
         ids.intermediary_index = program_input["blockToHash"]
-        segments.write_arg(ids.blocks, program_input["Blocks"])
+        segments.write_arg(ids.blocks, program_input["blocks"])
     %}
     let (height) = calculate_height(blocks_len)
     let intermediary_header = [blocks + intermediary_index]
@@ -60,8 +60,7 @@ func main{
     serialize_word([intermediary_header + 19])
 
     # calculate the block hash and output it
-    let (hash) = compute_double_sha256(
-        input_len=FELT_BLOCK_LEN, input=intermediary_header, n_bytes=N_BYTES_BLOCK)
+    let (hash) = compute_double_sha256(FELT_BLOCK_LEN, intermediary_header, N_BYTES_BLOCK)
     
     output_hash(hash)
     # calculate and output the merkle root of the batch

@@ -45,7 +45,7 @@ contract starkRelay {
         uint256 startingAtBatchHeight;
         uint256 length;
         uint256 numBatchChain;
-        Block firstEpochBlock;
+        Block firstBlockInEpoch;
         mapping(uint256 => Batch) batchChain;
     }
 
@@ -77,7 +77,7 @@ contract starkRelay {
             0xffff001d,
             0x1dac2b7c
         );
-        mainChain.firstEpochBlock = batch.blockHeader;
+        mainChain.firstBlockInEpoch = batch.blockHeader;
         batch.batchSize = 1;
         mainChain.length = 0;
     }
@@ -197,7 +197,7 @@ contract starkRelay {
     ) private view returns (bool) {
         //check if first epoch block is correct
         require(
-            blocksEqual(branches[branchId].firstEpochBlock, epochFirstBl),
+            blocksEqual(branches[branchId].firstBlockInEpoch, epochFirstBl),
             "First epoch block is not correct"
         );
 
@@ -272,7 +272,7 @@ contract starkRelay {
                 challengeChain.length +
                 branches[0].batchChain[i].batchSize;
             if (challengeChain.length % 2016 == 0) {
-                challengeChain.firstEpochBlock = branches[0]
+                challengeChain.firstBlockInEpoch = branches[0]
                     .batchChain[i]
                     .blockHeader;
             }
@@ -456,9 +456,9 @@ contract starkRelay {
         batch.batchSize = rest[0];
         batch.target = rest[2];
         chain.numBatchChain++;
-        // if this batch lead into a new epoch update firstEpochBlock of the branch
+        // if this batch lead into a new epoch update firstBlockInEpoch of the branch
         if ((chain.length + rest[0]) / EPOCH_SIZE > chain.length / EPOCH_SIZE) {
-            chain.firstEpochBlock = header;
+            chain.firstBlockInEpoch = header;
         }
         chain.length = chain.length + rest[0];
     }
@@ -518,12 +518,12 @@ contract starkRelay {
         return branches[0].batchChain[batchNo].merkleRoot;
     }
 
-    function getFirstEpochBlock(uint256 chainId)
+    function getFirstBlockInEpoch(uint256 chainId)
         public
         view
         returns (Block memory)
     {
-        return branches[chainId].firstEpochBlock;
+        return branches[chainId].firstBlockInEpoch;
     }
 
     function getChainLength(uint256 chainId) public view returns (uint256) {
