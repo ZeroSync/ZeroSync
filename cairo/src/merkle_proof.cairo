@@ -8,7 +8,7 @@ from starkware.cairo.common.cairo_builtins import HashBuiltin
 from sha256.sha256 import compute_sha256
 from merkle import create_merkle_tree, prepare_merkle_tree, calculate_height
 
-from io import N_BYTES_BLOCK, N_BYTES_HASH, FELT_HASH_LEN, FELT_BLOCK_LEN, output_hash
+from io import N_BYTES_BLOCK, FELT_BLOCK_LEN, output_hash
 
 from utils import compute_double_sha256
 

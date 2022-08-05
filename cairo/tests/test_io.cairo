@@ -1,7 +1,7 @@
 %lang starknet
 
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
-from tests.utils import fill_input_single_block
+from tests.dummy_data import fill_input_single_block
 from src.io import Block, get_block, bits_to_target
 from starkware.cairo.common.uint256 import Uint256, uint256_eq
 

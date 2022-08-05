@@ -2,15 +2,14 @@
 
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
-from tests.utils import fill_input_single_block, fill_input_multiple_blocks
 from starkware.cairo.common.uint256 import Uint256, uint256_eq
+from tests.dummy_data import fill_input_multiple_blocks
 
 from src.validate import (
     assert_hashes_equal, 
     assert_targets_almost_equal, 
     calculate_next_target,
-    get_time_median,
-    compute_double_sha256
+    get_time_median
 )
 
 from io import (
@@ -82,24 +81,4 @@ func test_get_time_median{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
     assert median_time = 1231471789
 
     return ()
-end
-
-
-@external
-func test_compute_double_sha256{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
-    alloc_locals
-    let input_len = 3
-
-    # Set input to "Hello World"
-    let (input:felt*) = alloc()
-    assert input[0] = 1214606444
-    assert input[1] = 1864398703
-    assert input[2] = 1919706112
-    let n_bytes = 12
-    
-    let (hash) = compute_double_sha256(input_len, input, n_bytes)
-    let hash_expected = Uint256(0x5bbb85e35552a1e29b9169397b7520d9, 0x577643825c8f1cd34c39fa6a5de3e4e1)
-    let (is_correct) = uint256_eq(hash, hash_expected)
-    assert is_correct = 1
-    return() 
 end
