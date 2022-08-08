@@ -20,7 +20,7 @@ SIBD will allow to download the latest state of the Bitcoin Blockchain and a ver
 
 ## Usage
 
-- Valdiate a batch:
+- Validate a batch:
 
 ```
 starkRelay validate-batch [START]-[END] -s
@@ -37,15 +37,13 @@ Initial setup from within the cairo directory (the suggested standard lib direct
 protostar init --existing
 ```
 
-Run all Cairo tests from within the cairo dir (starkRelay/cairo):
+Run all Cairo tests from within the cairo dir (sibd/cairo):
 
 ```
-protostar test ./tests --cairo-path=./src
+sudo chmod +x testCairo.sh
+./testCairo.sh
 ```
 
-**Note: Remove the output builtin from the first line of validate.cairo to run the tests**
-
-We might provide a script to run all tests that removes the output builtin automatically and adds it again after the tests were run.
 
 ## Credits
 

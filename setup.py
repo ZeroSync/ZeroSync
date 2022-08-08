@@ -4,7 +4,7 @@ import sys
 setup(
     name="sibd",
     version="0.0.1",
-    py_modules=["starkRelay_cli"],
+    py_modules=["sibd_cli"],
     packages=find_packages(),
     install_requires=[
         "click",
