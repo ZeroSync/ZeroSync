@@ -1,6 +1,6 @@
 # SIBD
 
-## Succint Initial Block Download using STARK-proofs
+## Succinct Initial Block Download using STARK-proofs
 SIBD will allow to download the latest state of the Bitcoin Blockchain and a verifiable proof attesting its correctness. Instead of validating every block and included transaction only the STARK-proof has to be verified.
 
 **In general, all of this is experimental research code and not to be used in production!**
