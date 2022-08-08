@@ -29,7 +29,7 @@ func test_compute_merkle_root{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
 	assert leaves[14] = 0x338530e9
 	assert leaves[15] = 0x831e9e16
 
-	let (root : felt*) = compute_merkle_root(leaves, leaves_len = 2)
+	let (root) = compute_merkle_root(leaves, leaves_len = 2)
 
 	# 7dac2c5666815c17a3b36427de37bb9d2e2c5ccec3f8633eb91a4205cb4c10ff
 	assert root[0] = 0x7dac2c56
@@ -40,7 +40,6 @@ func test_compute_merkle_root{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
 	assert root[5] = 0xc3f8633e
 	assert root[6] = 0xb91a4205
 	assert root[7] = 0xcb4c10ff
-
 
 	return()
 end

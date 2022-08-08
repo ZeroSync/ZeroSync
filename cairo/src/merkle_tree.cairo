@@ -3,54 +3,59 @@ from starkware.cairo.common.alloc import alloc
 from utils import _compute_double_sha256
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 
+# A 256-bit hash is represented as eight 32-bit unsigned integers
+const HASH_LEN = 8
+
 func compute_merkle_root{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(leaves : felt*, leaves_len : felt) -> (hash : felt*):
 	alloc_locals
 
+	# The trivial case is a tree with a single leaf
 	if leaves_len == 1:
-	 	let (root_hash) = _compute_double_sha256(8, leaves, 8 * 4)
-		return (root_hash)
+	 	let (root_hash) = _compute_double_sha256(HASH_LEN, leaves, HASH_LEN * 4)
 	end
 	
+	# If the number of leaves is odd then duplicate the last leaf
 	let (_, is_odd) = unsigned_div_rem(leaves_len, 2)
-
-	# padding (duplicate last leaf)
 	if is_odd == 1:
-		assert leaves[leaves_len * 8 + 0] = leaves[(leaves_len - 1) * 8 + 0]
-		assert leaves[leaves_len * 8 + 1] = leaves[(leaves_len - 1) * 8 + 1]
-		assert leaves[leaves_len * 8 + 2] = leaves[(leaves_len - 1) * 8 + 2]
-		assert leaves[leaves_len * 8 + 3] = leaves[(leaves_len - 1) * 8 + 3]
-		assert leaves[leaves_len * 8 + 4] = leaves[(leaves_len - 1) * 8 + 4]
-		assert leaves[leaves_len * 8 + 5] = leaves[(leaves_len - 1) * 8 + 5]
-		assert leaves[leaves_len * 8 + 6] = leaves[(leaves_len - 1) * 8 + 6]
-		assert leaves[leaves_len * 8 + 7] = leaves[(leaves_len - 1) * 8 + 7]
+		copy_hash(leaves + ((leaves_len - 1) * HASH_LEN), leaves + (leaves_len * HASH_LEN) )
 	end
 
-	let leaves_out_len = (leaves_len + is_odd) / 2
+	# Compute the next generation of leaves one level higher in the tree
+	let (next_leaves) = alloc()
+	let next_leaves_len = (leaves_len + is_odd) / 2
+	_compute_merkle_root_loop(leaves, next_leaves, next_leaves_len, 0)
 
-	let (leaves_out) = alloc()
-	_compute_merkle_root_loop(leaves, leaves_out_len, leaves_out, 0)
-
-	return compute_merkle_root(leaves_out, leaves_out_len)
+	# Recurse with the next generation of the tree
+	return compute_merkle_root(next_leaves, next_leaves_len)
 end
 
 func _compute_merkle_root_loop{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
-	leaves_in : felt*, leaves_out_len : felt, leaves_out : felt*, index : felt):
-	
-	if index == leaves_out_len:
+	leaves : felt*, next_leaves : felt*, next_leaves_len : felt, index : felt):
+
+	# We're done when we've computed all hashes of the current generation 
+	if index == next_leaves_len:
 		return ()
 	end
 
-	let (hash : felt*) = _compute_double_sha256(16, leaves_in, 16 * 4)
+	# Hash two leaves to get a node of the next generation
+	let (hash) = _compute_double_sha256(2 * HASH_LEN, leaves, 2 * HASH_LEN * 4)
+	copy_hash(hash, next_leaves)
 
-	assert leaves_out[0] = hash[0]
-	assert leaves_out[1] = hash[1]
-	assert leaves_out[2] = hash[2]
-	assert leaves_out[3] = hash[3]
-	assert leaves_out[4] = hash[4]
-	assert leaves_out[5] = hash[5]
-	assert leaves_out[6] = hash[6]
-	assert leaves_out[7] = hash[7]
-
-	return _compute_merkle_root_loop(leaves_in + 16, leaves_out_len, leaves_out + 8, index + 1)
-
+	# Continue the loop with the next two leaves
+	return _compute_merkle_root_loop(leaves + 2 * HASH_LEN, next_leaves + HASH_LEN, next_leaves_len, index + 1)
 end
+
+# Copy a hash represented as eight 32-bit unsigned integers 
+# starting at from_ptr and copy it to to_ptr
+func copy_hash(from_ptr, to_ptr):
+	assert to_ptr[0] = from_ptr[0]
+	assert to_ptr[1] = from_ptr[1]
+	assert to_ptr[2] = from_ptr[2]
+	assert to_ptr[3] = from_ptr[3]
+	assert to_ptr[4] = from_ptr[4]
+	assert to_ptr[5] = from_ptr[5]
+	assert to_ptr[6] = from_ptr[6]
+	assert to_ptr[7] = from_ptr[7]
+	return ()
+end
+	
