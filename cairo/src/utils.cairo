@@ -3,6 +3,7 @@ from starkware.cairo.common.uint256 import Uint256, uint256_eq, uint256_le
 from starkware.cairo.common.math import split_felt
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.bitwise import bitwise_and
+from starkware.cairo.common.memcpy import memcpy
 
 # A 256-bit hash is represented as an array of eight 32-bit unsigned integers
 const HASH_LEN = 8
@@ -55,17 +56,9 @@ func to_big_endian{bitwise_ptr : BitwiseBuiltin*}(a : felt) -> (result : felt):
     return (result)
 end
 
-
 # Copy a hash represented as eight 32-bit unsigned integers 
-# starting at from_ptr and copy it to to_ptr
-func copy_hash(from_ptr: felt*, to_ptr: felt*):
-    assert to_ptr[0] = from_ptr[0]
-    assert to_ptr[1] = from_ptr[1]
-    assert to_ptr[2] = from_ptr[2]
-    assert to_ptr[3] = from_ptr[3]
-    assert to_ptr[4] = from_ptr[4]
-    assert to_ptr[5] = from_ptr[5]
-    assert to_ptr[6] = from_ptr[6]
-    assert to_ptr[7] = from_ptr[7]
+# starting at `source` and copy it to `destination`
+func copy_hash(source: felt*, destination: felt*):
+    memcpy(destination, source, HASH_LEN)
     return ()
 end

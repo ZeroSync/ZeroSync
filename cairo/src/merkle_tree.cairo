@@ -3,6 +3,7 @@ from starkware.cairo.common.alloc import alloc
 from utils import _compute_double_sha256, copy_hash, HASH_LEN
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 
+# Compute the Merkle root hash of a set of hashes
 func compute_merkle_root{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(leaves : felt*, leaves_len : felt) -> (hash : felt*):
 	alloc_locals
 
@@ -22,10 +23,11 @@ func compute_merkle_root{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(leaves 
 	let next_leaves_len = (leaves_len + is_odd) / 2
 	_compute_merkle_root_loop(leaves, next_leaves, next_leaves_len, 0)
 
-	# Ascend in the tree and hash the next generation
+	# Ascend in the tree and recurse on the next generation one step closer to the root
 	return compute_merkle_root(next_leaves, next_leaves_len)
 end
 
+# Compute the next generation of leaves by pairwise hashing the current generation
 func _compute_merkle_root_loop{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
 	leaves : felt*, next_leaves : felt*, next_leaves_len : felt, index : felt):
 
