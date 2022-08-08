@@ -50,7 +50,7 @@ def binToFelt(str: str) -> List[int]:
 
 # formula:
 # https://medium.com/@dongha.sohn/bitcoin-6-target-and-difficulty-ee3bc9cc5962
-def unpackTarget(bits: str):  # TODO remove or keep for tests
+def unpackTarget(bits: str):
     coefficient = int(bits[2:8], 16)
     index = int(bits[0:2], 16)
     target = coefficient * (2 ** (8 * (index - 3)))
@@ -72,21 +72,6 @@ def dumpCairoInput(ctx, i, j):
     dump["firstBlockInEpoch"] = binToFelt(
         createCairoInputFromBlock(firstBlockInEpoch))
     dump["blockIndexInEpoch"] = i - ((i // 2016) * 2016)
-    cairo_input.write(jsonDumps(dump))
-    if cairo_input is not sys.stdout:
-        cairo_input.close()
-    return
-
-
-def dumpMerkleProofInput(ctx, i, j, intermediaryIndex):
-    fileStr = ctx.obj['inputFile']
-    cairo_input = open(fileStr, "w") if fileStr else sys.stdout
-    dump = {"blocks": []}
-    blocks = getBlockHeadersInRange(ctx, i, j)
-    for k, _ in enumerate(range(i, j)):
-        block = binToFelt(createCairoInputFromBlock(blocks[k]))
-        dump["blocks"].append(block)
-    dump["blockToHash"] = intermediaryIndex
     cairo_input.write(jsonDumps(dump))
     if cairo_input is not sys.stdout:
         cairo_input.close()

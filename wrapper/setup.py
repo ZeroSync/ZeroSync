@@ -5,7 +5,6 @@ from wrapper.cairo import compileCairo
 
 INIT_WORK_DIR = "work/"
 VALIDATE_PROG = "validate_compiled.json"
-MERKLE_PROG = "merkle_proof_compiled.json"
 
 
 # Returns a dictionary containing btc client configuration, compiled
@@ -65,7 +64,6 @@ def ctxConfigSetup(configFile, sourceDir, forceCompile):
               " does not exist. Specify a sourceDir directory using --source.")
         exit(3)
     validateSrcFile = sourceDir + "/validate.cairo"
-    merkleSrcFile = sourceDir + "/merkle_proof.cairo"
     # compile the files and store in our work_dir
     if not os.path.exists(workDir + VALIDATE_PROG) or forceCompile:
         print("Compiling " + validateSrcFile + "...")
@@ -73,12 +71,5 @@ def ctxConfigSetup(configFile, sourceDir, forceCompile):
             print("ERROR: Unable to compile validate sourceDir file.")
             exit(1)
         print("Done.")
-    if not os.path.exists(workDir + MERKLE_PROG) or forceCompile:
-        print("Compiling " + merkleSrcFile + "...")
-        if not compileCairo(merkleSrcFile, workDir + MERKLE_PROG):
-            print("ERROR: Unable to compile merkleProof sourceDir file.")
-            exit(2)
-        print("Done.")
     ctxDict['validate'] = workDir + VALIDATE_PROG
-    ctxDict['merkle'] = workDir + MERKLE_PROG
     return ctxDict

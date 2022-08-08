@@ -1,6 +1,6 @@
 %lang starknet
 
-from starkware.cairo.common.cairo_builtins import (BitwiseBuiltin, HashBuiltin)
+from starkware.cairo.common.cairo_builtins import BitwiseBuiltin, HashBuiltin
 from starkware.cairo.common.alloc import alloc
 from src.merkle import create_merkle_tree
 
@@ -21,7 +21,7 @@ func test_create_merkle_tree{pedersen_ptr : HashBuiltin*, range_check_ptr}():
     let height = 3
 
     let (merkle_root) = create_merkle_tree(leaves_ptr, left_index, leaves_ptr_len, height)
-    
+
     assert merkle_root = 0x15968b1d75b3e322a059fd23bc859c97ec647dc00f858eaf13ea2199abb77aa
 
     return ()
