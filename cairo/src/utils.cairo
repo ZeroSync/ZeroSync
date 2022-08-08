@@ -15,16 +15,32 @@ func array_to_uint256(array: felt*) -> (result: Uint256):
     return (result)
 end
 
+# Convert an Uint256 to an array of 32-bit unsigned integers
+func uint256_to_array(array: felt*) -> (result: Uint256):
+    let low  = array[0] + array[1] * 2**32 + array[2] * 2**64 + array[3] * 2**96
+    let high = array[4] + array[5] * 2**32 + array[6] * 2**64 + array[7] * 2**96
+    let result = Uint256(low, high)
+    return (result)
+end
+
+func _compute_double_sha256{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
+    input_len : felt, input : felt*, n_bytes : felt
+) -> (result : felt*):
+    alloc_locals
+    let (hash_first_round) = compute_sha256(input_len, input, n_bytes)
+    let (hash_second_round) = compute_sha256(FELT_HASH_LEN, hash_first_round, N_BYTES_HASH)
+    return (hash_second_round)
+end
+
 # Compute double sha256 hash of the input 
 # given as an array of 32-bit unsigned integers
 # and returns a Uint256.
 func compute_double_sha256{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
     input_len : felt, input : felt*, n_bytes : felt
-) -> (sha : Uint256):
+) -> (result : Uint256):
     alloc_locals
-    let (hash_first_round) = compute_sha256(input_len, input, n_bytes)
-    let (hash_second_round) = compute_sha256(FELT_HASH_LEN, hash_first_round, N_BYTES_HASH)
-    let (result) = array_to_uint256(hash_second_round)
+    let (hash) = _compute_double_sha256(input_len, input, n_bytes)
+    let (result) = array_to_uint256(hash)
     return (result)
 end
 

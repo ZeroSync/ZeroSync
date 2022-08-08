@@ -25,6 +25,23 @@ func test_compute_double_sha256{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
 end
 
 @external
+func test_compute_double_sha256_2{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
+    alloc_locals
+    let input_len = 1
+
+    # Set input to "Hello World"
+    let (input:felt*) = alloc()
+    assert input[0] = 0x00000000
+    let n_bytes = 4
+    
+    let (hash) = compute_double_sha256(input_len, input, n_bytes)
+    # 8cb9012517c817fead650287d61bdd9c68803b6bf9c64133dcab3e65b5a50cb9
+    assert hash.low =  0x68803b6bf9c64133dcab3e65b5a50cb9
+    assert hash.high = 0x8cb9012517c817fead650287d61bdd9c
+    return () 
+end
+
+@external
 func test_to_uint256{range_check_ptr}():
     let input = 2 ** 251 - 1
     let (output) = to_uint256(input)
