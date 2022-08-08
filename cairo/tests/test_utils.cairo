@@ -29,7 +29,7 @@ func test_compute_double_sha256_2{range_check_ptr, bitwise_ptr : BitwiseBuiltin*
     alloc_locals
     let input_len = 1
 
-    # Set input to "Hello World"
+    # Set input to three zero bytes
     let (input:felt*) = alloc()
     assert input[0] = 0x00000000
     let n_bytes = 4
