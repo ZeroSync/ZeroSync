@@ -56,7 +56,7 @@ func to_big_endian{bitwise_ptr : BitwiseBuiltin*}(a : felt) -> (result : felt):
     return (result)
 end
 
-# Copy a hash represented as eight 32-bit unsigned integers. 
+# Copy a hash represented as 8 x 32-bit unsigned integers. 
 # Starts reading at `source` and writes to `destination`
 func copy_hash(source: felt*, destination: felt*):
     memcpy(destination, source, HASH_LEN)
@@ -87,7 +87,7 @@ func write_hashes{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
     return ()
 end
 
-# Write a hash of 32-bytes represented as 2 x 16 bytes
+# Write a hash of 32 bytes represented as 2 x 16 bytes
 # into an array of 8 x 32-bit unsigned integers
 # and swap the endianess
 # (Assumes that high and low are at most 16 bytes)

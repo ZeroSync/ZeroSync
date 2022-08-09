@@ -87,4 +87,3 @@ func test_compute_merkle_root_uneven{range_check_ptr, bitwise_ptr : BitwiseBuilt
 	return()
 end
 
-
