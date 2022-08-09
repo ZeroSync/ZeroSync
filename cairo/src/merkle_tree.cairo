@@ -35,7 +35,7 @@ func _compute_merkle_root_loop{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
 	leaves : felt*, next_leaves : felt*, next_leaves_len : felt, index : felt):
 	alloc_locals
 	
-	# We're done when we've computed the entire next generation
+	# We loop until we've completed the next generation
 	if index == next_leaves_len:
 		return ()
 	end

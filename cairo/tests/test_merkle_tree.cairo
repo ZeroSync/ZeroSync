@@ -1,9 +1,8 @@
-# See https://medium.com/coinmonks/how-to-manually-verify-the-merkle-root-of-a-bitcoin-block-command-line-7881397d4db1
 # Note that Bitcoin Core and most block explorers swap the endianess when displaying a hash
 # So, we have to reverse the byte order to compute the merkle tree
 
 #
-# To run only this test use:
+# To run only this test suite use:
 # protostar test  --cairo-path=./src target tests/*_merkle_tree*
 #
 
@@ -11,39 +10,65 @@
 
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.math import unsigned_div_rem, split_int
-from src.merkle_tree import compute_merkle_root
-from src.utils import HASH_LEN, assert_hashes_equal
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
+from src.utils import HASH_LEN, assert_hashes_equal, to_big_endian
+from src.merkle_tree import compute_merkle_root
 
 
-func to_words{range_check_ptr}(high, low, destination: felt*, index):
-	let destination = destination + index * HASH_LEN
+# Write 4 bytes into an array of four 32-bit unsigned integers
+# and swap the endianess
+func write4_endian{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
+	value, destination: felt*):
+	let (value) = to_big_endian(value)
+	assert destination[0] = value
+	return ()
+end
 
-	let (uint96,   uint32_3) = unsigned_div_rem(high,   2**32)
+# Write 16 bytes into an array of four 32-bit unsigned integers
+# and swap the endianess
+func write16_endian{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
+	value, destination: felt*):
+
+	let (uint96,   uint32_3) = unsigned_div_rem(value,  2**32)
 	let (uint64,   uint32_2) = unsigned_div_rem(uint96, 2**32)
 	let (uint32_0, uint32_1) = unsigned_div_rem(uint64, 2**32)
-	assert destination[0] = uint32_0
-	assert destination[1] = uint32_1
-	assert destination[2] = uint32_2
-	assert destination[3] = uint32_3
-	let destination = destination + HASH_LEN / 2
-
-	let (uint96,   uint32_3) = unsigned_div_rem(low,    2**32)
-	let (uint64,   uint32_2) = unsigned_div_rem(uint96, 2**32)
-	let (uint32_0, uint32_1) = unsigned_div_rem(uint64, 2**32)
-	assert destination[0] = uint32_0
-	assert destination[1] = uint32_1
-	assert destination[2] = uint32_2
-	assert destination[3] = uint32_3
+	
+	# Swap the order and endianess of the 32-bit integers 
+	write4_endian(uint32_3, destination + 0)
+	write4_endian(uint32_2, destination + 1)
+	write4_endian(uint32_1, destination + 2)
+	write4_endian(uint32_0, destination + 3)
 
 	return ()
 end
 
-@external
-func test_to_words{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
-	alloc_locals
-	let (leaves) = alloc()
+# Write a 32-bytes hash represented as 2 x 16 bytes
+# into an array of 8 x 32-bit unsigned integers
+# and swap the endianess
+func write_hash{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
+	high, low, destination: felt*):
+	write16_endian(low, destination)
+	let destination = destination + HASH_LEN / 2
+	write16_endian(high, destination)
+	return ()
+end
 
+# Write an array of 32-bytes hashes represented as 2 x 16 bytes
+# into an array of 8 x 32-bit unsigned integers chunks in linear memory.
+# And swap the endianess of the 32 bytes.
+# Use `index` to address the index of the 32-byte chunks
+# (Assumes that high and low are at most 16 bytes)
+func write_hashes{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
+	high, low, destination: felt*, index):
+	let destination = destination + index * HASH_LEN
+	write_hash(high, low, destination)
+	return ()
+end
+
+@external
+func test_write_hashes{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
+
+	let (leaves) = alloc()
 	assert leaves[0] = 0x82501c11
 	assert leaves[1] = 0x78fa0b22
 	assert leaves[2] = 0x2c1f3d47
@@ -53,87 +78,84 @@ func test_to_words{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
 	assert leaves[6] = 0x620cce86
 	assert leaves[7] = 0x24a5feb1
 
-    to_words(0x82501c1178fa0b222c1f3d474ec726b8, 0x32013f0a532b44bb620cce8624a5feb1, leaves, 1)
+    write_hashes(0xb1fea52486ce0c62bb442b530a3f0132,0xb826c74e473d1f2c220bfa78111c5082, leaves, index = 1)
 
 	assert_hashes_equal(leaves, leaves + HASH_LEN)
-	return()
+	return ()
 end
 
-
+# Simple test case (2 TXs)
+# Test case from https://medium.com/coinmonks/how-to-manually-verify-the-merkle-root-of-a-bitcoin-block-command-line-7881397d4db1
 @external
 func test_compute_merkle_root{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
-	alloc_locals
-	let (leaves) = alloc()
 
-	to_words(0x82501c1178fa0b222c1f3d474ec726b8, 0x32013f0a532b44bb620cce8624a5feb1, leaves, 0)
-	to_words(0x169e1e83e930853391bc6f35f605c675, 0x4cfead57cf8387639d3b4096c54f18f4, leaves, 1)
+	let (leaves) = alloc()
+	write_hashes(0xb1fea52486ce0c62bb442b530a3f0132,0xb826c74e473d1f2c220bfa78111c5082, leaves, 0)
+	write_hashes(0xf4184fc596403b9d638783cf57adfe4c,0x75c605f6356fbc91338530e9831e9e16, leaves, 1)
 
 	let (root) = compute_merkle_root(leaves, leaves_len = 2)
 	
-	# ff104ccb05421ab93e63f8c3ce5c2c2e9dbb37de2764b3a3175c8166562cac7d
 	let (root_expected) = alloc()
-	to_words(0xff104ccb05421ab93e63f8c3ce5c2c2e, 0x9dbb37de2764b3a3175c8166562cac7d, root_expected, 0)
+	write_hash(0x7dac2c5666815c17a3b36427de37bb9d, 0x2e2c5ccec3f8633eb91a4205cb4c10ff, root_expected)
 
 	assert_hashes_equal(root, root_expected)
 	return()
 end
 
 
+# Power of 2 test case (8 TXs)
+# https://blockchain.info/block/000000000000307b75c9b213f61b2a0c429a34b41b628daae9774cb9b5ff1059
+# Test case from https://gist.github.com/thereal1024/45bb035e580430988a34
 @external
 func test_compute_merkle_root_power_of_2{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
-	# Test cases https://gist.github.com/thereal1024/45bb035e580430988a34
-	alloc_locals
-	let (leaves) = alloc()
 
-	to_words(0xaf0f882904d4c9e2f55389c954e1b608, 0xa03575bcf083ff67ba46e6348180a204, leaves, 0)
-	to_words(0x47916f4e92dcbd20a7b96ee07a647b6c, 0xf981c88f3f1f758c784a004d7bffb3b6, leaves, 1)
-	to_words(0xf1623315eb6fcf7a3d23725da0947361, 0xc9f51af940c4f4e148e259e0b7eb14e6, leaves, 2)
-	to_words(0xb615e026a583285c1f249979548c4646, 0x6680c1629e68918c102651144545bc5b, leaves, 3)
-	to_words(0x6435bc5e4674ac8d418c6d99f19d8711, 0x709c90ed55a1a5c066d4d38317c256de, leaves, 4)
-	to_words(0x27b5cdcecda9a19fd15c0d30dca56be2, 0x9d18704568588423f4dbaf326df927d3, leaves, 5)
-	to_words(0x819a4e1a9d6ef3a2933d1fe79e8b3b6f, 0x63b3d2a39e7c4e191cf31058843d2c70, leaves, 6)
-	to_words(0x04006fa1baa1aa5dd1f4e3826919ccf9, 0x3939c6a0deebb47359be4c0e4be420b3, leaves, 7)
+	let (leaves) = alloc()
+	write_hashes(0x04a2808134e646ba67ff83f0bc7535a0,0x08b6e154c98953f5e2c9d40429880faf, leaves, 0)
+	write_hashes(0xb6b3ff7b4d004a788c751f3f8fc881f9,0x6c7b647ae06eb9a720bddc924e6f9147, leaves, 1)
+	write_hashes(0xe614ebb7e059e248e1f4c440f91af5c9,0x617394a05d72233d7acf6feb153362f1, leaves, 2)
+	write_hashes(0x5bbc4545145126108c91689e62c18066,0x46468c547999241f5c2883a526e015b6, leaves, 3)
+	write_hashes(0xde56c21783d3d466c0a5a155ed909c70,0x11879df1996d8c418dac74465ebc3564, leaves, 4)
+	write_hashes(0xd327f96d32afdbf4238458684570189d,0xe26ba5dc300d5cd19fa1a9cdcecdb527, leaves, 5)
+	write_hashes(0x702c3d845810f31c194e7c9ea3d2b363,0x6f3b8b9ee71f3d93a2f36e9d1a4e9a81, leaves, 6)
+	write_hashes(0xb320e44b0e4cbe5973b4ebdea0c63939,0xf9cc196982e3f4d15daaa1baa16f0004, leaves, 7)
 
 	let (root) = compute_merkle_root(leaves, leaves_len = 8)
 	
-	# 0b0192e318af62f8f91243948ea4c7ea9d696197e88b9401bce35ecb0a0cb59b
 	let (root_expected) = alloc()
-    to_words(0x9bb50c0acb5ee3bc01948be89761699d, 0xeac7a48e944312f9f862af18e392010b, root_expected, 0)
+    write_hash(0x0b0192e318af62f8f91243948ea4c7ea,0x9d696197e88b9401bce35ecb0a0cb59b, root_expected)
 	
 	assert_hashes_equal(root, root_expected)
 	return()
 end
 
-
+# Uneven test case (13 TXs)
+# https://blockchain.info/block/0000000000004563d49a8e7f7f2a2f0aec01101fa971fb63714b8fbf32f62f91
+# Test case from https://gist.github.com/thereal1024/45bb035e580430988a34
 @external
 func test_compute_merkle_root_uneven{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
-	# Test cases https://gist.github.com/thereal1024/45bb035e580430988a34
-	alloc_locals
-	let (leaves) = alloc()
 
-    to_words(0xe86462ac879fd8eb8404e9118346d160, 0x555d5eab8ac029ad3243f56d6bf270df, leaves, 0)
-    to_words(0x50fc32e1a3527698cb451785a216a1f8, 0x6d34b7237f12be6a783722d04c314821, leaves, 1)
-    to_words(0x9059b3e9024fa5cfcc941daeb40a8ed0, 0x4b2ceb5cf9069f635deb33488903c306, leaves, 2)
-    to_words(0x246f8353de4c4b38f559616a100196db, 0x1bf827c957162e8ebb5d21a5273dae90, leaves, 3)
-    to_words(0x33f8a624118148f5b24ce69a2e52546c, 0xc984ad23a175f4e76663ed2900e2cf51, leaves, 4)
-    to_words(0x184b8b9c23b27ab09ccdf9193d0d4f6f, 0x1095507587b82959aafbb000e06b851e, leaves, 5)
-    to_words(0x980832c3cacbe2356896c2b7c83e9780, 0xfc3ff8023e56130525e89d8dd614639d, leaves, 6)
-    to_words(0x9cc9b409011fccca5e364f3cd987bba8, 0x545736cad7b7837b864bc4b0c43f6e5d, leaves, 7)
-    to_words(0x10e9fafc70c2c12f5e573e473986962a, 0x9fd5d82bbbd8153e2c79600aedcfaf58, leaves, 8)
-    to_words(0x0498296ac0a20e38fc9e98b5382d549a, 0x7edd25a12fee754f9357c2325ce1a050, leaves, 9)
-    to_words(0x1be58bd7e8e21ed4c029fed2f7c20386, 0x8dc2df423e58cc4020f874becd06d7ac, leaves, 10)
-    to_words(0x1f8a4b5b215527875624f0279e7c9128, 0x8cbeffc32d9da11c9fd55bb5d355bec7, leaves, 11)
-    to_words(0x604f74a0861894888f7b028ef48c019e, 0x3dc4bcf4d308b1deb807e71967fe23e3, leaves, 12)
+	let (leaves) = alloc()
+    write_hashes(0xdf70f26b6df54332ad29c08aab5e5d55,0x60d1468311e90484ebd89f87ac6264e8, leaves, 0)
+    write_hashes(0x2148314cd02237786abe127f23b7346d,0xf8a116a2851745cb987652a3e132fc50, leaves, 1)
+    write_hashes(0x06c303894833eb5d639f06f95ceb2c4b,0xd08e0ab4ae1d94cccfa54f02e9b35990, leaves, 2)
+    write_hashes(0x90ae3d27a5215dbb8e2e1657c927f81b,0xdb9601106a6159f5384b4cde53836f24, leaves, 3)
+    write_hashes(0x51cfe20029ed6366e7f475a123ad84c9,0x6c54522e9ae64cb2f548811124a6f833, leaves, 4)
+    write_hashes(0x1e856be000b0fbaa5929b88775509510,0x6f4f0d3d19f9cd9cb07ab2239c8b4b18, leaves, 5)
+    write_hashes(0x9d6314d68d9de8250513563e02f83ffc,0x80973ec8b7c2966835e2cbcac3320898, leaves, 6)
+    write_hashes(0x5d6e3fc4b0c44b867b83b7d7ca365754,0xa8bb87d93c4f365ecacc1f0109b4c99c, leaves, 7)
+    write_hashes(0x58afcfed0a60792c3e15d8bb2bd8d59f,0x2a968639473e575e2fc1c270fcfae910, leaves, 8)
+    write_hashes(0x50a0e15c32c257934f75ee2fa125dd7e,0x9a542d38b5989efc380ea2c06a299804, leaves, 9)
+    write_hashes(0xacd706cdbe74f82040cc583e42dfc28d,0x8603c2f7d2fe29c0d41ee2e8d78be51b, leaves, 10)
+    write_hashes(0xc7be55d3b55bd59f1ca19d2dc3ffbe8c,0x28917c9e27f02456872755215b4b8a1f, leaves, 11)
+    write_hashes(0xe323fe6719e707b8deb108d3f4bcc43d,0x9e018cf48e027b8f88941886a0744f60, leaves, 12)
 
 	let (root) = compute_merkle_root(leaves, leaves_len = 13)
 	
-	# 0b0192e318af62f8f91243948ea4c7ea9d696197e88b9401bce35ecb0a0cb59b
 	let (root_expected) = alloc()
-    to_words(0x7bb4c99517cda76699fb591a7c6711ce, 0x988f8a69290de78bf77fe5443b4d0a56, root_expected, 0)
+    write_hash(0x560a4d3b44e57ff78be70d29698a8f98,0xce11677c1a59fb9966a7cd1795c9b47b, root_expected)
 	
 	assert_hashes_equal(root, root_expected)
 	return()
 end
-
 
 
