@@ -4,14 +4,14 @@ from utils import _compute_double_sha256, copy_hash, HASH_LEN
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 
 # Compute the Merkle root hash of a set of hashes
+#
+# See https://github.com/bitcoin/bitcoin/blob/master/src/consensus/merkle.cpp
 func compute_merkle_root{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
 	leaves : felt*, leaves_len : felt) -> (hash : felt*):
 	alloc_locals
 
 	# The trivial case is a tree with a single leaf
 	if leaves_len == 1:
-	 	# let (root_hash) = _compute_double_sha256(HASH_LEN, leaves, HASH_LEN * 4)
-	 	# return (root_hash)
 	 	return (leaves)
 	end
 	

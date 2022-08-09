@@ -62,3 +62,16 @@ func copy_hash(source: felt*, destination: felt*):
     memcpy(destination, source, HASH_LEN)
     return ()
 end
+
+# Assert equality of two hashes represented as eight 32-bit unsigned integers
+func assert_hashes_equal(hash1: felt*, hash2: felt*):
+    assert hash1[0] = hash2[0]
+    assert hash1[1] = hash2[1]
+    assert hash1[2] = hash2[2]
+    assert hash1[3] = hash2[3]
+    assert hash1[4] = hash2[4]
+    assert hash1[5] = hash2[5]
+    assert hash1[6] = hash2[6]
+    assert hash1[7] = hash2[7]
+    return ()
+end
