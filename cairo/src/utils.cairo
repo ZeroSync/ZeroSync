@@ -1,6 +1,6 @@
 from sha256.sha256 import compute_sha256
 from starkware.cairo.common.uint256 import Uint256, uint256_eq, uint256_le
-from starkware.cairo.common.math import split_felt
+from starkware.cairo.common.math import split_felt, unsigned_div_rem
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.bitwise import bitwise_and
 from starkware.cairo.common.memcpy import memcpy
@@ -56,8 +56,8 @@ func to_big_endian{bitwise_ptr : BitwiseBuiltin*}(a : felt) -> (result : felt):
     return (result)
 end
 
-# Copy a hash represented as eight 32-bit unsigned integers 
-# starting at `source` and copy it to `destination`
+# Copy a hash represented as eight 32-bit unsigned integers. 
+# Starts reading at `source` and writes to `destination`
 func copy_hash(source: felt*, destination: felt*):
     memcpy(destination, source, HASH_LEN)
     return ()
@@ -73,5 +73,55 @@ func assert_hashes_equal(hash1: felt*, hash2: felt*):
     assert hash1[5] = hash2[5]
     assert hash1[6] = hash2[6]
     assert hash1[7] = hash2[7]
+    return ()
+end
+
+# Write an array of 32-bytes hashes, each represented as 2 x 16 bytes,
+# into an array of chunks of 8 x 32-bit unsigned integers in linear memory.
+# Also swap the endianess of the hashes.
+# Use `index` to address the position of the 32-byte chunks
+func write_hashes{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
+    high, low, destination: felt*, index):
+    let destination = destination + index * HASH_LEN
+    write_hash(high, low, destination)
+    return ()
+end
+
+# Write a hash of 32-bytes represented as 2 x 16 bytes
+# into an array of 8 x 32-bit unsigned integers
+# and swap the endianess
+# (Assumes that high and low are at most 16 bytes)
+func write_hash{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
+    high, low, destination: felt*):
+    write16_endian(low, destination)
+    let destination = destination + HASH_LEN / 2
+    write16_endian(high, destination)
+    return ()
+end
+
+# Write 16 bytes into an array of 4 x 32-bit unsigned integers
+# and swap the endianess
+func write16_endian{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
+    value, destination: felt*):
+
+    let (uint96,   uint32_3) = unsigned_div_rem(value,  2**32)
+    let (uint64,   uint32_2) = unsigned_div_rem(uint96, 2**32)
+    let (uint32_0, uint32_1) = unsigned_div_rem(uint64, 2**32)
+    
+    # Swap the order and endianess of the 32-bit integers 
+    write4_endian(uint32_3, destination + 0)
+    write4_endian(uint32_2, destination + 1)
+    write4_endian(uint32_1, destination + 2)
+    write4_endian(uint32_0, destination + 3)
+
+    return ()
+end
+
+# Write 4 bytes into a 32-bit unsigned integer
+# and swap the endianess
+func write4_endian{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
+    value, destination: felt*):
+    let (value) = to_big_endian(value)
+    assert destination[0] = value
     return ()
 end
