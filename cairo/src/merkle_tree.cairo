@@ -4,12 +4,15 @@ from utils import _compute_double_sha256, copy_hash, HASH_LEN
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 
 # Compute the Merkle root hash of a set of hashes
-func compute_merkle_root{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(leaves : felt*, leaves_len : felt) -> (hash : felt*):
+func compute_merkle_root{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
+	leaves : felt*, leaves_len : felt) -> (hash : felt*):
 	alloc_locals
 
 	# The trivial case is a tree with a single leaf
 	if leaves_len == 1:
-	 	let (root_hash) = _compute_double_sha256(HASH_LEN, leaves, HASH_LEN * 4)
+	 	# let (root_hash) = _compute_double_sha256(HASH_LEN, leaves, HASH_LEN * 4)
+	 	# return (root_hash)
+	 	return (leaves)
 	end
 	
 	# If the number of leaves is odd then duplicate the last leaf
@@ -30,7 +33,8 @@ end
 # Compute the next generation of leaves by pairwise hashing the current generation
 func _compute_merkle_root_loop{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
 	leaves : felt*, next_leaves : felt*, next_leaves_len : felt, index : felt):
-
+	alloc_locals
+	
 	# We're done when we've computed the entire next generation
 	if index == next_leaves_len:
 		return ()

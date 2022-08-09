@@ -6,7 +6,7 @@ from starkware.cairo.common.pow import pow
 from starkware.cairo.common.math import assert_le
 from starkware.cairo.common.uint256 import Uint256
 
-from utils import array_to_uint256, to_big_endian
+from utils import array_to_uint256, to_big_endian, copy_hash
 
 const FELT_BLOCK_LEN = 20
 const N_BYTES_BLOCK = 80
@@ -42,14 +42,7 @@ func get_block{bitwise_ptr : BitwiseBuiltin*, range_check_ptr}(
     
     # Parse previous hash
     let (prev_hash_tmp) = alloc()
-    assert prev_hash_tmp[0] = block.raw_data[1]
-    assert prev_hash_tmp[1] = block.raw_data[2]
-    assert prev_hash_tmp[2] = block.raw_data[3]
-    assert prev_hash_tmp[3] = block.raw_data[4]
-    assert prev_hash_tmp[4] = block.raw_data[5]
-    assert prev_hash_tmp[5] = block.raw_data[6]
-    assert prev_hash_tmp[6] = block.raw_data[7]
-    assert prev_hash_tmp[7] = block.raw_data[8]
+    copy_hash(block.raw_data + 1, prev_hash_tmp)
 
     let (prev_hash) = array_to_uint256(prev_hash_tmp)
     assert block.prev_hash = prev_hash
