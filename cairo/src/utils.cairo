@@ -10,7 +10,7 @@ const HASH_LEN = 8
 # A hash has 32 bytes
 const N_BYTES_HASH = 32
 
-# Convert an array of 32-bit unsigned integers to a Uint256
+# Convert an array of 8 x 32-bit unsigned integers to a Uint256
 func array_to_uint256(array: felt*) -> (result: Uint256):
     let low  = array[3] + array[2] * 2**32 + array[1] * 2**64 + array[0] * 2**96
     let high = array[7] + array[6] * 2**32 + array[5] * 2**64 + array[4] * 2**96

@@ -24,7 +24,7 @@ func compute_merkle_root{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
 	# Compute the next generation of leaves one level higher up in the tree
 	let (next_leaves) = alloc()
 	let next_leaves_len = (leaves_len + is_odd) / 2
-	_compute_merkle_root_loop(leaves, next_leaves, next_leaves_len, 0)
+	_compute_merkle_root_loop(leaves, next_leaves, next_leaves_len)
 
 	# Ascend in the tree and recurse on the next generation one step closer to the root
 	return compute_merkle_root(next_leaves, next_leaves_len)
@@ -32,11 +32,11 @@ end
 
 # Compute the next generation of leaves by pairwise hashing the current generation
 func _compute_merkle_root_loop{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
-	leaves : felt*, next_leaves : felt*, next_leaves_len : felt, index : felt):
+	leaves : felt*, next_leaves : felt*, loop_counter ):
 	alloc_locals
 	
 	# We loop until we've completed the next generation
-	if index == next_leaves_len:
+	if loop_counter == 0:
 		return ()
 	end
 
@@ -45,5 +45,5 @@ func _compute_merkle_root_loop{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
 	copy_hash(hash, next_leaves)
 
 	# Continue this loop with the next two leaves
-	return _compute_merkle_root_loop(leaves + 2 * HASH_LEN, next_leaves + HASH_LEN, next_leaves_len, index + 1)
+	return _compute_merkle_root_loop(leaves + 2 * HASH_LEN, next_leaves + HASH_LEN, loop_counter - 1)
 end
