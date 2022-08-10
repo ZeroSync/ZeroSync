@@ -31,10 +31,11 @@ def runCairo(cairoProg, inputFile, traceFile, memoryFile):
     return proc.stdout.decode("utf-8")
 
 
-def runCairoPrintInfo(cairoProg, inputFile):
-    program = f"cairo-run --program={cairoProg} --layout=all --print_info --print_output --program_input={inputFile} --cairo_pie_output={cairoProg.replace('.json','') + '.pie'}".split(
+def runCairoPrintInfo(cairoProg, inputFile, traceFile, memoryFile):
+    program = f"cairo-run --program={cairoProg} --layout=all --print_output --print_info --program_input={inputFile} --memory_file={memoryFile} --trace_file={traceFile} --cairo_pie_output={cairoProg.replace('.json','') + '.pie'}".split(
         " "
     )
+
     proc = subprocess.run(program, stdout=subprocess.PIPE)
     return proc.stdout.decode("utf-8")
 
@@ -79,9 +80,9 @@ def formatCairoOutput(output):
     return retStr
 
 
-def runCairoBenchmark(cairoProg, inputFile):
+def runCairoBenchmark(cairoProg, inputFile, traceFile, memoryFile):
     startTime = time.time()
-    result = runCairoPrintInfo(cairoProg, inputFile)
+    result = runCairoPrintInfo(cairoProg, inputFile, traceFile, memoryFile)
     endTime = time.time()
     # index 2 is maximum resident set size in KBytes:
     # https://docs.python.org/3/library/resource.html#resource.getrusage

@@ -11,7 +11,7 @@ import sys
 import atexit
 import csv
 from prettytable import PrettyTable
-from lib.benchmark_lib import benchmarkInit, benchmarkBatches
+from lib.benchmark_lib import benchmarkInit, benchmarkBatches, benchmarkProofGenBatches
 
 
 # Imitating the ctx object from click allows to share code base
@@ -39,10 +39,15 @@ resTable.field_names = [
     "steps",
     "cells"]
 
+resProofTable = PrettyTable()
+resProofTable.field_names = ["size", "start", "end", "time (s)", "memory (KB)"]
+
 
 def printResults():
     print("\n--- Batch Validation Results ---")
     print(resTable)
+    print("\n--- Proof Generation Results ---")
+    print(resProofTable)
 
 
 # If the program is stopped still output the results up to this point
@@ -52,7 +57,7 @@ ctx = Ctx()
 ctx.obj = benchmarkInit()
 
 
-# no command-line option given -> run all batches and do not output csv
+# No command-line option given -> run all batches and do not output csv
 batchesToRun = len(batches)
 if len(sys.argv) >= 2:
     if int(sys.argv[1]) <= batchesToRun:
@@ -66,6 +71,16 @@ for i in range(0, batchesToRun):
         end="")
     results = benchmarkBatches(ctx, batches[i])
     resTable.add_rows(results)
+
+
+# TODO max of 2 and batchesToRun
+for i in range(0, 2):
+    print(
+        f"Running batch set {i + 1}/{2}... (batch size increases with every batch set)\r",
+        end="")
+    results = benchmarkProofGenBatches(ctx, batches[i])
+    resProofTable.add_rows(results)
+
 
 if len(sys.argv) == 3:
     with open(sys.argv[2], 'w') as resFile:

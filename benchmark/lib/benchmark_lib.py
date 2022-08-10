@@ -5,6 +5,7 @@ from wrapper.preprocessing import (
 from wrapper.cairo import(
     runCairoBenchmark,
     formatCairoOutput,
+    createGizaProof
 )
 
 from wrapper.setup import ctxConfigSetup
@@ -24,8 +25,7 @@ def benchmarkBatch(ctx, batchStart, batchEnd):
         "validateInput_" + str(batchStart) + "-" + str(batchEnd) + ".json"
     dumpCairoInput(ctx, batchStart, batchEnd + 1)
     cairoOutput, secs, memory, steps, cells = runCairoBenchmark(
-        cairoProg=ctx.obj['validate'], inputFile=ctx.obj['inputFile']
-    )
+        cairoProg=ctx.obj['validate'], inputFile=ctx.obj['inputFile'], traceFile=ctx.obj['traceFile'], memoryFile=ctx.obj['memoryFile'])
     firstLine = [line for line in cairoOutput.split("\n")][0]
     # check first line is not an error output
     if firstLine != "Program output:" and firstLine[0:15] != "Number of steps":
@@ -49,7 +49,37 @@ def benchmarkBatch(ctx, batchStart, batchEnd):
 def benchmarkBatches(ctx, batches):
     results = []
     for batch in batches:
+        ctx.obj['traceFile'] = ctx.obj["validate"].replace(
+            ".json", f"{batch[0]}_{batch[1]}_trace.bin")
+        ctx.obj['memoryFile'] = ctx.obj["validate"].replace(
+            ".json", f"{batch[0]}_{batch[1]}_memory.bin")
         results.append(benchmarkBatch(ctx, batch[0], batch[1]))
+    return results
+
+
+def benchmarkProofGenBatch(ctx, batchStart, batchEnd):
+    result = createGizaProof(
+        ctx.obj['traceFile'],
+        ctx.obj['memoryFile'],
+        ctx.obj['validate'],
+        "/dev/null",
+        65)
+    return (
+        batchEnd + 1 - batchStart,
+        batchStart,
+        batchEnd,
+        round(result[1], 4),
+        result[2])
+
+
+def benchmarkProofGenBatches(ctx, batches):
+    results = []
+    for batch in batches:
+        ctx.obj['traceFile'] = ctx.obj["validate"].replace(
+            ".json", f"{batch[0]}_{batch[1]}_trace.bin")
+        ctx.obj['memoryFile'] = ctx.obj["validate"].replace(
+            ".json", f"{batch[0]}_{batch[1]}_memory.bin")
+        results.append(benchmarkProofGenBatch(ctx, batch[0], batch[1]))
     return results
 
 
