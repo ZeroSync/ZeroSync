@@ -122,7 +122,7 @@ end
 
 @external
 func test_write_hashes{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
-
+    alloc_locals
     let (leaves) = alloc()
     assert leaves[0] = 0x82501c11
     assert leaves[1] = 0x78fa0b22

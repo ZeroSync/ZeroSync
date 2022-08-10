@@ -17,6 +17,7 @@ from src.merkle_tree import compute_merkle_root
 # Test case from https://medium.com/coinmonks/how-to-manually-verify-the-merkle-root-of-a-bitcoin-block-command-line-7881397d4db1
 @external
 func test_compute_merkle_root{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
+	alloc_locals
 
 	let (leaves) = alloc()
 	write_hashes(0xb1fea52486ce0c62bb442b530a3f0132,0xb826c74e473d1f2c220bfa78111c5082, leaves, 0)
@@ -37,6 +38,7 @@ end
 # Test case from https://gist.github.com/thereal1024/45bb035e580430988a34
 @external
 func test_compute_merkle_root_power_of_2{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
+	alloc_locals
 
 	let (leaves) = alloc()
 	write_hashes(0x04a2808134e646ba67ff83f0bc7535a0,0x08b6e154c98953f5e2c9d40429880faf, leaves, 0)
@@ -62,7 +64,8 @@ func test_compute_merkle_root_power_of_2{range_check_ptr, bitwise_ptr : BitwiseB
 # Test case from https://gist.github.com/thereal1024/45bb035e580430988a34
 @external
 func test_compute_merkle_root_uneven{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
-
+	alloc_locals
+	
 	let (leaves) = alloc()
 	write_hashes(0xdf70f26b6df54332ad29c08aab5e5d55,0x60d1468311e90484ebd89f87ac6264e8, leaves, 0)
 	write_hashes(0x2148314cd02237786abe127f23b7346d,0xf8a116a2851745cb987652a3e132fc50, leaves, 1)

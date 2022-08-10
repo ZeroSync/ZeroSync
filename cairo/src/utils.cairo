@@ -103,7 +103,8 @@ end
 # and swap the endianess
 func write16_endian{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
     value, destination: felt*):
-
+    alloc_locals
+    
     let (uint96,   uint32_3) = unsigned_div_rem(value,  2**32)
     let (uint64,   uint32_2) = unsigned_div_rem(uint96, 2**32)
     let (uint32_0, uint32_1) = unsigned_div_rem(uint64, 2**32)
