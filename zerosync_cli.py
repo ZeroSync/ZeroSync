@@ -20,8 +20,8 @@ VALIDATE_OUTPUTS = 65
 @click.group()
 @click.option(
     "--configfile",
-    default=INIT_WORK_DIR + "sibd.toml",
-    help="Config for sibd - used for bitcoin RPC and Cairo sources",
+    default=INIT_WORK_DIR + "zerosync.toml",
+    help="Config for zerosync - used for bitcoin RPC and Cairo sources",
     show_default=True,
 )
 @click.option(
@@ -38,7 +38,7 @@ VALIDATE_OUTPUTS = 65
     help="Force to recompile all Cairo sources."
 )
 @click.pass_context
-def sibd_cli(ctx, configfile, source, force_compile):
+def zerosync_cli(ctx, configfile, source, force_compile):
     ctx.obj = ctxConfigSetup(configfile, source, force_compile)
     if not checkClientRunning(ctx):
         print("Warning: There might be no accessible bitcoin-client running")
@@ -79,7 +79,7 @@ def sibd_cli(ctx, configfile, source, force_compile):
     default=False,
     help="Create a STARK proof with giza",
 )
-@sibd_cli.command("validate-batch")
+@zerosync_cli.command("validate-batch")
 @click.pass_context
 def validateBatch(ctx, batchrange, submit, raw, info, giza_prove):
     """This validates blocks in the range BATCHRANGE using the provided compiled CAIROPROGRAM. Range includes the starting and ending block number and consists of two block numbers seperated by '-', e.g.: 1-10"""

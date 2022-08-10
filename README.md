@@ -1,7 +1,11 @@
-# SIBD
+# ZEROSYNC
 
-## Succinct Initial Block Download using STARK-proofs
-SIBD will allow to download the latest state of the Bitcoin Blockchain and a verifiable proof attesting its correctness. Instead of validating every block and included transaction only the STARK-proof has to be verified.
+## An alternative to Bitcoins initial block download using STARK-proofs that verify the correctness of a corresponding chainstate
+Zerosync will allow to download the latest state of the Bitcoin Blockchain and a verifiable proof attesting its correctness. Instead of validating every block and included transaction only the STARK-proof has to be verified.
+
+This will be achieved with a full node implememtation in Cairo. In the current state we implemented a light client in Cairo that we will now expand with functionalities.
+
+The original light client was a relay/bridge implementation that made Bitcoin blocks available on Ethereum (e.g. for SPV) and is available in the `relay` branch.
 
 **In general, all of this is experimental research code and not to be used in production!**
 
@@ -23,7 +27,7 @@ SIBD will allow to download the latest state of the Bitcoin Blockchain and a ver
 - Validate a batch:
 
 ```
-sibd validate-batch [START]-[END] -s
+zerosync validate-batch [START]-[END] -s
 ```
 
 ## Tests
@@ -48,5 +52,3 @@ sudo chmod +x testCairo.sh
 ## Credits
 
 sha256 code adopted from Lior Goldberg: https://github.com/starkware-libs/cairo-examples/tree/master/sha256
-
-zkRelay by Martin Westerkamp: https://github.com/informartin/zkRelay/
