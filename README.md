@@ -23,7 +23,7 @@ SIBD will allow to download the latest state of the Bitcoin Blockchain and a ver
 - Validate a batch:
 
 ```
-starkRelay validate-batch [START]-[END] -s
+sibd validate-batch [START]-[END] -s
 ```
 
 ## Tests
