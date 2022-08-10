@@ -39,4 +39,16 @@ Gathered on a PC with Ryzen 5 3600 processor @ 3.6GHz
 +------+-------+------+----------+-------------+---------+---------+
 
 
+--- Proof Generation Results ---
++------+-------+------+----------+-------------+
+| size | start | end  | time (s) | memory (KB) |
++------+-------+------+----------+-------------+
+|  3   |   1   |  3   | 14.3433  |   1533460   |
+|  3   |  2015 | 2017 |  14.196  |   1542272   |
+|  21  |   1   |  21  | 116.2051 |   12037728  |
+|  21  |  2015 | 2035 | 117.305  |   12037728  |
++------+-------+------+----------+-------------+
+
 ```
+
+The proof generation results were gathered using Giza ([this](https://github.com/maxgillett/giza/commit/934d4f421764173080ca0c3078b53b98ae895c7c) commit in particular)
