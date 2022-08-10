@@ -13,6 +13,9 @@ from wrapper.preprocessing import dumpCairoInput
 from wrapper.setup import ctxConfigSetup, INIT_WORK_DIR, VALIDATE_PROG
 import os
 
+# Outputs of the validate program used to create a giza proof
+VALIDATE_OUTPUTS = 65
+
 
 @click.group()
 @click.option(
@@ -114,7 +117,7 @@ def validateBatch(ctx, batchrange, submit, raw, info, giza_prove):
             traceFile=ctx.obj['work']['dir'] + "trace_" + batchrange + ".bin",
             memoryFile=ctx.obj['work']['dir'] + "memory_" + batchrange + ".bin",
             outputFile=ctx.obj['work']['dir'] + "prove_" + batchrange + ".bin",
-            outputNum=66,
+            outputNum=VALIDATE_OUTPUTS,
         )
         print(result)
         print(f"Giza prove generation took {time} seconds and {memory} KB.")

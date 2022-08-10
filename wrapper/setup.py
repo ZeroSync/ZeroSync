@@ -30,7 +30,7 @@ def ctxConfigSetup(configFile, sourceDir, forceCompile):
         port = input("Port [8332]: ") or "8332"
         user = input("User: ")
         psw = input("Password: ")
-        print("starkRelay will create a working directory for compiled cairo programs and program traces.")
+        print("sibd will create a working directory for compiled cairo programs and program traces.")
         workDir = (input("Working directory path [./work/]: ") or "work") + "/"
         os.makedirs(workDir)
         workDir = os.path.abspath(workDir) + "/"
@@ -64,7 +64,7 @@ def ctxConfigSetup(configFile, sourceDir, forceCompile):
               " does not exist. Specify a sourceDir directory using --source.")
         exit(3)
     validateSrcFile = sourceDir + "/validate.cairo"
-    # compile the files and store in our work_dir
+    # Compile the files and store in our work_dir
     if not os.path.exists(workDir + VALIDATE_PROG) or forceCompile:
         print("Compiling " + validateSrcFile + "...")
         if not compileCairo(validateSrcFile, workDir + VALIDATE_PROG):
