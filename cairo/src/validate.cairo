@@ -1,4 +1,5 @@
-%builtins output pedersen range_check ecdsa bitwise
+%builtins pedersen range_check ecdsa bitwise
+
 # some builtins may not be used but are required for the cairo-run layout
 # for a full node implementation we will need them all anyways
 

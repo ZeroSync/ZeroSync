@@ -9,7 +9,7 @@
 
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
-from src.utils import assert_hashes_equal, write_hash, write_hashes
+from src.utils import assert_hashes_equal
 from src.merkle_tree import compute_merkle_root
 
 # Defines write_hashes for tests
@@ -133,8 +133,5 @@ func test_compute_merkle_root_uneven{range_check_ptr, bitwise_ptr : BitwiseBuilt
 
     let (root) = compute_merkle_root(leaves, leaves_len)
     assert_hashes_equal(root, root_expected)
-    return ()
-end
-pected)
     return ()
 end

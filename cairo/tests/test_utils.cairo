@@ -8,7 +8,7 @@ from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.uint256 import Uint256
 
-from src.utils import compute_double_sha256,_compute_double_sha256, to_uint256, array_to_uint256, assert_hashes_equal, write_hashes, HASH_LEN
+from src.utils import compute_double_sha256,_compute_double_sha256, to_uint256, array_to_uint256, assert_hashes_equal, HASH_LEN
 from src.sha256.sha256 import compute_sha256
 
 @external
@@ -116,27 +116,5 @@ func test_to_uint256{range_check_ptr}():
     let (output) = to_uint256(input)
     assert output.low = 0xffffffffffffffffffffffffffffffff
     assert output.high = 0x7ffffffffffffffffffffffffffffff
-    return ()
-end
-
-
-@external
-func test_write_hashes{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
-    alloc_locals
-    let (leaves) = alloc()
-    assert leaves[0] = 0x82501c11
-    assert leaves[1] = 0x78fa0b22
-    assert leaves[2] = 0x2c1f3d47
-    assert leaves[3] = 0x4ec726b8
-    assert leaves[4] = 0x32013f0a
-    assert leaves[5] = 0x532b44bb
-    assert leaves[6] = 0x620cce86
-    assert leaves[7] = 0x24a5feb1
-
-    write_hashes(0xb1fea52486ce0c62bb442b530a3f0132,0xb826c74e473d1f2c220bfa78111c5082, leaves, index = 1)
-    write_hashes(0xb1fea52486ce0c62bb442b530a3f0132,0xb826c74e473d1f2c220bfa78111c5082, leaves, index = 2)
-
-    assert_hashes_equal(leaves, leaves + HASH_LEN)
-    assert_hashes_equal(leaves + HASH_LEN, leaves + HASH_LEN * 2)
     return ()
 end
