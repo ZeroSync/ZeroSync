@@ -1,3 +1,8 @@
+# Serialization Library
+# Functions for reading and writing byte buffers
+# 
+# Inspired by https://github.com/mimblewimble/grin/blob/master/core/src/ser.rs
+#
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.pow import pow
 from starkware.cairo.common.math import unsigned_div_rem
@@ -85,14 +90,19 @@ end
 
 func read_bytes4_endian{reader: Reader, range_check_ptr, bitwise_ptr : BitwiseBuiltin*}() -> (result: felt):
     alloc_locals
-    let (byte0) = read_byte()
-    let (byte1) = read_byte()
-    let (byte2) = read_byte()
-    let (byte3) = read_byte()
-    return (byte0 + byte1 * 2**8 + byte2 * 2**16 + byte3 * 2**24)
+    let (uint8_0) = read_byte()
+    let (uint8_1) = read_byte()
+    let (uint8_2) = read_byte()
+    let (uint8_3) = read_byte()
+    return (uint8_3 * 2**24 + uint8_2 * 2**16 + uint8_1 * 2**8 + uint8_0)
 end 
 
-
+func read_bytes8_endian{reader: Reader, range_check_ptr, bitwise_ptr : BitwiseBuiltin*}() -> (result: felt):
+    alloc_locals
+    let (uint32_0) = read_bytes4_endian()
+    let (uint32_1) = read_bytes4_endian()
+    return (uint32_1 * 2**32 + uint32_0)
+end
 
 struct Writer:
     member pointer : felt*

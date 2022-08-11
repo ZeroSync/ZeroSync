@@ -7,7 +7,7 @@
 
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
-from src.buffer import flush_writer, init_writer, write_byte, write_bytes4, init_reader, read_byte, read_bytes2, read_bytes3, read_bytes4, read_bytes4_endian, read_bytes
+from src.buffer import flush_writer, init_writer, write_byte, write_bytes4, init_reader, read_byte, read_bytes2, read_bytes3, read_bytes4, read_bytes8_endian, read_bytes4_endian, read_bytes
 
 
 @external
@@ -71,15 +71,15 @@ end
 
 
 @external
-func test_read_2_3_4_bytes{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
+func test_read_2_3_4_8_bytes{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
     alloc_locals
 
     let (array) = alloc()
     assert array[0] = 0x01020304
     assert array[1] = 0x05060708
-    assert array[2] = 0x090a0b0c
-    assert array[3] = 0x0d0e0f10
-    assert array[4] = 0x11121314
+    assert array[2] = 0x0900e40b
+    assert array[3] = 0x54020000
+    assert array[4] = 0x00121314
     assert array[5] = 0x15161718
     
     let (reader) = init_reader(array)
@@ -87,10 +87,12 @@ func test_read_2_3_4_bytes{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
     let (bytes2) = read_bytes2{reader = reader}()
     let (bytes3) = read_bytes3{reader = reader}()
     let (bytes4) = read_bytes4{reader = reader}()
+    let (bytes8) = read_bytes8_endian{reader = reader}()
 
     assert bytes2 = 0x0102
     assert bytes3 = 0x030405
     assert bytes4 = 0x06070809
+    assert bytes8 = 10000000000 # endian(0x00e40b5402000000)
    
     return ()
 end
