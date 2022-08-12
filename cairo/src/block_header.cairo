@@ -7,20 +7,16 @@
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.math import assert_le, unsigned_div_rem
 from starkware.cairo.common.pow import pow
-from buffer import Writer, Reader, write_4_bytes, write_4_bytes_endian, write_hash, read_4_bytes, read_4_bytes_endian, read_hash
+from buffer import Reader, Writer, read_uint32, write_uint32, read_hash, write_hash
 from utils import _compute_double_sha256
 
 struct BlockHeader:
 	member version : felt 
-	member hash_prev_block : felt* 
-	member hash_merkle_root : felt* 
+	member prev_block_hash : felt* 
+	member merkle_root_hash : felt* 
 	member time : felt 
 	member bits : felt 
 	member nonce : felt 
-
-	# Computed fields
-	member block_hash : felt*
-	member target : felt
 end
 
 # The size of a block header is 80 bytes
@@ -28,39 +24,62 @@ const SIZE_OF_BLOCK_HEADER = 80
 # The size of a block header encoded as an array of 4-byte integers is 20 felts
 const FELT_SIZE_OF_BLOCK_HEADER = SIZE_OF_BLOCK_HEADER / 4
 
-# Write a BlockHeader to a uint32 array
-func write_block_header{ writer: Writer, range_check_ptr }(
-	header : BlockHeader ):
-	write_4_bytes_endian(header.version)
-	write_hash(header.hash_prev_block)
-	write_hash(header.hash_merkle_root)
-	write_4_bytes_endian(header.time)
-	write_4_bytes_endian(header.bits)
-	write_4_bytes(header.nonce)
+# Write a BlockHeader to a Uint32 array
+func write_block_header{writer: Writer, range_check_ptr}(
+	header : BlockHeader):
+	write_uint32(header.version)
+	write_hash(header.prev_block_hash)
+	write_hash(header.merkle_root_hash)
+	write_uint32(header.time)
+	write_uint32(header.bits)
+	write_uint32(header.nonce)
 	return ()
 end
 
-# Read a BlockHeader from a uint32 array
-func read_block_header{reader: Reader, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
+# Read a BlockHeader from a Uint32 array
+func read_block_header{reader: Reader, range_check_ptr}(
 	) -> (result : BlockHeader):
 	alloc_locals
 
-	let raw_block_header = reader.pointer
-	let (block_hash) = _compute_double_sha256(
-		FELT_SIZE_OF_BLOCK_HEADER, raw_block_header, SIZE_OF_BLOCK_HEADER)
-
-	let (version) = read_4_bytes_endian()
-	let (hash_prev_block) = read_hash()
-	let (hash_merkle_root) = read_hash()
-	let (time) = read_4_bytes_endian()
-	let (bits) = read_4_bytes_endian()
-	let (nonce) = read_4_bytes()
-
-	let (target) = bits_to_target(bits)
+	let (version)			= read_uint32()
+	let (prev_block_hash)	= read_hash()
+	let (merkle_root_hash)	= read_hash()
+	let (time) 				= read_uint32()
+	let (bits) 				= read_uint32()
+	let (nonce) 			= read_uint32()
 
 	let result = BlockHeader(
-		version, hash_prev_block, hash_merkle_root, time, bits, nonce,
-		block_hash, target) 
+		version, prev_block_hash, merkle_root_hash, time, bits, nonce) 
+
+	return (result)
+end
+
+struct BlockHeaderValidationContext:
+	member block_header_raw: felt*
+	member block_header: BlockHeader
+	member block_hash : felt*
+	member target : felt
+	# member prev_header_context : BlockHeaderValidationContext*
+end
+
+func read_block_header_validation_context{reader: Reader, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
+	# prev_header_context: BlockHeaderValidationContext* 
+	) -> (result : BlockHeaderValidationContext):
+	alloc_locals
+
+	let block_header_raw = reader.head
+
+	let (block_hash) = _compute_double_sha256(
+		FELT_SIZE_OF_BLOCK_HEADER, block_header_raw, SIZE_OF_BLOCK_HEADER)
+	
+	let (block_header) = read_block_header()
+	
+	let (target) = bits_to_target(block_header.bits)
+
+	let result = BlockHeaderValidationContext(
+		block_header_raw, block_header, block_hash, target, 
+		# prev_header_context
+		)
 
 	return (result)
 end
@@ -77,6 +96,6 @@ func bits_to_target{range_check_ptr}(bits) -> (target: felt):
     let (exponent, significand) = unsigned_div_rem(bits, 2**24)
     
     # Compute the target via exponentiation of significand and exponent
-    let (tmp) = pow(2**8 , exponent - 3)
+    let (tmp) = pow(2**8, exponent - 3)
     return (significand * tmp)
 end

@@ -6,7 +6,111 @@
 %lang starknet
 
 from starkware.cairo.common.alloc import alloc
-from src.buffer import flush_writer, init_writer, write_byte, write_4_bytes, init_reader, read_byte, read_2_bytes, read_3_bytes, read_4_bytes, read_8_bytes_endian, read_4_bytes_endian, read_bytes
+from src.buffer import flush_writer, init_writer, write_uint8, write_uint32_endian, init_reader, read_uint8, read_uint16, read_uint32, read_uint64, read_varint, read_bytes_endian, read_uint32_endian
+
+
+@external
+func test_read_uint8{range_check_ptr}():
+    alloc_locals
+
+    let (array) = alloc()
+    assert array[0] = 0x01020304
+    assert array[1] = 0x05000000
+    
+    let (reader) = init_reader(array)
+    
+    let (uint8_1) = read_uint8{reader = reader}()
+    assert uint8_1 = 0x01
+
+    let (uint8_2) = read_uint8{reader = reader}()
+    assert uint8_2 = 0x02
+
+    let (uint8_3) = read_uint8{reader = reader}()
+    assert uint8_3 = 0x03
+
+    let (uint8_4) = read_uint8{reader = reader}()
+    assert uint8_4 = 0x04
+
+    let (uint8_5) = read_uint8{reader = reader}()
+    assert uint8_5 = 0x05
+    
+    return ()
+end
+
+@external
+func test_read_uint16{range_check_ptr}():
+    alloc_locals
+
+    let (array) = alloc()
+    assert array[0] = 0x01020304
+    
+    let (reader) = init_reader(array)
+    
+    let (uint16) = read_uint16{reader = reader}()
+    assert uint16 = 0x0201
+    
+    return ()
+end
+
+@external
+func test_read_uint32{range_check_ptr}():
+    alloc_locals
+
+    let (array) = alloc()
+    assert array[0] = 0x01020304
+    
+    let (reader) = init_reader(array)
+    
+    let (uint32) = read_uint32{reader = reader}()
+    assert uint32 = 0x04030201
+    
+    return ()
+end
+
+@external
+func test_read_uint64{range_check_ptr}():
+    alloc_locals
+
+    let (array) = alloc()
+    assert array[0] = 0x00e40b54
+    assert array[1] = 0x02000000
+    
+    let (reader) = init_reader(array)
+    
+    let (uint64) = read_uint64{reader = reader}()
+    assert uint64 = 10000000000
+    
+    return ()
+end
+
+@external
+func test_read_varint{range_check_ptr}():
+    alloc_locals
+
+    let (array) = alloc()
+    assert array[0] = 0x01fd0102
+    assert array[1] = 0xfe010203
+    assert array[2] = 0x04ff0102
+    assert array[3] = 0x03040506
+    assert array[4] = 0x07080000
+    
+    let (reader) = init_reader(array)
+    
+    let (varint_uint8) = read_varint{reader = reader}()
+    assert varint_uint8 = 0x01
+    
+    let (varint_uint16) = read_varint{reader = reader}()
+    assert varint_uint16 = 0x0201
+
+    let (varint_uint32) = read_varint{reader = reader}()
+    assert varint_uint32 = 0x04030201
+
+    let (varint_uint64) = read_varint{reader = reader}()
+    assert varint_uint64 = 0x0807060504030201
+    
+    return ()
+end
+
 
 
 @external
@@ -20,17 +124,17 @@ func test_read_bytes{range_check_ptr}():
     
     let (reader) = init_reader(array)
     
-    let (byte1) = read_byte{reader = reader}()
-    let (byte2) = read_byte{reader = reader}()
-    let (bytes4) = read_4_bytes{reader = reader}()
-    let (bytes4_endian) = read_4_bytes_endian{reader = reader}()
-    let (bytes2) = read_2_bytes{reader = reader}()  # read the complete buffer until the last byte
+    let (byte1) = read_uint8{reader = reader}()
+    let (byte2) = read_uint8{reader = reader}()
+    let (bytes4) = read_uint32_endian{reader = reader}()
+    let (bytes4_endian) = read_uint32{reader = reader}()
+    let (bytes2) = read_uint16{reader = reader}()  # read the complete buffer until the last byte
 
     assert byte1 = 0x01
     assert byte2 = 0x02
     assert bytes4 = 0x03040506
     assert bytes4_endian = 0x0a090807
-    assert bytes2 = 0x0b0c
+    assert bytes2 = 0x0c0b
 
     return ()
 end
@@ -50,10 +154,10 @@ func test_read_bytes_into_felt{range_check_ptr}():
     
     let (reader) = init_reader(array)
     
-    let (bytes3) = read_bytes{reader = reader}(3)
-    let (bytes5) = read_bytes{reader = reader}(5)
-    let (bytes6) = read_bytes{reader = reader}(6)
-    let (bytes7) = read_bytes{reader = reader}(7)
+    let (bytes3) = read_bytes_endian{reader = reader}(3)
+    let (bytes5) = read_bytes_endian{reader = reader}(5)
+    let (bytes6) = read_bytes_endian{reader = reader}(6)
+    let (bytes7) = read_bytes_endian{reader = reader}(7)
 
     assert bytes3[0] = 0x010203
 
@@ -71,29 +175,26 @@ end
 
 
 @external
-func test_read_2_3_4_8_bytes{range_check_ptr}():
+func test_read_2_4_8_bytes{range_check_ptr}():
     alloc_locals
 
     let (array) = alloc()
     assert array[0] = 0x01020304
-    assert array[1] = 0x05060708
-    assert array[2] = 0x0900e40b
-    assert array[3] = 0x54020000
-    assert array[4] = 0x00121314
-    assert array[5] = 0x15161718
+    assert array[1] = 0x050600e4
+    assert array[2] = 0x0b540200
+    assert array[3] = 0x00000000
     
     let (reader) = init_reader(array)
     
-    let (bytes2) = read_2_bytes{reader = reader}()
-    let (bytes3) = read_3_bytes{reader = reader}()
-    let (bytes4) = read_4_bytes{reader = reader}()
-    let (bytes8) = read_8_bytes_endian{reader = reader}()
+    let (bytes2) = read_uint16{reader = reader}()
+    assert bytes2 = 0x0201
+    
+    let (bytes4) = read_uint32{reader = reader}()
+    assert bytes4 = 0x06050403
 
-    assert bytes2 = 0x0102
-    assert bytes3 = 0x030405
-    assert bytes4 = 0x06070809
-    assert bytes8 = 10000000000 # endian(0x00e40b5402000000)
-   
+    let (bytes8) = read_uint64{reader = reader}()
+    assert bytes8 = 10000000000
+
     return ()
 end
 
@@ -102,9 +203,9 @@ func test_writer{range_check_ptr}():
     alloc_locals
     let (array) = alloc()
     let (writer) = init_writer(array)
-    write_byte{writer = writer}(0x01)
-    write_4_bytes{writer = writer}(0x02030405)
-    write_4_bytes{writer = writer}(0x06070809)
+    write_uint8{writer = writer}(0x01)
+    write_uint32_endian{writer = writer}(0x02030405)
+    write_uint32_endian{writer = writer}(0x06070809)
     flush_writer(writer)
     
     assert array[0] = 0x01020304

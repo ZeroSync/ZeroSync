@@ -5,15 +5,15 @@ from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.bitwise import bitwise_and
 from starkware.cairo.common.memcpy import memcpy
 
-# A 256-bit hash is represented as an array of eight 32-bit unsigned integers
+# A 256-bit hash is represented as an array of 8 x Uint32
 const HASH_LEN = 8
 # A hash has 32 bytes
 const N_BYTES_HASH = 32
 
-# Convert an array of 8 x 32-bit unsigned integers to a Uint256
+# Convert an array of 8 x Uint32 to an Uint256
 func array_to_uint256(array: felt*) -> (result: Uint256):
-    let low  = array[3] + array[2] * 2**32 + array[1] * 2**64 + array[0] * 2**96
-    let high = array[7] + array[6] * 2**32 + array[5] * 2**64 + array[4] * 2**96
+    let low  = array[0] * 2**96 + array[1] * 2**64 + array[2] * 2**32 + array[3]
+    let high = array[4] * 2**96 + array[5] * 2**64 + array[6] * 2**32 + array[7]
     let result = Uint256(low, high)
     return (result)
 end
@@ -27,8 +27,7 @@ func _compute_double_sha256{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
     return (hash_second_round)
 end
 
-# Compute double sha256 hash of the input 
-# given as an array of 32-bit unsigned integers
+# Compute double sha256 hash of the input given as an array of Uint32 
 # and returns a Uint256.
 func compute_double_sha256{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
     input_len : felt, input : felt*, n_bytes : felt
@@ -46,7 +45,7 @@ func to_uint256{range_check_ptr}(input: felt) -> (output: Uint256):
     return (result)
 end
 
-# Convert 32-bit unsigned integer to big endian
+# Convert Uint32 to big endian
 func to_big_endian{bitwise_ptr : BitwiseBuiltin*}(a : felt) -> (result : felt):
     let (byte1) = bitwise_and(a, 0x000000FF)
     let (byte2) = bitwise_and(a, 0x0000FF00)
@@ -56,14 +55,14 @@ func to_big_endian{bitwise_ptr : BitwiseBuiltin*}(a : felt) -> (result : felt):
     return (result)
 end
 
-# Copy a hash represented as 8 x 32-bit unsigned integers. 
+# Copy a hash represented as 8 x Uint32. 
 # Starts reading at `source` and writes to `destination`
 func copy_hash(source: felt*, destination: felt*):
     memcpy(destination, source, HASH_LEN)
     return ()
 end
 
-# Assert equality of two hashes represented as eight 32-bit unsigned integers
+# Assert equality of two hashes represented as an array of 8 x Uint32
 func assert_hashes_equal(hash1: felt*, hash2: felt*):
     assert hash1[0] = hash2[0]
     assert hash1[1] = hash2[1]
