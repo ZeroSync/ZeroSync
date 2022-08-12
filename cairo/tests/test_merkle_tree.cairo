@@ -20,7 +20,8 @@ from tests.utils_for_testing import setup_hashes
 func test_compute_merkle_root{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
     alloc_locals
     # Call setup_hashes at least once to make sure the python functions for the next hint are defined
-    let (leaves) = setup_hashes()
+    setup_hashes()
+    let (leaves) = alloc()
     let (root_expected) = alloc()
     local leaves_len
     %{
@@ -47,20 +48,20 @@ end
 @external
 func test_compute_merkle_root_power_of_2{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
     alloc_locals
-
-    let (leaves) = setup_hashes()
+    setup_hashes()
+    let (leaves) = alloc()
     let (root_expected) = alloc()
     local leaves_len
     %{
         hashes = [
-             "04a2808134e646ba67ff83f0bc7535a008b6e154c98953f5e2c9d40429880faf",
-             "b6b3ff7b4d004a788c751f3f8fc881f96c7b647ae06eb9a720bddc924e6f9147",
-             "e614ebb7e059e248e1f4c440f91af5c9617394a05d72233d7acf6feb153362f1",
-             "5bbc4545145126108c91689e62c1806646468c547999241f5c2883a526e015b6",
-             "de56c21783d3d466c0a5a155ed909c7011879df1996d8c418dac74465ebc3564",
-             "d327f96d32afdbf4238458684570189de26ba5dc300d5cd19fa1a9cdcecdb527",
-             "702c3d845810f31c194e7c9ea3d2b3636f3b8b9ee71f3d93a2f36e9d1a4e9a81",
-             "b320e44b0e4cbe5973b4ebdea0c63939f9cc196982e3f4d15daaa1baa16f0004"
+            "04a2808134e646ba67ff83f0bc7535a008b6e154c98953f5e2c9d40429880faf",
+            "b6b3ff7b4d004a788c751f3f8fc881f96c7b647ae06eb9a720bddc924e6f9147",
+            "e614ebb7e059e248e1f4c440f91af5c9617394a05d72233d7acf6feb153362f1",
+            "5bbc4545145126108c91689e62c1806646468c547999241f5c2883a526e015b6",
+            "de56c21783d3d466c0a5a155ed909c7011879df1996d8c418dac74465ebc3564",
+            "d327f96d32afdbf4238458684570189de26ba5dc300d5cd19fa1a9cdcecdb527",
+            "702c3d845810f31c194e7c9ea3d2b3636f3b8b9ee71f3d93a2f36e9d1a4e9a81",
+            "b320e44b0e4cbe5973b4ebdea0c63939f9cc196982e3f4d15daaa1baa16f0004"
         ]
         root_expected = ["0b0192e318af62f8f91243948ea4c7ea9d696197e88b9401bce35ecb0a0cb59b"]
 
@@ -80,8 +81,8 @@ end
 @external
 func test_compute_merkle_root_uneven{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
     alloc_locals
-
-    let (leaves) = setup_hashes()
+    setup_hashes()
+    let (leaves) = alloc()
     let (root_expected) = alloc()
     local leaves_len
     %{

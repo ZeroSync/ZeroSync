@@ -1,9 +1,5 @@
-
-from starkware.cairo.common.alloc import alloc
 # Defines write_hashes for tests
-func setup_hashes() -> (leaves : felt*):
-    let (ptr) = alloc()
-
+func setup_hashes():
     %{
         import re
 
@@ -23,5 +19,5 @@ func setup_hashes() -> (leaves : felt*):
             for i, tx_hash in enumerate(hashes):
                 segments.write_arg(destination + i*8, hex_to_felt(tx_hash))
     %}
-    return (ptr)
+    return ()
 end

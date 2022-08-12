@@ -19,12 +19,3 @@ func test_get_block{bitwise_ptr : BitwiseBuiltin*, range_check_ptr}():
     # TODO check prevHash and when included in the Block struct the merkle Root
     return ()
 end
-
-@external
-func test_bits_to_target{bitwise_ptr : BitwiseBuiltin*, range_check_ptr}():
-    alloc_locals
-    let bits = 0x181bc330
-    let (target) = bits_to_target(bits)
-    assert target = 0x1bc330000000000000000000000000000000000000000000
-    return ()
-end

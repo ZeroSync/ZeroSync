@@ -104,6 +104,11 @@ func read_8_bytes_endian{reader: Reader, range_check_ptr, bitwise_ptr : BitwiseB
     return (uint32_1 * 2**32 + uint32_0)
 end
 
+func read_hash{reader: Reader, range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
+    ) -> (result: felt*):
+    return read_bytes(32)
+end
+
 struct Writer:
     member pointer : felt*
     member offset : felt
@@ -150,3 +155,28 @@ func write_4_bytes{writer: Writer, range_check_ptr}(source):
     return ()
 end
 
+
+func write_4_bytes_endian{writer: Writer, range_check_ptr}(source):
+    alloc_locals
+    let (uint24,  uint8_0) = unsigned_div_rem(source,  2**8)
+    let (uint16,  uint8_1) = unsigned_div_rem(uint24,  2**8)
+    let (uint8_3, uint8_2) = unsigned_div_rem(uint16,  2**8)
+    write_byte(uint8_0)
+    write_byte(uint8_1)
+    write_byte(uint8_2)
+    write_byte(uint8_3)
+    return ()
+end
+
+
+func write_hash{ writer: Writer, range_check_ptr}(source: felt*):
+    write_4_bytes(source[0])
+    write_4_bytes(source[1])
+    write_4_bytes(source[2])
+    write_4_bytes(source[3])
+    write_4_bytes(source[4])
+    write_4_bytes(source[5])
+    write_4_bytes(source[6])
+    write_4_bytes(source[7])
+    return ()
+end
