@@ -26,15 +26,13 @@ func test_compute_merkle_root{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
     local leaves_len
     %{
         # For new test cases simply change the hashes and root_expected lists
-        hashes = [
+        ids.leaves_len = write_hashes([
             "b1fea52486ce0c62bb442b530a3f0132b826c74e473d1f2c220bfa78111c5082",
             "f4184fc596403b9d638783cf57adfe4c75c605f6356fbc91338530e9831e9e16"
-        ]
-        root_expected = ["7dac2c5666815c17a3b36427de37bb9d2e2c5ccec3f8633eb91a4205cb4c10ff"]
-
-        write_hashes(hashes, ids.leaves)
-        write_hashes(root_expected, ids.root_expected)
-        ids.leaves_len = len(hashes)
+        ], ids.leaves)
+        write_hashes([
+            "7dac2c5666815c17a3b36427de37bb9d2e2c5ccec3f8633eb91a4205cb4c10ff"
+        ], ids.root_expected)
     %}
 
     let (root) = compute_merkle_root(leaves, leaves_len)
@@ -53,7 +51,7 @@ func test_compute_merkle_root_power_of_2{range_check_ptr, bitwise_ptr : BitwiseB
     let (root_expected) = alloc()
     local leaves_len
     %{
-        hashes = [
+        ids.leaves_len = write_hashes([
             "04a2808134e646ba67ff83f0bc7535a008b6e154c98953f5e2c9d40429880faf",
             "b6b3ff7b4d004a788c751f3f8fc881f96c7b647ae06eb9a720bddc924e6f9147",
             "e614ebb7e059e248e1f4c440f91af5c9617394a05d72233d7acf6feb153362f1",
@@ -62,12 +60,11 @@ func test_compute_merkle_root_power_of_2{range_check_ptr, bitwise_ptr : BitwiseB
             "d327f96d32afdbf4238458684570189de26ba5dc300d5cd19fa1a9cdcecdb527",
             "702c3d845810f31c194e7c9ea3d2b3636f3b8b9ee71f3d93a2f36e9d1a4e9a81",
             "b320e44b0e4cbe5973b4ebdea0c63939f9cc196982e3f4d15daaa1baa16f0004"
-        ]
-        root_expected = ["0b0192e318af62f8f91243948ea4c7ea9d696197e88b9401bce35ecb0a0cb59b"]
+        ], ids.leaves)
 
-        write_hashes(hashes, ids.leaves)
-        write_hashes(root_expected, ids.root_expected)
-        ids.leaves_len = len(hashes)
+        write_hashes([
+            "0b0192e318af62f8f91243948ea4c7ea9d696197e88b9401bce35ecb0a0cb59b"
+        ], ids.root_expected)
     %}
 
     let (root) = compute_merkle_root(leaves, leaves_len)
@@ -86,7 +83,7 @@ func test_compute_merkle_root_uneven{range_check_ptr, bitwise_ptr : BitwiseBuilt
     let (root_expected) = alloc()
     local leaves_len
     %{
-        hashes = [
+        ids.leaves_len = write_hashes([
             "df70f26b6df54332ad29c08aab5e5d5560d1468311e90484ebd89f87ac6264e8",
             "2148314cd02237786abe127f23b7346df8a116a2851745cb987652a3e132fc50",
             "06c303894833eb5d639f06f95ceb2c4bd08e0ab4ae1d94cccfa54f02e9b35990",
@@ -100,12 +97,11 @@ func test_compute_merkle_root_uneven{range_check_ptr, bitwise_ptr : BitwiseBuilt
             "acd706cdbe74f82040cc583e42dfc28d8603c2f7d2fe29c0d41ee2e8d78be51b",
             "c7be55d3b55bd59f1ca19d2dc3ffbe8c28917c9e27f02456872755215b4b8a1f",
             "e323fe6719e707b8deb108d3f4bcc43d9e018cf48e027b8f88941886a0744f60"
-        ]
-        root_expected = ["560a4d3b44e57ff78be70d29698a8f98ce11677c1a59fb9966a7cd1795c9b47b"]
-
-        write_hashes(hashes, ids.leaves)
-        write_hashes(root_expected, ids.root_expected)
-        ids.leaves_len = len(hashes)
+        ], ids.leaves)
+        
+        write_hashes([
+            "560a4d3b44e57ff78be70d29698a8f98ce11677c1a59fb9966a7cd1795c9b47b"
+        ], ids.root_expected)
     %}
 
     let (root) = compute_merkle_root(leaves, leaves_len)

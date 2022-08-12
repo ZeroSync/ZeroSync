@@ -121,16 +121,18 @@ func init_writer(array: felt*) -> (writer : Writer):
 end 
 
 # Any unwritten data in the writer's temporary memory is written to the writer.
-func flush_writer( writer: Writer ):
-    assert [writer.pointer] = writer.temp
+func flush_writer{range_check_ptr}( writer: Writer): 
+    # Write what's left in our writer 
+    # Then fill up the uint with zeros
+    let (base) = pow(2**8, 4 - writer.offset)
+    assert [writer.pointer] = writer.temp * base
     return ()
 end
 
-func write_byte{writer: Writer, range_check_ptr}(source):
+func write_byte{writer: Writer}(source):
     alloc_locals
     
-    let (masked_value) = pow(2**8, 3 - writer.offset)
-    let value = writer.temp + masked_value * source
+    let value =  writer.temp * 2**8 + source
     
     let offset = writer.offset + 1
     if offset == 4:

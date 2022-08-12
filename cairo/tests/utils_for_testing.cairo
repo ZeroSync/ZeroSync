@@ -18,6 +18,7 @@ func setup_hashes():
         def write_hashes(hashes, destination):
             for i, tx_hash in enumerate(hashes):
                 segments.write_arg(destination + i*8, hex_to_felt(tx_hash))
+            return len(hashes)
     %}
     return ()
 end

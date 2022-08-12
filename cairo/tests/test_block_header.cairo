@@ -9,19 +9,21 @@ from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.memcpy import memcpy
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from tests.utils_for_testing import setup_hashes
-from buffer import init_reader, init_writer
+from buffer import init_reader, init_writer, flush_writer
 from utils import assert_hashes_equal
-from block_header import read_block_header, write_block_header, bits_to_target
+from block_header import read_block_header, write_block_header, bits_to_target, FELT_SIZE_OF_BLOCK_HEADER
 
 @external
 func test_serialize_block_header{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
     # Block Header example 
-    # Copied from: https://developer.bitcoin.org/reference/block_chain.html#block-headers
-    # Copied from: https://blockstream.info/block/000000000000000009a11b3972c8e532fe964de937c9e0096b43814e67af3728
+    # Copied from:
+    # https://developer.bitcoin.org/reference/block_chain.html#block-headers
+    # https://blockstream.info/block/000000000000000009a11b3972c8e532fe964de937c9e0096b43814e67af3728
     alloc_locals
     setup_hashes()
 
     let (array) = alloc()
+    # TODO: retrieve the header from python
     assert array[0]  = 0x02000000
     assert array[1]  = 0xb6ff0b1b
     assert array[2]  = 0x1680a286
@@ -51,10 +53,11 @@ func test_serialize_block_header{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}
     let (block_header_serialized) = alloc()
     let (writer) = init_writer(block_header_serialized)
     write_block_header{writer=writer}(block_header)
+    flush_writer(writer)
 
-    # Attention! Check equality properly. If `array` is empty then we perform a copy here
-    # and the test succeeds even though it should fail
-    memcpy(array, block_header_serialized, 20) 
+    # Caution! Check equality properly. If `array` is empty then we perform a copy here
+    # and the test succeeds even though it should fail!
+    memcpy(array, block_header_serialized, FELT_SIZE_OF_BLOCK_HEADER) 
     
     let (block_hash_expected) = alloc()
     %{
