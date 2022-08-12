@@ -25,51 +25,51 @@ func read_bytes{reader: Reader, range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
 
     let (result) = alloc()
     let (len_div_4, len_mod_4) = unsigned_div_rem(length, 4)
-    _read_4_bytes_into_array_loop(result, len_div_4)
-    _read_n_bytes_into_felt_loop(result + len_div_4, 0, len_mod_4)
+    _read_4_byte_chunks_into_array(result, len_div_4)
+    _read_n_bytes_into_felt(result + len_div_4, 0, len_mod_4)
 
     return (result)
 end
 
-func _read_4_bytes_into_array_loop{reader: Reader, range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
+func _read_4_byte_chunks_into_array{reader: Reader, range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
     output: felt*, loop_counter):
     if loop_counter == 0:
         return ()
     end
-    _read_n_bytes_into_felt_loop(output, 0, 4)
-    _read_4_bytes_into_array_loop(output + 1, loop_counter-1)
+    _read_n_bytes_into_felt(output, 0, 4)
+    _read_4_byte_chunks_into_array(output + 1, loop_counter-1)
     return ()
 end
 
-func _read_n_bytes_into_felt_loop{reader: Reader, range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
+func _read_n_bytes_into_felt{reader: Reader, range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
     output: felt*, value, loop_counter):
     if loop_counter == 0:
         assert [output] = value
         return ()
     end
     let (byte) = read_byte()
-    _read_n_bytes_into_felt_loop(output, value * 2**8 + byte, loop_counter-1)
+    _read_n_bytes_into_felt(output, value * 2**8 + byte, loop_counter-1)
     return ()
 end
 
-func read_bytes4{reader: Reader, range_check_ptr, bitwise_ptr : BitwiseBuiltin*}() -> (result: felt):
+func read_4_bytes{reader: Reader, range_check_ptr, bitwise_ptr : BitwiseBuiltin*}() -> (result: felt):
     alloc_locals
     let (result) = alloc()
-    _read_n_bytes_into_felt_loop(result, 0, 4)
+    _read_n_bytes_into_felt(result, 0, 4)
     return ([result])
 end
 
-func read_bytes3{reader: Reader, range_check_ptr, bitwise_ptr : BitwiseBuiltin*}() -> (result: felt):
+func read_3_bytes{reader: Reader, range_check_ptr, bitwise_ptr : BitwiseBuiltin*}() -> (result: felt):
     alloc_locals
     let (result) = alloc()
-    _read_n_bytes_into_felt_loop(result, 0, 3)
+    _read_n_bytes_into_felt(result, 0, 3)
     return ([result])
 end
 
-func read_bytes2{reader: Reader, range_check_ptr, bitwise_ptr : BitwiseBuiltin*}() -> (result: felt):
+func read_2_bytes{reader: Reader, range_check_ptr, bitwise_ptr : BitwiseBuiltin*}() -> (result: felt):
     alloc_locals
     let (result) = alloc()
-    _read_n_bytes_into_felt_loop(result, 0, 2)
+    _read_n_bytes_into_felt(result, 0, 2)
     return ([result])
 end 
 
@@ -88,7 +88,7 @@ func read_byte{reader: Reader, range_check_ptr, bitwise_ptr : BitwiseBuiltin*}()
     return (byte)
 end
 
-func read_bytes4_endian{reader: Reader, range_check_ptr, bitwise_ptr : BitwiseBuiltin*}() -> (result: felt):
+func read_4_bytes_endian{reader: Reader, range_check_ptr, bitwise_ptr : BitwiseBuiltin*}() -> (result: felt):
     alloc_locals
     let (uint8_0) = read_byte()
     let (uint8_1) = read_byte()
@@ -97,10 +97,10 @@ func read_bytes4_endian{reader: Reader, range_check_ptr, bitwise_ptr : BitwiseBu
     return (uint8_3 * 2**24 + uint8_2 * 2**16 + uint8_1 * 2**8 + uint8_0)
 end 
 
-func read_bytes8_endian{reader: Reader, range_check_ptr, bitwise_ptr : BitwiseBuiltin*}() -> (result: felt):
+func read_8_bytes_endian{reader: Reader, range_check_ptr, bitwise_ptr : BitwiseBuiltin*}() -> (result: felt):
     alloc_locals
-    let (uint32_0) = read_bytes4_endian()
-    let (uint32_1) = read_bytes4_endian()
+    let (uint32_0) = read_4_bytes_endian()
+    let (uint32_1) = read_4_bytes_endian()
     return (uint32_1 * 2**32 + uint32_0)
 end
 
@@ -138,7 +138,7 @@ func write_byte{writer: Writer, range_check_ptr}(source):
     return ()
 end
 
-func write_bytes4{writer: Writer, range_check_ptr}(source):
+func write_4_bytes{writer: Writer, range_check_ptr}(source):
     alloc_locals
     let (uint24,  uint8_3) = unsigned_div_rem(source,  2**8)
     let (uint16,  uint8_2) = unsigned_div_rem(uint24,  2**8)

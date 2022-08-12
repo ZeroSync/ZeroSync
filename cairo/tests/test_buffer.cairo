@@ -7,7 +7,7 @@
 
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
-from src.buffer import flush_writer, init_writer, write_byte, write_bytes4, init_reader, read_byte, read_bytes2, read_bytes3, read_bytes4, read_bytes8_endian, read_bytes4_endian, read_bytes
+from src.buffer import flush_writer, init_writer, write_byte, write_4_bytes, init_reader, read_byte, read_2_bytes, read_3_bytes, read_4_bytes, read_8_bytes_endian, read_4_bytes_endian, read_bytes
 
 
 @external
@@ -24,8 +24,8 @@ func test_read_bytes{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
     
     let (byte1) = read_byte{reader = reader}()
     let (byte2) = read_byte{reader = reader}()
-    let (bytes4) = read_bytes4{reader = reader}()
-    let (bytes4_endian) = read_bytes4_endian{reader = reader}()
+    let (bytes4) = read_4_bytes{reader = reader}()
+    let (bytes4_endian) = read_4_bytes_endian{reader = reader}()
     
     assert byte1 = 0x01
     assert byte2 = 0x02
@@ -84,10 +84,10 @@ func test_read_2_3_4_8_bytes{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
     
     let (reader) = init_reader(array)
     
-    let (bytes2) = read_bytes2{reader = reader}()
-    let (bytes3) = read_bytes3{reader = reader}()
-    let (bytes4) = read_bytes4{reader = reader}()
-    let (bytes8) = read_bytes8_endian{reader = reader}()
+    let (bytes2) = read_2_bytes{reader = reader}()
+    let (bytes3) = read_3_bytes{reader = reader}()
+    let (bytes4) = read_4_bytes{reader = reader}()
+    let (bytes8) = read_8_bytes_endian{reader = reader}()
 
     assert bytes2 = 0x0102
     assert bytes3 = 0x030405
@@ -103,8 +103,8 @@ func test_writer{range_check_ptr}():
     let (array) = alloc()
     let (writer) = init_writer(array)
     write_byte{writer = writer}(0x01)
-    write_bytes4{writer = writer}(0x02030405)
-    write_bytes4{writer = writer}(0x06070809)
+    write_4_bytes{writer = writer}(0x02030405)
+    write_4_bytes{writer = writer}(0x06070809)
     flush_writer(writer)
     
     assert array[0] = 0x01020304
