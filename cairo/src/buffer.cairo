@@ -6,20 +6,32 @@
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.pow import pow
 from starkware.cairo.common.math import unsigned_div_rem
-from starkware.cairo.common.bitwise import bitwise_and
-from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 
 struct Reader: 
     member pointer : felt*
     member offset : felt
+    member payload : felt
 end
 
 func init_reader(array: felt*) -> (reader : Reader):
-    let reader = Reader(array, 0)
+    # Read the first element into payload
+    let reader = Reader(array, 0, 0)
     return (reader)
 end 
 
-func read_bytes{reader: Reader, range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
+func read_byte{reader: Reader, range_check_ptr}() -> (byte: felt):
+    if reader.offset == 0:
+        let (byte, payload) = unsigned_div_rem([reader.pointer], 2**24)
+        tempvar reader = Reader(reader.pointer + 1, 3, payload * 2**8)
+        return (byte)
+    else: 
+        let (byte, payload) = unsigned_div_rem(reader.payload, 2**24)
+        tempvar reader = Reader(reader.pointer, reader.offset - 1, payload * 2**8)
+        return (byte)
+    end
+end
+
+func read_bytes{reader: Reader, range_check_ptr}(
     length:felt) -> (result: felt*):
     alloc_locals
 
@@ -31,7 +43,7 @@ func read_bytes{reader: Reader, range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
     return (result)
 end
 
-func _read_4_byte_chunks_into_array{reader: Reader, range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
+func _read_4_byte_chunks_into_array{reader: Reader, range_check_ptr}(
     output: felt*, loop_counter):
     if loop_counter == 0:
         return ()
@@ -41,7 +53,7 @@ func _read_4_byte_chunks_into_array{reader: Reader, range_check_ptr, bitwise_ptr
     return ()
 end
 
-func _read_n_bytes_into_felt{reader: Reader, range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
+func _read_n_bytes_into_felt{reader: Reader, range_check_ptr}(
     output: felt*, value, loop_counter):
     if loop_counter == 0:
         assert [output] = value
@@ -52,43 +64,30 @@ func _read_n_bytes_into_felt{reader: Reader, range_check_ptr, bitwise_ptr : Bitw
     return ()
 end
 
-func read_4_bytes{reader: Reader, range_check_ptr, bitwise_ptr : BitwiseBuiltin*}() -> (result: felt):
+func read_4_bytes{reader: Reader, range_check_ptr}() -> (result: felt):
     alloc_locals
     let (result) = alloc()
     _read_n_bytes_into_felt(result, 0, 4)
     return ([result])
 end
 
-func read_3_bytes{reader: Reader, range_check_ptr, bitwise_ptr : BitwiseBuiltin*}() -> (result: felt):
+func read_3_bytes{reader: Reader, range_check_ptr}() -> (result: felt):
     alloc_locals
     let (result) = alloc()
     _read_n_bytes_into_felt(result, 0, 3)
     return ([result])
 end
 
-func read_2_bytes{reader: Reader, range_check_ptr, bitwise_ptr : BitwiseBuiltin*}() -> (result: felt):
+func read_2_bytes{reader: Reader, range_check_ptr}() -> (result: felt):
     alloc_locals
     let (result) = alloc()
     _read_n_bytes_into_felt(result, 0, 2)
     return ([result])
 end 
 
-func read_byte{reader: Reader, range_check_ptr, bitwise_ptr : BitwiseBuiltin*}() -> (byte: felt):
-    let (tmp1) = pow(2**8, 3 - reader.offset)
-    let (tmp2) = bitwise_and([reader.pointer], 0xff * tmp1) 
-    let byte = tmp2 / tmp1
 
-    let offset = reader.offset + 1
-    if offset == 4:
-        tempvar reader = Reader(reader.pointer + 1, 0)
-    else: 
-        tempvar reader = Reader(reader.pointer, offset)
-    end
 
-    return (byte)
-end
-
-func read_4_bytes_endian{reader: Reader, range_check_ptr, bitwise_ptr : BitwiseBuiltin*}() -> (result: felt):
+func read_4_bytes_endian{reader: Reader, range_check_ptr}() -> (result: felt):
     alloc_locals
     let (uint8_0) = read_byte()
     let (uint8_1) = read_byte()
@@ -97,14 +96,14 @@ func read_4_bytes_endian{reader: Reader, range_check_ptr, bitwise_ptr : BitwiseB
     return (uint8_3 * 2**24 + uint8_2 * 2**16 + uint8_1 * 2**8 + uint8_0)
 end 
 
-func read_8_bytes_endian{reader: Reader, range_check_ptr, bitwise_ptr : BitwiseBuiltin*}() -> (result: felt):
+func read_8_bytes_endian{reader: Reader, range_check_ptr}() -> (result: felt):
     alloc_locals
     let (uint32_0) = read_4_bytes_endian()
     let (uint32_1) = read_4_bytes_endian()
     return (uint32_1 * 2**32 + uint32_0)
 end
 
-func read_hash{reader: Reader, range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
+func read_hash{reader: Reader, range_check_ptr}(
     ) -> (result: felt*):
     return read_bytes(32)
 end

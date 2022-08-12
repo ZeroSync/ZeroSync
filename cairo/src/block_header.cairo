@@ -25,7 +25,7 @@ end
 
 # The size of a block header is 80 bytes
 const SIZE_OF_BLOCK_HEADER = 80
-# The size of a block header encoded as an array of 32-bit integers is 20 felts
+# The size of a block header encoded as an array of 4-byte integers is 20 felts
 const FELT_SIZE_OF_BLOCK_HEADER = SIZE_OF_BLOCK_HEADER / 4
 
 # Write a BlockHeader to a uint32 array

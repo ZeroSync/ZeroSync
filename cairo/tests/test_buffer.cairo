@@ -6,19 +6,17 @@
 %lang starknet
 
 from starkware.cairo.common.alloc import alloc
-from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from src.buffer import flush_writer, init_writer, write_byte, write_4_bytes, init_reader, read_byte, read_2_bytes, read_3_bytes, read_4_bytes, read_8_bytes_endian, read_4_bytes_endian, read_bytes
 
 
 @external
-func test_read_bytes{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
+func test_read_bytes{range_check_ptr}():
     alloc_locals
 
     let (array) = alloc()
     assert array[0] = 0x01020304
     assert array[1] = 0x05060708
     assert array[2] = 0x090a0b0c
-    assert array[3] = 0x0d0e0f10
     
     let (reader) = init_reader(array)
     
@@ -26,18 +24,20 @@ func test_read_bytes{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
     let (byte2) = read_byte{reader = reader}()
     let (bytes4) = read_4_bytes{reader = reader}()
     let (bytes4_endian) = read_4_bytes_endian{reader = reader}()
-    
+    let (bytes2) = read_2_bytes{reader = reader}()  # read the complete buffer until the last byte
+
     assert byte1 = 0x01
     assert byte2 = 0x02
     assert bytes4 = 0x03040506
     assert bytes4_endian = 0x0a090807
-   
+    assert bytes2 = 0x0b0c
+
     return ()
 end
 
 
 @external
-func test_read_bytes_into_felt{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
+func test_read_bytes_into_felt{range_check_ptr}():
     alloc_locals
 
     let (array) = alloc()
@@ -71,7 +71,7 @@ end
 
 
 @external
-func test_read_2_3_4_8_bytes{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
+func test_read_2_3_4_8_bytes{range_check_ptr}():
     alloc_locals
 
     let (array) = alloc()
