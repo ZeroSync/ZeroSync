@@ -109,8 +109,9 @@ func test_read_block_header_validation_context{range_check_ptr, bitwise_ptr : Bi
     
     
     let (reader) = init_reader(array)
-    # local prev_validation_context : BlockHeaderValidationContext
-    let (validation_context) = read_block_header_validation_context{reader=reader}()
+    
+    let (local prev_context : BlockHeaderValidationContext*) = alloc()
+    let (validation_context) = read_block_header_validation_context{reader=reader}(prev_context)
 
     assert validation_context.block_header.version = 0x02
 

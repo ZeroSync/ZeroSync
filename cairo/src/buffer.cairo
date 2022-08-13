@@ -52,29 +52,6 @@ func _read_n_bytes_into_felt{reader: Reader, range_check_ptr}(
     return ()
 end 
 
-func read_bytes{reader: Reader, range_check_ptr}(
-    length:felt) -> (result: felt*):
-    alloc_locals
-
-    let (result) = alloc()
-    let (len_div_4, len_mod_4) = unsigned_div_rem(length, UINT32_SIZE)
-    # Read as many 4-byte chunks as possible into the array 
-    _read_into_uint32_array(result, len_div_4)
-    # Read up to three more bytes
-    _read_n_bytes_into_felt(result + len_div_4, 0, 1, len_mod_4)
-    return (result)
-end
-
-func _read_into_uint32_array{reader: Reader, range_check_ptr}(
-    output: felt*, loop_counter):
-    if loop_counter == 0:
-        return ()
-    end
-    _read_n_bytes_into_felt(output, 0, 1, UINT32_SIZE)
-    _read_into_uint32_array(output + 1, loop_counter - 1)
-    return ()
-end
-
 func read_uint16{reader: Reader, range_check_ptr}() -> (result: felt):
     alloc_locals
     let (result) = alloc()
@@ -99,33 +76,57 @@ end
 # Reads a VarInt from the buffer
 # 
 # See:
-# https://developer.bitcoin.org/reference/transactions.html#compactsize-unsigned-integers
+# - https://developer.bitcoin.org/reference/transactions.html#compactsize-unsigned-integers
 func read_varint{reader: Reader, range_check_ptr}() -> (result: felt):
     # Read the first byte 
-    let (byte) = read_uint8()
+    let (first_byte) = read_uint8()
 
     # Now check how many more bytes we have to read
     
-    if byte == 0xff:
+    if first_byte == 0xff:
         # This varint has 8 more bytes
         let (uint64) = read_uint64()
         return (uint64)
     end
 
-    if byte == 0xfe:
+    if first_byte == 0xfe:
         # This varint has 4 more bytes
         let (uint32) = read_uint32()
         return (uint32)
     end
 
-    if byte == 0xfd:
+    if first_byte == 0xfd:
         # This varint has 2 more bytes
         let (uint16) = read_uint16()
         return (uint16)
     end
     
     # This varint is only 1 byte
-    return (byte)
+    return (first_byte)
+end
+
+func _read_into_uint32_array{reader: Reader, range_check_ptr}(
+    output: felt*, loop_counter):
+    if loop_counter == 0:
+        return ()
+    end
+    _read_n_bytes_into_felt(output, 0, 1, UINT32_SIZE)
+    _read_into_uint32_array(output + 1, loop_counter - 1)
+    return ()
+end
+
+
+func read_bytes{reader: Reader, range_check_ptr}(
+    length:felt) -> (result: felt*):
+    alloc_locals
+
+    let (result) = alloc()
+    let (len_div_4, len_mod_4) = unsigned_div_rem(length, UINT32_SIZE)
+    # Read as many 4-byte chunks as possible into the array 
+    _read_into_uint32_array(result, len_div_4)
+    # Read up to three more bytes
+    _read_n_bytes_into_felt(result + len_div_4, 0, 1, len_mod_4)
+    return (result)
 end
 
 func read_bytes_endian{reader: Reader, range_check_ptr}(
