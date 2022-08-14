@@ -75,7 +75,7 @@ end
 
 # Reads a VarInt from the buffer
 # 
-# See:
+# See also:
 # - https://developer.bitcoin.org/reference/transactions.html#compactsize-unsigned-integers
 func read_varint{reader: Reader, range_check_ptr}() -> (result: felt):
     # Read the first byte 
@@ -186,7 +186,7 @@ end
 # Any unwritten data in the writer's temporary memory is written to the writer.
 func flush_writer{range_check_ptr}(writer: Writer): 
     # Write what's left in our writer 
-    # Then fill up the uint with zeros
+    # Then fill up the uint32 with trailing zeros
     let (base) = pow(BYTE, UINT32_SIZE - writer.offset)
     assert [writer.head] = writer.payload * base
     return ()

@@ -48,6 +48,7 @@ func test_serialize_block_header{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}
     let (reader) = init_reader(array)
     let (block_header) = read_block_header{reader=reader}()
 
+
     # Test block version
     assert block_header.version = 0x02
     
@@ -59,7 +60,7 @@ func test_serialize_block_header{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}
     %}
     assert_hashes_equal(block_header.prev_block_hash, prev_block_hash_expected)
 
-    # TODO: Test more block properties
+    # TODO: Test more block properties here
 
     let (block_header_serialized) = alloc()
     let (writer) = init_writer(block_header_serialized)
@@ -70,7 +71,6 @@ func test_serialize_block_header{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}
     # and the test succeeds even though it should fail!
     memcpy(array, block_header_serialized, FELT_SIZE_OF_BLOCK_HEADER) 
     
-
     return ()
 end
 
@@ -109,7 +109,7 @@ func test_read_block_header_validation_context{range_check_ptr, bitwise_ptr : Bi
     
     
     let (reader) = init_reader(array)
-    
+
     let (local prev_context : BlockHeaderValidationContext*) = alloc()
     let (validation_context) = read_block_header_validation_context{reader=reader}(prev_context)
 
@@ -121,7 +121,6 @@ func test_read_block_header_validation_context{range_check_ptr, bitwise_ptr : Bi
             ids.block_hash_expected)
     %}
     assert_hashes_equal(validation_context.block_hash, block_hash_expected)
-
 
     return ()
 end
