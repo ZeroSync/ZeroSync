@@ -213,3 +213,5 @@ func test_writer{range_check_ptr}():
     assert array[2] = 0x09000000
     return ()
 end
+
+# TODO: test remaining methods of the writer 

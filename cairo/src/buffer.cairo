@@ -2,8 +2,8 @@
 # Functions for reading and writing byte buffers
 # The stream is represented as an array of 32-bit unsigned integers
 # 
-# Inspired by https://github.com/mimblewimble/grin/blob/master/core/src/ser.rs
-#
+# See also:
+# - https://github.com/mimblewimble/grin/blob/master/core/src/ser.rs
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.pow import pow
 from starkware.cairo.common.math import unsigned_div_rem
@@ -21,8 +21,7 @@ struct Reader:
 end
 
 func init_reader(array: felt*) -> (reader : Reader):
-    let reader = Reader(array, 1, 0)
-    return (reader)
+    return (Reader(array, 1, 0))
 end 
 
 func read_uint8{reader: Reader, range_check_ptr}() -> (byte: felt):
@@ -179,8 +178,7 @@ struct Writer:
 end
 
 func init_writer(array: felt*) -> (writer : Writer):
-    let writer = Writer(array, 0, 0)
-    return (writer)
+    return (Writer(array, 0, 0))
 end 
 
 # Any unwritten data in the writer's temporary memory is written to the writer.
@@ -207,6 +205,14 @@ func write_uint8{writer: Writer}(source):
     return ()
 end
 
+func write_uint16{writer: Writer, range_check_ptr}(source):
+    alloc_locals
+    let (uint8_1, uint8_0) = unsigned_div_rem(source, BYTE)
+    write_uint8(uint8_0)
+    write_uint8(uint8_1)
+    return ()
+end
+
 func write_uint32{writer: Writer, range_check_ptr}(source):
     alloc_locals
     let (uint24,  uint8_0) = unsigned_div_rem(source, BYTE)
@@ -218,6 +224,18 @@ func write_uint32{writer: Writer, range_check_ptr}(source):
     write_uint8(uint8_3)
     return ()
 end
+
+func write_uint64{writer: Writer, range_check_ptr}(source: felt):
+    # TODO: implement me
+    assert 1=2
+    return()
+end 
+
+func write_varint{writer: Writer, range_check_ptr}(source: felt):
+    # TODO: implement me
+    assert 1=2
+    return ()
+end 
 
 func write_uint32_endian{writer: Writer, range_check_ptr}(source):
     alloc_locals
@@ -242,5 +260,3 @@ func write_hash{writer: Writer, range_check_ptr}(source: felt*):
     write_uint32_endian(source[7])
     return ()
 end
-
-

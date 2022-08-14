@@ -115,7 +115,7 @@ end
 # Validate this block header correctly extends the current chain
 func validate_prev_block_hash(context: BlockHeaderValidationContext):
 	assert_hashes_equal(context.prev_context.block_hash, context.block_header.prev_block_hash)
-	return()
+	return ()
 end
 
 # Validate this block header's proof-of-work matches its target
@@ -131,10 +131,10 @@ end
 # - https://github.com/bitcoin/bitcoin/blob/7fcf53f7b4524572d1d0c9a5fdc388e87eb02416/src/pow.cpp#L13
 func validate_target(context: BlockHeaderValidationContext):
 	# TODO: implement me
-	return()
+	return ()
 end
 
-# The timestamp in a BlockHeader must be strictly greater 
+# The timestamp of a block header must be strictly greater 
 # than the median time of the previous 11 blocks. 
 # Full nodes will not accept blocks with headers more than two hours in the future 
 # according to their clock.
@@ -148,5 +148,5 @@ func validate_median_time(context: BlockHeaderValidationContext):
 	# Step 2: Use that permutation to create a sorted array of pointers in Cairo
 	# Step 3: Prove sortedness of the sorted array in linear time
 	# Step 4: Read the median from the sorted array
-	return()
+	return ()
 end

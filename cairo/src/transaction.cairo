@@ -27,14 +27,6 @@ struct TxOutput:
 	member script_pub_key: felt*
 end
 
-struct TransactionValidationContext:
-	member transaction: Transaction
-	member transaction_raw: felt*
-	member transaction_raw_size: felt
-	member txid: felt*
-	# member utxo_set_root_hash: felt*
-end
-
 func read_transaction{reader:Reader}() -> (transaction: Transaction):
 	let version		= read_uint32()
 	let inputs_len	= read_varint()
@@ -103,3 +95,20 @@ func read_output{reader:Reader}() -> (output: TxOutput):
 end
 
 
+struct TransactionValidationContext:
+	member transaction: Transaction
+	member transaction_raw: felt*
+	member transaction_raw_size: felt
+	member txid: felt*
+	# member utxo_set_root_hash: felt*
+end
+
+func read_transaction_validation_context{reader:Reader}(
+	) -> (result: TransactionValidationContext):
+	let transaction_raw = reader.head
+	let transaction = read_transaction()
+	let transaction_raw_size = 0 # TODO: implement me
+	let txid = alloc() # TODO: implement me
+	return (TransactionValidationContext(
+		transaction_raw, transaction_raw_size, transaction_raw_size, txid))
+end

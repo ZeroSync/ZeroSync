@@ -110,18 +110,19 @@ func test_read_block_header_validation_context{range_check_ptr, bitwise_ptr : Bi
     
     let (reader) = init_reader(array)
 
-    let (local prev_context : BlockHeaderValidationContext*) = alloc()
-    let (validation_context) = read_block_header_validation_context{reader=reader}(prev_context)
+    let (local prev_context: BlockHeaderValidationContext*) = alloc()
+    let (context) = read_block_header_validation_context{reader=reader}(prev_context)
 
-    assert validation_context.block_header.version = 0x02
+    assert context.block_header.version = 0x02
 
     let (block_hash_expected) = alloc()
     %{
         write_hashes(["000000000000000009a11b3972c8e532fe964de937c9e0096b43814e67af3728"], 
             ids.block_hash_expected)
     %}
-    assert_hashes_equal(validation_context.block_hash, block_hash_expected)
+    assert_hashes_equal(context.block_hash, block_hash_expected)
 
+    assert context.target = 0x1bc330000000000000000000000000000000000000000000
     return ()
 end
 
