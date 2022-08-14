@@ -2,6 +2,7 @@
 #
 # See also:
 # - https://developer.bitcoin.org/reference/transactions.html#raw-transaction-format
+# - https://github.com/coins/research/blob/master/bitcoin-tx.md
 
 struct Transaction:
 	member version: felt
@@ -41,7 +42,8 @@ func read_transaction{reader:Reader}() -> (transaction: Transaction):
 	let outputs_len = read_varint()
 	let outputs 	= read_outputs(outputs_len)
 	let locktime 	= read_uint32()
-	
+	# TODO: Compute byte size of transaction while reading it
+
 	return (Transaction(
 		version, 
 		inputs_len, 
@@ -52,19 +54,19 @@ func read_transaction{reader:Reader}() -> (transaction: Transaction):
 	))
 end
 
-func read_inputs{reader:Reader}(inputs_count) -> (inputs: TxInput*):
+func read_inputs{reader:Reader}(inputs_len) -> (inputs: TxInput*):
 	let inputs = alloc()
-	_read_inputs_loop(inputs, inputs_count)
+	_read_inputs_loop(inputs, inputs_len)
 	return (inputs)
 end
 
-func _read_inputs_loop{reader:Reader}(inputs: felt*, inputs_count):
-	if inputs_count == 0:
+func _read_inputs_loop{reader:Reader}(inputs: felt*, inputs_len):
+	if inputs_len == 0:
 		return ()
 	end
 	let (input) = read_input() 
 	assert [inputs] = input
-	_read_inputs_loop(inputs + 1, inputs_count - 1)
+	_read_inputs_loop(inputs + 1, inputs_len - 1)
 	return ()
 end
 
@@ -77,19 +79,19 @@ func read_input{reader:Reader}() -> (input: TxInput):
 	return (TxInput(txid, vout, script_sig_size, script_sig, sequence))
 end
 
-func read_outputs{reader:Reader}(outputs_count) -> (outputs: TxOutput*):
+func read_outputs{reader:Reader}(outputs_len) -> (outputs: TxOutput*):
 	let outputs = alloc()
-	_read_outputs_loop(outputs, outputs_count)
+	_read_outputs_loop(outputs, outputs_len)
 	return (outputs)
 end
 
-func _read_outputs_loop{reader:Reader}(outputs: felt*, outputs_count):
-	if outputs_count == 0:
+func _read_outputs_loop{reader:Reader}(outputs: felt*, outputs_len):
+	if outputs_len == 0:
 		return ()
 	end
 	let (output) = read_output()
 	assert [outputs] = output
-	_read_outputs_loop(outputs + 1, outputs_count - 1)
+	_read_outputs_loop(outputs + 1, outputs_len - 1)
 	return ()
 end
 
@@ -97,7 +99,7 @@ func read_output{reader:Reader}() -> (output: TxOutput):
 	let value				= read_uint64()
 	let script_pub_key_size	= read_varint()
 	let script_pub_key		= read_bytes(script_pub_key_size)
-	return (TxOutput(txid, vout, script_pub_key_size, script_pub_key))
+	return (TxOutput(value, script_pub_key_size, script_pub_key))
 end
 
 

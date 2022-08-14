@@ -7,13 +7,13 @@
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.math import assert_le, unsigned_div_rem
 from starkware.cairo.common.pow import pow
-from buffer import Reader, Writer, read_uint32, write_uint32, read_hash, write_hash
+from buffer import Reader, Writer, read_uint32, write_uint32, read_hash, write_hash, UINT32_SIZE, BYTE
 from utils import _compute_double_sha256, assert_hashes_equal
 
 # The size of a block header is 80 bytes
-const SIZE_OF_BLOCK_HEADER = 80
+const BLOCK_HEADER_SIZE = 80
 # The size of a block header encoded as an array of Uint32 is 20 felts
-const FELT_SIZE_OF_BLOCK_HEADER = SIZE_OF_BLOCK_HEADER / 4
+const BLOCK_HEADER_FELT_SIZE = BLOCK_HEADER_SIZE / UINT32_SIZE
 
 struct BlockHeader:
 	member version : felt 
@@ -74,7 +74,7 @@ func read_block_header_validation_context{reader: Reader, range_check_ptr, bitwi
 	let (target) = bits_to_target(block_header.bits)
 	
 	let (block_hash) = _compute_double_sha256(
-		FELT_SIZE_OF_BLOCK_HEADER, block_header_raw, SIZE_OF_BLOCK_HEADER)
+		BLOCK_HEADER_FELT_SIZE, block_header_raw, BLOCK_HEADER_SIZE)
 
 	return (BlockHeaderValidationContext(
 		block_header_raw, block_header, block_hash, target, prev_context))
@@ -89,29 +89,11 @@ func bits_to_target{range_check_ptr}(bits) -> (target: felt):
 
     # Parse the significand and the exponent
     # The exponent has 8 bits and the significand has 24 bits
-    let (exponent, significand) = unsigned_div_rem(bits, 2**24)
+    let (exponent, significand) = unsigned_div_rem(bits, BYTE**3)
     
     # Compute the target via exponentiation of significand and exponent
-    let (tmp) = pow(2**8, exponent - 3)
-    return (significand * tmp)
-end
-
-
-# The timestamp in a BlockHeader must be strictly greater 
-# than the median time of the previous 11 blocks. 
-# Full nodes will not accept blocks with headers more than two hours in the future 
-# according to their clock.
-#
-# See also:
-# - https://developer.bitcoin.org/reference/block_chain.html#block-headers
-# - https://github.com/bitcoin/bitcoin/blob/36c83b40bd68a993ab6459cb0d5d2c8ce4541147/src/chain.h#L290
-func validate_median_time(context: BlockHeaderValidationContext):
-	# TODO: implement me
-	# Step 1: Let Python sort the array and compute a permutation (array of indexes)
-	# Step 2: Use that permutation to create a sorted array of pointers in Cairo
-	# Step 3: Prove sortedness of the sorted array in linear time
-	# Step 4: Read the median from the sorted array
-	return()
+    let (base) = pow(BYTE, exponent - 3)
+    return (significand * base)
 end
 
 # Validate a block header
@@ -119,11 +101,11 @@ func validate_block_header(context: BlockHeaderValidationContext):
 	# Validate previous block hash
 	validate_prev_block_hash(context)
 
-	# Validate proof-of-work
+	# Validate the proof-of-work
 	validate_proof_of_work(context)
 
-	# Validate the difficulty
-	validate_difficulty(context)
+	# Validate the difficulty of the proof-of-work
+	validate_target(context)
 
 	# Validate the block's timestamp
 	validate_median_time(context)
@@ -146,8 +128,25 @@ end
 # Validate the proof-of-work target is sufficiently high
 #
 # See also:
-# https://github.com/bitcoin/bitcoin/blob/7fcf53f7b4524572d1d0c9a5fdc388e87eb02416/src/pow.cpp#L13
-func validate_difficulty(context: BlockHeaderValidationContext):
+# - https://github.com/bitcoin/bitcoin/blob/7fcf53f7b4524572d1d0c9a5fdc388e87eb02416/src/pow.cpp#L13
+func validate_target(context: BlockHeaderValidationContext):
 	# TODO: implement me
+	return()
+end
+
+# The timestamp in a BlockHeader must be strictly greater 
+# than the median time of the previous 11 blocks. 
+# Full nodes will not accept blocks with headers more than two hours in the future 
+# according to their clock.
+#
+# See also:
+# - https://developer.bitcoin.org/reference/block_chain.html#block-headers
+# - https://github.com/bitcoin/bitcoin/blob/36c83b40bd68a993ab6459cb0d5d2c8ce4541147/src/chain.h#L290
+func validate_median_time(context: BlockHeaderValidationContext):
+	# TODO: implement me
+	# Step 1: Let Python sort the array and compute a permutation (array of indexes)
+	# Step 2: Use that permutation to create a sorted array of pointers in Cairo
+	# Step 3: Prove sortedness of the sorted array in linear time
+	# Step 4: Read the median from the sorted array
 	return()
 end

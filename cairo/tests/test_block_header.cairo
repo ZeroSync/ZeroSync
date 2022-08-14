@@ -11,7 +11,7 @@ from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from tests.utils_for_testing import setup_hashes
 from buffer import init_reader, init_writer, flush_writer
 from utils import assert_hashes_equal
-from block_header import read_block_header, write_block_header, bits_to_target, FELT_SIZE_OF_BLOCK_HEADER, BlockHeaderValidationContext, read_block_header_validation_context
+from block_header import read_block_header, write_block_header, bits_to_target, BLOCK_HEADER_FELT_SIZE, BlockHeaderValidationContext, read_block_header_validation_context
 
 @external
 func test_serialize_block_header{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
@@ -69,7 +69,7 @@ func test_serialize_block_header{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}
 
     # Caution! Check equality properly. If `array` is empty then we perform a copy here
     # and the test succeeds even though it should fail!
-    memcpy(array, block_header_serialized, FELT_SIZE_OF_BLOCK_HEADER) 
+    memcpy(array, block_header_serialized, BLOCK_HEADER_FELT_SIZE) 
     
     return ()
 end
