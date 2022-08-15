@@ -7,7 +7,7 @@
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 
-from utils import __compute_double_sha256
+from utils import sha256d, HASH_SIZE
 from buffer import Reader, read_uint32, read_uint64, read_varint, read_hash, read_bytes, UINT32_SIZE, UINT64_SIZE
 
 # A Bitcoin transaction
@@ -37,7 +37,8 @@ struct TxOutput:
 end
 
 # Read a Transaction from a buffer
-func read_transaction{reader:Reader, range_check_ptr}() -> (transaction: Transaction, byte_size):
+func read_transaction{reader:Reader, range_check_ptr}(
+	) -> (transaction: Transaction, byte_size):
 	alloc_locals
 	let (version)	= read_uint32()
 	let inputs_len	= read_varint()
@@ -63,7 +64,8 @@ func read_transaction{reader:Reader, range_check_ptr}() -> (transaction: Transac
 end
 
 # Read transaction inputs from a buffer
-func read_inputs{reader:Reader, range_check_ptr}(inputs_len) -> (inputs: TxInput*, byte_size):
+func read_inputs{reader:Reader, range_check_ptr}(
+	inputs_len) -> (inputs: TxInput*, byte_size):
 	alloc_locals
 	let (inputs: TxInput*) = alloc()
 	let (byte_size) = _read_inputs_loop(inputs, inputs_len)
@@ -71,7 +73,8 @@ func read_inputs{reader:Reader, range_check_ptr}(inputs_len) -> (inputs: TxInput
 end
 
 # LOOP: Read transaction inputs from a buffer
-func _read_inputs_loop{reader:Reader, range_check_ptr}(inputs: TxInput*, inputs_len) -> (byte_size):
+func _read_inputs_loop{reader:Reader, range_check_ptr}(
+	inputs: TxInput*, inputs_len) -> (byte_size):
 	alloc_locals
 	if inputs_len == 0:
 		return (0)
@@ -83,13 +86,14 @@ func _read_inputs_loop{reader:Reader, range_check_ptr}(inputs: TxInput*, inputs_
 end
 
 # Read a transaction input from a buffer
-func read_input{reader:Reader, range_check_ptr}() -> (input: TxInput, byte_size):
+func read_input{reader:Reader, range_check_ptr}(
+	) -> (input: TxInput, byte_size):
 	alloc_locals
-	let (txid)				= read_hash()
-	let (vout)				= read_uint32()
-	let script_sig_size		= read_varint()
-	let (script_sig)		= read_bytes(script_sig_size.value)
-	let (sequence)			= read_uint32()
+	let (txid)			= read_hash()
+	let (vout)			= read_uint32()
+	let script_sig_size	= read_varint()
+	let (script_sig)	= read_bytes(script_sig_size.value)
+	let (sequence)		= read_uint32()
 	return (
 		TxInput(
 			txid, 
@@ -97,8 +101,9 @@ func read_input{reader:Reader, range_check_ptr}() -> (input: TxInput, byte_size)
 			script_sig_size.value, 
 			script_sig, 
 			sequence
-		),	# Compute the input's byte length
-			32 + 
+		),	
+		# Compute the input's byte size
+			HASH_SIZE + 
 			UINT32_SIZE + 
 			script_sig_size.byte_size + 
 			script_sig_size.value + 
@@ -107,7 +112,8 @@ func read_input{reader:Reader, range_check_ptr}() -> (input: TxInput, byte_size)
 end
 
 # Read outputs from a buffer
-func read_outputs{reader:Reader, range_check_ptr}(outputs_len) -> (outputs: TxOutput*, byte_size):
+func read_outputs{reader:Reader, range_check_ptr}(
+	outputs_len) -> (outputs: TxOutput*, byte_size):
 	alloc_locals
 	let outputs: TxOutput* = alloc()
 	let (byte_size) = _read_outputs_loop(outputs, outputs_len)
@@ -115,7 +121,8 @@ func read_outputs{reader:Reader, range_check_ptr}(outputs_len) -> (outputs: TxOu
 end
 
 # LOOP: Read transaction outputs
-func _read_outputs_loop{reader:Reader, range_check_ptr}(outputs: TxOutput*, outputs_len) -> (byte_size):
+func _read_outputs_loop{reader:Reader, range_check_ptr}(
+	outputs: TxOutput*, outputs_len) -> (byte_size):
 	alloc_locals
 	if outputs_len == 0:
 		return (0)
@@ -127,7 +134,8 @@ func _read_outputs_loop{reader:Reader, range_check_ptr}(outputs: TxOutput*, outp
 end
 
 # Read an output from a buffer
-func read_output{reader:Reader, range_check_ptr}() -> (output: TxOutput, byte_size):
+func read_output{reader:Reader, range_check_ptr}(
+	) -> (output: TxOutput, byte_size):
 	alloc_locals
 	let (amount)			= read_uint64()
 	let script_pub_key_size	= read_varint()
@@ -138,6 +146,7 @@ func read_output{reader:Reader, range_check_ptr}() -> (output: TxOutput, byte_si
 			script_pub_key_size.value, 
 			script_pub_key
 		),
+		# Compute the output's byte size
 			UINT64_SIZE + 
 			script_pub_key_size.byte_size +
 			script_pub_key_size.value
@@ -159,8 +168,11 @@ func read_transaction_validation_context{reader:Reader, range_check_ptr, bitwise
 	alloc_locals
 	let transaction_raw = reader.head
 	let (transaction, byte_size) = read_transaction()
-	# let (txid) = __compute_double_sha256(transaction_raw, byte_size)
-	let (txid) = __compute_double_sha256(transaction_raw, 64) # TODO fix byte_size of the sha256
+
+	# TODO: fix byte_size of the sha256 implementation
+	# let (txid) = sha256d(transaction_raw, byte_size)
+	let (txid) = sha256d(transaction_raw, 65)
+	
 	return (TransactionValidationContext(
 		transaction, transaction_raw, byte_size, txid))
 end

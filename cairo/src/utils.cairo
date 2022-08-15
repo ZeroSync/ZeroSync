@@ -5,7 +5,7 @@ from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.bitwise import bitwise_and
 from starkware.cairo.common.memcpy import memcpy
 
-from buffer import byte_size_to_felt_size
+from buffer import byte_size_to_felt_size, UINT32_SIZE
 
 # A hash has 32 bytes
 const HASH_SIZE = 32
@@ -29,11 +29,20 @@ func _compute_double_sha256{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
     return (hash_second_round)
 end
 
-func __compute_double_sha256{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
+func sha256d{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
     input : felt*, byte_size : felt
 ) -> (result : felt*):
     alloc_locals
     let (felt_size) = byte_size_to_felt_size(byte_size)
+    let (hash) = _compute_double_sha256(felt_size, input, byte_size)
+    return (hash)
+end
+
+func sha256d_felt_sized{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
+    input : felt*, felt_size : felt
+) -> (result : felt*):
+    alloc_locals
+    let byte_size = felt_size * UINT32_SIZE
     let (hash) = _compute_double_sha256( felt_size, input, byte_size )
     return (hash)
 end

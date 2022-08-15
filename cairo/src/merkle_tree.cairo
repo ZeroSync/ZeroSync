@@ -1,6 +1,6 @@
 from starkware.cairo.common.math import unsigned_div_rem
 from starkware.cairo.common.alloc import alloc
-from utils import _compute_double_sha256, copy_hash, HASH_FELT_SIZE
+from utils import sha256d_felt_sized, copy_hash, HASH_FELT_SIZE
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 
 # Compute the Merkle root hash of a set of hashes
@@ -41,7 +41,7 @@ func _compute_merkle_root_loop{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
 	end
 
 	# Hash two leaves to get a node of the next generation
-	let (hash) = _compute_double_sha256(2 * HASH_FELT_SIZE, leaves, 2 * HASH_FELT_SIZE * 4)
+	let (hash) = sha256d_felt_sized(leaves, 2 * HASH_FELT_SIZE)
 	copy_hash(hash, next_leaves)
 
 	# Continue this loop with the next two leaves
