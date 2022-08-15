@@ -60,7 +60,6 @@ struct BlockHeaderValidationContext:
 	member prev_context : BlockHeaderValidationContext*
 	# member total_work: felt
 	# member block_height: felt
-	# member median_time: felt
 end
 
 func read_block_header_validation_context{reader: Reader, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
@@ -70,8 +69,9 @@ func read_block_header_validation_context{reader: Reader, range_check_ptr, bitwi
 	let block_header_raw = reader.head
 
 	let (block_header) = read_block_header()
+	# let block_header_ptr : BlockHeader* = &block_header
 	
-	let (target) = bits_to_target(block_header.bits)
+	let (target) = bits_to_target( block_header.bits )
 	
 	let (block_hash) = _compute_double_sha256(
 		BLOCK_HEADER_FELT_SIZE, block_header_raw, BLOCK_HEADER_SIZE)
@@ -112,20 +112,20 @@ func validate_block_header(context: BlockHeaderValidationContext):
 	return ()
 end
 
-# Validate this block header correctly extends the current chain
+# Validate a block header correctly extends the current chain
 func validate_prev_block_hash(context: BlockHeaderValidationContext):
 	assert_hashes_equal(context.prev_context.block_hash, context.block_header.prev_block_hash)
 	return ()
 end
 
-# Validate this block header's proof-of-work matches its target
+# Validate a block header's proof-of-work matches its target
 func validate_proof_of_work(context: BlockHeaderValidationContext):
 	# Securely convert block_hash to a felt and then compare it to the target
 	# TODO: implement me
 	return ()
 end
 
-# Validate the proof-of-work target is sufficiently high
+# Validate that the proof-of-work target is sufficiently difficult
 #
 # See also:
 # - https://github.com/bitcoin/bitcoin/blob/7fcf53f7b4524572d1d0c9a5fdc388e87eb02416/src/pow.cpp#L13
@@ -134,10 +134,8 @@ func validate_target(context: BlockHeaderValidationContext):
 	return ()
 end
 
-# The timestamp of a block header must be strictly greater 
-# than the median time of the previous 11 blocks. 
-# Full nodes will not accept blocks with headers more than two hours in the future 
-# according to their clock.
+# The timestamp of a block header must be strictly greater than the median time 
+# of the previous 11 blocks. 
 #
 # See also:
 # - https://developer.bitcoin.org/reference/block_chain.html#block-headers
