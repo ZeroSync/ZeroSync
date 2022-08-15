@@ -20,7 +20,7 @@ func array_to_uint256(array: felt*) -> (result: Uint256):
     return (result)
 end
 
-func _compute_double_sha256{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
+func _compute_double_sha256{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
     felt_size : felt, input : felt*, byte_size : felt
 ) -> (result : felt*):
     alloc_locals
@@ -29,7 +29,7 @@ func _compute_double_sha256{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
     return (hash_second_round)
 end
 
-func sha256d{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
+func sha256d{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
     input : felt*, byte_size : felt
 ) -> (result : felt*):
     alloc_locals
@@ -39,9 +39,8 @@ func sha256d{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
 end
 
 
-func sha256d_hint{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
-    input : felt*, byte_size : felt): 
-#-> (result : felt*):
+func compute_sha256_hint{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
+    input: felt*, byte_size: felt) -> (hash: felt*):
     
     # TODO: implement me    
     return ()
@@ -49,7 +48,7 @@ end
 
 
 # 
-func sha256d_felt_sized{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
+func sha256d_felt_sized{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
     input : felt*, felt_size : felt
 ) -> (result : felt*):
     alloc_locals
@@ -61,7 +60,7 @@ end
 # Compute double sha256 hash of the input given as an array of Uint32 
 # and returns a Uint256.
 # DEPRECATED! WILL GET DELETED WITH validate.cairo
-func compute_double_sha256{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
+func compute_double_sha256{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
     felt_size : felt, input : felt*, byte_size : felt
 ) -> (result : Uint256):
     alloc_locals
@@ -78,7 +77,7 @@ func to_uint256{range_check_ptr}(input: felt) -> (output: Uint256):
 end
 
 # Convert Uint32 to big endian
-func to_big_endian{bitwise_ptr : BitwiseBuiltin*}(a : felt) -> (result : felt):
+func to_big_endian{bitwise_ptr: BitwiseBuiltin*}(a : felt) -> (result : felt):
     let (byte1) = bitwise_and(a, 0x000000FF)
     let (byte2) = bitwise_and(a, 0x0000FF00)
     let (byte3) = bitwise_and(a, 0x00FF0000)

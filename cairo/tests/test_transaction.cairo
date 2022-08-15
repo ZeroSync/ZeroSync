@@ -79,8 +79,8 @@ func test_read_segwit_transaction{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}
 
 	assert transaction.version = 0x02
 	
-	assert transaction.outputs[0].value = 0x0127
-	assert transaction.outputs[1].value = 0xb16e
+	assert transaction.outputs[0].value = 295
+	assert transaction.outputs[1].value = 45422
 
 	# assert byte_size = 259
 	return ()

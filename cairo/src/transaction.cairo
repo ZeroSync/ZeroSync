@@ -46,7 +46,7 @@ func read_transaction{reader: Reader, range_check_ptr}(
 	let (is_not_segwit) = peek_uint8()
 	if is_not_segwit == 0:
 		# This is a SegWit transaction
-		# Read the 2-byte flag
+		# Read the 2 bytes of "marker" and "flag"
 		let (flag) = read_uint16()
 		assert flag = 0x0100
 	end
@@ -171,6 +171,8 @@ struct TransactionValidationContext:
 	member transaction_raw: felt*
 	member transaction_size: felt
 	member txid: felt*
+	# member is_segwit: felt
+	# member witnesses: felt**
 	# member utxo_set_root_hash: felt*
 end
 

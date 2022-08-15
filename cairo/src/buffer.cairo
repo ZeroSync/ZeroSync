@@ -30,6 +30,7 @@ func init_reader(array : felt*) -> (reader : Reader):
     return (Reader(array, 0, 0))
 end
 
+# Read a byte from the reader
 func read_uint8{reader : Reader, range_check_ptr}() -> (byte : felt):
     if reader.offset == 0:
         # The Reader is empty, so we read from the head, return the first byte,
@@ -46,18 +47,16 @@ func read_uint8{reader : Reader, range_check_ptr}() -> (byte : felt):
     end
 end
 
-
+# Peek the first byte from a reader without increasing the reader's cursor
 func peek_uint8{reader: Reader, range_check_ptr}() -> (byte: felt):
     if reader.offset == 0:
-        # The Reader is empty, so we read from the head, return the first byte,
-        # and copy the remaining three bytes into the Reader's payload.
-        let (byte, payload) = unsigned_div_rem([reader.head], BYTE**3)
-        return (byte)
+        # The Reader's payload is empty, so we read from the head
+        let (first_byte, _) = unsigned_div_rem([reader.head], BYTE ** 3)
+        return (first_byte)
     else: 
-        # The Reader is not empty. So we read the first byte from its payload
-        # and continue with the remaining bytes.
-        let (byte, payload) = unsigned_div_rem(reader.payload, BYTE**3)
-        return (byte)
+        # The Reader is not empty, so we read the first byte from its payload
+        let (first_byte, _) = unsigned_div_rem(reader.payload, BYTE ** 3)
+        return (first_byte)
     end
 end
 
@@ -124,6 +123,9 @@ func read_varint{reader : Reader, range_check_ptr}() -> (value, byte_size):
 
     # This varint is only 1 byte
     return (first_byte, UINT8_SIZE)
+
+    # TODO: Research if there's a strict encoding required
+    # E.g. what about "1" encoded as 0xff0100000000000000 ?
 end
 
 func _read_into_uint32_array{reader : Reader, range_check_ptr}(output : felt*, loop_counter):
