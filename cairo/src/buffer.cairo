@@ -262,3 +262,9 @@ func write_hash{writer: Writer, range_check_ptr}(source: felt*):
     write_uint32_endian(source[7])
     return ()
 end
+
+# Compute the byte size of an integer encoded as varint
+func size_of_varint(varint) -> (size:felt):
+    # TODO: implement me
+    return (1) 
+end
