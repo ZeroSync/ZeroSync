@@ -38,17 +38,29 @@ func sha256d{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
     return (hash)
 end
 
+
+func sha256d_hint{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
+    input : felt*, byte_size : felt): 
+#-> (result : felt*):
+    
+    # TODO: implement me    
+    return ()
+end
+
+
+# 
 func sha256d_felt_sized{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
     input : felt*, felt_size : felt
 ) -> (result : felt*):
     alloc_locals
     let byte_size = felt_size * UINT32_SIZE
-    let (hash) = _compute_double_sha256( felt_size, input, byte_size )
+    let (hash) = _compute_double_sha256(felt_size, input, byte_size)
     return (hash)
 end
 
 # Compute double sha256 hash of the input given as an array of Uint32 
 # and returns a Uint256.
+# DEPRECATED! WILL GET DELETED WITH validate.cairo
 func compute_double_sha256{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
     felt_size : felt, input : felt*, byte_size : felt
 ) -> (result : Uint256):
@@ -84,13 +96,8 @@ end
 
 # Assert equality of two hashes represented as an array of 8 x Uint32
 func assert_hashes_equal(hash1: felt*, hash2: felt*):
-    assert hash1[0] = hash2[0]
-    assert hash1[1] = hash2[1]
-    assert hash1[2] = hash2[2]
-    assert hash1[3] = hash2[3]
-    assert hash1[4] = hash2[4]
-    assert hash1[5] = hash2[5]
-    assert hash1[6] = hash2[6]
-    assert hash1[7] = hash2[7]
+    # TODO: ensure hash1 is not empty
+    # Otherwise, we perform a copy here and pass where we should fail!
+    memcpy(hash1, hash2, HASH_FELT_SIZE)
     return ()
 end

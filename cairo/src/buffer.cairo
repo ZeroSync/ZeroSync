@@ -13,11 +13,12 @@ from starkware.cairo.common.math import unsigned_div_rem
 # The base for byte-wise shifts via multiplication and integer division
 const BYTE = 2**8
 
-# The size of an Uint32 is 4 bytes
-const UINT8_SIZE = 1
+# The byte sizes of Uint8, Uint16, Uint32, and Uint64
+const UINT8_SIZE  = 1
 const UINT16_SIZE = 2
 const UINT32_SIZE = 4
 const UINT64_SIZE = 8
+
 
 struct Reader: 
     member head : felt*
@@ -91,19 +92,19 @@ func read_varint{reader: Reader, range_check_ptr}() -> (value, byte_size):
     if first_byte == 0xff:
         # This varint has 8 more bytes
         let (uint64) = read_uint64()
-        return (uint64, UINT64_SIZE + UINT8_SIZE)
+        return (uint64, UINT8_SIZE + UINT64_SIZE)
     end
 
     if first_byte == 0xfe:
         # This varint has 4 more bytes
         let (uint32) = read_uint32()
-        return (uint32, UINT32_SIZE + UINT8_SIZE)
+        return (uint32, UINT8_SIZE + UINT32_SIZE)
     end
 
     if first_byte == 0xfd:
         # This varint has 2 more bytes
         let (uint16) = read_uint16()
-        return (uint16, UINT16_SIZE + UINT8_SIZE)
+        return (uint16, UINT8_SIZE + UINT16_SIZE)
     end
     
     # This varint is only 1 byte

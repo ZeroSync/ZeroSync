@@ -13,9 +13,9 @@ from buffer import Reader, read_uint32, read_uint64, read_varint, read_hash, rea
 # A Bitcoin transaction
 struct Transaction:
 	member version: felt
-	member inputs_len: felt
+	member inputs_count: felt
 	member inputs: TxInput*
-	member outputs_len: felt
+	member outputs_count: felt
 	member outputs: TxOutput*
 	member locktime: felt
 end
@@ -40,24 +40,30 @@ end
 func read_transaction{reader:Reader, range_check_ptr}(
 	) -> (transaction: Transaction, byte_size):
 	alloc_locals
-	let (version)	= read_uint32()
-	let inputs_len	= read_varint()
-	let inputs		= read_inputs(inputs_len.value)
-	let outputs_len	= read_varint()
-	let outputs		= read_outputs(outputs_len.value)
-	let (locktime)	= read_uint32()
+	let (version)		= read_uint32()
+	# TODO: parse segwit flag (use get_word)
+	let inputs_count	= read_varint()
+	if inputs_count.value == 0:
+
+	end
+
+	let inputs			= read_inputs(inputs_count.value)
+	let outputs_count	= read_varint()
+	let outputs			= read_outputs(outputs_count.value)
+	let (locktime)		= read_uint32()
 	return (Transaction(
 		version, 
-		inputs_len.value, 
+		inputs_count.value, 
 		inputs.inputs, 
-		outputs_len.value, 
+		outputs_count.value, 
 		outputs.outputs, 
 		locktime
-	), 	# Compute the byte size of the transaction 
+	), 	
+	# Compute the byte size of the transaction 
 		UINT32_SIZE +
-		inputs_len.byte_size + 
+		inputs_count.byte_size + 
 		inputs.byte_size +
-		outputs_len.byte_size +
+		outputs_count.byte_size +
 		outputs.byte_size +
 		UINT32_SIZE
 	)
@@ -65,24 +71,24 @@ end
 
 # Read transaction inputs from a buffer
 func read_inputs{reader:Reader, range_check_ptr}(
-	inputs_len) -> (inputs: TxInput*, byte_size):
+	inputs_count) -> (inputs: TxInput*, byte_size):
 	alloc_locals
 	let (inputs: TxInput*) = alloc()
-	let (byte_size) = _read_inputs_loop(inputs, inputs_len)
+	let (byte_size) = _read_inputs_loop(inputs, inputs_count)
 	return (inputs, byte_size)
 end
 
 # LOOP: Read transaction inputs from a buffer
 func _read_inputs_loop{reader:Reader, range_check_ptr}(
-	inputs: TxInput*, inputs_len) -> (byte_size):
+	inputs: TxInput*, loop_counter) -> (byte_size):
 	alloc_locals
-	if inputs_len == 0:
+	if loop_counter == 0:
 		return (0)
 	end
-	let (input, byte_size) = read_input()
-	assert [inputs] = input
-	let (byte_size_accu) = _read_inputs_loop(inputs + TxInput.SIZE, inputs_len - 1)
-	return (byte_size_accu + byte_size)
+	let input = read_input()
+	assert [inputs] = input.input
+	let (byte_size_accu) = _read_inputs_loop(inputs + TxInput.SIZE, loop_counter - 1)
+	return (byte_size_accu + input.byte_size)
 end
 
 # Read a transaction input from a buffer
@@ -113,23 +119,23 @@ end
 
 # Read outputs from a buffer
 func read_outputs{reader:Reader, range_check_ptr}(
-	outputs_len) -> (outputs: TxOutput*, byte_size):
+	outputs_count) -> (outputs: TxOutput*, byte_size):
 	alloc_locals
 	let outputs: TxOutput* = alloc()
-	let (byte_size) = _read_outputs_loop(outputs, outputs_len)
+	let (byte_size) = _read_outputs_loop(outputs, outputs_count)
 	return (outputs, byte_size)
 end
 
 # LOOP: Read transaction outputs
 func _read_outputs_loop{reader:Reader, range_check_ptr}(
-	outputs: TxOutput*, outputs_len) -> (byte_size):
+	outputs: TxOutput*, loop_counter) -> (byte_size):
 	alloc_locals
-	if outputs_len == 0:
+	if loop_counter == 0:
 		return (0)
 	end
 	let (output, byte_size) = read_output()
 	assert [outputs] = output
-	let (byte_size_accu) = _read_outputs_loop(outputs + TxOutput.SIZE, outputs_len - 1)
+	let (byte_size_accu) = _read_outputs_loop(outputs + TxOutput.SIZE, loop_counter - 1)
 	return (byte_size_accu + byte_size)
 end
 
