@@ -21,7 +21,6 @@ func test_sha256_dummy{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
         # NOTE: For now strings with more than 119 chars will not work.
         # This will change when we switch to another sha256 implementation which allows arbitrary input lengths.
         test_string = "Hello world"
-
         import hashlib
         ids.n_bytes, ids.input_len = write_string(test_string, ids.input)
         # Compute expected hash from the python hashlib library.

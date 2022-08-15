@@ -1,4 +1,4 @@
-# https://developer.bitcoin.org/reference/block_chain.html#block-headers
+%builtins output pedersen range_check ecdsa bitwise
 %builtins pedersen range_check ecdsa bitwise
 
 # some builtins may not be used but are required for the cairo-run layout

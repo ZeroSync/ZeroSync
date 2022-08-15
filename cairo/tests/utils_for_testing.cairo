@@ -26,6 +26,11 @@ func setup_python_defs():
 
 
         def write_hex_string(hex_string, destination):
+            # To see if there are only 0..f in hex_string we can try to turn it into an int
+            try:
+                check_if_hex = int(hex_string,16)
+            except ValueError:
+                print("ERROR: Input to write_hex_string contains non-hex characters.")
             felts = hex_to_felt(hex_string)
             segments.write_arg(destination, felts)
             return len(felts)
