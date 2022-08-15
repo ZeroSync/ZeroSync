@@ -25,6 +25,10 @@ func setup_python_defs():
             return len(hashes)
 
 
+        # Writes a hex string string into an uint32 array
+        #
+        # Using multi-line strings in python:
+        # - https://stackoverflow.com/questions/10660435/how-do-i-split-the-definition-of-a-long-string-over-multiple-lines
         def write_hex_string(hex_string, destination):
             # To see if there are only 0..f in hex_string we can try to turn it into an int
             try:

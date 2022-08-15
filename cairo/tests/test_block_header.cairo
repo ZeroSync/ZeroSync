@@ -22,30 +22,16 @@ func test_serialize_block_header{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}
     alloc_locals
     setup_python_defs()
 
-    let (array) = alloc()
-    # TODO: retrieve the header from python
-    assert array[0]  = 0x02000000
-    assert array[1]  = 0xb6ff0b1b
-    assert array[2]  = 0x1680a286
-    assert array[3]  = 0x2a30ca44
-    assert array[4]  = 0xd346d9e8
-    assert array[5]  = 0x910d334b
-    assert array[6]  = 0xeb48ca0c
-    assert array[7]  = 0x00000000
-    assert array[8]  = 0x00000000
-    assert array[9]  = 0x9d10aa52
-    assert array[10] = 0xee949386
-    assert array[11] = 0xca938569
-    assert array[12] = 0x5f04ede2
-    assert array[13] = 0x70dda208
-    assert array[14] = 0x10decd12
-    assert array[15] = 0xbc9b048a
-    assert array[16] = 0xaab31471
-    assert array[17] = 0x24d95a54
-    assert array[18] = 0x30c31b18
-    assert array[19] = 0xfe9f0864
+    let (block_header_raw) = alloc()
+    %{
+        write_hex_string((
+            "02000000b6ff0b1b1680a2862a30ca44d346d9e8910d334beb48ca0c00000000"
+            "000000009d10aa52ee949386ca9385695f04ede270dda20810decd12bc9b048a"
+            "aab3147124d95a5430c31b18fe9f0864"), ids.block_header_raw)
+    %}    
     
-    let (reader) = init_reader(array)
+    let (reader) = init_reader(block_header_raw)
+    
     let (block_header) = read_block_header{reader=reader}()
 
 
@@ -67,9 +53,9 @@ func test_serialize_block_header{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}
     write_block_header{writer=writer}(block_header)
     flush_writer(writer)
 
-    # Caution! Check equality properly. If `array` is empty then we perform a copy here
+    # Caution! Check equality properly. If `block_header_raw` is empty then we perform a copy here
     # and the test succeeds even though it should fail!
-    memcpy(array, block_header_serialized, BLOCK_HEADER_FELT_SIZE) 
+    memcpy(block_header_raw, block_header_serialized, BLOCK_HEADER_FELT_SIZE) 
     
     return ()
 end
@@ -81,34 +67,19 @@ func test_read_block_header_validation_context{range_check_ptr, bitwise_ptr : Bi
     # Copied from:
     # https://developer.bitcoin.org/reference/block_chain.html#block-headers
     # https://blockstream.info/block/000000000000000009a11b3972c8e532fe964de937c9e0096b43814e67af3728
+    # https://blockstream.info/api/block/000000000000000009a11b3972c8e532fe964de937c9e0096b43814e67af3728/header
     alloc_locals
     setup_python_defs()
 
-    let (array) = alloc()
-    # TODO: retrieve the header from python
-    assert array[0]  = 0x02000000
-    assert array[1]  = 0xb6ff0b1b
-    assert array[2]  = 0x1680a286
-    assert array[3]  = 0x2a30ca44
-    assert array[4]  = 0xd346d9e8
-    assert array[5]  = 0x910d334b
-    assert array[6]  = 0xeb48ca0c
-    assert array[7]  = 0x00000000
-    assert array[8]  = 0x00000000
-    assert array[9]  = 0x9d10aa52
-    assert array[10] = 0xee949386
-    assert array[11] = 0xca938569
-    assert array[12] = 0x5f04ede2
-    assert array[13] = 0x70dda208
-    assert array[14] = 0x10decd12
-    assert array[15] = 0xbc9b048a
-    assert array[16] = 0xaab31471
-    assert array[17] = 0x24d95a54
-    assert array[18] = 0x30c31b18
-    assert array[19] = 0xfe9f0864
+    let (block_header_raw) = alloc()
+    %{
+        write_hex_string((
+            "02000000b6ff0b1b1680a2862a30ca44d346d9e8910d334beb48ca0c00000000"
+            "000000009d10aa52ee949386ca9385695f04ede270dda20810decd12bc9b048a"
+            "aab3147124d95a5430c31b18fe9f0864"), ids.block_header_raw)
+    %}    
     
-    
-    let (reader) = init_reader(array)
+    let (reader) = init_reader(block_header_raw)
 
     let (local prev_context: BlockHeaderValidationContext*) = alloc()
     let (context) = read_block_header_validation_context{reader=reader}(prev_context)
@@ -119,7 +90,7 @@ func test_read_block_header_validation_context{range_check_ptr, bitwise_ptr : Bi
     %{
         write_hashes(["000000000000000009a11b3972c8e532fe964de937c9e0096b43814e67af3728"], 
             ids.block_hash_expected)
-    %}
+    %} 
     assert_hashes_equal(context.block_hash, block_hash_expected)
 
     assert context.target = 0x1bc330000000000000000000000000000000000000000000
