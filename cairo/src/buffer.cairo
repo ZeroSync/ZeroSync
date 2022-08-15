@@ -3,7 +3,7 @@
 # Functions for reading and writing byte buffers
 # The byte stream is represented as an array of uint32 because
 # the sha256 hash function works on 32-bit words.
-# 
+#
 # See also:
 # - https://github.com/mimblewimble/grin/blob/master/core/src/ser.rs
 from starkware.cairo.common.alloc import alloc
@@ -11,7 +11,7 @@ from starkware.cairo.common.pow import pow
 from starkware.cairo.common.math import unsigned_div_rem
 
 # The base for byte-wise shifts via multiplication and integer division
-const BYTE = 2**8
+const BYTE = 2 ** 8
 
 # The size of an Uint32 is 4 bytes
 const UINT8_SIZE = 1
@@ -19,34 +19,35 @@ const UINT16_SIZE = 2
 const UINT32_SIZE = 4
 const UINT64_SIZE = 8
 
-struct Reader: 
+struct Reader:
     member head : felt*
     member offset : felt
     member payload : felt
 end
 
-func init_reader(array: felt*) -> (reader : Reader):
+func init_reader(array : felt*) -> (reader : Reader):
     return (Reader(array, 0, 0))
-end 
+end
 
-func read_uint8{reader: Reader, range_check_ptr}() -> (byte: felt):
+func read_uint8{reader : Reader, range_check_ptr}() -> (byte : felt):
     if reader.offset == 0:
         # The Reader is empty, so we read from the head, return the first byte,
         # and copy the remaining three bytes into the Reader's payload.
-        let (byte, payload) = unsigned_div_rem([reader.head], BYTE**3)
+        let (byte, payload) = unsigned_div_rem([reader.head], BYTE ** 3)
         let reader = Reader(reader.head + 1, UINT32_SIZE - 1, payload * BYTE)
         return (byte)
-    else: 
+    else:
         # The Reader is not empty. So we read the first byte from its payload
         # and continue with the remaining bytes.
-        let (byte, payload) = unsigned_div_rem(reader.payload, BYTE**3)
+        let (byte, payload) = unsigned_div_rem(reader.payload, BYTE ** 3)
         let reader = Reader(reader.head, reader.offset - 1, payload * BYTE)
         return (byte)
     end
 end
 
-func _read_n_bytes_into_felt{reader: Reader, range_check_ptr}(
-    output: felt*, value, base, loop_counter):
+func _read_n_bytes_into_felt{reader : Reader, range_check_ptr}(
+    output : felt*, value, base, loop_counter
+):
     if loop_counter == 0:
         assert [output] = value
         return ()
@@ -54,40 +55,40 @@ func _read_n_bytes_into_felt{reader: Reader, range_check_ptr}(
     let (byte) = read_uint8()
     _read_n_bytes_into_felt(output, byte * base + value, base * BYTE, loop_counter - 1)
     return ()
-end 
+end
 
-func read_uint16{reader: Reader, range_check_ptr}() -> (result: felt):
+func read_uint16{reader : Reader, range_check_ptr}() -> (result : felt):
     alloc_locals
     let (result) = alloc()
     _read_n_bytes_into_felt(result, 0, 1, UINT16_SIZE)
-    return ([result]) 
-end 
+    return ([result])
+end
 
-func read_uint32{reader: Reader, range_check_ptr}() -> (result: felt):
+func read_uint32{reader : Reader, range_check_ptr}() -> (result : felt):
     alloc_locals
     let (result) = alloc()
     _read_n_bytes_into_felt(result, 0, 1, UINT32_SIZE)
-    return ([result]) 
-end 
+    return ([result])
+end
 
-func read_uint64{reader: Reader, range_check_ptr}() -> (result: felt):
+func read_uint64{reader : Reader, range_check_ptr}() -> (result : felt):
     alloc_locals
     let (result) = alloc()
     _read_n_bytes_into_felt(result, 0, 1, UINT64_SIZE)
     return ([result])
 end
 
-# Reads a VarInt from the buffer and returns a pair 
+# Reads a VarInt from the buffer and returns a pair
 # of the varint that was read and its byte size.
-# 
+#
 # See also:
 # - https://developer.bitcoin.org/reference/transactions.html#compactsize-unsigned-integers
-func read_varint{reader: Reader, range_check_ptr}() -> (value, byte_size):
-    # Read the first byte 
+func read_varint{reader : Reader, range_check_ptr}() -> (value, byte_size):
+    # Read the first byte
     let (first_byte) = read_uint8()
 
     # Now check how many more bytes we have to read
-    
+
     if first_byte == 0xff:
         # This varint has 8 more bytes
         let (uint64) = read_uint64()
@@ -105,13 +106,12 @@ func read_varint{reader: Reader, range_check_ptr}() -> (value, byte_size):
         let (uint16) = read_uint16()
         return (uint16, UINT16_SIZE + UINT8_SIZE)
     end
-    
+
     # This varint is only 1 byte
     return (first_byte, UINT8_SIZE)
 end
 
-func _read_into_uint32_array{reader: Reader, range_check_ptr}(
-    output: felt*, loop_counter):
+func _read_into_uint32_array{reader : Reader, range_check_ptr}(output : felt*, loop_counter):
     if loop_counter == 0:
         return ()
     end
@@ -120,22 +120,19 @@ func _read_into_uint32_array{reader: Reader, range_check_ptr}(
     return ()
 end
 
-
-func read_bytes{reader: Reader, range_check_ptr}(
-    length:felt) -> (result: felt*):
+func read_bytes{reader : Reader, range_check_ptr}(length : felt) -> (result : felt*):
     alloc_locals
 
     let (result) = alloc()
     let (len_div_4, len_mod_4) = unsigned_div_rem(length, UINT32_SIZE)
-    # Read as many 4-byte chunks as possible into the array 
+    # Read as many 4-byte chunks as possible into the array
     _read_into_uint32_array(result, len_div_4)
     # Read up to three more bytes
     _read_n_bytes_into_felt(result + len_div_4, 0, 1, len_mod_4)
     return (result)
 end
 
-func read_bytes_endian{reader: Reader, range_check_ptr}(
-    length:felt) -> (result: felt*):
+func read_bytes_endian{reader : Reader, range_check_ptr}(length : felt) -> (result : felt*):
     alloc_locals
 
     let (result) = alloc()
@@ -145,8 +142,7 @@ func read_bytes_endian{reader: Reader, range_check_ptr}(
     return (result)
 end
 
-func _read_into_uint32_array_endian{reader: Reader, range_check_ptr}(
-    output: felt*, loop_counter):
+func _read_into_uint32_array_endian{reader : Reader, range_check_ptr}(output : felt*, loop_counter):
     if loop_counter == 0:
         return ()
     end
@@ -155,8 +151,9 @@ func _read_into_uint32_array_endian{reader: Reader, range_check_ptr}(
     return ()
 end
 
-func _read_n_bytes_into_felt_endian{reader: Reader, range_check_ptr}(
-    output: felt*, value, loop_counter):
+func _read_n_bytes_into_felt_endian{reader : Reader, range_check_ptr}(
+    output : felt*, value, loop_counter
+):
     if loop_counter == 0:
         assert [output] = value
         return ()
@@ -166,52 +163,52 @@ func _read_n_bytes_into_felt_endian{reader: Reader, range_check_ptr}(
     return ()
 end
 
-func read_uint32_endian{reader: Reader, range_check_ptr}() -> (result: felt):
+func read_uint32_endian{reader : Reader, range_check_ptr}() -> (result : felt):
     alloc_locals
     let (result) = alloc()
     _read_n_bytes_into_felt_endian(result, 0, UINT32_SIZE)
     return ([result])
 end
 
-func read_hash{reader: Reader, range_check_ptr}() -> (result: felt*):
+func read_hash{reader : Reader, range_check_ptr}() -> (result : felt*):
     return read_bytes_endian(32)
 end
 
 struct Writer:
     member head : felt*
     member offset : felt
-    member payload : felt 
+    member payload : felt
 end
 
-func init_writer(array: felt*) -> (writer : Writer):
+func init_writer(array : felt*) -> (writer : Writer):
     return (Writer(array, 0, 0))
-end 
+end
 
 # Any unwritten data in the writer's temporary memory is written to the writer.
-func flush_writer{range_check_ptr}(writer: Writer): 
-    # Write what's left in our writer 
+func flush_writer{range_check_ptr}(writer : Writer):
+    # Write what's left in our writer
     # Then fill up the uint32 with trailing zeros
     let (base) = pow(BYTE, UINT32_SIZE - writer.offset)
     assert [writer.head] = writer.payload * base
     return ()
 end
 
-func write_uint8{writer: Writer}(source):
+func write_uint8{writer : Writer}(source):
     alloc_locals
-    
-    let value =  writer.payload * BYTE + source
-    
+
+    let value = writer.payload * BYTE + source
+
     let offset = writer.offset + 1
     if offset == UINT32_SIZE:
         assert [writer.head] = value
         tempvar writer = Writer(writer.head + 1, 0, 0)
-    else: 
+    else:
         tempvar writer = Writer(writer.head, offset, value)
     end
     return ()
 end
 
-func write_uint16{writer: Writer, range_check_ptr}(source):
+func write_uint16{writer : Writer, range_check_ptr}(source):
     alloc_locals
     let (uint8_1, uint8_0) = unsigned_div_rem(source, BYTE)
     write_uint8(uint8_0)
@@ -219,10 +216,10 @@ func write_uint16{writer: Writer, range_check_ptr}(source):
     return ()
 end
 
-func write_uint32{writer: Writer, range_check_ptr}(source):
+func write_uint32{writer : Writer, range_check_ptr}(source):
     alloc_locals
-    let (uint24,  uint8_0) = unsigned_div_rem(source, BYTE)
-    let (uint16,  uint8_1) = unsigned_div_rem(uint24, BYTE)
+    let (uint24, uint8_0) = unsigned_div_rem(source, BYTE)
+    let (uint16, uint8_1) = unsigned_div_rem(uint24, BYTE)
     let (uint8_3, uint8_2) = unsigned_div_rem(uint16, BYTE)
     write_uint8(uint8_0)
     write_uint8(uint8_1)
@@ -231,22 +228,69 @@ func write_uint32{writer: Writer, range_check_ptr}(source):
     return ()
 end
 
-func write_uint64{writer: Writer, range_check_ptr}(source: felt):
-    # TODO: implement me
-    assert 1=2
-    return()
-end 
-
-func write_varint{writer: Writer, range_check_ptr}(source: felt):
-    # TODO: implement me
-    assert 1=2
-    return ()
-end 
-
-func write_uint32_endian{writer: Writer, range_check_ptr}(source):
+func write_uint64{writer : Writer, range_check_ptr}(source : felt):
     alloc_locals
-    let (uint24,  uint8_3) = unsigned_div_rem(source, BYTE)
-    let (uint16,  uint8_2) = unsigned_div_rem(uint24, BYTE)
+    let (uint56, uint8_0) = unsigned_div_rem(source, BYTE)
+    let (uint48, uint8_1) = unsigned_div_rem(uint56, BYTE)
+    let (uint40, uint8_2) = unsigned_div_rem(uint48, BYTE)
+    let (uint32, uint8_3) = unsigned_div_rem(uint40, BYTE)
+    let (uint24, uint8_4) = unsigned_div_rem(uint32, BYTE)
+    let (uint16, uint8_5) = unsigned_div_rem(uint24, BYTE)
+    let (uint8_7, uint8_6) = unsigned_div_rem(uint16, BYTE)
+    write_uint8(uint8_0)
+    write_uint8(uint8_1)
+    write_uint8(uint8_2)
+    write_uint8(uint8_3)
+    write_uint8(uint8_4)
+    write_uint8(uint8_5)
+    write_uint8(uint8_6)
+    write_uint8(uint8_7)
+    return ()
+end
+
+# Write a varint into the buffer.
+func write_varint{writer : Writer, range_check_ptr}(source : felt):
+    alloc_locals
+
+    # Find out if this is a 9 byte varint.
+    let (leading_byte_uint64, uint64) = unsigned_div_rem(source, BYTE ** 8)
+
+    if leading_byte_uint64 == 0xff:
+        # This varint has 8 more bytes after the leading byte.
+        write_uint8(leading_byte_uint64)
+        write_uint64(uint64)
+        return ()
+    end
+
+    # Find out if this is a 5 byte varint.
+    let (leading_byte_uint32, uint32) = unsigned_div_rem(source, BYTE ** 4)
+
+    if leading_byte_uint32 == 0xfe:
+        # This varint has 4 more bytes after the leading byte.
+        write_uint8(leading_byte_uint32)
+        write_uint32(uint32)
+        return ()
+    end
+
+    # Find out if this is a 3 byte varint.
+    let (leading_byte_uint16, uint16) = unsigned_div_rem(source, BYTE ** 2)
+
+    if leading_byte_uint16 == 0xfd:
+        # This varint has 2 more bytes after the leading byte.
+        write_uint8(leading_byte_uint16)
+        write_uint16(uint16)
+        return ()
+    end
+
+    # This varint is only 1 byte.
+    write_uint8(source)
+    return ()
+end
+
+func write_uint32_endian{writer : Writer, range_check_ptr}(source):
+    alloc_locals
+    let (uint24, uint8_3) = unsigned_div_rem(source, BYTE)
+    let (uint16, uint8_2) = unsigned_div_rem(uint24, BYTE)
     let (uint8_0, uint8_1) = unsigned_div_rem(uint16, BYTE)
     write_uint8(uint8_0)
     write_uint8(uint8_1)
@@ -255,7 +299,7 @@ func write_uint32_endian{writer: Writer, range_check_ptr}(source):
     return ()
 end
 
-func write_hash{writer: Writer, range_check_ptr}(source: felt*):
+func write_hash{writer : Writer, range_check_ptr}(source : felt*):
     write_uint32_endian(source[0])
     write_uint32_endian(source[1])
     write_uint32_endian(source[2])
@@ -267,14 +311,8 @@ func write_hash{writer: Writer, range_check_ptr}(source: felt*):
     return ()
 end
 
-# Compute the byte size of an integer encoded as varint
-func size_of_varint(varint) -> (size:felt):
-    # TODO: implement me
-    return (1) 
-end
-
-
-func byte_size_to_felt_size{range_check_ptr}(byte_size)->(felt_size):
+# Return the number of UINT32 felt chunks required to store byte_size bytes.
+func byte_size_to_felt_size{range_check_ptr}(byte_size) -> (felt_size):
     let (size_div_4, size_mod_4) = unsigned_div_rem(byte_size, UINT32_SIZE)
     if size_mod_4 == 0:
         return (size_div_4)
