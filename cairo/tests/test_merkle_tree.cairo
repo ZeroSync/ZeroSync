@@ -11,16 +11,15 @@ from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from src.utils import assert_hashes_equal
 from src.merkle_tree import compute_merkle_root
-from tests.utils_for_testing import setup_hashes
-
+from tests.utils_for_testing import setup_python_defs
 
 # Simple test case (2 TXs)
 # Test case from https://medium.com/coinmonks/how-to-manually-verify-the-merkle-root-of-a-bitcoin-block-command-line-7881397d4db1
 @external
 func test_compute_merkle_root{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
     alloc_locals
-    # Call setup_hashes at least once to make sure the python functions for the next hint are defined
-    setup_hashes()
+    # Call setup_python_defs at least once to make sure the python functions for the next hint are defined
+    setup_python_defs()
     let (leaves) = alloc()
     let (root_expected) = alloc()
     local leaves_len
@@ -46,7 +45,7 @@ end
 @external
 func test_compute_merkle_root_power_of_2{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
     alloc_locals
-    setup_hashes()
+    setup_python_defs()
     let (leaves) = alloc()
     let (root_expected) = alloc()
     local leaves_len
@@ -78,7 +77,7 @@ end
 @external
 func test_compute_merkle_root_uneven{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
     alloc_locals
-    setup_hashes()
+    setup_python_defs()
     let (leaves) = alloc()
     let (root_expected) = alloc()
     local leaves_len
@@ -98,7 +97,7 @@ func test_compute_merkle_root_uneven{range_check_ptr, bitwise_ptr : BitwiseBuilt
             "c7be55d3b55bd59f1ca19d2dc3ffbe8c28917c9e27f02456872755215b4b8a1f",
             "e323fe6719e707b8deb108d3f4bcc43d9e018cf48e027b8f88941886a0744f60"
         ], ids.leaves)
-        
+
         write_hashes([
             "560a4d3b44e57ff78be70d29698a8f98ce11677c1a59fb9966a7cd1795c9b47b"
         ], ids.root_expected)

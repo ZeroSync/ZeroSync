@@ -21,7 +21,7 @@ func setup_python_defs():
         def write_hashes(hashes, destination):
             for i, hex_hash in enumerate(hashes):
                 hex_string = little_endian(hex_hash.replace("0x",""))
-                _ = write_hex_string(hex_string, destination)
+                _ = write_hex_string(hex_string, destination + i * 8)
             return len(hashes)
 
 
