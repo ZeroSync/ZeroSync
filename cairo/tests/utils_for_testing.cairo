@@ -30,6 +30,11 @@ func setup_python_defs():
         # Using multi-line strings in python:
         # - https://stackoverflow.com/questions/10660435/how-do-i-split-the-definition-of-a-long-string-over-multiple-lines
         def from_hex(hex_string, destination):
+            # To see if there are only 0..f in hex_string we can try to turn it into an int
+            try:
+                check_if_hex = int(hex_string,16)
+            except ValueError:
+                print("ERROR: Input to from_hex contains non-hex characters.")
             felts = hex_to_felt(hex_string)
             segments.write_arg(destination, felts)
             return len(felts)
