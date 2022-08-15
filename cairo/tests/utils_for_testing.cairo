@@ -21,7 +21,7 @@ func setup_python_defs():
         def write_hashes(hashes, destination):
             for i, hex_hash in enumerate(hashes):
                 hex_string = little_endian(hex_hash.replace("0x",""))
-                _ = write_hex_string(hex_string, destination + i * 8)
+                _ = from_hex(hex_string, destination + i * 8)
             return len(hashes)
 
 
@@ -29,7 +29,7 @@ func setup_python_defs():
         #
         # Using multi-line strings in python:
         # - https://stackoverflow.com/questions/10660435/how-do-i-split-the-definition-of-a-long-string-over-multiple-lines
-        def write_hex_string(hex_string, destination):
+        def from_hex(hex_string, destination):
             felts = hex_to_felt(hex_string)
             segments.write_arg(destination, felts)
             return len(felts)
@@ -41,7 +41,7 @@ func setup_python_defs():
         def write_string(string, destination):
             hex_list = [hex(ord(x)).replace("0x","") for x in string]
             hex_string = "".join(hex_list)
-            len_felts = write_hex_string(hex_string, destination)
+            len_felts = from_hex(hex_string, destination)
             return len(string), len_felts
     %}
     return ()
