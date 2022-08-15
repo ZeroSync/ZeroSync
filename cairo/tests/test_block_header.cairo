@@ -8,7 +8,7 @@
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.memcpy import memcpy
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
-from tests.utils_for_testing import setup_hashes
+from tests.utils_for_testing import setup_python_defs
 from buffer import init_reader, init_writer, flush_writer
 from utils import assert_hashes_equal
 from block_header import read_block_header, write_block_header, bits_to_target, BLOCK_HEADER_FELT_SIZE, BlockHeaderValidationContext, read_block_header_validation_context
@@ -20,7 +20,7 @@ func test_serialize_block_header{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}
     # https://developer.bitcoin.org/reference/block_chain.html#block-headers
     # https://blockstream.info/block/000000000000000009a11b3972c8e532fe964de937c9e0096b43814e67af3728
     alloc_locals
-    setup_hashes()
+    setup_python_defs()
 
     let (array) = alloc()
     # TODO: retrieve the header from python
@@ -82,7 +82,7 @@ func test_read_block_header_validation_context{range_check_ptr, bitwise_ptr : Bi
     # https://developer.bitcoin.org/reference/block_chain.html#block-headers
     # https://blockstream.info/block/000000000000000009a11b3972c8e532fe964de937c9e0096b43814e67af3728
     alloc_locals
-    setup_hashes()
+    setup_python_defs()
 
     let (array) = alloc()
     # TODO: retrieve the header from python
