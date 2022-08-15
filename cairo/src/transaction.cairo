@@ -8,7 +8,7 @@ from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 
 from utils import sha256d, HASH_SIZE
-from buffer import Reader, read_uint32, read_uint64, read_varint, read_hash, read_bytes, UINT32_SIZE, UINT64_SIZE
+from buffer import Reader, read_uint8, peek_uint8, read_uint16, read_uint32, read_uint64, read_varint, read_hash, read_bytes, UINT32_SIZE, UINT64_SIZE
 
 # A Bitcoin transaction
 struct Transaction:
@@ -37,20 +37,26 @@ struct TxOutput:
 end
 
 # Read a Transaction from a buffer
-func read_transaction{reader:Reader, range_check_ptr}(
+func read_transaction{reader: Reader, range_check_ptr}(
 	) -> (transaction: Transaction, byte_size):
 	alloc_locals
-	let (version)		= read_uint32()
-	# TODO: parse segwit flag (use get_word)
-	let inputs_count	= read_varint()
-	if inputs_count.value == 0:
-
+	let (version) = read_uint32()
+	
+	# Parse the SegWit flag
+	let (is_not_segwit) = peek_uint8()
+	if is_not_segwit == 0:
+		# This is a SegWit transaction
+		# Read the 2-byte flag
+		let (flag) = read_uint16()
+		assert flag = 0x0100
 	end
 
+	let inputs_count	= read_varint()
 	let inputs			= read_inputs(inputs_count.value)
 	let outputs_count	= read_varint()
 	let outputs			= read_outputs(outputs_count.value)
 	let (locktime)		= read_uint32()
+
 	return (Transaction(
 		version, 
 		inputs_count.value, 

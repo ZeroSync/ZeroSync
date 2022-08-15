@@ -47,6 +47,46 @@ func test_read_transaction{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}():
 end
 
 
+
+# SegWit Transaction example 
+#
+# See also
+# - https://blockstream.info/testnet/tx/45c1edba17b831b919f9539d2d3d2e7107da7b661673e10ffb65446fc1781335?expand
+# - https://blockstream.info/testnet/api/tx/45c1edba17b831b919f9539d2d3d2e7107da7b661673e10ffb65446fc1781335/hex
+@external
+func test_read_segwit_transaction{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}():
+	alloc_locals
+	setup_python_defs()
+
+	let (transaction_raw) = alloc()
+
+	# Use Python to convert hex string into uint32 array
+   %{
+    from_hex((
+        "02000000000101193c8e971011dad3a886b8f88b05614ce38930b2b00ae9e34f"
+        "a9b3e0371093990100000000ffffffff0327010000000000001600145d6787fb"
+        "4d4bf624d7d30edc1832253f80ed45aa6eb1000000000000160014519a06346d"
+        "e75727fb060af1fc0615922efb2e050000000000000000066a04000004b00247"
+        "3044022012d52c4451c549cf14dec197a1b3546e8fdbe87239ed82cfa98d0f43"
+        "358c101a0220046405b23a5e3e5a3765a11ace75ea1498ef28ac2bdf5adf2160"
+        "498521914f6c012103f2a2ae66e6f49f62f011be8c34e498d3b615b06990590e"
+        "3f5d68e866ecec219500000000"), ids.transaction_raw)
+    %}
+
+	let (reader) = init_reader(transaction_raw)
+
+	let (transaction, byte_size) = read_transaction{reader=reader}()
+
+	assert transaction.version = 0x02
+	
+	assert transaction.outputs[0].value = 0x0127
+	assert transaction.outputs[1].value = 0xb16e
+
+	# assert byte_size = 259
+	return ()
+end
+
+
 @external
 func test_read_transaction_validation_context{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}():
 	alloc_locals

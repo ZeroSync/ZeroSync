@@ -46,6 +46,20 @@ func read_uint8{reader: Reader, range_check_ptr}() -> (byte: felt):
     end
 end
 
+func peek_uint8{reader: Reader, range_check_ptr}() -> (byte: felt):
+    if reader.offset == 0:
+        # The Reader is empty, so we read from the head, return the first byte,
+        # and copy the remaining three bytes into the Reader's payload.
+        let (byte, payload) = unsigned_div_rem([reader.head], BYTE**3)
+        return (byte)
+    else: 
+        # The Reader is not empty. So we read the first byte from its payload
+        # and continue with the remaining bytes.
+        let (byte, payload) = unsigned_div_rem(reader.payload, BYTE**3)
+        return (byte)
+    end
+end
+
 func _read_n_bytes_into_felt{reader: Reader, range_check_ptr}(
     output: felt*, value, base, loop_counter):
     if loop_counter == 0:
