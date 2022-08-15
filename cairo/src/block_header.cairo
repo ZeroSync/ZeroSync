@@ -8,7 +8,7 @@ from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.math import assert_le, unsigned_div_rem
 from starkware.cairo.common.pow import pow
 from buffer import Reader, Writer, read_uint32, write_uint32, read_hash, write_hash, UINT32_SIZE, BYTE
-from utils import _compute_double_sha256, assert_hashes_equal
+from utils import sha256d_felt_sized, assert_hashes_equal
 
 # The size of a block header is 80 bytes
 const BLOCK_HEADER_SIZE = 80
@@ -73,8 +73,7 @@ func read_block_header_validation_context{reader: Reader, range_check_ptr, bitwi
 	
 	let (target) = bits_to_target( block_header.bits )
 	
-	let (block_hash) = _compute_double_sha256(
-		BLOCK_HEADER_FELT_SIZE, block_header_raw, BLOCK_HEADER_SIZE)
+	let (block_hash) = sha256d_felt_sized(block_header_raw, BLOCK_HEADER_FELT_SIZE)
 
 	return (BlockHeaderValidationContext(
 		block_header_raw, block_header, block_hash, target, prev_context))

@@ -9,7 +9,7 @@ from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.uint256 import Uint256
 
 from tests.utils_for_testing import setup_python_defs
-from src.utils import compute_double_sha256, _compute_double_sha256, __compute_double_sha256, to_uint256, array_to_uint256, assert_hashes_equal, HASH_FELT_SIZE
+from src.utils import compute_double_sha256, _compute_double_sha256, sha256d, to_uint256, array_to_uint256, assert_hashes_equal, HASH_FELT_SIZE
 from src.sha256.sha256 import compute_sha256
 
 @external
@@ -65,7 +65,7 @@ func test_compute_double_sha256{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
 end
 
 @external
-func test__compute_double_sha256{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
+func testsha256d{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
     alloc_locals
     # Set input to a long byte string
     let (input) = alloc()
@@ -87,7 +87,7 @@ func test__compute_double_sha256{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}
     let byte_size = 259
 
     # TODO: FIXME
-    # let (hash) = __compute_double_sha256(input, byte_size)
+    # let (hash) = sha256d(input, byte_size)
 
     return () 
 end

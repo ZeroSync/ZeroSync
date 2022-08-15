@@ -282,4 +282,3 @@ func byte_size_to_felt_size{range_check_ptr}(byte_size)->(felt_size):
         return (size_div_4 + 1)
     end
 end
-
