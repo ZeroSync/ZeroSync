@@ -5,10 +5,12 @@ from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.bitwise import bitwise_and
 from starkware.cairo.common.memcpy import memcpy
 
-# A 256-bit hash is represented as an array of 8 x Uint32
-const HASH_LEN = 8
+from buffer import byte_size_to_felt_size
+
 # A hash has 32 bytes
-const N_BYTES_HASH = 32
+const HASH_SIZE = 32
+# A 256-bit hash is represented as an array of 8 x Uint32
+const HASH_FELT_SIZE = 8
 
 # Convert an array of 8 x Uint32 to an Uint256
 func array_to_uint256(array: felt*) -> (result: Uint256):
@@ -19,21 +21,30 @@ func array_to_uint256(array: felt*) -> (result: Uint256):
 end
 
 func _compute_double_sha256{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
-    input_len : felt, input : felt*, n_bytes : felt
+    felt_size : felt, input : felt*, byte_size : felt
 ) -> (result : felt*):
     alloc_locals
-    let (hash_first_round) = compute_sha256(input_len, input, n_bytes)
-    let (hash_second_round) = compute_sha256(HASH_LEN, hash_first_round, N_BYTES_HASH)
+    let (hash_first_round) = compute_sha256(felt_size, input, byte_size)
+    let (hash_second_round) = compute_sha256(HASH_FELT_SIZE, hash_first_round, HASH_SIZE)
     return (hash_second_round)
+end
+
+func __compute_double_sha256{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
+    input : felt*, byte_size : felt
+) -> (result : felt*):
+    alloc_locals
+    let (felt_size) = byte_size_to_felt_size(byte_size)
+    let (hash) = _compute_double_sha256( felt_size, input, byte_size )
+    return (hash)
 end
 
 # Compute double sha256 hash of the input given as an array of Uint32 
 # and returns a Uint256.
 func compute_double_sha256{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
-    input_len : felt, input : felt*, n_bytes : felt
+    felt_size : felt, input : felt*, byte_size : felt
 ) -> (result : Uint256):
     alloc_locals
-    let (hash) = _compute_double_sha256(input_len, input, n_bytes)
+    let (hash) = _compute_double_sha256(felt_size, input, byte_size)
     let (result) = array_to_uint256(hash)
     return (result)
 end
@@ -58,7 +69,7 @@ end
 # Copy a hash represented as 8 x Uint32. 
 # Starts reading at `source` and writes to `destination`
 func copy_hash(source: felt*, destination: felt*):
-    memcpy(destination, source, HASH_LEN)
+    memcpy(destination, source, HASH_FELT_SIZE)
     return ()
 end
 

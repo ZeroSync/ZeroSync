@@ -14,7 +14,10 @@ from starkware.cairo.common.math import unsigned_div_rem
 const BYTE = 2**8
 
 # The size of an Uint32 is 4 bytes
+const UINT8_SIZE = 1
+const UINT16_SIZE = 2
 const UINT32_SIZE = 4
+const UINT64_SIZE = 8
 
 struct Reader: 
     member head : felt*
@@ -23,15 +26,15 @@ struct Reader:
 end
 
 func init_reader(array: felt*) -> (reader : Reader):
-    return (Reader(array, 1, 0))
+    return (Reader(array, 0, 0))
 end 
 
 func read_uint8{reader: Reader, range_check_ptr}() -> (byte: felt):
-    if reader.offset == 1:
+    if reader.offset == 0:
         # The Reader is empty, so we read from the head, return the first byte,
         # and copy the remaining three bytes into the Reader's payload.
         let (byte, payload) = unsigned_div_rem([reader.head], BYTE**3)
-        let reader = Reader(reader.head + 1, UINT32_SIZE, payload * BYTE)
+        let reader = Reader(reader.head + 1, UINT32_SIZE - 1, payload * BYTE)
         return (byte)
     else: 
         # The Reader is not empty. So we read the first byte from its payload
@@ -56,29 +59,30 @@ end
 func read_uint16{reader: Reader, range_check_ptr}() -> (result: felt):
     alloc_locals
     let (result) = alloc()
-    _read_n_bytes_into_felt(result, 0, 1, 2)
+    _read_n_bytes_into_felt(result, 0, 1, UINT16_SIZE)
     return ([result]) 
 end 
 
 func read_uint32{reader: Reader, range_check_ptr}() -> (result: felt):
     alloc_locals
     let (result) = alloc()
-    _read_n_bytes_into_felt(result, 0, 1, 4)
+    _read_n_bytes_into_felt(result, 0, 1, UINT32_SIZE)
     return ([result]) 
 end 
 
 func read_uint64{reader: Reader, range_check_ptr}() -> (result: felt):
     alloc_locals
     let (result) = alloc()
-    _read_n_bytes_into_felt(result, 0, 1, 8)
+    _read_n_bytes_into_felt(result, 0, 1, UINT64_SIZE)
     return ([result])
 end
 
-# Reads a VarInt from the buffer
+# Reads a VarInt from the buffer and returns a pair 
+# of the varint that was read and its byte size.
 # 
 # See also:
 # - https://developer.bitcoin.org/reference/transactions.html#compactsize-unsigned-integers
-func read_varint{reader: Reader, range_check_ptr}() -> (result: felt):
+func read_varint{reader: Reader, range_check_ptr}() -> (value, byte_size):
     # Read the first byte 
     let (first_byte) = read_uint8()
 
@@ -87,23 +91,23 @@ func read_varint{reader: Reader, range_check_ptr}() -> (result: felt):
     if first_byte == 0xff:
         # This varint has 8 more bytes
         let (uint64) = read_uint64()
-        return (uint64)
+        return (uint64, UINT64_SIZE + UINT8_SIZE)
     end
 
     if first_byte == 0xfe:
         # This varint has 4 more bytes
         let (uint32) = read_uint32()
-        return (uint32)
+        return (uint32, UINT32_SIZE + UINT8_SIZE)
     end
 
     if first_byte == 0xfd:
         # This varint has 2 more bytes
         let (uint16) = read_uint16()
-        return (uint16)
+        return (uint16, UINT16_SIZE + UINT8_SIZE)
     end
     
     # This varint is only 1 byte
-    return (first_byte)
+    return (first_byte, UINT8_SIZE)
 end
 
 func _read_into_uint32_array{reader: Reader, range_check_ptr}(
@@ -268,3 +272,14 @@ func size_of_varint(varint) -> (size:felt):
     # TODO: implement me
     return (1) 
 end
+
+
+func byte_size_to_felt_size{range_check_ptr}(byte_size)->(felt_size):
+    let (size_div_4, size_mod_4) = unsigned_div_rem(byte_size, UINT32_SIZE)
+    if size_mod_4 == 0:
+        return (size_div_4)
+    else:
+        return (size_div_4 + 1)
+    end
+end
+

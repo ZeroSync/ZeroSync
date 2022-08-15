@@ -5,7 +5,7 @@ from buffer import init_reader, init_writer, flush_writer
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from tests.utils_for_testing import setup_python_defs
 
-from transaction import read_transaction
+from transaction import read_transaction, read_transaction_validation_context
 
 # Transaction example 
 #
@@ -18,27 +18,65 @@ func test_read_transaction{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}():
 	setup_python_defs()
 
 	let (transaction_raw) = alloc()
-	%{
-        from_hex((
-            "0100000001352a68f58c6e69fa632a1bf77566cf83a7515fc9ecd251fa37f410"
-            "460d07fb0c010000008c493046022100e30fea4f598a32ea10cd56118552090c"
-            "be79f0b1a0c63a4921d2399c9ec14ffc022100ef00f238218864a909db55be9e"
-            "2e464ccdd0c42d645957ea80fa92441e90b4c6014104b01cf49815496b5ef83a"
-            "bd1a3891996233f0047ada682d56687dd58feb39e969409ce70be398cf73634f"
-            "f9d1aae79ac2be2b1348ce622dddb974ad790b4106deffffffff02e093040000"
-            "0000001976a914a18cc6dd0e38dea210390a2403622ffc09dae88688ac8152b5"
-            "00000000001976a914d73441c86ea086121991877e204516f1861c194188ac00"
-            "000000"), ids.transaction_raw)
-	%}
+
+	# Use Python to convert hex string into uint32 array
+   %{
+    from_hex((
+        "0100000001352a68f58c6e69fa632a1bf77566cf83a7515fc9ecd251fa37f410"
+        "460d07fb0c010000008c493046022100e30fea4f598a32ea10cd56118552090c"
+        "be79f0b1a0c63a4921d2399c9ec14ffc022100ef00f238218864a909db55be9e"
+        "2e464ccdd0c42d645957ea80fa92441e90b4c6014104b01cf49815496b5ef83a"
+        "bd1a3891996233f0047ada682d56687dd58feb39e969409ce70be398cf73634f"
+        "f9d1aae79ac2be2b1348ce622dddb974ad790b4106deffffffff02e093040000"
+        "0000001976a914a18cc6dd0e38dea210390a2403622ffc09dae88688ac8152b5"
+        "00000000001976a914d73441c86ea086121991877e204516f1861c194188ac00"
+        "000000"), ids.transaction_raw)
+    %}
 
 	let (reader) = init_reader(transaction_raw)
 
-	let (transaction) = read_transaction{reader=reader}()
+	let (transaction, byte_size) = read_transaction{reader=reader}()
 
 	assert transaction.version = 0x01
 	
 	assert transaction.outputs[0].value =   300000
 	assert transaction.outputs[1].value = 11883137
 
+	assert byte_size = 259
+	return ()
+end
+
+
+@external
+func test_read_transaction_validation_context{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}():
+	alloc_locals
+	setup_python_defs()
+
+	let (transaction_raw) = alloc()
+
+	# Use Python to convert hex string into uint32 array
+   %{
+    from_hex((
+        "0100000001352a68f58c6e69fa632a1bf77566cf83a7515fc9ecd251fa37f410"
+        "460d07fb0c010000008c493046022100e30fea4f598a32ea10cd56118552090c"
+        "be79f0b1a0c63a4921d2399c9ec14ffc022100ef00f238218864a909db55be9e"
+        "2e464ccdd0c42d645957ea80fa92441e90b4c6014104b01cf49815496b5ef83a"
+        "bd1a3891996233f0047ada682d56687dd58feb39e969409ce70be398cf73634f"
+        "f9d1aae79ac2be2b1348ce622dddb974ad790b4106deffffffff02e093040000"
+        "0000001976a914a18cc6dd0e38dea210390a2403622ffc09dae88688ac8152b5"
+        "00000000001976a914d73441c86ea086121991877e204516f1861c194188ac00"
+        "000000"), ids.transaction_raw)
+    %}
+
+	let (reader) = init_reader(transaction_raw)
+
+	let (context) = read_transaction_validation_context{reader=reader}()
+
+	assert context.transaction.version = 0x01
+	
+	assert context.transaction.outputs[0].value =   300000
+	assert context.transaction.outputs[1].value = 11883137
+
+	assert context.transaction_size = 259
 	return ()
 end

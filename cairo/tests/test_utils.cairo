@@ -8,7 +8,8 @@ from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.uint256 import Uint256
 
-from src.utils import compute_double_sha256,_compute_double_sha256, to_uint256, array_to_uint256, assert_hashes_equal, HASH_LEN
+from tests.utils_for_testing import setup_python_defs
+from src.utils import compute_double_sha256, _compute_double_sha256, __compute_double_sha256, to_uint256, array_to_uint256, assert_hashes_equal, HASH_FELT_SIZE
 from src.sha256.sha256 import compute_sha256
 
 @external
@@ -17,15 +18,15 @@ func test_compute_sha256{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
     # Test vectors: https://www.di-mgt.com.au/sha_testvectors.html
     # Test vectors: https://github.com/bitcoin/bitcoin/blob/master/src/test/crypto_tests.cpp
 
-    let input_len = 1
+    let felt_size = 1
 
     # Set input to "abc"
     let (input) = alloc()
     assert input[0] = 0x61626300
-    let n_bytes = 3
+    let byte_size = 3
     
     # ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad
-    let (hash) = compute_sha256(input_len, input, n_bytes)
+    let (hash) = compute_sha256(felt_size, input, byte_size)
     assert hash[0] = 0xba7816bf
     assert hash[1] = 0x8f01cfea
     assert hash[2] = 0x414140de
@@ -42,14 +43,14 @@ end
 @external
 func test_compute_double_sha256{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
     alloc_locals
-    let input_len = 1
+    let felt_size = 1
 
     # Set input to "abc"
     let (input) = alloc()
     assert input[0] = 0x61626300
-    let n_bytes = 3
+    let byte_size = 3
     
-    let (hash) = _compute_double_sha256(input_len, input, n_bytes)
+    let (hash) = _compute_double_sha256(felt_size, input, byte_size)
     # 8cb9012517c817fead650287d61bdd9c68803b6bf9c64133dcab3e65b5a50cb9
     assert hash[0] = 0x4f8b42c2
     assert hash[1] = 0x2dd3729b
@@ -64,9 +65,37 @@ func test_compute_double_sha256{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
 end
 
 @external
+func test__compute_double_sha256{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
+    alloc_locals
+    # Set input to a long byte string
+    let (input) = alloc()
+
+    # Use Python to convert hex string into uint32 array
+    setup_python_defs()
+   %{
+    from_hex((
+        "0100000001352a68f58c6e69fa632a1bf77566cf83a7515fc9ecd251fa37f410"
+        "460d07fb0c010000008c493046022100e30fea4f598a32ea10cd56118552090c"
+        "be79f0b1a0c63a4921d2399c9ec14ffc022100ef00f238218864a909db55be9e"
+        "2e464ccdd0c42d645957ea80fa92441e90b4c6014104b01cf49815496b5ef83a"
+        "bd1a3891996233f0047ada682d56687dd58feb39e969409ce70be398cf73634f"
+        "f9d1aae79ac2be2b1348ce622dddb974ad790b4106deffffffff02e093040000"
+        "0000001976a914a18cc6dd0e38dea210390a2403622ffc09dae88688ac8152b5"
+        "00000000001976a914d73441c86ea086121991877e204516f1861c194188ac00"
+        "000000"), ids.input)
+    %}
+    let byte_size = 259
+
+    # TODO: FIXME
+    # let (hash) = __compute_double_sha256(input, byte_size)
+
+    return () 
+end
+
+@external
 func test_compute_double_sha256_uint256{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
     alloc_locals
-    let input_len = 11
+    let felt_size = 11
 
     # Set input to "The quick brown fox jumps over the lazy dog"
     let (input) = alloc()
@@ -81,9 +110,9 @@ func test_compute_double_sha256_uint256{range_check_ptr, bitwise_ptr : BitwiseBu
     assert input[8]  = 0x6865206c
     assert input[9]  = 0x617a7920
     assert input[10] = 0x646f6700
-    let n_bytes = 43 
+    let byte_size = 43 
     
-    let (hash) = compute_double_sha256(input_len, input, n_bytes)
+    let (hash) = compute_double_sha256(felt_size, input, byte_size)
     assert hash.low  = 0x6d37795021e544d82b41850edf7aabab
     assert hash.high = 0x9a0ebe274e54a519840c4666f35b3937
     return () 

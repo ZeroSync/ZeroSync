@@ -96,17 +96,21 @@ func test_read_varint{range_check_ptr}():
     
     let (reader) = init_reader(array)
     
-    let (varint8) = read_varint{reader=reader}()
+    let (varint8, byte_size) = read_varint{reader=reader}()
     assert varint8 = 0x01
+    assert byte_size = 1
     
-    let (varint16) = read_varint{reader=reader}()
+    let (varint16, byte_size) = read_varint{reader=reader}()
     assert varint16 = 0x0201
+    assert byte_size = 3
 
-    let (varint32) = read_varint{reader=reader}()
+    let (varint32, byte_size) = read_varint{reader=reader}()
     assert varint32 = 0x04030201
+    assert byte_size = 5
 
-    let (varint64) = read_varint{reader=reader}()
+    let (varint64, byte_size) = read_varint{reader=reader}()
     assert varint64 = 0x0807060504030201
+    assert byte_size = 9
     
     return ()
 end

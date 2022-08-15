@@ -13,12 +13,16 @@ from buffer import init_reader, init_writer, flush_writer
 from utils import assert_hashes_equal
 from block_header import read_block_header, write_block_header, bits_to_target, BLOCK_HEADER_FELT_SIZE, BlockHeaderValidationContext, read_block_header_validation_context
 
+# Test Block Header serializations
+# 
+# See also:
+# https://developer.bitcoin.org/reference/block_chain.html#block-headers
+#
+# Example copied from:
+# https://blockstream.info/block/000000000000000009a11b3972c8e532fe964de937c9e0096b43814e67af3728
+# https://blockstream.info/api/block/000000000000000009a11b3972c8e532fe964de937c9e0096b43814e67af3728/header
 @external
 func test_serialize_block_header{range_check_ptr}():
-    # Block Header example 
-    # Copied from:
-    # https://developer.bitcoin.org/reference/block_chain.html#block-headers
-    # https://blockstream.info/block/000000000000000009a11b3972c8e532fe964de937c9e0096b43814e67af3728
     alloc_locals
     setup_python_defs()
 
@@ -61,13 +65,13 @@ func test_serialize_block_header{range_check_ptr}():
 end
 
 
+# Test Block Header validation context
+#
+# Example copied from:
+# https://blockstream.info/block/000000000000000009a11b3972c8e532fe964de937c9e0096b43814e67af3728
+# https://blockstream.info/api/block/000000000000000009a11b3972c8e532fe964de937c9e0096b43814e67af3728/header
 @external
 func test_read_block_header_validation_context{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
-    # Block Header example 
-    # Copied from:
-    # https://developer.bitcoin.org/reference/block_chain.html#block-headers
-    # https://blockstream.info/block/000000000000000009a11b3972c8e532fe964de937c9e0096b43814e67af3728
-    # https://blockstream.info/api/block/000000000000000009a11b3972c8e532fe964de937c9e0096b43814e67af3728/header
     alloc_locals
     setup_python_defs()
 

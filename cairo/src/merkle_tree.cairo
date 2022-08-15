@@ -1,6 +1,6 @@
 from starkware.cairo.common.math import unsigned_div_rem
 from starkware.cairo.common.alloc import alloc
-from utils import _compute_double_sha256, copy_hash, HASH_LEN
+from utils import _compute_double_sha256, copy_hash, HASH_FELT_SIZE
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 
 # Compute the Merkle root hash of a set of hashes
@@ -18,7 +18,7 @@ func compute_merkle_root{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
 	# If the number of leaves is odd then duplicate the last leaf
 	let (_, is_odd) = unsigned_div_rem(leaves_len, 2)
 	if is_odd == 1:
-		copy_hash(leaves + HASH_LEN * (leaves_len - 1), leaves + HASH_LEN * leaves_len)
+		copy_hash(leaves + HASH_FELT_SIZE * (leaves_len - 1), leaves + HASH_FELT_SIZE * leaves_len)
 	end
 
 	# Compute the next generation of leaves one level higher up in the tree
@@ -41,9 +41,9 @@ func _compute_merkle_root_loop{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
 	end
 
 	# Hash two leaves to get a node of the next generation
-	let (hash) = _compute_double_sha256(2 * HASH_LEN, leaves, 2 * HASH_LEN * 4)
+	let (hash) = _compute_double_sha256(2 * HASH_FELT_SIZE, leaves, 2 * HASH_FELT_SIZE * 4)
 	copy_hash(hash, next_leaves)
 
 	# Continue this loop with the next two leaves
-	return _compute_merkle_root_loop(leaves + 2 * HASH_LEN, next_leaves + HASH_LEN, loop_counter - 1)
+	return _compute_merkle_root_loop(leaves + 2 * HASH_FELT_SIZE, next_leaves + HASH_FELT_SIZE, loop_counter - 1)
 end
