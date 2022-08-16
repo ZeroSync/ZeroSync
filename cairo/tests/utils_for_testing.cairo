@@ -17,7 +17,9 @@ func setup_python_defs():
                 felts[-1] += "0"
             return [int(x, 16) for x in felts]
 
-
+        # Writes an array of hex-encoded hashes into an uint32 array
+        # Because of the quirk in Bitcoin we display hex-encoded hashes 
+        # in reverse byte order.
         def hashes_from_hex(hashes, destination):
             for i, hex_hash in enumerate(hashes):
                 hex_string = little_endian(hex_hash.replace("0x",""))
