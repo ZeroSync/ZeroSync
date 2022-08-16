@@ -62,16 +62,23 @@ func test_compute_double_sha256{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
     return () 
 end
 
+# Test input with a long byte string 
+# (We use a 259 bytes transaction here)
+#
+# See also:
+#  - Example Transaction: https://blockstream.info/api/tx/b9818f9eb8925f2b5b9aaf3e804306efa1a0682a7173c0b7edb5f2e05cc435bd/hex 
 @external
 func test_sha256d_long_input{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
     alloc_locals
-    # Set input to a long byte string
-    let (input) = alloc()
 
     # Use Python to convert hex string into uint32 array
+    let (input) = alloc()
+    local byte_size
+    let (hash_expected) = alloc()
+
     setup_python_defs()
    %{
-    from_hex((
+    ids.byte_size = from_hex((
         "0100000001352a68f58c6e69fa632a1bf77566cf83a7515fc9ecd251fa37f410"
         "460d07fb0c010000008c493046022100e30fea4f598a32ea10cd56118552090c"
         "be79f0b1a0c63a4921d2399c9ec14ffc022100ef00f238218864a909db55be9e"
@@ -81,10 +88,35 @@ func test_sha256d_long_input{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
         "0000001976a914a18cc6dd0e38dea210390a2403622ffc09dae88688ac8152b5"
         "00000000001976a914d73441c86ea086121991877e204516f1861c194188ac00"
         "000000"), ids.input)
-    %}
-    let byte_size = 259
 
-    # TODO: FIXME
+    hashes_from_hex([
+        "b9818f9eb8925f2b5b9aaf3e804306efa1a0682a7173c0b7edb5f2e05cc435bd"
+        ], ids.hash_expected)
+    %}
+
+    let (hash) = sha256d(input, byte_size)
+
+    assert_hashes_equal(hash_expected, hash)
+    return () 
+end
+
+
+# Test input with a 64 bytes string
+@external
+func test_sha256d_64bytes_input{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
+    alloc_locals
+
+    # Use Python to convert hex string into uint32 array
+    let (input) = alloc()
+    local byte_size
+    setup_python_defs()
+   %{
+    ids.byte_size = from_hex((
+        "0100000001352a68f58c6e69fa632a1bf77566cf83a7515fc9ecd251fa37f410"
+        "460d07fb0c010000008c493046022100e30fea4f598a32ea10cd56118552090c"
+    ), ids.input)
+    %}
+
     let (hash) = sha256d(input, byte_size)
 
     return () 

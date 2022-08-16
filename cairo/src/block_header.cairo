@@ -1,8 +1,8 @@
-# Bitcoin Block Header
+# Serialization and Validation of Bitcoin Block Headers
 #
 # See also: 
-# - https://developer.bitcoin.org/reference/block_chain.html#block-headers
-# - https://github.com/bitcoin/bitcoin/blob/7fcf53f7b4524572d1d0c9a5fdc388e87eb02416/src/primitives/block.h
+# - Reference: https://developer.bitcoin.org/reference/block_chain.html#block-headers
+# - Bitcoin Core: https://github.com/bitcoin/bitcoin/blob/7fcf53f7b4524572d1d0c9a5fdc388e87eb02416/src/primitives/block.h#L22
 
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.math import assert_le, unsigned_div_rem
@@ -20,7 +20,7 @@ const BLOCK_HEADER_FELT_SIZE = BLOCK_HEADER_SIZE / UINT32_SIZE
 # See also:
 # - https://developer.bitcoin.org/reference/block_chain.html#block-headers
 struct BlockHeader:
-	# The block version number indicates which set of block validation rules to follow.
+	# The block version number indicates which set of block validation rules to follow
 	member version: felt 
 
 	# The hash of the previous block in the chain
@@ -44,12 +44,12 @@ func read_block_header{reader: Reader, range_check_ptr}(
 	) -> (result : BlockHeader):
 	alloc_locals
 
-	let (version)			= read_uint32()
-	let (prev_block_hash)	= read_hash()
-	let (merkle_root_hash)	= read_hash()
-	let (time)				= read_uint32()
-	let (bits)				= read_uint32()
-	let (nonce)				= read_uint32()
+	let (version)          = read_uint32()
+	let (prev_block_hash)  = read_hash()
+	let (merkle_root_hash) = read_hash()
+	let (time)             = read_uint32()
+	let (bits)             = read_uint32()
+	let (nonce)            = read_uint32()
 
 	return (BlockHeader(
 		version, prev_block_hash, merkle_root_hash, time, bits, nonce))
@@ -86,7 +86,7 @@ struct BlockHeaderValidationContext:
 	# The previous validation context
 	member prev_context: BlockHeaderValidationContext* # TODO: remove this dependency and make context as stateless as possible
 	
-	# The block heigth of this block header
+	# The block height of this block header
 	member block_height: felt
 	
 	# TODO:

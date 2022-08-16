@@ -39,7 +39,9 @@ func setup_python_defs():
                 print("ERROR: Input to from_hex contains non-hex characters.")
             felts = hex_to_felt(hex_string)
             segments.write_arg(destination, felts)
-            return len(felts)
+
+            # Return the byte size of the uint32 array
+            return len(hex_string) // 2 
 
 
         # Writes a string of any length into the given destination array.

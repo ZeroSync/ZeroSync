@@ -1,8 +1,9 @@
-# Serialization Library
+# Serialization Library for Reading and Writing Byte Streams
 #
-# Functions for reading and writing byte buffers
-# The byte stream is represented as an array of uint32 because
-# the sha256 hash function works on 32-bit words.
+# A byte stream is represented as an array of uint32 because
+# the sha256 hash function works on 32-bit words, and feeding 
+# byte streams into the sha256 function is our main reason for 
+# serializing block data.
 #
 # See also:
 # - https://github.com/mimblewimble/grin/blob/master/core/src/ser.rs

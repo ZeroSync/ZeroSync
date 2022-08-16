@@ -1,8 +1,8 @@
-# Bitcoin Transactions 
+# Serialization and Validation of Bitcoin Transactions
 #
 # See also:
-# - https://developer.bitcoin.org/reference/transactions.html#raw-transaction-format
-# - https://github.com/coins/research/blob/master/bitcoin-tx.md
+# - Bitcoin Core: https://developer.bitcoin.org/reference/transactions.html#raw-transaction-format
+# - Example transactions of all types: https://github.com/coins/research/blob/master/bitcoin-tx.md
 
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
@@ -10,7 +10,10 @@ from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from utils import sha256d, HASH_SIZE
 from buffer import Reader, read_uint8, peek_uint8, read_uint16, read_uint32, read_uint64, read_varint, read_hash, read_bytes, UINT32_SIZE, UINT64_SIZE
 
-# A Bitcoin transaction
+# Definition of a Bitcoin transaction
+#
+# See also:
+# - https://developer.bitcoin.org/reference/transactions.html#raw-transaction-format
 struct Transaction:
 	member version: felt
 	member inputs_count: felt
