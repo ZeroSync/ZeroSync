@@ -1,6 +1,6 @@
-# Bitcoin Hashes
+# Bitcoin Hash Proofs
 
-A library for all hash functions used in [Bitcoin (Script)](https://en.bitcoin.it/wiki/Script#Crypto)
+TODO: A library to prove all hash functions used in [Bitcoin (Script)](https://en.bitcoin.it/wiki/Script#Crypto)
 
 - OP_RIPEMD160: The input is hashed using RIPEMD-160.
 - OP_SHA1: The input is hashed using SHA-1.

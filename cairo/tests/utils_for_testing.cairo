@@ -40,8 +40,8 @@ func setup_python_defs():
             felts = hex_to_felt(hex_string)
             segments.write_arg(destination, felts)
 
-            # Return the byte size of the uint32 array
-            return len(hex_string) // 2 
+            # Return the byte size of the uint32 array and the array length.
+            return len(hex_string) // 2, len(felts)
 
         # Writes a string of any length into the given destination array.
         # String is seperated into uint32 chunks.
@@ -49,8 +49,8 @@ func setup_python_defs():
         def from_string(string, destination):
             hex_list = [hex(ord(x)).replace("0x","") for x in string]
             hex_string = "".join(hex_list)
-            len_felts = from_hex(hex_string, destination)
-            return len(string), len_felts
+            
+            return from_hex(hex_string, destination)
     %}
     return ()
 end
