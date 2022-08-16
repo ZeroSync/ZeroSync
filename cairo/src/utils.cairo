@@ -7,22 +7,17 @@ from starkware.cairo.common.memcpy import memcpy
 
 from buffer import byte_size_to_felt_size, UINT32_SIZE
 from sha256.sha256 import sha256, finalize_sha256
-from sha256_legacy.sha256 import compute_sha256
 
 # A hash has 32 bytes
 const HASH_SIZE = 32
 # A 256-bit hash is represented as an array of 8 x Uint32
 const HASH_FELT_SIZE = 8
 
-
 func _compute_sha256{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
     felt_size, input:felt*, byte_size) -> (hash: felt*):
-    # let (hash) = compute_sha256(felt_size, input, byte_size) # legacy
 
-    # let (hash) = _compute_sha256_real(felt_size, input, byte_size)
-    
-    let (hash) = _compute_sha256_fake(felt_size, input, byte_size)
-    return (hash)
+    # return _compute_sha256_real(felt_size, input, byte_size)
+    return _compute_sha256_fake(felt_size, input, byte_size)
 end
 
 func _compute_sha256_real{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
@@ -31,7 +26,7 @@ func _compute_sha256_real{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
     let sha256_ptr: felt* = alloc()
     let sha256_ptr_start = sha256_ptr
     let hash: felt* = sha256{sha256_ptr=sha256_ptr}(input, byte_size)
-    # finalize_sha256(sha256_ptr_start, sha256_ptr)
+    finalize_sha256(sha256_ptr_start, sha256_ptr)
     return (hash)
 end 
 
