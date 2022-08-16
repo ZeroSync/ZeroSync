@@ -45,7 +45,7 @@ func test_serialize_block_header{range_check_ptr}():
     # Test hash of the previous block
     let (prev_block_hash_expected) = alloc()
     %{
-        write_hashes(["00000000000000000cca48eb4b330d91e8d946d344ca302a86a280161b0bffb6"], 
+        hashes_from_hex(["00000000000000000cca48eb4b330d91e8d946d344ca302a86a280161b0bffb6"], 
             ids.prev_block_hash_expected)
     %}
     assert_hashes_equal(block_header.prev_block_hash, prev_block_hash_expected)
@@ -92,7 +92,7 @@ func test_read_block_header_validation_context{range_check_ptr, bitwise_ptr : Bi
 
     let (block_hash_expected) = alloc()
     %{
-        write_hashes(["000000000000000009a11b3972c8e532fe964de937c9e0096b43814e67af3728"], 
+        hashes_from_hex(["000000000000000009a11b3972c8e532fe964de937c9e0096b43814e67af3728"], 
             ids.block_hash_expected)
     %} 
     assert_hashes_equal(context.block_hash, block_hash_expected)

@@ -184,8 +184,8 @@ func read_transaction_validation_context{reader:Reader, range_check_ptr, bitwise
 	let (transaction, byte_size) = read_transaction()
 
 	# TODO: fix byte_size of the sha256 implementation
-	# let (txid) = sha256d(transaction_raw, byte_size)
-	let (txid) = sha256d(transaction_raw, 65)
+	# let (txid) = sha256d(transaction_raw, 65)
+	let (txid) = sha256d(transaction_raw, byte_size)
 	
 	return (TransactionValidationContext(
 		transaction, transaction_raw, byte_size, txid))

@@ -1,4 +1,4 @@
-# Defines write_hashes for tests
+# Defines hashes_from_hex for tests
 func setup_python_defs():
     %{
         import re
@@ -18,7 +18,7 @@ func setup_python_defs():
             return [int(x, 16) for x in felts]
 
 
-        def write_hashes(hashes, destination):
+        def hashes_from_hex(hashes, destination):
             for i, hex_hash in enumerate(hashes):
                 hex_string = little_endian(hex_hash.replace("0x",""))
                 _ = from_hex(hex_string, destination + i * 8)

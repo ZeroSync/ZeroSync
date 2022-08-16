@@ -3,6 +3,7 @@
 from starkware.cairo.common.alloc import alloc
 from buffer import init_reader, init_writer, flush_writer
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
+from utils import assert_hashes_equal
 from tests.utils_for_testing import setup_python_defs
 
 from transaction import read_transaction, read_transaction_validation_context
@@ -93,6 +94,7 @@ func test_read_transaction_validation_context{range_check_ptr, bitwise_ptr: Bitw
 	setup_python_defs()
 
 	let (transaction_raw) = alloc()
+	let (txid_expected) = alloc()
 
 	# Use Python to convert hex string into uint32 array
    %{
@@ -106,6 +108,10 @@ func test_read_transaction_validation_context{range_check_ptr, bitwise_ptr: Bitw
         "0000001976a914a18cc6dd0e38dea210390a2403622ffc09dae88688ac8152b5"
         "00000000001976a914d73441c86ea086121991877e204516f1861c194188ac00"
         "000000"), ids.transaction_raw)
+
+    hashes_from_hex([
+    	"b9818f9eb8925f2b5b9aaf3e804306efa1a0682a7173c0b7edb5f2e05cc435bd"
+    	], ids.txid_expected)
     %}
 
 	let (reader) = init_reader(transaction_raw)
@@ -118,5 +124,7 @@ func test_read_transaction_validation_context{range_check_ptr, bitwise_ptr: Bitw
 	assert context.transaction.outputs[1].value = 11883137
 
 	assert context.transaction_size = 259
+
+	assert_hashes_equal(context.txid, txid_expected)
 	return ()
 end

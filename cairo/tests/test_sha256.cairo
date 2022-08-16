@@ -2,7 +2,7 @@
 
 from starkware.cairo.common.alloc import alloc
 
-from src.sha256.sha256 import compute_sha256
+from utils import compute_sha256
 
 from tests.utils_for_testing import setup_python_defs
 from src.utils import assert_hashes_equal
