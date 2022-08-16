@@ -4,7 +4,7 @@ from starkware.cairo.common.memcpy import memcpy
 
 from buffer import byte_size_to_felt_size, UINT32_SIZE
 
-from src.hash.sha256.sha256 import _sha256
+from src.crypto.sha256.sha256 import _sha256
 
 # A hash has 32 bytes
 const HASH_SIZE = 32

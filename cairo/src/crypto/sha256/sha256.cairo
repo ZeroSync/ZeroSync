@@ -18,7 +18,7 @@ func _sha256{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
     return _compute_sha256_fake(felt_size, input, byte_size)
 end
 
-from hash.sha256.cartridge_gg.sha256 import compute_sha256, finalize_sha256
+from crypto.sha256.cartridge_gg.sha256 import compute_sha256, finalize_sha256
 func _compute_sha256_real{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
     felt_size, input:felt*, byte_size) -> (hash:felt*):
     alloc_locals

@@ -4,8 +4,8 @@ from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 
 from tests.utils_for_testing import setup_python_defs
-from hash.sha256.sha256 import _sha256
-from hash.sha256d.sha256d import assert_hashes_equal
+from crypto.sha256.sha256 import _sha256
+from crypto.sha256d.sha256d import assert_hashes_equal
 
 @external
 func test_sha256_dummy{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():

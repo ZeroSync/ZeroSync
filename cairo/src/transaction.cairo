@@ -7,7 +7,7 @@
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 
-from hash.sha256d.sha256d import sha256d, HASH_SIZE
+from crypto.sha256d.sha256d import sha256d, HASH_SIZE
 from buffer import Reader, read_uint8, peek_uint8, read_uint16, read_uint32, read_uint64, read_varint, read_hash, read_bytes, UINT32_SIZE, UINT64_SIZE
 
 # Definition of a Bitcoin transaction

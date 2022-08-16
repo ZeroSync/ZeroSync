@@ -9,8 +9,8 @@ from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.uint256 import Uint256
 
 from tests.utils_for_testing import setup_python_defs
-from hash.sha256.sha256 import sha256, _sha256
-from hash.sha256d.sha256d import assert_hashes_equal
+from crypto.sha256.sha256 import sha256, _sha256
+from crypto.sha256d.sha256d import assert_hashes_equal
 
 @external
 func test_sha256{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
@@ -56,7 +56,7 @@ func test_sha256_long_input{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
 
     setup_python_defs()
    %{
-    ids.byte_size = from_hex((
+    (ids.byte_size, _) = from_hex((
         "0100000001352a68f58c6e69fa632a1bf77566cf83a7515fc9ecd251fa37f410"
         "460d07fb0c010000008c493046022100e30fea4f598a32ea10cd56118552090c"
         "be79f0b1a0c63a4921d2399c9ec14ffc022100ef00f238218864a909db55be9e"
