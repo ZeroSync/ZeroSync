@@ -68,17 +68,6 @@ func sha256d_felt_sized{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
     return (hash)
 end
 
-# Compute double sha256 hash of the input given as an array of Uint32 
-# and returns a Uint256.
-# DEPRECATED! WILL GET DELETED WITH validate.cairo
-func compute_double_sha256{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
-    felt_size : felt, input : felt*, byte_size : felt
-) -> (result : Uint256):
-    alloc_locals
-    let (hash) = _compute_double_sha256(felt_size, input, byte_size)
-    let (result) = array_to_uint256(hash)
-    return (result)
-end
 
 # Convert a felt into a Uint256
 func to_uint256{range_check_ptr}(input: felt) -> (output: Uint256):
@@ -87,15 +76,6 @@ func to_uint256{range_check_ptr}(input: felt) -> (output: Uint256):
     return (result)
 end
 
-# Convert Uint32 to big endian
-func to_big_endian{bitwise_ptr: BitwiseBuiltin*}(a : felt) -> (result : felt):
-    let (byte1) = bitwise_and(a, 0x000000FF)
-    let (byte2) = bitwise_and(a, 0x0000FF00)
-    let (byte3) = bitwise_and(a, 0x00FF0000)
-    let (byte4) = bitwise_and(a, 0xFF000000)
-    let result = byte1 * 2**24 + byte2 * 2**8 + byte3 / 2**8 + byte4 / 2**24
-    return (result)
-end
 
 # Copy a hash represented as 8 x Uint32. 
 # Starts reading at `source` and writes to `destination`

@@ -15,12 +15,27 @@ const BLOCK_HEADER_SIZE = 80
 # The size of a block header encoded as an array of Uint32 is 20 felts
 const BLOCK_HEADER_FELT_SIZE = BLOCK_HEADER_SIZE / UINT32_SIZE
 
+# Definition of a Bitcoin block header
+# 
+# See also:
+# - https://developer.bitcoin.org/reference/block_chain.html#block-headers
 struct BlockHeader:
+	# The block version number indicates which set of block validation rules to follow.
 	member version: felt 
+
+	# The hash of the previous block in the chain
 	member prev_block_hash: felt* 
+	
+	# The Merkle root hash of all transactions in this block
 	member merkle_root_hash: felt* 
+
+	# The timestamp of this block header
 	member time: felt 
+
+	# The difficulty target in compact encoding
 	member bits: felt 
+
+	# The lucky nonce which solves the proof-of-work
 	member nonce: felt 
 end
 
@@ -40,7 +55,7 @@ func read_block_header{reader: Reader, range_check_ptr}(
 		version, prev_block_hash, merkle_root_hash, time, bits, nonce))
 end
 
-# Write a BlockHeader to a Uint32 array
+# Write a BlockHeader into a Uint32 array
 func write_block_header{writer: Writer, range_check_ptr}(
 	header : BlockHeader):
 	write_uint32(header.version)
@@ -52,18 +67,35 @@ func write_block_header{writer: Writer, range_check_ptr}(
 	return ()
 end
 
+# The validation context for block headers
 struct BlockHeaderValidationContext:
+	# The block header serialized as uint32 array
 	member block_header_raw: felt*
-	member block_header: BlockHeader # TODO: block_header should be a pointer
+	
+	# The block header parsed into a struct
+	# TODO: should be a pointer
+	member block_header: BlockHeader 
+	
+	# The hash of this block header
 	member block_hash: felt*
-	member target: felt # Assumption: smaller than 2**246 might overflow otherwise
+	
+	# The difficulty target
+	# ASSUMPTION: Smaller than 2**246 might overflow otherwise
+	member target: felt 
+	
+	# The previous validation context
 	member prev_context: BlockHeaderValidationContext* # TODO: remove this dependency and make context as stateless as possible
+	
+	# The block heigth of this block header
 	member block_height: felt
+	
+	# TODO:
 	# member prev_block_hash
 	# member epoch_start_time: felt
 	# member total_work: felt
 end
 
+# Read a block header and its validation context from a reader and a previous validation context
 func read_block_header_validation_context{reader: Reader, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
 	prev_context: BlockHeaderValidationContext*) -> (result : BlockHeaderValidationContext):
 	alloc_locals
