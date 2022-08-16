@@ -2,10 +2,8 @@
 
 from starkware.cairo.common.alloc import alloc
 
-from utils import _compute_sha256
-
 from tests.utils_for_testing import setup_python_defs
-from src.utils import assert_hashes_equal
+from hash.sha256d.sha256d import _compute_sha256, assert_hashes_equal
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 
 @external

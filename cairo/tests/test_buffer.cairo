@@ -6,7 +6,7 @@
 %lang starknet
 
 from starkware.cairo.common.alloc import alloc
-from src.utils import assert_hashes_equal
+from hash.sha256d.sha256d import assert_hashes_equal
 from src.buffer import (
     flush_writer,
     init_writer,

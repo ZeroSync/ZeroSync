@@ -8,7 +8,7 @@ from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.math import assert_le, unsigned_div_rem
 from starkware.cairo.common.pow import pow
 from buffer import Reader, Writer, read_uint32, write_uint32, read_hash, write_hash, UINT32_SIZE, BYTE
-from utils import sha256d_felt_sized, assert_hashes_equal
+from hash.sha256d.sha256d import sha256d_felt_sized, assert_hashes_equal
 
 # The size of a block header is 80 bytes
 const BLOCK_HEADER_SIZE = 80
