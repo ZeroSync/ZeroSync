@@ -41,7 +41,7 @@ end
 
 # Read a BlockHeader from a Uint32 array
 func read_block_header{reader: Reader, range_check_ptr}(
-	) -> (result : BlockHeader):
+	) -> (result: BlockHeader):
 	alloc_locals
 
 	let (version)          = read_uint32()
@@ -182,8 +182,7 @@ end
 # - https://developer.bitcoin.org/reference/block_chain.html#block-headers
 # - https://github.com/bitcoin/bitcoin/blob/36c83b40bd68a993ab6459cb0d5d2c8ce4541147/src/chain.h#L290
 func validate_median_time(context: BlockHeaderValidationContext):
-	# TODO: implement me
-	# Use nondeterminism
+	# TODO: implement me using nondeterminism
 	# Step 1: Let Python sort the array and compute a permutation (array of indexes)
 	# Step 2: Use that permutation to create a sorted array of pointers in Cairo
 	# Step 3: Prove sortedness of the sorted array in linear time

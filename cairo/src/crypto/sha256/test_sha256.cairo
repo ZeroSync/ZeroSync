@@ -78,29 +78,6 @@ func test_sha256_long_input{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
     return () 
 end
 
-
-# Test a double sha256 input with a 64-byte subarray of a 67-byte array
-@external
-func test_sha256_64bytes_input{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
-    alloc_locals
-
-    # Use Python to convert hex string into uint32 array
-    let (input) = alloc()
-    setup_python_defs()
-   %{
-    from_hex((
-        "0100000001352a68f58c6e69fa632a1bf77566cf83a7515fc9ecd251fa37f410"
-        "460d07fb0c010000008c493046022100e30fea4f598a32ea10cd56118552090c"
-        "be79f0"
-    ), ids.input)
-    %}
-
-    # Hash only 64 bytes of the input
-    let (hash) = sha256(input, 64)
-
-    return () 
-end
-
 @external
 func test_sha256_dummy{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
     alloc_locals
