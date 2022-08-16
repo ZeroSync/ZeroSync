@@ -13,7 +13,8 @@ const HASH_SIZE = 32
 # A 256-bit hash is represented as an array of 8 x Uint32
 const HASH_FELT_SIZE = 8
 
-func compute_sha256{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(felt_size, input:felt*, byte_size) -> (hash:felt*):
+func compute_sha256{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
+    felt_size, input:felt*, byte_size) -> (hash:felt*):
     alloc_locals
     let sha256_ptr: felt* = alloc()
     let sha256_ptr_start = sha256_ptr

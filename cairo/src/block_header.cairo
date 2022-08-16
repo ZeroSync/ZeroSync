@@ -16,12 +16,12 @@ const BLOCK_HEADER_SIZE = 80
 const BLOCK_HEADER_FELT_SIZE = BLOCK_HEADER_SIZE / UINT32_SIZE
 
 struct BlockHeader:
-	member version : felt 
-	member prev_block_hash : felt* 
-	member merkle_root_hash : felt* 
-	member time : felt 
-	member bits : felt 
-	member nonce : felt 
+	member version: felt 
+	member prev_block_hash: felt* 
+	member merkle_root_hash: felt* 
+	member time: felt 
+	member bits: felt 
+	member nonce: felt 
 end
 
 # Read a BlockHeader from a Uint32 array
@@ -54,12 +54,14 @@ end
 
 struct BlockHeaderValidationContext:
 	member block_header_raw: felt*
-	member block_header: BlockHeader
-	member block_hash : felt*
-	member target : felt
-	member prev_context : BlockHeaderValidationContext*
+	member block_header: BlockHeader # TODO: block_header should be a pointer
+	member block_hash: felt*
+	member target: felt # Assumption: smaller than 2**246 might overflow otherwise
+	member prev_context: BlockHeaderValidationContext* # TODO: remove this dependency and make context as stateless as possible
+	member block_height: felt
+	# member prev_block_hash
+	# member epoch_start_time: felt
 	# member total_work: felt
-	# member block_height: felt
 end
 
 func read_block_header_validation_context{reader: Reader, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
@@ -69,14 +71,23 @@ func read_block_header_validation_context{reader: Reader, range_check_ptr, bitwi
 	let block_header_raw = reader.head
 
 	let (block_header) = read_block_header()
-	# let block_header_ptr : BlockHeader* = &block_header
 	
-	let (target) = bits_to_target( block_header.bits )
+	let (target) = bits_to_target(block_header.bits)
 	
 	let (block_hash) = sha256d_felt_sized(block_header_raw, BLOCK_HEADER_FELT_SIZE)
 
+	# let block_height = [prev_context].block_height + 1
+	let block_height = 0
+
+
 	return (BlockHeaderValidationContext(
-		block_header_raw, block_header, block_hash, target, prev_context))
+		block_header_raw, 
+		block_header, 
+		block_hash, 
+		target, 
+		prev_context,
+		block_height
+	))
 end
 
 # Calculate target from bits
@@ -133,7 +144,7 @@ func validate_target(context: BlockHeaderValidationContext):
 	return ()
 end
 
-# The timestamp of a block header must be strictly greater than the median time 
+# Validate that the timestamp of a block header is strictly greater than the median time 
 # of the previous 11 blocks. 
 #
 # See also:
