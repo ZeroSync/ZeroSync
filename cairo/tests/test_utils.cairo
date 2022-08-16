@@ -9,7 +9,7 @@ from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.uint256 import Uint256
 
 from tests.utils_for_testing import setup_python_defs
-from src.utils import compute_sha256, _compute_double_sha256, sha256d, to_uint256, array_to_uint256, assert_hashes_equal, HASH_FELT_SIZE
+from src.utils import _compute_sha256, _compute_double_sha256, sha256d, to_uint256, array_to_uint256, assert_hashes_equal, HASH_FELT_SIZE
 
 @external
 func test_compute_sha256{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
@@ -25,7 +25,7 @@ func test_compute_sha256{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
     let byte_size = 3
     
     # ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad
-    let (hash) = compute_sha256(felt_size, input, byte_size)
+    let (hash) = _compute_sha256(felt_size, input, byte_size)
     assert hash[0] = 0xba7816bf
     assert hash[1] = 0x8f01cfea
     assert hash[2] = 0x414140de
@@ -62,7 +62,7 @@ func test_compute_double_sha256{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
     return () 
 end
 
-# Test input with a long byte string 
+# Test a double sha256 input with a long byte string 
 # (We use a 259 bytes transaction here)
 #
 # See also:
@@ -101,23 +101,24 @@ func test_sha256d_long_input{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
 end
 
 
-# Test input with a 64 bytes string
+# Test a double sha256 input with a 64-byte subarray of a 67-byte array
 @external
 func test_sha256d_64bytes_input{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
     alloc_locals
 
     # Use Python to convert hex string into uint32 array
     let (input) = alloc()
-    local byte_size
     setup_python_defs()
    %{
-    ids.byte_size = from_hex((
+    from_hex((
         "0100000001352a68f58c6e69fa632a1bf77566cf83a7515fc9ecd251fa37f410"
         "460d07fb0c010000008c493046022100e30fea4f598a32ea10cd56118552090c"
+        "be79f0"
     ), ids.input)
     %}
 
-    let (hash) = sha256d(input, byte_size)
+    # Hash only 64 bytes of the input
+    let (hash) = sha256d(input, 64)
 
     return () 
 end

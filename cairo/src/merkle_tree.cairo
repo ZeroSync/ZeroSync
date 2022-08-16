@@ -8,12 +8,12 @@
 
 from starkware.cairo.common.math import unsigned_div_rem
 from starkware.cairo.common.alloc import alloc
-from utils import sha256d, copy_hash, HASH_SIZE, HASH_FELT_SIZE
+from utils import sha256d_felt_sized, copy_hash, HASH_SIZE, HASH_FELT_SIZE
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 
 # Compute the Merkle root hash of a set of hashes
-func compute_merkle_root{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
-	leaves : felt*, leaves_len : felt) -> (hash : felt*):
+func compute_merkle_root{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
+	leaves: felt*, leaves_len: felt) -> (hash : felt*):
 	alloc_locals
 
 	# The trivial case is a tree with a single leaf
@@ -36,9 +36,10 @@ func compute_merkle_root{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
 	return compute_merkle_root(next_leaves, next_leaves_len)
 end
 
-# Compute the next generation of leaves by pairwise hashing the current generation
-func _compute_merkle_root_loop{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
-	leaves : felt*, next_leaves : felt*, loop_counter):
+# Compute the next generation of leaves by pairwise hashing 
+# the previous generation of leaves
+func _compute_merkle_root_loop{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
+	prev_leaves: felt*, next_leaves: felt*, loop_counter):
 	alloc_locals
 	
 	# We loop until we've completed the next generation
@@ -46,10 +47,17 @@ func _compute_merkle_root_loop{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
 		return ()
 	end
 
-	# Hash two leaves to get a node of the next generation
-	let (hash) = sha256d(leaves, 2 * HASH_SIZE)
+	# Hash two prev_leaves to get one leave of the next generation
+	let (hash) = sha256d_felt_sized(prev_leaves, HASH_FELT_SIZE * 2)
 	copy_hash(hash, next_leaves)
 
-	# Continue this loop with the next two leaves
-	return _compute_merkle_root_loop(leaves + 2 * HASH_FELT_SIZE, next_leaves + HASH_FELT_SIZE, loop_counter - 1)
+	# Continue this loop with the next two prev_leaves
+	return _compute_merkle_root_loop(
+		# Increase pointer on prev_leaves by two hashes
+		prev_leaves + HASH_FELT_SIZE * 2,
+		# Increase pointer on next_leaves by one hash
+		next_leaves + HASH_FELT_SIZE,
+		# Decrease the loop count by one	
+		loop_counter - 1
+	)
 end

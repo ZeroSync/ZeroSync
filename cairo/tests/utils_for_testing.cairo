@@ -43,11 +43,10 @@ func setup_python_defs():
             # Return the byte size of the uint32 array
             return len(hex_string) // 2 
 
-
         # Writes a string of any length into the given destination array.
         # String is seperated into uint32 chunks.
         # Last chunk is filled with zeros after the last string byte.
-        def write_string(string, destination):
+        def from_string(string, destination):
             hex_list = [hex(ord(x)).replace("0x","") for x in string]
             hex_string = "".join(hex_list)
             len_felts = from_hex(hex_string, destination)

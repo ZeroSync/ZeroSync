@@ -183,6 +183,7 @@ end
 # - https://github.com/bitcoin/bitcoin/blob/36c83b40bd68a993ab6459cb0d5d2c8ce4541147/src/chain.h#L290
 func validate_median_time(context: BlockHeaderValidationContext):
 	# TODO: implement me
+	# Use nondeterminism
 	# Step 1: Let Python sort the array and compute a permutation (array of indexes)
 	# Step 2: Use that permutation to create a sorted array of pointers in Cairo
 	# Step 3: Prove sortedness of the sorted array in linear time

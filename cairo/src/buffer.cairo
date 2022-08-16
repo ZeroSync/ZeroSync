@@ -3,7 +3,7 @@
 # A byte stream is represented as an array of uint32 because
 # the sha256 hash function works on 32-bit words, and feeding 
 # byte streams into the sha256 function is our main reason for 
-# serializing block data.
+# serializing any block data.
 #
 # See also:
 # - https://github.com/mimblewimble/grin/blob/master/core/src/ser.rs
