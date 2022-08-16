@@ -79,7 +79,6 @@ func read_block_header_validation_context{reader: Reader, range_check_ptr, bitwi
 	# let block_height = [prev_context].block_height + 1
 	let block_height = 0
 
-
 	return (BlockHeaderValidationContext(
 		block_header_raw, 
 		block_header, 
