@@ -7,7 +7,7 @@ from starkware.cairo.common.memcpy import memcpy
 from starkware.cairo.common.memset import memset
 from starkware.cairo.common.pow import pow
 
-from sha256.packed_sha256 import BLOCK_SIZE, compute_message_schedule, sha2_compress, get_round_constants
+from hash.sha256.packed_sha256 import BLOCK_SIZE, compute_message_schedule, sha2_compress, get_round_constants
 
 const SHA256_INPUT_CHUNK_SIZE_FELTS = 16
 const SHA256_INPUT_CHUNK_SIZE_BYTES = 64

@@ -6,7 +6,7 @@ from starkware.cairo.common.bitwise import bitwise_and
 from starkware.cairo.common.memcpy import memcpy
 
 from buffer import byte_size_to_felt_size, UINT32_SIZE
-from sha256.sha256 import sha256, finalize_sha256
+from hash.sha256.sha256 import sha256, finalize_sha256
 
 # A hash has 32 bytes
 const HASH_SIZE = 32
@@ -30,21 +30,21 @@ func _compute_sha256_real{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
     return (hash)
 end 
 
-from tests.utils_for_testing import setup_python_defs
 
+# Compute a sha256 hash using Python's hashlib library
+# WARNING: This proves nothing!
+# It is intended to be used only for testing purposes!
+#
+from tests.utils_for_testing import setup_python_defs
 func _compute_sha256_fake{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
     felt_size, input:felt*, byte_size) -> (hash:felt*):
     alloc_locals
     setup_python_defs()
     let (hash) = alloc()
     %{
-        # print('ids.byte_size=', ids.byte_size)
-        # print('ids.felt_size=', ids.felt_size)
-        # print('ids.input=', memory[ids.input])
-        # Compute the sha256 hash with the python hashlib library
         import struct
-        import hashlib
         import ctypes
+        import hashlib
 
         felt_size = ids.byte_size // 4 
         felt_size = felt_size + 1 if ids.byte_size % 4 else felt_size
