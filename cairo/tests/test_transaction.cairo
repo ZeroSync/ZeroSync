@@ -1,7 +1,7 @@
 %lang starknet
 
 from starkware.cairo.common.alloc import alloc
-from buffer import init_reader, init_writer, flush_writer
+from buffer import init_reader, init_writer, flush_writer, read_uint8
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from crypto.sha256d.sha256d import assert_hashes_equal
 from tests.utils_for_testing import setup_python_defs
@@ -130,7 +130,7 @@ func test_read_transaction_validation_context{range_check_ptr, bitwise_ptr: Bitw
 end
 
 
-# Transaction example 
+# Read transaction from buffer with an offset
 #
 # See also
 # - https://blockstream.info/tx/a4bc0a85369d04454ec7e006ece017f21549fdfe7df128d61f9f107479bfdf7e
@@ -146,7 +146,7 @@ func test_coinbase_transaction{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}():
 	# Use Python to convert hex string into uint32 array
    %{
     from_hex((
-        "0100000001000000000000000000000000000000000000000000000000000000"
+        "010100000001000000000000000000000000000000000000000000000000000000"
         "0000000000ffffffff0804ffff001d024f02ffffffff0100f2052a0100000043"
         "41048a5294505f44683bbc2be81e0f6a91ac1a197d6050accac393aad3b86b23"
         "98387e34fedf0de5d9f185eb3f2c17f3564b9170b9c262aa3ac91f371279beca"
@@ -158,6 +158,9 @@ func test_coinbase_transaction{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}():
     %}
 
 	let (reader) = init_reader(transaction_raw)
+
+	# Create some offset
+	read_uint8{reader=reader}()
 
 	let (context) = read_transaction_validation_context{reader=reader}()
 
