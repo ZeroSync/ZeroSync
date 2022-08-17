@@ -40,8 +40,8 @@ func test_read_transaction{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}():
 
 	assert transaction.version = 0x01
 	
-	assert transaction.outputs[0].value =   300000
-	assert transaction.outputs[1].value = 11883137
+	assert transaction.outputs[0].amount =   300000
+	assert transaction.outputs[1].amount = 11883137
 
 	assert byte_size = 259
 	return ()
@@ -80,8 +80,8 @@ func test_read_segwit_transaction{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}
 
 	assert transaction.version = 0x02
 	
-	assert transaction.outputs[0].value = 295
-	assert transaction.outputs[1].value = 45422
+	assert transaction.outputs[0].amount = 295
+	assert transaction.outputs[1].amount = 45422
 
 	# assert byte_size = 259
 	return ()
@@ -120,8 +120,8 @@ func test_read_transaction_validation_context{range_check_ptr, bitwise_ptr: Bitw
 
 	assert context.transaction.version = 0x01
 	
-	assert context.transaction.outputs[0].value =   300000
-	assert context.transaction.outputs[1].value = 11883137
+	assert context.transaction.outputs[0].amount =   300000
+	assert context.transaction.outputs[1].amount = 11883137
 
 	assert context.transaction_size = 259
 
@@ -166,7 +166,7 @@ func test_read_transaction_with_offset{range_check_ptr, bitwise_ptr: BitwiseBuil
 
 	assert context.transaction.version = 0x01
 	
-	assert context.transaction.outputs[0].value = 50 * 10**8 # 50 BTC
+	assert context.transaction.outputs[0].amount = 50 * 10**8 # 50 BTC
 
 	assert context.transaction_size = 135
 

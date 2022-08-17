@@ -61,16 +61,24 @@ func _read_transactions_validation_context_loop{reader: Reader, range_check_ptr,
 	)
 end
 
-func validate_block{reader: Reader, range_check_ptr}(context: BlockValidationContext):
-	validate_block_header(context.header_context)
+func validate_block{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(context: BlockValidationContext):
+	# validate_block_header(context.header_context)
 	validate_merkle_root(context)
 	return ()
 end
 
-func validate_merkle_root(context: BlockValidationContext):
-	let txids = alloc()
-	# _copy_txids_into_array_loop(context.transactions_context, txids, block.transactions_size)
-	let (merkle_root) = compute_merkle_root(txids)
+func validate_merkle_root{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(context: BlockValidationContext):
+	alloc_locals
+	let (txids) = alloc()
+	_copy_txids_into_array_loop(
+		context.transactions_context, 
+		txids, 
+		context.transactions_count
+	)
+	let (merkle_root) = compute_merkle_root(
+		txids, 
+		context.transactions_count
+	)
 	assert_hashes_equal(
 		context.header_context.block_header.merkle_root_hash,
 		merkle_root

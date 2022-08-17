@@ -34,7 +34,7 @@ end
 
 # A transaction output
 struct TxOutput:
-	member value: felt
+	member amount: felt
 	member script_pub_key_size: felt
 	member script_pub_key: felt*
 end
