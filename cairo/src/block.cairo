@@ -49,7 +49,6 @@ end
 
 func _read_transactions_validation_context_loop{reader: Reader, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
 	contexts: TransactionValidationContext*, loop_counter):
-	%{print('tx_count', ids.loop_counter)%}
 	if loop_counter == 0:
 		return ()
 	end

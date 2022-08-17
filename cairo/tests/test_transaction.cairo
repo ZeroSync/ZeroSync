@@ -136,7 +136,7 @@ end
 # - https://blockstream.info/tx/a4bc0a85369d04454ec7e006ece017f21549fdfe7df128d61f9f107479bfdf7e
 # - https://blockstream.info/api/tx/a4bc0a85369d04454ec7e006ece017f21549fdfe7df128d61f9f107479bfdf7e/hex
 @external
-func test_coinbase_transaction{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}():
+func test_read_transaction_with_offset{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}():
 	alloc_locals
 	setup_python_defs()
 

@@ -8,7 +8,7 @@ from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 
 from crypto.sha256d.sha256d import sha256d, HASH_SIZE
-from buffer import Reader, read_uint8, peek_uint8, read_uint16, read_uint32, read_uint64, read_varint, read_hash, read_bytes, UINT32_SIZE, UINT64_SIZE
+from buffer import Reader, read_uint8, peek_uint8, read_uint16, read_uint32, read_uint64, read_varint, read_hash, read_bytes, UINT32_SIZE, UINT64_SIZE, read_bytes_endian
 
 # Definition of a Bitcoin transaction
 #
@@ -183,9 +183,13 @@ end
 func read_transaction_validation_context{reader:Reader, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
 	) -> (result: TransactionValidationContext):
 	alloc_locals
-	# FIXME: what if not reader.offset == 0 here?
-	let transaction_raw = reader.head
+
+	# TODO: This is a quick fix to prevent the bug 
+	# when not reader.offset == 0. Fix me properly.
+	#
+	let raw_reader = reader
 	let (transaction, byte_size) = read_transaction()
+	let (transaction_raw) = read_bytes_endian{reader = raw_reader}(byte_size)
 	let (txid) = sha256d(transaction_raw, byte_size)
 	
 	return (TransactionValidationContext(
