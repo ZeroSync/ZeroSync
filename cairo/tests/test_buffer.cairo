@@ -292,16 +292,33 @@ func test_write_varint{range_check_ptr}():
     let (array) = alloc()
     let (writer) = init_writer(array)
 
+    # Write every type of varint.
     write_varint{writer=writer}(0x01)
-    write_varint{writer=writer}(0xfd0102)
-    write_varint{writer=writer}(0xfe01020304)
-    write_varint{writer=writer}(0xff0102030405060708)
+    write_varint{writer=writer}(0x0102)
+    write_varint{writer=writer}(0x01020304)
+    write_varint{writer=writer}(0x0102030405060708)
+
+    # Write every full varint.
+    write_varint{writer=writer}(0xff)
+    write_varint{writer=writer}(0xffff)
+    write_varint{writer=writer}(0xffffffff)
+    write_varint{writer=writer}(0xffffffffffffffff)
 
     assert array[0] = 0x01fd0201
     assert array[1] = 0xfe040302
     assert array[2] = 0x01ff0807
     assert array[3] = 0x06050403
-    assert array[4] = 0x02010000
+    assert array[4] = 0x0201fffd
+
+    assert array[5] = 0xfffffeff
+    assert array[6] = 0xffffffff
+    assert array[7] = 0xffffffff
+    assert array[8] = 0xffffffff
+
+    # Try to write varint bigger than 8 bytes
+    %{ expect_revert() %}
+    write_varint{writer=writer}(0x010203040506070809)
+
     return ()
 end
 

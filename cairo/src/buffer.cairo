@@ -1,27 +1,27 @@
 # Serialization Library for Reading and Writing Byte Streams
 #
 # A byte stream is represented as an array of uint32 because
-# the sha256 hash function works on 32-bit words, and feeding 
-# byte streams into the sha256 function is our main reason for 
+# the sha256 hash function works on 32-bit words, and feeding
+# byte streams into the sha256 function is our main reason for
 # serializing any block data.
 #
 # See also:
 # - https://github.com/mimblewimble/grin/blob/master/core/src/ser.rs
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.pow import pow
-from starkware.cairo.common.math import unsigned_div_rem
+from starkware.cairo.common.math import unsigned_div_rem, assert_le
+from starkware.cairo.common.math_cmp import is_le
 
 # The base for byte-wise shifts via multiplication and integer division
 const BYTE = 2 ** 8
 
 # The byte sizes of Uint8, Uint16, Uint32, and Uint64
-const UINT8_SIZE  = 1
+const UINT8_SIZE = 1
 const UINT16_SIZE = 2
 const UINT32_SIZE = 4
 const UINT64_SIZE = 8
 
-
-struct Reader: 
+struct Reader:
     member head : felt*
     member offset : felt
     member payload : felt
@@ -49,20 +49,21 @@ func read_uint8{reader : Reader, range_check_ptr}() -> (byte : felt):
 end
 
 # Peek the first byte from a reader without increasing the reader's cursor
-func peek_uint8{reader: Reader, range_check_ptr}() -> (byte: felt):
+func peek_uint8{reader : Reader, range_check_ptr}() -> (byte : felt):
     if reader.offset == 0:
         # The Reader's payload is empty, so we read from the head
         let (first_byte, _) = unsigned_div_rem([reader.head], BYTE ** 3)
         return (first_byte)
-    else: 
+    else:
         # The Reader is not empty, so we read the first byte from its payload
         let (first_byte, _) = unsigned_div_rem(reader.payload, BYTE ** 3)
         return (first_byte)
     end
 end
 
-func _read_n_bytes_into_felt{reader: Reader, range_check_ptr}(
-    output: felt*, value, base, loop_counter):
+func _read_n_bytes_into_felt{reader : Reader, range_check_ptr}(
+    output : felt*, value, base, loop_counter
+):
     if loop_counter == 0:
         assert [output] = value
         return ()
@@ -270,33 +271,33 @@ end
 func write_varint{writer : Writer, range_check_ptr}(source : felt):
     alloc_locals
 
-    # Find out if this is a 9 byte varint.
-    let (leading_byte_uint64, uint64) = unsigned_div_rem(source, BYTE ** 8)
+    # Ensure source is a maximum of 8 bytes.
+    with_attr error_message("ERROR: write_varint source exceeded the maximum of 8 bytes."):
+        # TODO it seems like the error_message is not printed at all
+        assert_le(source, BYTE ** 8 - 1)
+    end
 
-    if leading_byte_uint64 == 0xff:
+    let (source_is_8_bytes) = is_le(BYTE ** 4, source)
+    if source_is_8_bytes == 1:
         # This varint has 8 more bytes after the leading byte.
-        write_uint8(leading_byte_uint64)
-        write_uint64(uint64)
+        write_uint8(0xff)
+        write_uint64(source)
         return ()
     end
 
-    # Find out if this is a 5 byte varint.
-    let (leading_byte_uint32, uint32) = unsigned_div_rem(source, BYTE ** 4)
-
-    if leading_byte_uint32 == 0xfe:
+    let (source_is_4_bytes) = is_le(BYTE ** 2, source)
+    if source_is_4_bytes == 1:
         # This varint has 4 more bytes after the leading byte.
-        write_uint8(leading_byte_uint32)
-        write_uint32(uint32)
+        write_uint8(0xfe)
+        write_uint32(source)
         return ()
     end
 
-    # Find out if this is a 3 byte varint.
-    let (leading_byte_uint16, uint16) = unsigned_div_rem(source, BYTE ** 2)
-
-    if leading_byte_uint16 == 0xfd:
+    let (source_is_2_bytes) = is_le(BYTE, source)
+    if source_is_2_bytes == 1:
         # This varint has 2 more bytes after the leading byte.
-        write_uint8(leading_byte_uint16)
-        write_uint16(uint16)
+        write_uint8(0xfd)
+        write_uint16(source)
         return ()
     end
 
