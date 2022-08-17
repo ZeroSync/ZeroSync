@@ -7,6 +7,8 @@
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.math import assert_le, unsigned_div_rem
 from starkware.cairo.common.pow import pow
+from starkware.cairo.common.alloc import alloc
+
 from buffer import Reader, Writer, read_uint32, write_uint32, read_hash, write_hash, UINT32_SIZE, BYTE
 from crypto.sha256d.sha256d import sha256d_felt_sized, assert_hashes_equal
 
@@ -84,7 +86,8 @@ struct BlockHeaderValidationContext:
 	member target: felt 
 	
 	# The previous validation context
-	member prev_context: BlockHeaderValidationContext* # TODO: remove this dependency and make context as stateless as possible
+	# TODO: remove this dependency and make context as stateless as possible
+	member prev_context: BlockHeaderValidationContext*
 	
 	# The block height of this block header
 	member block_height: felt
@@ -97,7 +100,7 @@ end
 
 # Read a block header and its validation context from a reader and a previous validation context
 func read_block_header_validation_context{reader: Reader, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
-	prev_context: BlockHeaderValidationContext*) -> (result : BlockHeaderValidationContext):
+	prev_context: BlockHeaderValidationContext*) -> (context : BlockHeaderValidationContext*):
 	alloc_locals
 
 	let block_header_raw = reader.head
@@ -111,14 +114,16 @@ func read_block_header_validation_context{reader: Reader, range_check_ptr, bitwi
 	# let block_height = [prev_context].block_height + 1
 	let block_height = 0
 
-	return (BlockHeaderValidationContext(
+	let (context: BlockHeaderValidationContext*) = alloc()
+	assert [context] = BlockHeaderValidationContext(
 		block_header_raw, 
 		block_header, 
 		block_hash, 
 		target, 
 		prev_context,
 		block_height
-	))
+	)
+	return (context)
 end
 
 # Calculate target from bits
