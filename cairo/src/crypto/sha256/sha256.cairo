@@ -1,8 +1,11 @@
+# Wrapper library for a sha256 implementation to be used
+#
+# Allows to switch between different implementations and dummies
+#
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.alloc import alloc
 
 from buffer import byte_size_to_felt_size, UINT32_SIZE
-
 
 func sha256{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
     input:felt*, byte_size) -> (hash: felt*):
@@ -30,9 +33,11 @@ func _compute_sha256_real{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
 end 
 
 # Compute a sha256 hash using Python's hashlib library
-# WARNING: This proves nothing!
+#
+# WARNING: This fakes the entire Bitcoin proof!
 # It is intended to be used only for testing purposes!
 #
+# TODO: Delete this function before deploying any release!
 from tests.utils_for_testing import setup_python_defs
 func _compute_sha256_fake{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
     felt_size, input:felt*, byte_size) -> (hash:felt*):

@@ -11,38 +11,36 @@ const HASH_SIZE = 32
 # A 256-bit hash is represented as an array of 8 x Uint32
 const HASH_FELT_SIZE = 8
 
-func _compute_double_sha256{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
-    felt_size : felt, input : felt*, byte_size : felt
-) -> (result : felt*):
-    alloc_locals
-    let (hash_first_round) = _sha256(felt_size, input, byte_size)
-    let (hash_second_round) = _sha256(HASH_FELT_SIZE, hash_first_round, HASH_SIZE)
-    return (hash_second_round)
-end
-
 func sha256d{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
-    input : felt*, byte_size : felt
-) -> (result : felt*):
+    input: felt*, byte_size: felt
+) -> (result: felt*):
     alloc_locals
     let (felt_size) = byte_size_to_felt_size(byte_size)
     let (hash) = _compute_double_sha256(felt_size, input, byte_size)
     return (hash)
 end
 
-
 # Hashing 
 func sha256d_felt_sized{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
-    input : felt*, felt_size : felt
-) -> (result : felt*):
+    input: felt*, felt_size: felt
+) -> (result: felt*):
     alloc_locals
     let byte_size = felt_size * UINT32_SIZE
     let (hash) = _compute_double_sha256(felt_size, input, byte_size)
     return (hash)
 end
 
+func _compute_double_sha256{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
+    felt_size: felt, input: felt*, byte_size: felt
+) -> (result: felt*):
+    alloc_locals
+    let (hash_first_round) = _sha256(felt_size, input, byte_size)
+    let (hash_second_round) = _sha256(HASH_FELT_SIZE, hash_first_round, HASH_SIZE)
+    return (hash_second_round)
+end
 
-# Copy a hash represented as 8 x Uint32. 
-# Starts reading at `source` and writes to `destination`
+# Copy a hash represented as an array of 8 x Uint32. 
+# It reads from `source` and writes to `destination`
 func copy_hash(source: felt*, destination: felt*):
     memcpy(destination, source, HASH_FELT_SIZE)
     return ()

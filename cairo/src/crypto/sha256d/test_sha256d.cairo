@@ -39,7 +39,7 @@ end
 # (We use a 259 bytes transaction here)
 #
 # See also:
-#  - Example Transaction: https://blockstream.info/api/tx/b9818f9eb8925f2b5b9aaf3e804306efa1a0682a7173c0b7edb5f2e05cc435bd/hex 
+#  - Example transaction: https://blockstream.info/api/tx/b9818f9eb8925f2b5b9aaf3e804306efa1a0682a7173c0b7edb5f2e05cc435bd/hex 
 @external
 func test_sha256d_long_input{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
     alloc_locals
@@ -51,7 +51,7 @@ func test_sha256d_long_input{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
 
     setup_python_defs()
    %{
-    ids.byte_size,_ = from_hex((
+    ids.byte_size, _ = from_hex((
         "0100000001352a68f58c6e69fa632a1bf77566cf83a7515fc9ecd251fa37f410"
         "460d07fb0c010000008c493046022100e30fea4f598a32ea10cd56118552090c"
         "be79f0b1a0c63a4921d2399c9ec14ffc022100ef00f238218864a909db55be9e"

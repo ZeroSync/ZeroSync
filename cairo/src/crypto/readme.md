@@ -1,6 +1,6 @@
 # Bitcoin Crypto Proofs
 
-TODO: A library to prove all hash functions used in [Bitcoin (Script)](https://en.bitcoin.it/wiki/Script#Crypto) as well as ECDSA and Schnorr signatures
+TODO: A library to prove all hash functions used in [Bitcoin (Script)](https://en.bitcoin.it/wiki/Script#Crypto) as well as ECDSA and Schnorr signatures.
 
 - OP_RIPEMD160: The input is hashed using RIPEMD-160.
 - OP_SHA1: The input is hashed using SHA-1.

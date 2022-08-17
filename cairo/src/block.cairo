@@ -39,7 +39,7 @@ func validate_merkle_root(context: BlockValidationContext):
 end
 
 func _copy_txids_into_array_loop(
-	transactions_context: TransactionValidationContext*, txids:felt*, loop_counter):
+	transactions_context: TransactionValidationContext*, txids: felt*, loop_counter):
 	if loop_counter == 0:
 		return ()
 	end
