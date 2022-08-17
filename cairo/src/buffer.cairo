@@ -16,7 +16,7 @@ from starkware.cairo.common.math_cmp import is_le
 const BYTE = 2 ** 8
 
 # The byte sizes of Uint8, Uint16, Uint32, and Uint64
-const UINT8_SIZE = 1
+const UINT8_SIZE  = 1
 const UINT16_SIZE = 2
 const UINT32_SIZE = 4
 const UINT64_SIZE = 8

@@ -185,9 +185,7 @@ func read_transaction_validation_context{reader:Reader, range_check_ptr, bitwise
 	alloc_locals
 	let transaction_raw = reader.head
 	let (transaction, byte_size) = read_transaction()
-
-	# TODO: fix byte_size of the sha256 implementation
-	# let (txid) = sha256d(transaction_raw, 65)
+	%{ print('TX size', ids.byte_size) %}
 	let (txid) = sha256d(transaction_raw, byte_size)
 	
 	return (TransactionValidationContext(
