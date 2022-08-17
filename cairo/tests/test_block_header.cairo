@@ -11,9 +11,9 @@ from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from tests.utils_for_testing import setup_python_defs
 from buffer import init_reader, init_writer, flush_writer
 from crypto.sha256d.sha256d import assert_hashes_equal
-from block_header import read_block_header, write_block_header, bits_to_target, BLOCK_HEADER_FELT_SIZE, BlockHeaderValidationContext, read_block_header_validation_context
+from block_header import read_block_header, write_block_header, bits_to_target, BLOCK_HEADER_FELT_SIZE, BlockHeaderValidationContext, read_block_header_validation_context, validate_block_header
 
-# Test Block Header serializations
+# Test block header serialization
 # 
 # See also:
 # https://developer.bitcoin.org/reference/block_chain.html#block-headers
@@ -65,11 +65,17 @@ func test_serialize_block_header{range_check_ptr}():
 end
 
 
-# Test Block Header validation context
+# Test the validation context for a block header
 #
-# Example copied from:
-# https://blockstream.info/block/000000000000000009a11b3972c8e532fe964de937c9e0096b43814e67af3728
-# https://blockstream.info/api/block/000000000000000009a11b3972c8e532fe964de937c9e0096b43814e67af3728/header
+# A previous block is necessary to do this.
+#
+# Block at height 328734:
+# - https://blockstream.info/block/000000000000000009a11b3972c8e532fe964de937c9e0096b43814e67af3728
+# - https://blockstream.info/api/block/000000000000000009a11b3972c8e532fe964de937c9e0096b43814e67af3728/header
+#
+# Block at height 328733:
+# - https://blockstream.info/block/00000000000000000cca48eb4b330d91e8d946d344ca302a86a280161b0bffb6
+# - https://blockstream.info/api/block/00000000000000000cca48eb4b330d91e8d946d344ca302a86a280161b0bffb6/header
 @external
 func test_read_block_header_validation_context{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
     alloc_locals
@@ -78,6 +84,9 @@ func test_read_block_header_validation_context{range_check_ptr, bitwise_ptr : Bi
     let (block_header_raw) = alloc()
     %{
         from_hex((
+            "020000009dbd8389886fe8eaac27664a34d2ddc88779b7f73a19ae1500000000"
+            "00000000299aa0f2be88cfbb33b33fdb1800b75f660cfef974050c52817fad2e"
+            "5581aa8cbed95a5430c31b1808699083"
             "02000000b6ff0b1b1680a2862a30ca44d346d9e8910d334beb48ca0c00000000"
             "000000009d10aa52ee949386ca9385695f04ede270dda20810decd12bc9b048a"
             "aab3147124d95a5430c31b18fe9f0864"), ids.block_header_raw)
@@ -85,7 +94,14 @@ func test_read_block_header_validation_context{range_check_ptr, bitwise_ptr : Bi
     
     let (reader) = init_reader(block_header_raw)
 
-    let (local prev_context: BlockHeaderValidationContext*) = alloc()
+    # Create dummy for a previous previous context
+    let (local prev_prev_context: BlockHeaderValidationContext*) = alloc()
+    
+    # Read a first block from the byte stream
+    # This is our previous context
+    let (prev_context) = read_block_header_validation_context{reader=reader}(prev_prev_context)
+    
+    # Read a second block from the byte stream
     let (context) = read_block_header_validation_context{reader=reader}(prev_context)
 
     assert context.block_header.version = 0x02
@@ -98,6 +114,8 @@ func test_read_block_header_validation_context{range_check_ptr, bitwise_ptr : Bi
     assert_hashes_equal(context.block_hash, block_hash_expected)
 
     assert context.target = 0x1bc330000000000000000000000000000000000000000000
+
+    validate_block_header([context])
     return ()
 end
 

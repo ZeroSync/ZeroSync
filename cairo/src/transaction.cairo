@@ -184,9 +184,8 @@ func read_transaction_validation_context{reader:Reader, range_check_ptr, bitwise
 	) -> (result: TransactionValidationContext):
 	alloc_locals
 
-	# TODO: This is a quick fix to prevent the bug 
-	# when not reader.offset == 0. Fix me properly.
-	#
+	# TODO: This is a quick fix to prevent the bug occuring 
+	# when not reader.offset > 0. Fix me properly.
 	let raw_reader = reader
 	let (transaction, byte_size) = read_transaction()
 	let (transaction_raw) = read_bytes_endian{reader = raw_reader}(byte_size)

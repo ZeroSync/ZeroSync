@@ -16,9 +16,9 @@ from block import BlockValidationContext, read_block_validation_context, validat
 
 from buffer import init_reader
 
-# Test a simple Bitcoin block.
+# Test a simple Bitcoin block with only a single transaction.
 #
-# Example block from block height 6425. Number of TXs == 1
+# Example block is from block height 6425.
 # 
 # - Block hash: 000000004d15e01d3ffc495df7bb638c2b35c5b5dd0ba405615f513e3393f0c7
 # - Block explorer: https://blockstream.info/block/000000004d15e01d3ffc495df7bb638c2b35c5b5dd0ba405615f513e3393f0c7
@@ -99,13 +99,15 @@ func test_read_block_with_5_transactions{range_check_ptr, bitwise_ptr : BitwiseB
     
     let (reader) = init_reader(block_raw)
 
-    # Create a previous context
-    let (local prev_header_context: BlockHeaderValidationContext*) = alloc()
-    let (local prev_transactions_context: TransactionValidationContext*) = alloc()
+    # Create a dummy of the previous context
+    # TODO: simplify BlockHeaderValidationContext
+
+    let (prev_header_context: BlockHeaderValidationContext*) = alloc()
+    let (prev_transactions_context: TransactionValidationContext*) = alloc()
     let (prev_context: BlockValidationContext*) = alloc()
     assert [prev_context] = BlockValidationContext(
-        prev_header_context, 
-        0, 
+        prev_header_context,
+        transactions_count = 0,
         prev_transactions_context
     )
 
@@ -115,9 +117,10 @@ func test_read_block_with_5_transactions{range_check_ptr, bitwise_ptr : BitwiseB
     # Validate the block
     validate_block([context])
 
-    # Sanity check for the second output of the first non-coinbase TX
+    # Sanity Check 
+    # The second output of the second transaction should be 44.44 BTC
     let transaction = [context].transactions_context[1].transaction
-    assert transaction.outputs[1].amount = 4444 * 10**6 # 44.44 BTC
+    assert transaction.outputs[1].amount = 4444 * 10**6 
     
     return ()
 end

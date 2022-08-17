@@ -62,8 +62,11 @@ func _read_transactions_validation_context_loop{reader: Reader, range_check_ptr,
 end
 
 func validate_block{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(context: BlockValidationContext):
+	alloc_locals
 	# validate_block_header(context.header_context)
 	validate_merkle_root(context)
+	validate_coinbase(context)
+	validate_transactions(context)
 	return ()
 end
 
@@ -99,8 +102,19 @@ func _copy_txids_into_array_loop(
 	)
 end
 
-func validate_transactions(block_context: BlockValidationContext):
-	return()
+
+# Validate that all transactions in this block are valid
+func validate_transactions(context: BlockValidationContext):
+	# TODO: implement me
+	return ()
+end
+
+
+# Validate that the coinbase's output amount is at most 
+# the current block reward plus the transaction fees of this block
+func validate_coinbase(context: BlockValidationContext):
+	# TODO: implement me
+	return ()
 end
 
 

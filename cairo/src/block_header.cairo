@@ -103,7 +103,7 @@ func read_block_header_validation_context{reader: Reader, range_check_ptr, bitwi
 	prev_context: BlockHeaderValidationContext*) -> (context : BlockHeaderValidationContext*):
 	alloc_locals
 
-	# FIXME: what if not reader.offset == 0 here?
+	# TODO: what if reader.offset > 0 here?
 	assert reader.offset = 0
 	let block_header_raw = reader.head
 
@@ -118,10 +118,10 @@ func read_block_header_validation_context{reader: Reader, range_check_ptr, bitwi
 
 	let (context: BlockHeaderValidationContext*) = alloc()
 	assert [context] = BlockHeaderValidationContext(
-		block_header_raw, 
-		block_header, 
-		block_hash, 
-		target, 
+		block_header_raw,
+		block_header,
+		block_hash,
+		target,
 		prev_context,
 		block_height
 	)
@@ -135,13 +135,13 @@ func bits_to_target{range_check_ptr}(bits) -> (target: felt):
     # Ensure that the max target is not exceeded (0x1d00FFFF)
     assert_le(bits, 0x1d00FFFF)
 
-    # Parse the significand and the exponent
-    # The exponent has 8 bits and the significand has 24 bits
+    # Parse the significand and the exponent 
+    # There's 1 byte for the exponent followed by 3 bytes for the significand
     let (exponent, significand) = unsigned_div_rem(bits, BYTE**3)
     
     # Compute the target via exponentiation of significand and exponent
-    let (base) = pow(BYTE, exponent - 3)
-    return (significand * base)
+    let (shift_left) = pow(BYTE, exponent - 3)
+    return (significand * shift_left)
 end
 
 # Validate a block header
