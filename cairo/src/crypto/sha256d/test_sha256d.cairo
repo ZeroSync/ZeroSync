@@ -72,3 +72,38 @@ func test_sha256d_long_input{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
     assert_hashes_equal(hash_expected, hash)
     return () 
 end
+
+
+# Test a double sha256 input with a long byte string 
+# (We use a 259 bytes transaction here)
+#
+# See also:
+#  - Example transaction: https://blockstream.info/api/tx/b9818f9eb8925f2b5b9aaf3e804306efa1a0682a7173c0b7edb5f2e05cc435bd/hex 
+@external
+func test_sha256d_long_input_2{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
+    alloc_locals
+
+    # Use Python to convert hex string into uint32 array
+    let (input) = alloc()
+    local byte_size
+    let (hash_expected) = alloc()
+
+    setup_python_defs()
+   %{
+    ids.byte_size, _ = from_hex((
+        "0100000001000000000000000000000000000000000000000000000000000000"
+        "0000000000ffffffff0804ffff001d024f02ffffffff0100f2052a0100000043"
+        "41048a5294505f44683bbc2be81e0f6a91ac1a197d6050accac393aad3b86b23"
+        "98387e34fedf0de5d9f185eb3f2c17f3564b9170b9c262aa3ac91f371279beca"
+        "0cafac00000000"), ids.input)
+
+    hashes_from_hex([
+        "a4bc0a85369d04454ec7e006ece017f21549fdfe7df128d61f9f107479bfdf7e"
+        ], ids.hash_expected)
+    %}
+
+    let (hash) = sha256d(input, 135)
+
+    assert_hashes_equal(hash_expected, hash)
+    return () 
+end

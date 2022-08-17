@@ -1,4 +1,4 @@
-# Serialization and Validation of Bitcoin Transactions
+# Serialization and Validation of a Bitcoin Transaction
 #
 # See also:
 # - Bitcoin Core: https://developer.bitcoin.org/reference/transactions.html#raw-transaction-format
@@ -8,7 +8,7 @@ from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 
 from crypto.sha256d.sha256d import sha256d, HASH_SIZE
-from buffer import Reader, read_uint8, peek_uint8, read_uint16, read_uint32, read_uint64, read_varint, read_hash, read_bytes, UINT32_SIZE, UINT64_SIZE
+from buffer import Reader, read_uint8, peek_uint8, read_uint16, read_uint32, read_uint64, read_varint, read_hash, read_bytes, UINT32_SIZE, UINT64_SIZE, read_bytes_endian
 
 # Definition of a Bitcoin transaction
 #
@@ -34,7 +34,7 @@ end
 
 # A transaction output
 struct TxOutput:
-	member value: felt
+	member amount: felt
 	member script_pub_key_size: felt
 	member script_pub_key: felt*
 end
@@ -183,13 +183,19 @@ end
 func read_transaction_validation_context{reader:Reader, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
 	) -> (result: TransactionValidationContext):
 	alloc_locals
-	let transaction_raw = reader.head
-	let (transaction, byte_size) = read_transaction()
 
-	# TODO: fix byte_size of the sha256 implementation
-	# let (txid) = sha256d(transaction_raw, 65)
+	# TODO: This is a quick fix to prevent the bug occuring 
+	# when reader.offset > 0. Fix me properly.
+	let raw_reader = reader
+	let (transaction, byte_size) = read_transaction()
+	let (transaction_raw) = read_bytes_endian{reader = raw_reader}(byte_size)
 	let (txid) = sha256d(transaction_raw, byte_size)
 	
 	return (TransactionValidationContext(
 		transaction, transaction_raw, byte_size, txid))
+end
+
+
+struct TxWriter:
+	member sighash_flag: felt
 end

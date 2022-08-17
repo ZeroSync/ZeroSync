@@ -16,7 +16,7 @@ from starkware.cairo.common.math_cmp import is_le
 const BYTE = 2 ** 8
 
 # The byte sizes of Uint8, Uint16, Uint32, and Uint64
-const UINT8_SIZE = 1
+const UINT8_SIZE  = 1
 const UINT16_SIZE = 2
 const UINT32_SIZE = 4
 const UINT64_SIZE = 8
@@ -45,19 +45,6 @@ func read_uint8{reader : Reader, range_check_ptr}() -> (byte : felt):
         let (byte, payload) = unsigned_div_rem(reader.payload, BYTE ** 3)
         let reader = Reader(reader.head, reader.offset - 1, payload * BYTE)
         return (byte)
-    end
-end
-
-# Peek the first byte from a reader without increasing the reader's cursor
-func peek_uint8{reader : Reader, range_check_ptr}() -> (byte : felt):
-    if reader.offset == 0:
-        # The Reader's payload is empty, so we read from the head
-        let (first_byte, _) = unsigned_div_rem([reader.head], BYTE ** 3)
-        return (first_byte)
-    else:
-        # The Reader is not empty, so we read the first byte from its payload
-        let (first_byte, _) = unsigned_div_rem(reader.payload, BYTE ** 3)
-        return (first_byte)
     end
 end
 
@@ -99,6 +86,9 @@ end
 #
 # See also:
 # - https://developer.bitcoin.org/reference/transactions.html#compactsize-unsigned-integers
+#
+# TODO: Research if there's a strict encoding required
+# E.g. encoding "1" as "0xff01000000" instead of in its most compact form "0x01"
 func read_varint{reader : Reader, range_check_ptr}() -> (value, byte_size):
     # Read the first byte
     let (first_byte) = read_uint8()
@@ -125,9 +115,6 @@ func read_varint{reader : Reader, range_check_ptr}() -> (value, byte_size):
 
     # This varint is only 1 byte
     return (first_byte, UINT8_SIZE)
-
-    # TODO: Research if there's a strict encoding required
-    # E.g. what about "1" encoded as 0xff0100000000000000 ?
 end
 
 func _read_into_uint32_array{reader : Reader, range_check_ptr}(output : felt*, loop_counter):
@@ -191,6 +178,19 @@ end
 
 func read_hash{reader : Reader, range_check_ptr}() -> (result : felt*):
     return read_bytes_endian(32)
+end
+
+# Peek the first byte from a reader without increasing the reader's cursor
+func peek_uint8{reader : Reader, range_check_ptr}() -> (byte : felt):
+    if reader.offset == 0:
+        # The Reader's payload is empty, so we read from the head
+        let (first_byte, _) = unsigned_div_rem([reader.head], BYTE ** 3)
+        return (first_byte)
+    else:
+        # The Reader is not empty, so we read the first byte from its payload
+        let (first_byte, _) = unsigned_div_rem(reader.payload, BYTE ** 3)
+        return (first_byte)
+    end
 end
 
 struct Writer:

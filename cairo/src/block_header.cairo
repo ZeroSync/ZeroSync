@@ -7,6 +7,8 @@
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.math import assert_le, unsigned_div_rem
 from starkware.cairo.common.pow import pow
+from starkware.cairo.common.alloc import alloc
+
 from buffer import Reader, Writer, read_uint32, write_uint32, read_hash, write_hash, UINT32_SIZE, BYTE
 from crypto.sha256d.sha256d import sha256d_felt_sized, assert_hashes_equal
 
@@ -24,19 +26,19 @@ struct BlockHeader:
 	member version: felt 
 
 	# The hash of the previous block in the chain
-	member prev_block_hash: felt* 
+	member prev_block_hash: felt*
 	
 	# The Merkle root hash of all transactions in this block
-	member merkle_root_hash: felt* 
+	member merkle_root_hash: felt*
 
 	# The timestamp of this block header
 	member time: felt 
 
-	# The difficulty target in compact encoding
-	member bits: felt 
+	# The target for the proof-of-work in compact encoding
+	member bits: felt
 
 	# The lucky nonce which solves the proof-of-work
-	member nonce: felt 
+	member nonce: felt
 end
 
 # Read a BlockHeader from a Uint32 array
@@ -79,13 +81,17 @@ struct BlockHeaderValidationContext:
 	# The hash of this block header
 	member block_hash: felt*
 	
-	# The difficulty target
-	# ASSUMPTION: Smaller than 2**246 might overflow otherwise
+	# The target for the proof-of-work 
+	# ASSUMPTION: Target is smaller than 2**246. Might overflow otherwise
 	member target: felt 
 	
 	# The previous validation context
-	member prev_context: BlockHeaderValidationContext* # TODO: remove this dependency and make context as stateless as possible
+	# TODO: remove this dependency and make context as stateless as possible
+	member prev_context: BlockHeaderValidationContext*
 	
+	# The hash of the previous block
+	# member prev_block_hash: felt*
+
 	# The block height of this block header
 	member block_height: felt
 	
@@ -97,9 +103,11 @@ end
 
 # Read a block header and its validation context from a reader and a previous validation context
 func read_block_header_validation_context{reader: Reader, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
-	prev_context: BlockHeaderValidationContext*) -> (result : BlockHeaderValidationContext):
+	prev_context: BlockHeaderValidationContext*) -> (context : BlockHeaderValidationContext*):
 	alloc_locals
 
+	# TODO: what if reader.offset > 0 here?
+	assert reader.offset = 0
 	let block_header_raw = reader.head
 
 	let (block_header) = read_block_header()
@@ -111,14 +119,17 @@ func read_block_header_validation_context{reader: Reader, range_check_ptr, bitwi
 	# let block_height = [prev_context].block_height + 1
 	let block_height = 0
 
-	return (BlockHeaderValidationContext(
-		block_header_raw, 
-		block_header, 
-		block_hash, 
-		target, 
+	let (context: BlockHeaderValidationContext*) = alloc()
+	assert [context] = BlockHeaderValidationContext(
+		block_header_raw,
+		block_header,
+		block_hash,
+		target,
 		prev_context,
+		# prev_block_hash, # TODO replace
 		block_height
-	))
+	)
+	return (context)
 end
 
 # Calculate target from bits
@@ -128,13 +139,13 @@ func bits_to_target{range_check_ptr}(bits) -> (target: felt):
     # Ensure that the max target is not exceeded (0x1d00FFFF)
     assert_le(bits, 0x1d00FFFF)
 
-    # Parse the significand and the exponent
-    # The exponent has 8 bits and the significand has 24 bits
+    # Decode `bits` into significand and exponent 
+    # There's 1 byte for the exponent followed by 3 bytes for the significand
     let (exponent, significand) = unsigned_div_rem(bits, BYTE**3)
     
     # Compute the target via exponentiation of significand and exponent
-    let (base) = pow(BYTE, exponent - 3)
-    return (significand * base)
+    let (shift_left) = pow(BYTE, exponent - 3)
+    return (significand * shift_left)
 end
 
 # Validate a block header

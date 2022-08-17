@@ -1,7 +1,7 @@
 %lang starknet
 
 from starkware.cairo.common.alloc import alloc
-from buffer import init_reader, init_writer, flush_writer
+from buffer import init_reader, init_writer, flush_writer, read_uint8
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from crypto.sha256d.sha256d import assert_hashes_equal
 from tests.utils_for_testing import setup_python_defs
@@ -40,8 +40,8 @@ func test_read_transaction{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}():
 
 	assert transaction.version = 0x01
 	
-	assert transaction.outputs[0].value =   300000
-	assert transaction.outputs[1].value = 11883137
+	assert transaction.outputs[0].amount =   300000
+	assert transaction.outputs[1].amount = 11883137
 
 	assert byte_size = 259
 	return ()
@@ -80,8 +80,8 @@ func test_read_segwit_transaction{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}
 
 	assert transaction.version = 0x02
 	
-	assert transaction.outputs[0].value = 295
-	assert transaction.outputs[1].value = 45422
+	assert transaction.outputs[0].amount = 295
+	assert transaction.outputs[1].amount = 45422
 
 	# assert byte_size = 259
 	return ()
@@ -120,10 +120,55 @@ func test_read_transaction_validation_context{range_check_ptr, bitwise_ptr: Bitw
 
 	assert context.transaction.version = 0x01
 	
-	assert context.transaction.outputs[0].value =   300000
-	assert context.transaction.outputs[1].value = 11883137
+	assert context.transaction.outputs[0].amount =   300000
+	assert context.transaction.outputs[1].amount = 11883137
 
 	assert context.transaction_size = 259
+
+	assert_hashes_equal(context.txid, txid_expected)
+	return ()
+end
+
+
+# Read transaction from buffer with an offset
+#
+# See also
+# - https://blockstream.info/tx/a4bc0a85369d04454ec7e006ece017f21549fdfe7df128d61f9f107479bfdf7e
+# - https://blockstream.info/api/tx/a4bc0a85369d04454ec7e006ece017f21549fdfe7df128d61f9f107479bfdf7e/hex
+@external
+func test_read_transaction_with_offset{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}():
+	alloc_locals
+	setup_python_defs()
+
+	let (transaction_raw) = alloc()
+	let (txid_expected) = alloc()
+
+	# Use Python to convert hex string into uint32 array
+   %{
+    from_hex((
+        "010100000001000000000000000000000000000000000000000000000000000000"
+        "0000000000ffffffff0804ffff001d024f02ffffffff0100f2052a0100000043"
+        "41048a5294505f44683bbc2be81e0f6a91ac1a197d6050accac393aad3b86b23"
+        "98387e34fedf0de5d9f185eb3f2c17f3564b9170b9c262aa3ac91f371279beca"
+        "0cafac00000000"), ids.transaction_raw)
+
+    hashes_from_hex([
+    	"a4bc0a85369d04454ec7e006ece017f21549fdfe7df128d61f9f107479bfdf7e"
+    	], ids.txid_expected)
+    %}
+
+	let (reader) = init_reader(transaction_raw)
+
+	# Create some offset
+	read_uint8{reader=reader}()
+
+	let (context) = read_transaction_validation_context{reader=reader}()
+
+	assert context.transaction.version = 0x01
+	
+	assert context.transaction.outputs[0].amount = 50 * 10**8 # 50 BTC
+
+	assert context.transaction_size = 135
 
 	assert_hashes_equal(context.txid, txid_expected)
 	return ()
