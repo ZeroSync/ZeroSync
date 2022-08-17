@@ -18,7 +18,7 @@ from buffer import init_reader
 
 # Test a simple Bitcoin block with only a single transaction.
 #
-# Example block is from block height 6425.
+# Example: Block at height 6425
 # 
 # - Block hash: 000000004d15e01d3ffc495df7bb638c2b35c5b5dd0ba405615f513e3393f0c7
 # - Block explorer: https://blockstream.info/block/000000004d15e01d3ffc495df7bb638c2b35c5b5dd0ba405615f513e3393f0c7
@@ -64,7 +64,7 @@ end
 
 # Test a Bitcoin block with 5 transactions.
 #
-# Example block from block height 100000.
+# Example: Block at height 100000
 # 
 # - Block hash: 000000000003ba27aa200b1cecaad478d2b00432346c3f1f3986da1afd33e506
 # - Block explorer: https://blockstream.info/block/000000000003ba27aa200b1cecaad478d2b00432346c3f1f3986da1afd33e506

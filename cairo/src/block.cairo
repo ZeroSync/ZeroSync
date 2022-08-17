@@ -61,7 +61,8 @@ func _read_transactions_validation_context_loop{reader: Reader, range_check_ptr,
 	)
 end
 
-func validate_block{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(context: BlockValidationContext):
+func validate_block{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
+	context: BlockValidationContext):
 	alloc_locals
 	# validate_block_header(context.header_context)
 	validate_merkle_root(context)
@@ -70,7 +71,8 @@ func validate_block{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(context: Bloc
 	return ()
 end
 
-func validate_merkle_root{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(context: BlockValidationContext):
+func validate_merkle_root{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
+	context: BlockValidationContext):
 	alloc_locals
 	let (txids) = alloc()
 	_copy_txids_into_array_loop(

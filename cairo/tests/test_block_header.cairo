@@ -65,10 +65,12 @@ func test_serialize_block_header{range_check_ptr}():
 end
 
 
-# Test the validation context for a block header
+# Test a block header validation context
 #
-# A previous block is necessary to do this.
-#
+# A previous block header is necessary to do this. So we use two subsequent headers here.
+# 
+# Example block headers
+# 
 # Block at height 328734:
 # - https://blockstream.info/block/000000000000000009a11b3972c8e532fe964de937c9e0096b43814e67af3728
 # - https://blockstream.info/api/block/000000000000000009a11b3972c8e532fe964de937c9e0096b43814e67af3728/header
@@ -84,9 +86,11 @@ func test_read_block_header_validation_context{range_check_ptr, bitwise_ptr : Bi
     let (block_header_raw) = alloc()
     %{
         from_hex((
+            # Previous header 
             "020000009dbd8389886fe8eaac27664a34d2ddc88779b7f73a19ae1500000000"
             "00000000299aa0f2be88cfbb33b33fdb1800b75f660cfef974050c52817fad2e"
             "5581aa8cbed95a5430c31b1808699083"
+            # Current header
             "02000000b6ff0b1b1680a2862a30ca44d346d9e8910d334beb48ca0c00000000"
             "000000009d10aa52ee949386ca9385695f04ede270dda20810decd12bc9b048a"
             "aab3147124d95a5430c31b18fe9f0864"), ids.block_header_raw)
@@ -95,17 +99,22 @@ func test_read_block_header_validation_context{range_check_ptr, bitwise_ptr : Bi
     let (reader) = init_reader(block_header_raw)
 
     # Create dummy for a previous previous context
-    let (local prev_prev_context: BlockHeaderValidationContext*) = alloc()
+    let (prev_prev_context: BlockHeaderValidationContext*) = alloc()
     
-    # Read a first block from the byte stream
+    # Read a first block header from the byte stream
     # This is our previous context
     let (prev_context) = read_block_header_validation_context{reader=reader}(prev_prev_context)
     
-    # Read a second block from the byte stream
+    # Read a second block header from the byte stream
     let (context) = read_block_header_validation_context{reader=reader}(prev_context)
 
+    # Sanity check: transaction version should be 2
     assert context.block_header.version = 0x02
 
+    # Check if the target was computed correctly
+    assert context.target = 0x1bc330000000000000000000000000000000000000000000
+
+    # Check if the block hash is correct
     let (block_hash_expected) = alloc()
     %{
         hashes_from_hex(["000000000000000009a11b3972c8e532fe964de937c9e0096b43814e67af3728"], 
@@ -113,9 +122,10 @@ func test_read_block_header_validation_context{range_check_ptr, bitwise_ptr : Bi
     %} 
     assert_hashes_equal(context.block_hash, block_hash_expected)
 
-    assert context.target = 0x1bc330000000000000000000000000000000000000000000
-
+    # Try to validate the block header. 
+    # This should succeed for valid block headers
     validate_block_header([context])
+
     return ()
 end
 

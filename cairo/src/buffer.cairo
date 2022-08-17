@@ -48,19 +48,6 @@ func read_uint8{reader : Reader, range_check_ptr}() -> (byte : felt):
     end
 end
 
-# Peek the first byte from a reader without increasing the reader's cursor
-func peek_uint8{reader : Reader, range_check_ptr}() -> (byte : felt):
-    if reader.offset == 0:
-        # The Reader's payload is empty, so we read from the head
-        let (first_byte, _) = unsigned_div_rem([reader.head], BYTE ** 3)
-        return (first_byte)
-    else:
-        # The Reader is not empty, so we read the first byte from its payload
-        let (first_byte, _) = unsigned_div_rem(reader.payload, BYTE ** 3)
-        return (first_byte)
-    end
-end
-
 func _read_n_bytes_into_felt{reader : Reader, range_check_ptr}(
     output : felt*, value, base, loop_counter
 ):
@@ -191,6 +178,19 @@ end
 
 func read_hash{reader : Reader, range_check_ptr}() -> (result : felt*):
     return read_bytes_endian(32)
+end
+
+# Peek the first byte from a reader without increasing the reader's cursor
+func peek_uint8{reader : Reader, range_check_ptr}() -> (byte : felt):
+    if reader.offset == 0:
+        # The Reader's payload is empty, so we read from the head
+        let (first_byte, _) = unsigned_div_rem([reader.head], BYTE ** 3)
+        return (first_byte)
+    else:
+        # The Reader is not empty, so we read the first byte from its payload
+        let (first_byte, _) = unsigned_div_rem(reader.payload, BYTE ** 3)
+        return (first_byte)
+    end
 end
 
 struct Writer:

@@ -34,7 +34,7 @@ struct BlockHeader:
 	# The timestamp of this block header
 	member time: felt 
 
-	# The difficulty target in compact encoding
+	# The target for the proof-of-work in compact encoding
 	member bits: felt 
 
 	# The lucky nonce which solves the proof-of-work
@@ -81,8 +81,8 @@ struct BlockHeaderValidationContext:
 	# The hash of this block header
 	member block_hash: felt*
 	
-	# The difficulty target
-	# ASSUMPTION: Smaller than 2**246 might overflow otherwise
+	# The target for the proof-of-work 
+	# ASSUMPTION: Target is smaller than 2**246. Might overflow otherwise
 	member target: felt 
 	
 	# The previous validation context
@@ -135,7 +135,7 @@ func bits_to_target{range_check_ptr}(bits) -> (target: felt):
     # Ensure that the max target is not exceeded (0x1d00FFFF)
     assert_le(bits, 0x1d00FFFF)
 
-    # Parse the significand and the exponent 
+    # Decode `bits` into significand and exponent 
     # There's 1 byte for the exponent followed by 3 bytes for the significand
     let (exponent, significand) = unsigned_div_rem(bits, BYTE**3)
     
