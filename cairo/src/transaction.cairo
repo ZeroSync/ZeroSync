@@ -183,6 +183,7 @@ end
 func read_transaction_validation_context{reader:Reader, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
 	) -> (result: TransactionValidationContext):
 	alloc_locals
+	# FIXME: what if not reader.offset == 0 here?
 	let transaction_raw = reader.head
 	let (transaction, byte_size) = read_transaction()
 	%{ print('TX size', ids.byte_size) %}

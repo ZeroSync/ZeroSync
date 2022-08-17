@@ -103,6 +103,7 @@ func read_block_header_validation_context{reader: Reader, range_check_ptr, bitwi
 	prev_context: BlockHeaderValidationContext*) -> (context : BlockHeaderValidationContext*):
 	alloc_locals
 
+	# FIXME: what if not reader.offset == 0 here?
 	let block_header_raw = reader.head
 
 	let (block_header) = read_block_header()

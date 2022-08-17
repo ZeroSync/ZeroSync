@@ -8,7 +8,7 @@ from starkware.cairo.common.alloc import alloc
 from buffer import byte_size_to_felt_size, UINT32_SIZE
 
 func sha256{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
-    input:felt*, byte_size) -> (hash: felt*):
+    input: felt*, byte_size) -> (hash: felt*):
     let (felt_size) = byte_size_to_felt_size(byte_size)
     return _sha256(felt_size, input, byte_size)
 end
