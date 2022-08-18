@@ -16,11 +16,11 @@ from block_header import read_block_header, write_block_header, bits_to_target, 
 # Test block header serialization
 # 
 # See also:
-# https://developer.bitcoin.org/reference/block_chain.html#block-headers
+# - https://developer.bitcoin.org/reference/block_chain.html#block-headers
 #
 # Example copied from:
-# https://blockstream.info/block/000000000000000009a11b3972c8e532fe964de937c9e0096b43814e67af3728
-# https://blockstream.info/api/block/000000000000000009a11b3972c8e532fe964de937c9e0096b43814e67af3728/header
+# - https://blockstream.info/block/000000000000000009a11b3972c8e532fe964de937c9e0096b43814e67af3728
+# - https://blockstream.info/api/block/000000000000000009a11b3972c8e532fe964de937c9e0096b43814e67af3728/header
 @external
 func test_serialize_block_header{range_check_ptr}():
     alloc_locals
@@ -106,9 +106,10 @@ func test_read_block_header_validation_context{range_check_ptr, bitwise_ptr : Bi
     let (prev_context) = read_block_header_validation_context{reader=reader}(prev_prev_context)
     
     # Read a second block header from the byte stream
+    # This is our chain tip
     let (context) = read_block_header_validation_context{reader=reader}(prev_context)
 
-    # Sanity check: transaction version should be 2
+    # Sanity check: block version should be 2
     assert context.block_header.version = 0x02
 
     # Check if the target was computed correctly

@@ -86,6 +86,9 @@ end
 #
 # See also:
 # - https://developer.bitcoin.org/reference/transactions.html#compactsize-unsigned-integers
+#
+# TODO: Research if there's a strict encoding required
+# E.g. encoding "1" as "0xff01000000" instead of in its most compact form "0x01"
 func read_varint{reader : Reader, range_check_ptr}() -> (value, byte_size):
     # Read the first byte
     let (first_byte) = read_uint8()
@@ -112,9 +115,6 @@ func read_varint{reader : Reader, range_check_ptr}() -> (value, byte_size):
 
     # This varint is only 1 byte
     return (first_byte, UINT8_SIZE)
-
-    # TODO: Research if there's a strict encoding required
-    # E.g. what about "1" encoded as 0xff0100000000000000 ?
 end
 
 func _read_into_uint32_array{reader : Reader, range_check_ptr}(output : felt*, loop_counter):

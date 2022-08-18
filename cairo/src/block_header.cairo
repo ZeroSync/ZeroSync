@@ -26,19 +26,19 @@ struct BlockHeader:
 	member version: felt 
 
 	# The hash of the previous block in the chain
-	member prev_block_hash: felt* 
+	member prev_block_hash: felt*
 	
 	# The Merkle root hash of all transactions in this block
-	member merkle_root_hash: felt* 
+	member merkle_root_hash: felt*
 
 	# The timestamp of this block header
 	member time: felt 
 
 	# The target for the proof-of-work in compact encoding
-	member bits: felt 
+	member bits: felt
 
 	# The lucky nonce which solves the proof-of-work
-	member nonce: felt 
+	member nonce: felt
 end
 
 # Read a BlockHeader from a Uint32 array
@@ -89,6 +89,9 @@ struct BlockHeaderValidationContext:
 	# TODO: remove this dependency and make context as stateless as possible
 	member prev_context: BlockHeaderValidationContext*
 	
+	# The hash of the previous block
+	# member prev_block_hash: felt*
+
 	# The block height of this block header
 	member block_height: felt
 	
@@ -123,6 +126,7 @@ func read_block_header_validation_context{reader: Reader, range_check_ptr, bitwi
 		block_hash,
 		target,
 		prev_context,
+		# prev_block_hash, # TODO replace
 		block_height
 	)
 	return (context)

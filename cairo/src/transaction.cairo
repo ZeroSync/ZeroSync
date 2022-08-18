@@ -197,5 +197,5 @@ end
 
 
 struct TxWriter:
-	member sighash_flag
+	member sighash_flag: felt
 end
