@@ -11,22 +11,22 @@ from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 
 from buffer import Reader, Writer, read_varint
-from block_header import BlockHeaderValidationContext, read_block_header_validation_context, validate_block_header
+from block_header import BlockHeaderValidationContext, ChainState, read_block_header_validation_context, validate_block_header
 from transaction import TransactionValidationContext, read_transaction_validation_context
 from merkle_tree import compute_merkle_root
 from crypto.sha256d.sha256d import assert_hashes_equal, copy_hash, HASH_FELT_SIZE
 
 struct BlockValidationContext:
-	member header_context: BlockHeaderValidationContext*
+	member header_context: BlockHeaderValidationContext
 	member transactions_count: felt
 	member transactions_context: TransactionValidationContext*
 end
 
 func read_block_validation_context{reader: Reader, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
-	prev_context: BlockValidationContext*) -> (context: BlockValidationContext*):
+	prev_chain_state: ChainState) -> (context: BlockValidationContext*):
 	alloc_locals
 
-	let (header_context) = read_block_header_validation_context(prev_context.header_context)
+	let (header_context) = read_block_header_validation_context(prev_chain_state)
 	let (transactions_count, _) = read_varint()
 	let (transactions_context) = read_transactions_validation_context(transactions_count)
 

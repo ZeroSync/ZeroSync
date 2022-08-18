@@ -11,7 +11,7 @@ from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 
 from tests.utils_for_testing import setup_python_defs
 from transaction import TransactionValidationContext
-from block_header import BlockHeaderValidationContext
+from block_header import ChainState
 from block import BlockValidationContext, read_block_validation_context, validate_block
 
 from buffer import init_reader
@@ -45,18 +45,26 @@ func test_read_block_validation_context{range_check_ptr, bitwise_ptr : BitwiseBu
     
     let (reader) = init_reader(block_raw)
 
-    # Create a previous context
-    let (local prev_header_context: BlockHeaderValidationContext*) = alloc()
-    let (local prev_transactions_context: TransactionValidationContext*) = alloc()
-    let (prev_context: BlockValidationContext*) = alloc()
-    assert [prev_context] = BlockValidationContext(
-        prev_header_context, 
-        0, 
-        prev_transactions_context
+    # Create a dummy for the previous chain state
+    let (prev_block_hash) = alloc()
+    %{
+        hashes_from_hex([
+            "00000000000000000cca48eb4b330d91e8d946d344ca302a86a280161b0bffb6"
+        ], ids.prev_block_hash)
+    %}
+
+    let (prev_timestamps) = alloc()
+    let prev_chain_state = ChainState(
+        block_height = 328733,
+        total_work = 0,
+        best_hash = prev_block_hash,
+        difficulty = 0,
+        epoch_start_time = 0,
+        prev_timestamps
     )
 
     # Parse the block validation context 
-    let (context) = read_block_validation_context{reader=reader}(prev_context)
+    let (context) = read_block_validation_context{reader=reader}(prev_chain_state)
 
     validate_block([context])
     return ()
@@ -99,20 +107,27 @@ func test_read_block_with_5_transactions{range_check_ptr, bitwise_ptr : BitwiseB
     
     let (reader) = init_reader(block_raw)
 
-    # Create a dummy of the previous context
-    # TODO: simplify BlockHeaderValidationContext
+    # Create a dummy for the previous chain state
+    let (prev_block_hash) = alloc()
+    # Block 99999: https://blockstream.info/block/000000000002d01c1fccc21636b607dfd930d31d01c3a62104612a1719011250
+    %{
+        hashes_from_hex([
+            "000000000002d01c1fccc21636b607dfd930d31d01c3a62104612a1719011250"
+        ], ids.prev_block_hash)
+    %}
 
-    let (prev_header_context: BlockHeaderValidationContext*) = alloc()
-    let (prev_transactions_context: TransactionValidationContext*) = alloc()
-    let (prev_context: BlockValidationContext*) = alloc()
-    assert [prev_context] = BlockValidationContext(
-        prev_header_context,
-        transactions_count = 0,
-        prev_transactions_context
+    let (prev_timestamps) = alloc()
+    let prev_chain_state = ChainState(
+        block_height = 99999,
+        total_work = 0,
+        best_hash = prev_block_hash,
+        difficulty = 0,
+        epoch_start_time = 0,
+        prev_timestamps
     )
 
-    # Parse the block validation context 
-    let (context) = read_block_validation_context{reader=reader}(prev_context)
+    # Parse the block validation context using the previous state
+    let (context) = read_block_validation_context{reader = reader}(prev_chain_state)
 
     # Validate the block
     validate_block([context])

@@ -23,7 +23,7 @@ const BLOCK_HEADER_FELT_SIZE = BLOCK_HEADER_SIZE / UINT32_SIZE
 # - https://developer.bitcoin.org/reference/block_chain.html#block-headers
 struct BlockHeader:
 	# The block version number indicates which set of block validation rules to follow
-	member version: felt 
+	member version: felt
 
 	# The hash of the previous block in the chain
 	member prev_block_hash: felt*
@@ -32,7 +32,7 @@ struct BlockHeader:
 	member merkle_root_hash: felt*
 
 	# The timestamp of this block header
-	member time: felt 
+	member time: felt
 
 	# The target for the proof-of-work in compact encoding
 	member bits: felt
@@ -69,6 +69,27 @@ func write_block_header{writer: Writer, range_check_ptr}(
 	return ()
 end
 
+# A summary of the current state of a block chain
+struct ChainState:
+	# The number of blocks in the longest chain
+	member block_height: felt
+
+	# The total amount of work in the longest chain
+	member total_work: felt
+
+	# The block_hash of the current chain tip
+	member best_hash: felt*
+
+	# The difficulty for targets
+	member difficulty: felt
+
+	# The start time used to recalibrate the difficulty after 2016 blocks
+	member epoch_start_time: felt
+
+	# The timestamps of the most recent 11 blocks
+	member prev_timestamps : felt*
+end
+
 # The validation context for block headers
 struct BlockHeaderValidationContext:
 	# The block header serialized as uint32 array
@@ -76,37 +97,31 @@ struct BlockHeaderValidationContext:
 	
 	# The block header parsed into a struct
 	# TODO: should be a pointer
-	member block_header: BlockHeader 
+	member block_header: BlockHeader
 	
 	# The hash of this block header
 	member block_hash: felt*
 	
 	# The target for the proof-of-work 
 	# ASSUMPTION: Target is smaller than 2**246. Might overflow otherwise
-	member target: felt 
-	
-	# The previous validation context
-	# TODO: remove this dependency and make context as stateless as possible
-	member prev_context: BlockHeaderValidationContext*
+	member target: felt
 	
 	# The hash of the previous block
-	# member prev_block_hash: felt*
+	member prev_chain_state: ChainState
 
 	# The block height of this block header
 	member block_height: felt
-	
-	# TODO:
-	# member prev_block_hash
-	# member epoch_start_time: felt
-	# member total_work: felt
 end
+
 
 # Read a block header and its validation context from a reader and a previous validation context
 func read_block_header_validation_context{reader: Reader, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
-	prev_context: BlockHeaderValidationContext*) -> (context : BlockHeaderValidationContext*):
+	prev_chain_state: ChainState) -> (context : BlockHeaderValidationContext):
 	alloc_locals
 
 	# TODO: what if reader.offset > 0 here?
+	# block_header_raw should be a "pointer" into the raw byte string
+	# (actually, that's just the same as a Reader) 
 	assert reader.offset = 0
 	let block_header_raw = reader.head
 
@@ -116,20 +131,16 @@ func read_block_header_validation_context{reader: Reader, range_check_ptr, bitwi
 	
 	let (block_hash) = sha256d_felt_sized(block_header_raw, BLOCK_HEADER_FELT_SIZE)
 
-	# let block_height = [prev_context].block_height + 1
-	let block_height = 0
+	let block_height = prev_chain_state.block_height + 1
 
-	let (context: BlockHeaderValidationContext*) = alloc()
-	assert [context] = BlockHeaderValidationContext(
+	return (BlockHeaderValidationContext(
 		block_header_raw,
 		block_header,
 		block_hash,
 		target,
-		prev_context,
-		# prev_block_hash, # TODO replace
+		prev_chain_state,
 		block_height
-	)
-	return (context)
+	))
 end
 
 # Calculate target from bits
@@ -139,7 +150,7 @@ func bits_to_target{range_check_ptr}(bits) -> (target: felt):
     # Ensure that the max target is not exceeded (0x1d00FFFF)
     assert_le(bits, 0x1d00FFFF)
 
-    # Decode `bits` into significand and exponent 
+    # Decode `bits` into exponent and significand
     # There's 1 byte for the exponent followed by 3 bytes for the significand
     let (exponent, significand) = unsigned_div_rem(bits, BYTE**3)
     
@@ -164,9 +175,10 @@ func validate_block_header(context: BlockHeaderValidationContext):
 	return ()
 end
 
-# Validate a block header correctly extends the current chain
+# Validate that a block header correctly extends the current chain
 func validate_prev_block_hash(context: BlockHeaderValidationContext):
-	assert_hashes_equal(context.prev_context.block_hash, context.block_header.prev_block_hash)
+	# TODO: FIXME 
+	# assert_hashes_equal(context.prev_context.block_hash, context.block_header.prev_block_hash)
 	return ()
 end
 
@@ -187,7 +199,7 @@ func validate_target(context: BlockHeaderValidationContext):
 end
 
 # Validate that the timestamp of a block header is strictly greater than the median time 
-# of the previous 11 blocks. 
+# of the previous 11 blocks.
 #
 # See also:
 # - https://developer.bitcoin.org/reference/block_chain.html#block-headers

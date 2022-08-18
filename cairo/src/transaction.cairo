@@ -8,7 +8,7 @@ from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 
 from crypto.sha256d.sha256d import sha256d, HASH_SIZE
-from buffer import Reader, read_uint8, peek_uint8, read_uint16, read_uint32, read_uint64, read_varint, read_hash, read_bytes, UINT32_SIZE, UINT64_SIZE, read_bytes_endian
+from buffer import Reader, Writer, read_uint8, peek_uint8, read_uint16, read_uint32, read_uint64, read_varint, read_hash, read_bytes, UINT32_SIZE, UINT64_SIZE, read_bytes_endian
 
 # Definition of a Bitcoin transaction
 #
@@ -195,7 +195,27 @@ func read_transaction_validation_context{reader:Reader, range_check_ptr, bitwise
 		transaction, transaction_raw, byte_size, txid))
 end
 
+# Write a transaction into a Writer
+# 
+# There are multiple different types of writing:
+# 	- TXID:    Serialize for hashing the transaction id (that might mean to ignore the segwit flag)
+# 	- wTXID:   Serialize for hashing the witness transaction id (add the segwit data)
+# 	- sighash: Serialize for hashing with a given signature hash flag
+#			   (tweak the inputs, outputs, and the script accordingly)
+# 
+# See also:
+# - https://developer.bitcoin.org/devguide/transactions.html#signature-hash-types
+#
+func write_transaction{writer:Writer, range_check_ptr}(
+	transaction: Transaction):
+	# TODO: implement me
+	return ()
+end
 
+# Idea
+const IS_TXID = 1
+const IS_WTXID = 2
+const IS_SIGHASH = 3
 struct TxWriter:
-	member sighash_flag: felt
+	member type: felt
 end
