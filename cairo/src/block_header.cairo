@@ -86,7 +86,7 @@ struct ChainState:
 	# The start time used to recalibrate the difficulty after 2016 blocks
 	member epoch_start_time: felt
 
-	# The timestamps of the most recent 11 blocks
+	# The timestamps of the latest 11 blocks
 	member prev_timestamps : felt*
 end
 
@@ -106,7 +106,7 @@ struct BlockHeaderValidationContext:
 	# ASSUMPTION: Target is smaller than 2**246. Might overflow otherwise
 	member target: felt
 	
-	# The hash of the previous block
+	# The previous state that is updated by this block
 	member prev_chain_state: ChainState
 
 	# The block height of this block header
@@ -178,7 +178,7 @@ end
 # Validate that a block header correctly extends the current chain
 func validate_prev_block_hash(context: BlockHeaderValidationContext):
 	# TODO: FIXME 
-	# assert_hashes_equal(context.prev_context.block_hash, context.block_header.prev_block_hash)
+	assert_hashes_equal(context.prev_chain_state.best_hash, context.block_header.prev_block_hash)
 	return ()
 end
 

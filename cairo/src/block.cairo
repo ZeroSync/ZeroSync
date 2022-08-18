@@ -19,24 +19,22 @@ from crypto.sha256d.sha256d import assert_hashes_equal, copy_hash, HASH_FELT_SIZ
 struct BlockValidationContext:
 	member header_context: BlockHeaderValidationContext
 	member transactions_count: felt
-	member transactions_context: TransactionValidationContext*
+	member transaction_contexts: TransactionValidationContext*
 end
 
 func read_block_validation_context{reader: Reader, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
-	prev_chain_state: ChainState) -> (context: BlockValidationContext*):
+	prev_chain_state: ChainState) -> (context: BlockValidationContext):
 	alloc_locals
 
 	let (header_context) = read_block_header_validation_context(prev_chain_state)
 	let (transactions_count, _) = read_varint()
-	let (transactions_context) = read_transactions_validation_context(transactions_count)
+	let (transaction_contexts) = read_transactions_validation_context(transactions_count)
 
-	let (context: BlockValidationContext*) = alloc()
-	assert [context] = BlockValidationContext(
+	return (BlockValidationContext(
 		header_context, 
 		transactions_count,
-		transactions_context
-	)
-	return (context)
+		transaction_contexts
+	))
 end
 
 func read_transactions_validation_context{reader: Reader, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
@@ -64,7 +62,7 @@ end
 func validate_block{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
 	context: BlockValidationContext):
 	alloc_locals
-	# validate_block_header(context.header_context)
+	validate_block_header(context.header_context)
 	validate_merkle_root(context)
 	validate_coinbase(context)
 	validate_transactions(context)
@@ -76,7 +74,7 @@ func validate_merkle_root{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
 	alloc_locals
 	let (txids) = alloc()
 	_copy_txids_into_array_loop(
-		context.transactions_context, 
+		context.transaction_contexts, 
 		txids, 
 		context.transactions_count
 	)
