@@ -64,7 +64,6 @@ func _sha256_chunk{range_check_ptr, sha256_start: felt*, state: felt*, output: f
 
         _sha256_input_chunk_size_felts = int(ids.SHA256_INPUT_CHUNK_SIZE_FELTS)
         assert 0 <= _sha256_input_chunk_size_felts < 100
-
         w = compute_message_schedule(memory.get_range(
             ids.sha256_start, _sha256_input_chunk_size_felts))
         new_state = sha2_compress_function(memory.get_range(ids.state, int(ids.SHA256_STATE_SIZE_FELTS)), w)
@@ -86,7 +85,13 @@ func sha256_inner{range_check_ptr, sha256_ptr: felt*}(
 
     let (zero_bytes) = is_le(n_bytes, 0)
     let (zero_total_bytes) = is_le(total_bytes, 0)
-    let zero_chunk = zero_bytes - zero_total_bytes
+
+    # If the previous message block was full we are still missing "1" at the end of the message
+    let (_, r_div_by_64) = unsigned_div_rem(total_bytes, 64)
+    let (missing_bit_one) = is_le(r_div_by_64, 0)
+
+    # This works for 0 total bytes too, because zero_chunk will be -1 and, therefore, not 0.
+    let zero_chunk = zero_bytes - zero_total_bytes - missing_bit_one
 
     let (is_last_block) = is_le(n_bytes, 55)
     if is_last_block != 0:
@@ -149,7 +154,7 @@ func _sha256_input{range_check_ptr, sha256_ptr: felt*}(
         memset(dst=sha256_ptr, value=0, n=n_words)
         let sha256_ptr = sha256_ptr + n_words
         return ()
-    end
+    end 
 
     if n_bytes == 0:
         # This is the last input word, so we should add a byte '0x80' at the end and fill the rest with
@@ -160,6 +165,7 @@ func _sha256_input{range_check_ptr, sha256_ptr: felt*}(
         return ()
     end
 
+   
     assert_nn_le(n_bytes, 3)
     let (padding) = pow(256, 3 - n_bytes)
     local range_check_ptr = range_check_ptr
