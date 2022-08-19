@@ -80,13 +80,14 @@ struct ChainState:
 	# The block_hash of the current chain tip
 	member best_hash: felt*
 
-	# The difficulty for targets
+	# The required difficulty for targets in this epoch
 	member difficulty: felt
 
-	# The start time used to recalibrate the difficulty after 2016 blocks
+	# The start time used to recalibrate the difficulty 
+	# after an epoch of about 2 weeks (exactly 2016 blocks)
 	member epoch_start_time: felt
 
-	# The timestamps of the latest 11 blocks
+	# The timestamps of the 11 most recent blocks
 	member prev_timestamps : felt*
 end
 
@@ -177,8 +178,10 @@ end
 
 # Validate that a block header correctly extends the current chain
 func validate_prev_block_hash(context: BlockHeaderValidationContext):
-	# TODO: FIXME 
-	assert_hashes_equal(context.prev_chain_state.best_hash, context.block_header.prev_block_hash)
+	assert_hashes_equal(
+		context.prev_chain_state.best_hash, 
+		context.block_header.prev_block_hash
+	)
 	return ()
 end
 
@@ -199,7 +202,7 @@ func validate_target(context: BlockHeaderValidationContext):
 end
 
 # Validate that the timestamp of a block header is strictly greater than the median time 
-# of the previous 11 blocks.
+# of the 11 most recent blocks.
 #
 # See also:
 # - https://developer.bitcoin.org/reference/block_chain.html#block-headers
@@ -212,3 +215,45 @@ func validate_median_time(context: BlockHeaderValidationContext):
 	# Step 4: Read the median from the sorted array
 	return ()
 end
+
+
+# Apply a block header to a previous chain state to obtain the next chain state
+#
+func apply_block_header(
+	context: BlockHeaderValidationContext) -> (next_state: ChainState):
+	
+	# TODO: Copy the 10 most recent timestamps and the current timestamp
+	let (prev_timestamps) = alloc()
+	let total_work = compute_total_work(context)
+
+	# TODO: recalibrate the difficulty after about 2 weeks of blocks
+	# E.g. if context.block_height % 2016 == 0:
+	return (ChainState(
+			context.block_height,
+			total_work,
+			context.block_hash,
+			context.prev_chain_state.difficulty,
+			context.prev_chain_state.epoch_start_time,
+			prev_timestamps
+		))
+end
+
+
+# Compute the total work invested into the longest chain
+#
+# See also:
+# - https://bitcoin.stackexchange.com/questions/936/how-does-a-client-decide-which-is-the-longest-block-chain-if-there-is-a-fork/939#939
+# - https://github.com/bitcoin/bitcoin/blob/v0.16.2/src/validation.cpp#L3713
+#
+func compute_total_work(context: BlockHeaderValidationContext) -> (work):
+	# We need to compute 2**256 / (bnTarget+1), but we can't represent 2**256
+    # as it's too large for a felt. However, as 2**256 is at least as large
+    # as bnTarget+1, it is equal to ((2**256 - bnTarget - 1) / (bnTarget+1)) + 1,
+    # or ~bnTarget / (bnTarget+1) + 1.
+	
+	# TODO: Fix me. This doesn't give the correct value
+	let (work, _) = unsigned_div_rem(-context.target, context.target + 1)
+	return (work + 1 + context.prev_chain_state.total_work)
+end
+
+

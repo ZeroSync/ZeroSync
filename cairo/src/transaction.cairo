@@ -195,6 +195,10 @@ func read_transaction_validation_context{reader:Reader, range_check_ptr, bitwise
 		transaction, transaction_raw, byte_size, txid))
 end
 
+func validate_transaction(context: TransactionValidationContext):
+	return ()
+end
+
 # Write a transaction into a Writer
 # 
 # There are multiple different types of writing:

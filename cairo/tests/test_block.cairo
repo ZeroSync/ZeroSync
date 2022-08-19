@@ -12,7 +12,7 @@ from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from tests.utils_for_testing import setup_python_defs
 from transaction import TransactionValidationContext
 from block_header import ChainState
-from block import BlockValidationContext, read_block_validation_context, validate_block
+from block import BlockValidationContext, State, read_block_validation_context, validate_block
 
 from buffer import init_reader
 
@@ -63,8 +63,12 @@ func test_read_block_validation_context{range_check_ptr, bitwise_ptr : BitwiseBu
         prev_timestamps
     )
 
+    let prev_state = State(
+        prev_chain_state
+    )
+
     # Parse the block validation context 
-    let (context) = read_block_validation_context{reader=reader}(prev_chain_state)
+    let (context) = read_block_validation_context{reader=reader}(prev_state)
 
     validate_block(context)
     return ()
@@ -126,8 +130,12 @@ func test_read_block_with_5_transactions{range_check_ptr, bitwise_ptr : BitwiseB
         prev_timestamps
     )
 
-    # Parse the block validation context using the previous chain state
-    let (context) = read_block_validation_context{reader=reader}(prev_chain_state)
+    let prev_state = State(
+        prev_chain_state
+    )
+
+    # Parse the block validation context using the previous state
+    let (context) = read_block_validation_context{reader=reader}(prev_state)
 
     # Sanity Check 
     # The second output of the second transaction should be 44.44 BTC
