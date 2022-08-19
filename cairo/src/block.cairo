@@ -11,20 +11,25 @@ from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 
 from buffer import Reader, Writer, read_varint
-from block_header import BlockHeaderValidationContext, ChainState, read_block_header_validation_context, validate_block_header, apply_block_header
-from transaction import TransactionValidationContext, read_transaction_validation_context, validate_transaction
+from block_header import BlockHeaderValidationContext, ChainState, read_block_header_validation_context, validate_and_apply_block_header, apply_block_header
+from transaction import TransactionValidationContext, read_transaction_validation_context, validate_and_apply_transaction
 from merkle_tree import compute_merkle_root
 from crypto.sha256d.sha256d import assert_hashes_equal, copy_hash, HASH_FELT_SIZE
 
-struct BlockValidationContext:
-	member header_context: BlockHeaderValidationContext
-	member transactions_count: felt
-	member transaction_contexts: TransactionValidationContext*
+
+# The state of the headers chain and the UTXO set
+struct State:
+	# The state of the chain of block headers
+	member chain_state: ChainState
+	# The state of the UTXO set represented in a (fancy) Merkle root hash
+	member state_root: felt* 
 end
 
-
-struct State:
-	member chain_state: ChainState
+struct BlockValidationContext:
+	member header_context: BlockHeaderValidationContext
+	member transaction_count: felt
+	member transaction_contexts: TransactionValidationContext*
+	member prev_state_root: felt*
 end
 
 func read_block_validation_context{reader: Reader, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
@@ -32,21 +37,22 @@ func read_block_validation_context{reader: Reader, range_check_ptr, bitwise_ptr:
 	alloc_locals
 
 	let (header_context) = read_block_header_validation_context(prev_state.chain_state)
-	let (transactions_count, _) = read_varint()
-	let (transaction_contexts) = read_transaction_validation_contexts(transactions_count)
+	let (transaction_count, _) = read_varint()
+	let (transaction_contexts) = read_transaction_validation_contexts(transaction_count)
 
 	return (BlockValidationContext(
 		header_context, 
-		transactions_count,
-		transaction_contexts
+		transaction_count,
+		transaction_contexts,
+		prev_state.state_root
 	))
 end
 
 func read_transaction_validation_contexts{reader: Reader, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
-	transactions_count) -> (contexts: TransactionValidationContext*):
+	transaction_count) -> (contexts: TransactionValidationContext*):
 	alloc_locals
 	let (contexts: TransactionValidationContext*) = alloc()
-	_read_transaction_validation_contexts_loop(contexts, transactions_count)
+	_read_transaction_validation_contexts_loop(contexts, transaction_count)
 	return (contexts)
 end
 
@@ -64,15 +70,16 @@ func _read_transaction_validation_contexts_loop{reader: Reader, range_check_ptr,
 	)
 end
 
-# Validate all properties of a block
-func validate_block{ range_check_ptr, bitwise_ptr: BitwiseBuiltin* }(
-	context: BlockValidationContext):
+# Validate all properties of a block, apply it to the previous state,
+# and return the next state
+#
+func validate_and_apply_block{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
+	context: BlockValidationContext) -> (next_state: State):
 	alloc_locals
-	validate_block_header(context.header_context)
+	let (next_chain_state) = validate_and_apply_block_header(context.header_context)
 	validate_merkle_root(context)
-	validate_coinbase(context)
-	validate_transactions(context.transaction_contexts, context.transactions_count)
-	return ()
+	let (next_state_root) = validate_and_apply_transactions(context)
+	return ( State(next_chain_state, next_state_root) )
 end
 
 # Compute the Merkle root of all transactions in this block
@@ -85,18 +92,16 @@ func validate_merkle_root{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
 	_copy_txids_into_array_loop(
 		context.transaction_contexts, 
 		txids, 
-		context.transactions_count
+		context.transaction_count
 	)
 	
 	# Compute the Merkle root of the TXIDs
-	let (merkle_root) = compute_merkle_root(txids, context.transactions_count)
+	let (merkle_root) = compute_merkle_root(txids, context.transaction_count)
 	
 	# Validate that the computed Merkle root 
 	# matches the Merkle root in this block's header
 	assert_hashes_equal(
-		context.header_context.block_header.merkle_root_hash,
-		merkle_root
-	)
+		context.header_context.block_header.merkle_root_hash, merkle_root)
 	return ()
 end
 
@@ -114,33 +119,49 @@ func _copy_txids_into_array_loop(
 end
 
 
-# Validate that every transaction in this block is valid
-func validate_transactions(tx_contexts: TransactionValidationContext*, loop_counter):
+# Validate that every transaction in this block is valid,
+# apply them to the previous state and return the resulting state root
+func validate_and_apply_transactions(
+	context: BlockValidationContext) -> (next_state_root : felt*):
+	# Validate the coinbase transaction with its special validation rules
+	validate_and_apply_coinbase(context)
+	# Validate all other transactions with the regular validation rules
+	return _validate_and_apply_transactions_loop(
+		context.transaction_contexts + 1,
+		context.header_context,
+		context.prev_state_root,
+		context.transaction_count - 1
+	)
+end
+
+func _validate_and_apply_transactions_loop(
+	tx_contexts: TransactionValidationContext*, 
+	header_context: BlockHeaderValidationContext, 
+	prev_state_root: felt*,
+	loop_counter) -> (next_state_root: felt*):
 	if loop_counter == 0:
-		return ()
+		return (prev_state_root)
 	end
-	validate_transaction([tx_contexts])
-	return validate_transactions(
+	
+	let (next_state_root) = validate_and_apply_transaction([tx_contexts], header_context, prev_state_root)
+
+	return _validate_and_apply_transactions_loop(
 		tx_contexts + TransactionValidationContext.SIZE,
+		header_context,
+		next_state_root,
 		loop_counter - 1
 	)
 end
 
 
-# Validate the format of the coinbase's input. Also validate 
-# that the coinbase's output amount is at most the current block reward 
+# Validate the format of the coinbase transaction. Also validate that
+# the coinbase's output amount is at most the current block reward 
 # plus the transaction fees of this block.
 #
 # See also:
 # - https://developer.bitcoin.org/reference/transactions.html#coinbase-input-the-input-of-the-first-transaction-in-a-block
-func validate_coinbase(context: BlockValidationContext):
+func validate_and_apply_coinbase(context: BlockValidationContext):
 	# TODO: implement me
 	return ()
 end
 
-func apply_block(context: BlockValidationContext) -> (state: State):
-	const chain_state = apply_block_header(context)
-	return (State(
-		chain_state
-		))
-end

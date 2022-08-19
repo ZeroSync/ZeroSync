@@ -9,6 +9,7 @@ from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 
 from crypto.sha256d.sha256d import sha256d, HASH_SIZE
 from buffer import Reader, Writer, read_uint8, peek_uint8, read_uint16, read_uint32, read_uint64, read_varint, read_hash, read_bytes, UINT32_SIZE, UINT64_SIZE, read_bytes_endian
+from block_header import BlockHeaderValidationContext
 
 # Definition of a Bitcoin transaction
 #
@@ -16,9 +17,9 @@ from buffer import Reader, Writer, read_uint8, peek_uint8, read_uint16, read_uin
 # - https://developer.bitcoin.org/reference/transactions.html#raw-transaction-format
 struct Transaction:
 	member version: felt
-	member inputs_count: felt
+	member input_count: felt
 	member inputs: TxInput*
-	member outputs_count: felt
+	member output_count: felt
 	member outputs: TxOutput*
 	member locktime: felt
 end
@@ -51,28 +52,29 @@ func read_transaction{reader: Reader, range_check_ptr}(
 		# This is a SegWit transaction
 		# Read the 2 bytes of "marker" and "flag"
 		let (flag) = read_uint16()
+		# Validate that they are set correctly
 		assert flag = 0x0100
 	end
 
-	let inputs_count	= read_varint()
-	let inputs			= read_inputs(inputs_count.value)
-	let outputs_count	= read_varint()
-	let outputs			= read_outputs(outputs_count.value)
+	let input_count	= read_varint()
+	let inputs			= read_inputs(input_count.value)
+	let output_count	= read_varint()
+	let outputs			= read_outputs(output_count.value)
 	let (locktime)		= read_uint32()
 
 	return (Transaction(
 		version, 
-		inputs_count.value, 
+		input_count.value, 
 		inputs.inputs, 
-		outputs_count.value, 
+		output_count.value, 
 		outputs.outputs, 
 		locktime
 	), 	
 	# Compute the byte size of the transaction 
 		UINT32_SIZE +
-		inputs_count.byte_size + 
+		input_count.byte_size + 
 		inputs.byte_size +
-		outputs_count.byte_size +
+		output_count.byte_size +
 		outputs.byte_size +
 		UINT32_SIZE
 	)
@@ -80,10 +82,10 @@ end
 
 # Read transaction inputs from a buffer
 func read_inputs{reader:Reader, range_check_ptr}(
-	inputs_count) -> (inputs: TxInput*, byte_size):
+	input_count) -> (inputs: TxInput*, byte_size):
 	alloc_locals
 	let (inputs: TxInput*) = alloc()
-	let (byte_size) = _read_inputs_loop(inputs, inputs_count)
+	let (byte_size) = _read_inputs_loop(inputs, input_count)
 	return (inputs, byte_size)
 end
 
@@ -128,10 +130,10 @@ end
 
 # Read outputs from a buffer
 func read_outputs{reader:Reader, range_check_ptr}(
-	outputs_count) -> (outputs: TxOutput*, byte_size):
+	output_count) -> (outputs: TxOutput*, byte_size):
 	alloc_locals
 	let outputs: TxOutput* = alloc()
-	let (byte_size) = _read_outputs_loop(outputs, outputs_count)
+	let (byte_size) = _read_outputs_loop(outputs, output_count)
 	return (outputs, byte_size)
 end
 
@@ -184,8 +186,8 @@ func read_transaction_validation_context{reader:Reader, range_check_ptr, bitwise
 	) -> (result: TransactionValidationContext):
 	alloc_locals
 
-	# TODO: This is a quick fix to prevent the bug occuring 
-	# when reader.offset > 0. Fix me properly.
+	# TODO: Fix me properly. This is just a quick fix to prevent 
+	# the bug occuring when reader.offset > 0. 
 	let raw_reader = reader
 	let (transaction, byte_size) = read_transaction()
 	let (transaction_raw) = read_bytes_endian{reader = raw_reader}(byte_size)
@@ -195,9 +197,17 @@ func read_transaction_validation_context{reader:Reader, range_check_ptr, bitwise
 		transaction, transaction_raw, byte_size, txid))
 end
 
-func validate_transaction(context: TransactionValidationContext):
-	return ()
+# Validate all properties of a transaction, apply it to the current state
+# and return the resulting next state root
+func validate_and_apply_transaction(
+	context: TransactionValidationContext, header_context: BlockHeaderValidationContext,
+	prev_state: felt*
+	) -> (next_state:felt*):
+	
+	let (state_root) = alloc()
+	return (state_root)
 end
+
 
 # Write a transaction into a Writer
 # 
@@ -216,10 +226,20 @@ func write_transaction{writer:Writer, range_check_ptr}(
 	return ()
 end
 
-# Idea
+# Sketch of an idea to make the writer carry meta data
+
+# The different types of Writers
 const IS_TXID = 1
 const IS_WTXID = 2
 const IS_SIGHASH = 3
-struct TxWriter:
+
+struct TypedWriter:
+	# This writer's type
 	member type: felt
+	# This writer's meta data (gets casted according to type)
+	# Nullpointer if the type of this Writer has no meta data
+	member meta: felt*
 end
+
+
+

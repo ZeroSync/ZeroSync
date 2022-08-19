@@ -145,23 +145,27 @@ func read_block_header_validation_context{reader: Reader, range_check_ptr, bitwi
 end
 
 # Calculate target from bits
-# See https://developer.bitcoin.org/reference/block_chain.html#target-nbits
-func bits_to_target{range_check_ptr}(bits) -> (target: felt):
+#
+# See also:
+# - https://developer.bitcoin.org/reference/block_chain.html#target-nbits
+func bits_to_target{range_check_ptr}(bits) -> (target):
     alloc_locals
     # Ensure that the max target is not exceeded (0x1d00FFFF)
     assert_le(bits, 0x1d00FFFF)
 
-    # Decode `bits` into exponent and significand
+    # Decode the 4 bytes of `bits` into exponent and significand.
     # There's 1 byte for the exponent followed by 3 bytes for the significand
     let (exponent, significand) = unsigned_div_rem(bits, BYTE**3)
     
-    # Compute the target via exponentiation of significand and exponent
+    # The target is the `significand` shifted `exponent` times to the left
     let (shift_left) = pow(BYTE, exponent - 3)
     return (significand * shift_left)
 end
 
-# Validate a block header
-func validate_block_header(context: BlockHeaderValidationContext):
+# Validate a block header, apply it to the previous state
+# and return the next state
+func validate_and_apply_block_header(
+	context: BlockHeaderValidationContext) -> (next_state: ChainState):
 	# Validate previous block hash
 	validate_prev_block_hash(context)
 
@@ -173,7 +177,10 @@ func validate_block_header(context: BlockHeaderValidationContext):
 
 	# Validate the block's timestamp
 	validate_median_time(context)
-	return ()
+
+	# Apply this block to the previous state 
+	# and return the next state
+	return apply_block_header(context)
 end
 
 # Validate that a block header correctly extends the current chain
@@ -221,10 +228,11 @@ end
 #
 func apply_block_header(
 	context: BlockHeaderValidationContext) -> (next_state: ChainState):
-	
+	alloc_locals
+
 	# TODO: Copy the 10 most recent timestamps and the current timestamp
 	let (prev_timestamps) = alloc()
-	let total_work = compute_total_work(context)
+	let (total_work) = compute_total_work(context)
 
 	# TODO: recalibrate the difficulty after about 2 weeks of blocks
 	# E.g. if context.block_height % 2016 == 0:
@@ -241,19 +249,25 @@ end
 
 # Compute the total work invested into the longest chain
 #
+func compute_total_work(context: BlockHeaderValidationContext) -> (work):
+	let (work_in_block) = compute_work_from_target(context.target)
+	return (context.prev_chain_state.total_work + work_in_block)
+end
+
+# Convert a target into units of work
+#
 # See also:
 # - https://bitcoin.stackexchange.com/questions/936/how-does-a-client-decide-which-is-the-longest-block-chain-if-there-is-a-fork/939#939
+# - https://github.com/bitcoin/bitcoin/blob/v0.16.2/src/chain.cpp#L121
 # - https://github.com/bitcoin/bitcoin/blob/v0.16.2/src/validation.cpp#L3713
-#
-func compute_total_work(context: BlockHeaderValidationContext) -> (work):
+func compute_work_from_target(target) -> (work):
 	# We need to compute 2**256 / (bnTarget+1), but we can't represent 2**256
     # as it's too large for a felt. However, as 2**256 is at least as large
     # as bnTarget+1, it is equal to ((2**256 - bnTarget - 1) / (bnTarget+1)) + 1,
     # or ~bnTarget / (bnTarget+1) + 1.
-	
-	# TODO: Fix me. This doesn't give the correct value
-	let (work, _) = unsigned_div_rem(-context.target, context.target + 1)
-	return (work + 1 + context.prev_chain_state.total_work)
-end
 
-
+    # TODO: Fix me. This doesn't give the correct value
+	# let (work, _) = unsigned_div_rem(-context.target, context.target + 1)
+	# return (work + 1)
+	return (0)
+end 
