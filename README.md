@@ -56,11 +56,11 @@ sha256 code adopted from Lior Goldberg: https://github.com/starkware-libs/cairo-
 
 
 
-## Compile (Temporary Quick Fix)
+## Compile (Temporary Dummy)
 
 ```sh
 source ~/cairo_venv/bin/activate
-
+mkdir tmp
 ```
 
 ```sh
@@ -72,5 +72,5 @@ cairo-run --program=tmp/program.json --layout=all --print_output --program_input
 ```
 
 ```sh
-giza prove --trace=tmp/trace.bin --memory=tmp/memory.bin --program=tmp/program.json --output=tmp/proof.bin --num-outputs=1
+giza prove --trace=tmp/trace.bin --memory=tmp/memory.bin --program=tmp/program.json --output=tmp/proof.bin --num-outputs=12
 ```

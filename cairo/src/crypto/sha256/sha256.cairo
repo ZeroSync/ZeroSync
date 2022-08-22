@@ -17,7 +17,6 @@ func _sha256{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
     felt_size, input:felt*, byte_size) -> (hash: felt*):
     
     # return _compute_sha256_real(felt_size, input, byte_size)
-    
     return _compute_sha256_fake(felt_size, input, byte_size)
 end
 

@@ -56,11 +56,11 @@ func read_transaction{reader: Reader, range_check_ptr}(
 		assert flag = 0x0100
 	end
 
-	let input_count	= read_varint()
-	let inputs			= read_inputs(input_count.value)
-	let output_count	= read_varint()
-	let outputs			= read_outputs(output_count.value)
-	let (locktime)		= read_uint32()
+	let input_count  = read_varint()
+	let inputs       = read_inputs(input_count.value)
+	let output_count = read_varint()
+	let outputs      = read_outputs(output_count.value)
+	let (locktime)   = read_uint32()
 
 	return (Transaction(
 		version, 

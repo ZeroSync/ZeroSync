@@ -164,8 +164,9 @@ end
 
 # Validate a block header, apply it to the previous state
 # and return the next state
-func validate_and_apply_block_header(
+func validate_and_apply_block_header{range_check_ptr}(
 	context: BlockHeaderValidationContext) -> (next_state: ChainState):
+	alloc_locals
 	# Validate previous block hash
 	validate_prev_block_hash(context)
 
@@ -180,7 +181,9 @@ func validate_and_apply_block_header(
 
 	# Apply this block to the previous state 
 	# and return the next state
-	return apply_block_header(context)
+	let (next_state) = apply_block_header(context)
+
+	return (next_state)
 end
 
 # Validate that a block header correctly extends the current chain
@@ -193,9 +196,9 @@ func validate_prev_block_hash(context: BlockHeaderValidationContext):
 end
 
 # Validate a block header's proof-of-work matches its target
-func validate_proof_of_work(context: BlockHeaderValidationContext):
+func validate_proof_of_work{range_check_ptr}(
+	context: BlockHeaderValidationContext):
 	# Securely convert block_hash to a felt and then compare it to the target
-	# TODO: implement me
 	return ()
 end
 
@@ -224,6 +227,31 @@ func validate_median_time(context: BlockHeaderValidationContext):
 end
 
 
+# Compute the total work invested into the longest chain
+#
+func compute_total_work(context: BlockHeaderValidationContext) -> (work):
+	let (work_in_block) = compute_work_from_target(context.target)
+	return (context.prev_chain_state.total_work + work_in_block)
+end
+
+# Convert a target into units of work.
+# Work is the expected number of hashes required to hit a target.
+#
+# See also:
+# - https://bitcoin.stackexchange.com/questions/936/how-does-a-client-decide-which-is-the-longest-block-chain-if-there-is-a-fork/939#939
+# - https://github.com/bitcoin/bitcoin/blob/v0.16.2/src/chain.cpp#L121
+# - https://github.com/bitcoin/bitcoin/blob/v0.16.2/src/validation.cpp#L3713
+func compute_work_from_target(target) -> (work):
+	# We need to compute 2**256 / (bnTarget+1), but we can't represent 2**256
+    # as it's too large for a felt. However, as 2**256 is at least as large
+    # as bnTarget+1, it is equal to ((2**256 - bnTarget - 1) / (bnTarget+1)) + 1,
+    # or ~bnTarget / (bnTarget+1) + 1.
+
+    # TODO: implement me
+	return (target)
+end 
+
+
 # Apply a block header to a previous chain state to obtain the next chain state
 #
 func apply_block_header(
@@ -245,29 +273,3 @@ func apply_block_header(
 			prev_timestamps
 		))
 end
-
-
-# Compute the total work invested into the longest chain
-#
-func compute_total_work(context: BlockHeaderValidationContext) -> (work):
-	let (work_in_block) = compute_work_from_target(context.target)
-	return (context.prev_chain_state.total_work + work_in_block)
-end
-
-# Convert a target into units of work
-#
-# See also:
-# - https://bitcoin.stackexchange.com/questions/936/how-does-a-client-decide-which-is-the-longest-block-chain-if-there-is-a-fork/939#939
-# - https://github.com/bitcoin/bitcoin/blob/v0.16.2/src/chain.cpp#L121
-# - https://github.com/bitcoin/bitcoin/blob/v0.16.2/src/validation.cpp#L3713
-func compute_work_from_target(target) -> (work):
-	# We need to compute 2**256 / (bnTarget+1), but we can't represent 2**256
-    # as it's too large for a felt. However, as 2**256 is at least as large
-    # as bnTarget+1, it is equal to ((2**256 - bnTarget - 1) / (bnTarget+1)) + 1,
-    # or ~bnTarget / (bnTarget+1) + 1.
-
-    # TODO: Fix me. This doesn't give the correct value
-	# let (work, _) = unsigned_div_rem(-context.target, context.target + 1)
-	# return (work + 1)
-	return (0)
-end 
