@@ -1,6 +1,6 @@
 # ZEROSYNC
 
-## An alternative to Bitcoins initial block download using STARK proofs that verify the correctness of a corresponding chainstate
+## An alternative to Bitcoin's initial block download using STARK proofs that verify the correctness of a corresponding chainstate
 Zerosync will allow to download the latest state of the Bitcoin Blockchain and a verifiable proof attesting its correctness. Instead of validating every block and included transaction only the STARK proof has to be verified.
 
 This will be achieved with a full node implememtation in Cairo. In the current state we implemented a light client in Cairo that we will now expand with functionalities.
@@ -57,10 +57,20 @@ sha256 code adopted from Lior Goldberg: https://github.com/starkware-libs/cairo-
 
 
 ## Compile (Temporary Quick Fix)
+
 ```sh
-cairo-compile cairo/src/main.cairo --cairo_path cairo/src --output tmp/main_compiled.json
+source ~/cairo_venv/bin/activate
+
 ```
 
 ```sh
-cairo-run --program=tmp/main_compiled.json --layout=all --print_output --program_input=tmp/block_100000.json
+cairo-compile cairo/src/main.cairo --cairo_path cairo/src --output tmp/program.json
+```
+
+```sh
+cairo-run --program=tmp/program.json --layout=all --print_output --program_input=data/block_100000.json --trace_file=tmp/trace.bin --memory_file=tmp/memory.bin --print_info
+```
+
+```sh
+giza prove --trace=tmp/trace.bin --memory=tmp/memory.bin --program=tmp/program.json --output=tmp/proof.bin --num-outputs=1
 ```

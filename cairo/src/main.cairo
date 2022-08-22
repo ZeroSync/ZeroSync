@@ -54,15 +54,13 @@ func main{output_ptr : felt*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}():
 
     let prev_state = State(prev_chain_state, prev_state_root)
 
-    # local next_state: State = prev_state
 
     # Read the UTXO proof data and inclusion proofs
     # from the program input
-
     # TODO: implement me
 
-    # Prove a state transition
 
+    # Prove a state transition
     let (reader) = init_reader(raw_block)
     let (context) = read_block_validation_context{reader=reader}(prev_state)
     let (next_state) = validate_and_apply_block(context)
