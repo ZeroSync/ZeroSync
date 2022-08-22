@@ -4,3 +4,4 @@ conf/starkRelay.toml
 build
 starkRelay.egg-info
 .DS_Store
+tmp

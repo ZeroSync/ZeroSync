@@ -217,6 +217,21 @@ func test_read_2_4_8_bytes{range_check_ptr}():
     return ()
 end
 
+# TODO
+@external
+func test_read_overflow_uint32{range_check_ptr}():
+    alloc_locals
+    let (array) = alloc()
+    assert array[0] = 0x05010203ff
+
+    let (reader) = init_reader(array)
+
+    # %{ expect_revert() %}
+    let (uint32) = read_uint32{reader=reader}()
+
+    return ()
+end
+
 @external
 func test_writer{range_check_ptr}():
     alloc_locals

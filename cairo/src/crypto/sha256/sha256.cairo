@@ -38,7 +38,7 @@ end
 # It is intended to be used only for testing purposes!
 #
 # TODO: Delete this function before deploying any release!
-from tests.utils_for_testing import setup_python_defs
+from utils_for_testing import setup_python_defs
 func _compute_sha256_fake{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
     felt_size, input:felt*, byte_size) -> (hash:felt*):
     alloc_locals

@@ -73,6 +73,8 @@ end
 # Validate all properties of a block, apply it to the previous state,
 # and return the next state
 #
+# TODO: read the UTXO data required to validate the TX inputs (amounts and such) and verify the corresponding proofs
+#
 func validate_and_apply_block{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
 	context: BlockValidationContext) -> (next_state: State):
 	alloc_locals

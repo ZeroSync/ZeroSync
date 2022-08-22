@@ -9,7 +9,7 @@ from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.memcpy import memcpy
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 
-from tests.utils_for_testing import setup_python_defs
+from utils_for_testing import setup_python_defs
 from transaction import TransactionValidationContext
 from block_header import ChainState
 from block import BlockValidationContext, State, read_block_validation_context, validate_and_apply_block

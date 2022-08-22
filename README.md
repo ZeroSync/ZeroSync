@@ -52,3 +52,15 @@ sudo chmod +x testCairo.sh
 ## Credits
 
 sha256 code adopted from Lior Goldberg: https://github.com/starkware-libs/cairo-examples/tree/master/sha256
+
+
+
+
+## Compile (Temporary Quick Fix)
+```sh
+cairo-compile cairo/src/main.cairo --cairo_path cairo/src --output tmp/main_compiled.json
+```
+
+```sh
+cairo-run --program=tmp/main_compiled.json --layout=all --print_output --program_input=tmp/block_100000.json
+```

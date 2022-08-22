@@ -4,7 +4,7 @@ from starkware.cairo.common.alloc import alloc
 from buffer import init_reader, init_writer, flush_writer, read_uint8
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from crypto.sha256d.sha256d import assert_hashes_equal
-from tests.utils_for_testing import setup_python_defs
+from utils_for_testing import setup_python_defs
 
 from transaction import read_transaction, read_transaction_validation_context
 

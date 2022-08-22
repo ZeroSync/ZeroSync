@@ -8,7 +8,7 @@ from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.uint256 import Uint256
 
-from tests.utils_for_testing import setup_python_defs
+from utils_for_testing import setup_python_defs
 from crypto.sha256.sha256 import sha256, _sha256
 from crypto.sha256d.sha256d import assert_hashes_equal
 
@@ -125,3 +125,7 @@ func test_sha256_64_bytes{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
     assert_hashes_equal(output, expected_output)
     return ()
 end
+
+
+# TODO: Test that sha256 validates that every element of the input array is an uint32
+# and throws and error otherwise

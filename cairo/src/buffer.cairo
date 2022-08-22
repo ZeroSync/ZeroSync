@@ -37,6 +37,8 @@ func read_uint8{reader : Reader, range_check_ptr}() -> (byte : felt):
         # The Reader is empty, so we read from the head, return the first byte,
         # and copy the remaining three bytes into the Reader's payload.
         let (byte, payload) = unsigned_div_rem([reader.head], BYTE ** 3)
+        # TODO: Check for overflows. What if `byte` > 255 here?
+        # assert_le(byte, BYTE - 1)
         let reader = Reader(reader.head + 1, UINT32_SIZE - 1, payload * BYTE)
         return (byte)
     else:
@@ -47,6 +49,7 @@ func read_uint8{reader : Reader, range_check_ptr}() -> (byte : felt):
         return (byte)
     end
 end
+
 
 func _read_n_bytes_into_felt{reader : Reader, range_check_ptr}(
     output : felt*, value, base, loop_counter

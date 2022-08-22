@@ -8,7 +8,7 @@ from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.uint256 import Uint256
 
-from tests.utils_for_testing import setup_python_defs
+from utils_for_testing import setup_python_defs
 from crypto.sha256d.sha256d import _compute_double_sha256, sha256d, assert_hashes_equal, HASH_FELT_SIZE
 
 

@@ -8,7 +8,7 @@
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.memcpy import memcpy
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
-from tests.utils_for_testing import setup_python_defs
+from utils_for_testing import setup_python_defs
 from buffer import init_reader, init_writer, flush_writer
 from crypto.sha256d.sha256d import assert_hashes_equal
 from block_header import read_block_header, write_block_header, bits_to_target, BLOCK_HEADER_FELT_SIZE, BlockHeaderValidationContext, read_block_header_validation_context, validate_and_apply_block_header, ChainState
