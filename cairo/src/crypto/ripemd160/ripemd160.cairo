@@ -6,6 +6,7 @@ from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.alloc import alloc
 
 from buffer import byte_size_to_felt_size, UINT32_SIZE
+from crypto.ripemd160.ripemd160_python import setup_python_ripemd160
 
 func ripemd160{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(input : felt*, byte_size) -> (
     hash : felt*
@@ -21,7 +22,7 @@ func _ripemd160{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
     return _compute_ripemd160_fake(felt_size, input, byte_size)
 end
 
-# Compute a ripemd160 hash using Python's hashlib library
+# Compute a ripemd160 hash using a Python implementation
 #
 # WARNING: This fakes the entire Bitcoin proof!
 # It is intended to be used only for testing purposes!
@@ -33,31 +34,29 @@ func _compute_ripemd160_fake{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
 ) -> (hash : felt*):
     alloc_locals
     setup_python_defs()
+    setup_python_ripemd160()
     let (hash) = alloc()
     %{
         import struct
         import ctypes
-        # Requires PyCryptoDome
-        from Crypto.Hash import RIPEMD160
+
+
 
         felt_size = ids.byte_size // 4 
         felt_size = felt_size + 1 if ids.byte_size % 4 else felt_size
         assert felt_size == ids.felt_size
 
         inputs = memory.get_range(ids.input, ids.felt_size)
-        # print('inputs=', inputs)
 
         data = ctypes.create_string_buffer(ids.felt_size * 4)
         for index in range(ids.felt_size):
             struct.pack_into(">I", data, index * 4, inputs[index]) 
 
         data = data[:ids.byte_size]
-        # print('data=', list(data))
 
         rmd160 = RIPEMD160.new()
         rmd160.update(data)
         hash_hex = rmd160.hexdigest()
-        print('hash=', hash_hex)
 
         from_hex(hash_hex, ids.hash)
     %}
