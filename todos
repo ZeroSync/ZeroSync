@@ -1,0 +1,1 @@
+grep -nr --include "*.cairo" "# TODO:" .| sed "s/\/\/ TODO://g" | sed "s|.*/||g"

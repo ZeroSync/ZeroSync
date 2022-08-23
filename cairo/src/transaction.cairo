@@ -250,7 +250,7 @@ struct TypedWriter:
 end
 
 # - https://developer.bitcoin.org/devguide/transactions.html#signature-hash-types
-# func hash_with_sighash(transaction: Transaction, sighash: felt) -> (hash: felt*):
+# func hash_with_sighash_flag(transaction: Transaction, sighash: felt) -> (hash: felt*):
 	
 # 	return ()
 #end

@@ -56,7 +56,7 @@ sha256 code adopted from Lior Goldberg: https://github.com/starkware-libs/cairo-
 
 
 
-## Compile (Temporary Dummy)
+## Compile and Run Prover (With a temporary dummy)
 
 ```sh
 source ~/cairo_venv/bin/activate

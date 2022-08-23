@@ -46,10 +46,8 @@ func main{output_ptr : felt*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}():
 
     let prev_state = State(prev_chain_state, prev_state_root)
 
-
     # Read the UTXO data and inclusion proofs from the program input
     # TODO: implement me
-
 
     # Perform a state transition
     let (reader) = init_reader(raw_block)
@@ -57,13 +55,23 @@ func main{output_ptr : felt*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}():
     let (next_state) = validate_and_apply_block(context)
     
     # Print the next state
-    serialize_word(next_state.chain_state.block_height)
-    serialize_word(next_state.chain_state.total_work)
-    serialize_array(next_state.chain_state.best_hash, HASH_FELT_SIZE)
-    serialize_word(next_state.chain_state.difficulty)
-    serialize_word(next_state.chain_state.epoch_start_time)
-    # serialize_array(next_state.chain_state.prev_timestamps, 11)
+    serialize_chain_state(next_state.chain_state)
+    # serialize_array(next_state.state_root, HASH_FELT_SIZE)
 
+
+    # Validate the proof for the previous block chain
+    # TODO: implement me
+
+    return ()
+end
+
+func serialize_chain_state{output_ptr: felt*}(chain_state: ChainState):
+    serialize_word(chain_state.block_height)
+    serialize_word(chain_state.total_work)
+    serialize_array(chain_state.best_hash, HASH_FELT_SIZE)
+    serialize_word(chain_state.difficulty)
+    serialize_word(chain_state.epoch_start_time)
+    # serialize_array(next_state.chain_state.prev_timestamps, 11)
     return ()
 end
 
