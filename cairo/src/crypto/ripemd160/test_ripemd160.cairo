@@ -7,6 +7,7 @@
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 
+from utils_for_testing import setup_python_defs
 from crypto.ripemd160.ripemd160 import ripemd160
 
 @external
