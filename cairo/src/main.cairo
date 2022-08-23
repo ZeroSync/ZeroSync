@@ -1,6 +1,5 @@
 %builtins output range_check bitwise
 
-# Import the serialize_word() function.
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.serialize import serialize_word

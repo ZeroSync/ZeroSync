@@ -24,7 +24,7 @@ func test_sha256{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
     let (input) = alloc()
     assert input[0] = 0x61626300
     let byte_size = 3
-    
+
     # ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad
     let (hash) = _sha256(felt_size, input, byte_size)
     assert hash[0] = 0xba7816bf
@@ -35,16 +35,13 @@ func test_sha256{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
     assert hash[5] = 0x96177a9c
     assert hash[6] = 0xb410ff61
     assert hash[7] = 0xf20015ad
-    
-    return () 
+
+    return ()
 end
 
-
-# Test a double sha256 input with a long byte string 
-# (We use a 259 bytes transaction here)
+# Test a sha256 input with a long byte string
+# We use a 112 byte test vector here
 #
-# See also:
-#  - Example Transaction: https://blockstream.info/api/tx/b9818f9eb8925f2b5b9aaf3e804306efa1a0682a7173c0b7edb5f2e05cc435bd/hex 
 @external
 func test_sha256_long_input{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
     alloc_locals
@@ -55,27 +52,48 @@ func test_sha256_long_input{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
     let (hash_expected) = alloc()
 
     setup_python_defs()
-   %{
-    (ids.byte_size, _) = from_hex((
-        "0100000001352a68f58c6e69fa632a1bf77566cf83a7515fc9ecd251fa37f410"
-        "460d07fb0c010000008c493046022100e30fea4f598a32ea10cd56118552090c"
-        "be79f0b1a0c63a4921d2399c9ec14ffc022100ef00f238218864a909db55be9e"
-        "2e464ccdd0c42d645957ea80fa92441e90b4c6014104b01cf49815496b5ef83a"
-        "bd1a3891996233f0047ada682d56687dd58feb39e969409ce70be398cf73634f"
-        "f9d1aae79ac2be2b1348ce622dddb974ad790b4106deffffffff02e093040000"
-        "0000001976a914a18cc6dd0e38dea210390a2403622ffc09dae88688ac8152b5"
-        "00000000001976a914d73441c86ea086121991877e204516f1861c194188ac00"
-        "000000"), ids.input)
+    %{
+        (ids.byte_size, _) = from_string(
+            "abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu",
+            ids.input)
 
-    hashes_from_hex([
-        "b9818f9eb8925f2b5b9aaf3e804306efa1a0682a7173c0b7edb5f2e05cc435bd"
-        ], ids.hash_expected)
+        from_hex(
+            "cf5b16a778af8380036ce59e7b0492370b249b11e8f07a51afac45037afee9d1",
+            ids.hash_expected)
     %}
 
     let (hash) = sha256(input, byte_size)
 
-    # assert_hashes_equal(hash_expected, hash)
-    return () 
+    assert_hashes_equal(hash_expected, hash)
+    return ()
+end
+
+# Test a sha256 input with 1'000'000 repetitions of the character "a"
+# This results in a 2'000'000 byte test vector
+#
+# See also:
+#    https://www.di-mgt.com.au/sha_testvectors.html
+@external
+func test_sha256_super_long_input{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
+    alloc_locals
+    setup_python_defs()
+    let (input) = alloc()
+    let (expected_output) = alloc()
+    local input_byte_size : felt
+    local input_felt_size : felt
+
+    %{
+        test_string = "a" * 1000000
+        import hashlib
+        ids.input_byte_size, ids.input_felt_size = from_string(test_string, ids.input)
+        # Compute expected hash from the python hashlib library.
+        expected_hash = "cdc76e5c9914fb9281a1c7e284d73e67f1809a48a497200e046d39ccc7112cd0"
+        from_hex(expected_hash, ids.expected_output)
+    %}
+
+    let (output) = sha256(input, input_byte_size)
+    assert_hashes_equal(output, expected_output)
+    return ()
 end
 
 @external
@@ -96,11 +114,10 @@ func test_sha256_dummy{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
         from_hex(expected_hash, ids.expected_output)
     %}
 
-    let (output) = _sha256(input_felt_size, input, input_byte_size)
+    let (output) = sha256(input, input_byte_size)
     assert_hashes_equal(output, expected_output)
     return ()
 end
-
 
 # Test for the bug in the cartridge_gg implementation
 @external
@@ -121,11 +138,10 @@ func test_sha256_64_bytes{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
         from_hex(expected_hash, ids.expected_output)
     %}
 
-    let (output) = _sha256(input_felt_size, input, input_byte_size)
+    let (output) = sha256(input, input_byte_size)
     assert_hashes_equal(output, expected_output)
     return ()
 end
-
 
 # TODO: Test that sha256 validates that every element of the input array is an uint32
 # and throws and error otherwise
