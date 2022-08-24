@@ -120,7 +120,6 @@ func test_read_block_header_validation_context{range_check_ptr, bitwise_ptr : Bi
 
     # Check if the target was computed correctly
     assert context.target = 0x1bc330000000000000000000000000000000000000000000
-
     # Check if the block hash is correct
     let (block_hash_expected) = alloc()
     %{
@@ -146,3 +145,6 @@ func test_bits_to_target{bitwise_ptr : BitwiseBuiltin*, range_check_ptr}():
     assert target = 0x1bc330000000000000000000000000000000000000000000
     return ()
 end
+
+
+# TODO: Test that a block which does not match its PoW target throws an error

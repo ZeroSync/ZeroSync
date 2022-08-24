@@ -5,11 +5,11 @@
 # - Bitcoin Core: https://github.com/bitcoin/bitcoin/blob/7fcf53f7b4524572d1d0c9a5fdc388e87eb02416/src/primitives/block.h#L22
 
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
-from starkware.cairo.common.math import assert_le, unsigned_div_rem
+from starkware.cairo.common.math import assert_le, unsigned_div_rem, assert_le_felt
 from starkware.cairo.common.pow import pow
 from starkware.cairo.common.alloc import alloc
 
-from buffer import Reader, Writer, read_uint32, write_uint32, read_hash, write_hash, UINT32_SIZE, BYTE
+from buffer import Reader, Writer, read_uint32, write_uint32, read_hash, write_hash, UINT32_SIZE, BYTE, init_reader, read_bytes
 from crypto.sha256d.sha256d import sha256d_felt_sized, assert_hashes_equal
 
 # The size of a block header is 80 bytes
@@ -144,6 +144,7 @@ func read_block_header_validation_context{reader: Reader, range_check_ptr, bitwi
 	))
 end
 
+
 # Calculate target from bits
 #
 # See also:
@@ -161,6 +162,7 @@ func bits_to_target{range_check_ptr}(bits) -> (target):
     let (shift_left) = pow(BYTE, exponent - 3)
     return (significand * shift_left)
 end
+
 
 # Validate a block header, apply it to the previous state
 # and return the next state
@@ -186,6 +188,7 @@ func validate_and_apply_block_header{range_check_ptr}(
 	return (next_state)
 end
 
+
 # Validate that a block header correctly extends the current chain
 func validate_prev_block_hash(context: BlockHeaderValidationContext):
 	assert_hashes_equal(
@@ -195,12 +198,34 @@ func validate_prev_block_hash(context: BlockHeaderValidationContext):
 	return ()
 end
 
-# Validate a block header's proof-of-work matches its target
+
+# Validate a block header's proof-of-work matches its target.
+# Throws an error if `block_hash` > 2 ** 248
 func validate_proof_of_work{range_check_ptr}(
 	context: BlockHeaderValidationContext):
-	# Securely convert block_hash to a felt and then compare it to the target
+
+	# Swap the endianess in the uint32 chunks of the hash
+	let (reader) = init_reader(context.block_hash)
+	let (hash) = read_bytes{reader=reader}(32)
+	
+	# Validate that the hash's most significant uint32 chunk is zero
+	assert 0 = hash[7]
+
+	# Sum up the other 7 uint32 chunks of the hash into 1 felt
+	const BASE = 2 ** 32
+	let hash_felt =	hash[0] * BASE ** 0 +
+					hash[1] * BASE ** 1 +
+					hash[2] * BASE ** 2 +
+					hash[3] * BASE ** 3 +
+					hash[4] * BASE ** 4 +
+					hash[5] * BASE ** 5 +
+					hash[6] * BASE ** 6
+
+	# Validate that the hash is smaller than the target
+	assert_le_felt(hash_felt, context.target)
 	return ()
 end
+
 
 # Validate that the proof-of-work target is sufficiently difficult
 #
@@ -263,7 +288,7 @@ func apply_block_header(
 	let (total_work) = compute_total_work(context)
 
 	# TODO: recalibrate the difficulty after about 2 weeks of blocks
-	# E.g. if context.block_height % 2016 == 0:
+	# Exactly when context.block_height % 2016 == 0:
 	return (ChainState(
 			context.block_height,
 			total_work,
