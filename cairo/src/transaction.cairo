@@ -113,10 +113,10 @@ func read_input{reader:Reader, range_check_ptr}(
 	let (sequence)		= read_uint32()
 	return (
 		TxInput(
-			txid, 
-			vout, 
-			script_sig_size.value, 
-			script_sig, 
+			txid,
+			vout,
+			script_sig_size.value,
+			script_sig,
 			sequence
 		),	
 		# Compute the input's byte size

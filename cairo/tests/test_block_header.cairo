@@ -64,6 +64,22 @@ func test_serialize_block_header{range_check_ptr}():
     return ()
 end
 
+# Create a dummy for the previous timestamps
+func dummy_prev_timestamps() -> (timestamps: felt*):
+    let (prev_timestamps) = alloc()
+    assert prev_timestamps[0] = 0
+    assert prev_timestamps[1] = 1
+    assert prev_timestamps[2] = 2
+    assert prev_timestamps[3] = 3
+    assert prev_timestamps[4] = 4
+    assert prev_timestamps[5] = 5
+    assert prev_timestamps[6] = 6
+    assert prev_timestamps[7] = 7
+    assert prev_timestamps[8] = 8
+    assert prev_timestamps[9] = 9
+    assert prev_timestamps[10] = 10
+    return (prev_timestamps)
+end
 
 # Test a block header validation context
 #
@@ -73,11 +89,11 @@ end
 # 
 # Block at height 328734:
 # - https://blockstream.info/block/000000000000000009a11b3972c8e532fe964de937c9e0096b43814e67af3728
+# - https://blockstream.info/api/block/000000000000000009a11b3972c8e532fe964de937c9e0096b43814e67af3728
 # - https://blockstream.info/api/block/000000000000000009a11b3972c8e532fe964de937c9e0096b43814e67af3728/header
 #
 # Block at height 328733:
 # - https://blockstream.info/block/00000000000000000cca48eb4b330d91e8d946d344ca302a86a280161b0bffb6
-# - https://blockstream.info/api/block/00000000000000000cca48eb4b330d91e8d946d344ca302a86a280161b0bffb6/header
 @external
 func test_read_block_header_validation_context{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
     alloc_locals
@@ -89,9 +105,7 @@ func test_read_block_header_validation_context{range_check_ptr, bitwise_ptr : Bi
             "02000000b6ff0b1b1680a2862a30ca44d346d9e8910d334beb48ca0c00000000"
             "000000009d10aa52ee949386ca9385695f04ede270dda20810decd12bc9b048a"
             "aab3147124d95a5430c31b18fe9f0864"), ids.block_header_raw)
-    %}    
-    
-    let (reader) = init_reader(block_header_raw)
+    %}        
 
     # Create a dummy for the previous chain state
     let (prev_block_hash) = alloc()
@@ -101,7 +115,7 @@ func test_read_block_header_validation_context{range_check_ptr, bitwise_ptr : Bi
         ], ids.prev_block_hash)
     %}
 
-    let (prev_timestamps) = alloc()
+    let (prev_timestamps) = dummy_prev_timestamps()
     let prev_chain_state = ChainState(
         block_height = 328733,
         total_work = 0,
@@ -113,6 +127,7 @@ func test_read_block_header_validation_context{range_check_ptr, bitwise_ptr : Bi
     
     # Read a block header from the byte stream
     # This is our next chain tip
+    let (reader) = init_reader(block_header_raw)
     let (context) = read_block_header_validation_context{reader=reader}(prev_chain_state)
 
     # Sanity check: block version should be 2
@@ -131,14 +146,26 @@ func test_read_block_header_validation_context{range_check_ptr, bitwise_ptr : Bi
 
     # Try to validate the block header. 
     # This should succeed for valid block headers
-    validate_and_apply_block_header(context)
+    let (next_state) = validate_and_apply_block_header(context)
+
+    # Sanity check for prev_timestamps of next_state
+    # First element is the timestamp of this block
+    assert next_state.prev_timestamps[0]  = 1415239972
+    # Our 2nd element should be the 1st of the dummy
+    assert next_state.prev_timestamps[1]  = 0
+    # ...
+    assert next_state.prev_timestamps[7]  = 6
+    # ...
+    assert next_state.prev_timestamps[9]  = 8
+    # Our 11th element should be the 10th of the dummy
+    assert next_state.prev_timestamps[10] = 9
 
     return ()
 end
 
 
 @external
-func test_bits_to_target{bitwise_ptr : BitwiseBuiltin*, range_check_ptr}():
+func test_bits_to_target{bitwise_ptr: BitwiseBuiltin*, range_check_ptr}():
     alloc_locals
     let bits = 0x181bc330
     let (target) = bits_to_target(bits)

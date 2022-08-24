@@ -166,4 +166,3 @@ func validate_and_apply_coinbase(context: BlockValidationContext):
 	# TODO: implement me
 	return ()
 end
-

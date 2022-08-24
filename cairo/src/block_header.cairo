@@ -5,9 +5,10 @@
 # - Bitcoin Core: https://github.com/bitcoin/bitcoin/blob/7fcf53f7b4524572d1d0c9a5fdc388e87eb02416/src/primitives/block.h#L22
 
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
-from starkware.cairo.common.math import assert_le, unsigned_div_rem, assert_le_felt
+from starkware.cairo.common.math import assert_le, unsigned_div_rem, assert_le_felt, split_felt
 from starkware.cairo.common.pow import pow
 from starkware.cairo.common.alloc import alloc
+from starkware.cairo.common.memcpy import memcpy
 
 from buffer import Reader, Writer, read_uint32, write_uint32, read_hash, write_hash, UINT32_SIZE, BYTE, init_reader, read_bytes
 from crypto.sha256d.sha256d import sha256d_felt_sized, assert_hashes_equal
@@ -200,7 +201,7 @@ end
 
 
 # Validate a block header's proof-of-work matches its target.
-# Throws an error if `block_hash` > 2 ** 248
+# Expects that the 4 most significant bytes of `block_hash` are zero
 func validate_proof_of_work{range_check_ptr}(
 	context: BlockHeaderValidationContext):
 
@@ -236,6 +237,7 @@ func validate_target(context: BlockHeaderValidationContext):
 	return ()
 end
 
+
 # Validate that the timestamp of a block header is strictly greater than the median time 
 # of the 11 most recent blocks.
 #
@@ -243,6 +245,7 @@ end
 # - https://developer.bitcoin.org/reference/block_chain.html#block-headers
 # - https://github.com/bitcoin/bitcoin/blob/36c83b40bd68a993ab6459cb0d5d2c8ce4541147/src/chain.h#L290
 func validate_median_time(context: BlockHeaderValidationContext):
+	let prev_timestamps = context.prev_chain_state.prev_timestamps
 	# TODO: implement me using nondeterminism
 	# Step 1: Let Python sort the array and compute a permutation (array of indexes)
 	# Step 2: Use that permutation to create a sorted array of pointers in Cairo
@@ -254,10 +257,11 @@ end
 
 # Compute the total work invested into the longest chain
 #
-func compute_total_work(context: BlockHeaderValidationContext) -> (work):
+func compute_total_work{range_check_ptr}(context: BlockHeaderValidationContext) -> (work):
 	let (work_in_block) = compute_work_from_target(context.target)
 	return (context.prev_chain_state.total_work + work_in_block)
 end
+
 
 # Convert a target into units of work.
 # Work is the expected number of hashes required to hit a target.
@@ -266,11 +270,10 @@ end
 # - https://bitcoin.stackexchange.com/questions/936/how-does-a-client-decide-which-is-the-longest-block-chain-if-there-is-a-fork/939#939
 # - https://github.com/bitcoin/bitcoin/blob/v0.16.2/src/chain.cpp#L121
 # - https://github.com/bitcoin/bitcoin/blob/v0.16.2/src/validation.cpp#L3713
-func compute_work_from_target(target) -> (work):
+#
+func compute_work_from_target{range_check_ptr}(target) -> (work):
 	# We need to compute 2**256 / (bnTarget+1), but we can't represent 2**256
-    # as it's too large for a felt. However, as 2**256 is at least as large
-    # as bnTarget+1, it is equal to ((2**256 - bnTarget - 1) / (bnTarget+1)) + 1,
-    # or ~bnTarget / (bnTarget+1) + 1.
+    # as it's too large for a felt.
 
     # TODO: implement me
 	return (target)
@@ -279,12 +282,12 @@ end
 
 # Apply a block header to a previous chain state to obtain the next chain state
 #
-func apply_block_header(
+func apply_block_header{range_check_ptr}(
 	context: BlockHeaderValidationContext) -> (next_state: ChainState):
 	alloc_locals
 
 	# TODO: Copy the 10 most recent timestamps and the current timestamp
-	let (prev_timestamps) = alloc()
+	let (prev_timestamps) = next_prev_timestamps(context)
 	let (total_work) = compute_total_work(context)
 
 	# TODO: recalibrate the difficulty after about 2 weeks of blocks
@@ -298,3 +301,22 @@ func apply_block_header(
 			prev_timestamps
 		))
 end
+
+
+# Compute the 11 most recent timestamps for the next state
+#
+func next_prev_timestamps(
+	context: BlockHeaderValidationContext) -> (timestamps: felt*):
+	
+	# Copy the timestamp of the most recent block
+	alloc_locals
+	let (timestamps) = alloc()
+	assert timestamps[0] = context.block_header.time
+
+	# Copy the 10 most recent timestamps from the previous state
+	let prev_timestamps = context.prev_chain_state.prev_timestamps
+	memcpy(timestamps + 1, prev_timestamps, 10)
+	return (timestamps)
+end
+
+

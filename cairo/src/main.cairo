@@ -71,7 +71,7 @@ func serialize_chain_state{output_ptr: felt*}(chain_state: ChainState):
     serialize_array(chain_state.best_hash, HASH_FELT_SIZE)
     serialize_word(chain_state.difficulty)
     serialize_word(chain_state.epoch_start_time)
-    # serialize_array(next_state.chain_state.prev_timestamps, 11)
+    serialize_array(chain_state.prev_timestamps, 11)
     return ()
 end
 

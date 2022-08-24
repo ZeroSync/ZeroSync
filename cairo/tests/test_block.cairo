@@ -15,6 +15,7 @@ from block_header import ChainState
 from block import BlockValidationContext, State, read_block_validation_context, validate_and_apply_block
 
 from buffer import init_reader
+from tests.test_block_header import dummy_prev_timestamps
 
 # Test a simple Bitcoin block with only a single transaction.
 #
@@ -43,9 +44,9 @@ func test_read_block_validation_context{range_check_ptr, bitwise_ptr : BitwiseBu
             ), ids.block_raw)
     %}    
     
-    let (reader) = init_reader(block_raw)
 
     # Create a dummy for the previous chain state
+    let (reader) = init_reader(block_raw)
     let (prev_block_hash) = alloc()
     %{
         hashes_from_hex([
@@ -53,7 +54,8 @@ func test_read_block_validation_context{range_check_ptr, bitwise_ptr : BitwiseBu
         ], ids.prev_block_hash)
     %}
 
-    let (prev_timestamps) = alloc()
+    let (prev_timestamps) = dummy_prev_timestamps()
+
     let prev_chain_state = ChainState(
         block_height = 328733,
         total_work = 0,
@@ -122,7 +124,8 @@ func test_read_block_with_5_transactions{range_check_ptr, bitwise_ptr : BitwiseB
         ], ids.prev_block_hash)
     %}
 
-    let (prev_timestamps) = alloc()
+    let (prev_timestamps) = dummy_prev_timestamps()
+    
     let prev_chain_state = ChainState(
         block_height = 99999,
         total_work = 0,
