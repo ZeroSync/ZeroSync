@@ -287,7 +287,6 @@ func apply_block_header{range_check_ptr}(
 	context: BlockHeaderValidationContext) -> (next_state: ChainState):
 	alloc_locals
 
-	# TODO: Copy the 10 most recent timestamps and the current timestamp
 	let (prev_timestamps) = next_prev_timestamps(context)
 	let (total_work) = compute_total_work(context)
 

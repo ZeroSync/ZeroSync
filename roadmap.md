@@ -26,6 +26,7 @@
 	- Download and prove a chainstate directory for a Bitcoin Core full node
 	- Demo for state proof in web browser?
 
+
 ## Milestone 2: *zerosync and scan the chain efficiently*
 
 - Compact blocks (compressed for light clients)

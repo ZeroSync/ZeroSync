@@ -66,19 +66,19 @@ func test_read_block_validation_context{range_check_ptr, bitwise_ptr : BitwiseBu
     )
     let (prev_state_root) = alloc()
 
-    let prev_state = State(
-        prev_chain_state,
-        prev_state_root
-    )
+    let prev_state = State(prev_chain_state, prev_state_root)
 
     # Parse the block validation context 
     let (context) = read_block_validation_context{reader=reader}(prev_state)
 
-    validate_and_apply_block(context)
+    let (utxo_data_raw) = alloc()
+    let (utxo_data_reader) = init_reader(utxo_data_raw)
+
+    validate_and_apply_block{utxo_data_reader=utxo_data_reader}(context)
     return ()
 end
 
-# Test a Bitcoin block with 5 transactions.
+# Test a Bitcoin block with 4 transactions.
 #
 # Example: Block at height 100000
 # 
@@ -87,7 +87,7 @@ end
 # - Stackoverflow: https://stackoverflow.com/questions/67631407/raw-or-hex-of-a-whole-bitcoin-block
 # - Blockchair: https://api.blockchair.com/bitcoin/raw/block/000000000003ba27aa200b1cecaad478d2b00432346c3f1f3986da1afd33e506
 @external
-func test_read_block_with_5_transactions{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
+func test_read_block_with_4_transactions{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
     alloc_locals
     setup_python_defs()
 
@@ -137,10 +137,7 @@ func test_read_block_with_5_transactions{range_check_ptr, bitwise_ptr : BitwiseB
 
     let (prev_state_root) = alloc()
 
-    let prev_state = State(
-        prev_chain_state,
-        prev_state_root
-    )
+    let prev_state = State(prev_chain_state, prev_state_root)
 
     # Parse the block validation context using the previous state
     let (context) = read_block_validation_context{reader=reader}(prev_state)
@@ -150,9 +147,18 @@ func test_read_block_with_5_transactions{range_check_ptr, bitwise_ptr : BitwiseB
     let transaction = context.transaction_contexts[1].transaction
     assert transaction.outputs[1].amount = 4444 * 10**6
     
-    # Validate the block
-    validate_and_apply_block(context)
 
+    let (utxo_data_raw) = alloc()
+    %{
+        from_hex((
+            "00f2052a010000001976a91471d7dd96d9edda09180fe9d57a477b5acc9cad1188ac00a3e111000000001976a91435fbee6a3bf8d99f17724ec54787567393a8"
+            "a6b188ac40420f00000000001976a914c4eb47ecfdcf609a1848ee79acc2fa49d3caad7088ac"), ids.utxo_data_raw)
+    %}    
+    let (utxo_data_reader) = init_reader(utxo_data_raw)
+
+
+    # Validate the block
+    validate_and_apply_block{utxo_data_reader=utxo_data_reader}(context)
     return ()
 end
 

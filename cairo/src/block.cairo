@@ -75,7 +75,7 @@ end
 #
 # TODO: read the UTXO data required to validate the TX inputs (amounts and such) and verify the corresponding proofs
 #
-func validate_and_apply_block{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
+func validate_and_apply_block{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, utxo_data_reader: Reader}(
 	context: BlockValidationContext) -> (next_state: State):
 	alloc_locals
 	let (next_chain_state) = validate_and_apply_block_header(context.header_context)
@@ -123,7 +123,7 @@ end
 
 # Validate that every transaction in this block is valid,
 # apply them to the previous state and return the resulting state root
-func validate_and_apply_transactions(
+func validate_and_apply_transactions{range_check_ptr, utxo_data_reader: Reader}(
 	context: BlockValidationContext) -> (next_state_root : felt*):
 	# Validate the coinbase transaction with its special validation rules
 	validate_and_apply_coinbase(context)
@@ -136,7 +136,7 @@ func validate_and_apply_transactions(
 	)
 end
 
-func _validate_and_apply_transactions_loop(
+func _validate_and_apply_transactions_loop{range_check_ptr, utxo_data_reader: Reader}(
 	tx_contexts: TransactionValidationContext*, 
 	header_context: BlockHeaderValidationContext, 
 	prev_state_root: felt*,
@@ -145,7 +145,8 @@ func _validate_and_apply_transactions_loop(
 		return (prev_state_root)
 	end
 	
-	let (next_state_root) = validate_and_apply_transaction([tx_contexts], header_context, prev_state_root)
+	let (next_state_root) = validate_and_apply_transaction(
+		[tx_contexts], header_context, prev_state_root)
 
 	return _validate_and_apply_transactions_loop(
 		tx_contexts + TransactionValidationContext.SIZE,

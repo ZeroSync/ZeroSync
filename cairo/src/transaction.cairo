@@ -199,11 +199,16 @@ end
 
 # Validate all properties of a transaction, apply it to the current state
 # and return the resulting next state root
-func validate_and_apply_transaction(
-	context: TransactionValidationContext, header_context: BlockHeaderValidationContext,
-	prev_state: felt*
-	) -> (next_state:felt*):
+func validate_and_apply_transaction{range_check_ptr, utxo_data_reader: Reader}(
+	context: TransactionValidationContext, 
+	header_context: BlockHeaderValidationContext,
+	prev_state: felt*) -> (next_state:felt*):
+
+	let (prevout, size) = read_output{reader=utxo_data_reader}()
+	%{ print('tx_input amount:', ids.prevout.amount) %}
 	
+	# TODO: implement me 
+
 	let (state_root) = alloc()
 	return (state_root)
 end

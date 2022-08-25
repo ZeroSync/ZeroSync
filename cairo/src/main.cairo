@@ -14,9 +14,8 @@ func main{output_ptr : felt*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}():
 
     # Read a block from the program input
     let (raw_block) = alloc()
-    %{
-        segments.write_arg(ids.raw_block, program_input["raw_block"])
-    %}
+    %{ segments.write_arg(ids.raw_block, program_input["block"]) %}
+    let (reader) = init_reader(raw_block)
 
     # Read the previous state from the program input
     local block_height: felt
@@ -45,13 +44,22 @@ func main{output_ptr : felt*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}():
 
     let prev_state = State(prev_chain_state, prev_state_root)
 
-    # Read the UTXO data and inclusion proofs from the program input
+
+    # Read the UTXO data from the program input
+    let (raw_utxo_data) = alloc()
+    %{ segments.write_arg(ids.raw_utxo_data, program_input["utxo_data"]) %}
+    let (utxo_data_reader) = init_reader(raw_utxo_data)
+
+    
+    # Read the inclusion proofs from the program input
     # TODO: implement me
 
+
     # Perform a state transition
-    let (reader) = init_reader(raw_block)
     let (context) = read_block_validation_context{reader=reader}(prev_state)
-    let (next_state) = validate_and_apply_block(context)
+
+
+    let (next_state) = validate_and_apply_block{utxo_data_reader=utxo_data_reader}(context)
     
     # Print the next state
     serialize_chain_state(next_state.chain_state)
