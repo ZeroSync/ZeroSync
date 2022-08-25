@@ -18,7 +18,6 @@ func main{output_ptr : felt*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}():
         segments.write_arg(ids.raw_block, program_input["raw_block"])
     %}
 
-    
     # Read the previous state from the program input
     local block_height: felt
     local total_work: felt

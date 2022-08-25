@@ -201,7 +201,7 @@ end
 
 
 # Validate a block header's proof-of-work matches its target.
-# Expects that the 4 most significant bytes of `block_hash` are zero
+# Expects that the 4 most significant bytes of `block_hash` are zero.
 func validate_proof_of_work{range_check_ptr}(
 	context: BlockHeaderValidationContext):
 
@@ -210,6 +210,7 @@ func validate_proof_of_work{range_check_ptr}(
 	let (hash) = read_bytes{reader=reader}(32)
 	
 	# Validate that the hash's most significant uint32 chunk is zero
+	# This guarantees that the hash fits into a felt.
 	assert 0 = hash[7]
 
 	# Sum up the other 7 uint32 chunks of the hash into 1 felt
