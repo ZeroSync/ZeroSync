@@ -10,9 +10,10 @@ def fetch_utxo_data_for_block(block_hash):
 	block = blockexplorer.get_block_by_hash(block_hash)
 	start_index = 0
 	while start_index < block.tx_count:
+		skip_coinbase = 1 if start_index == 0 else 0
 		transactions = blockexplorer.get_block_transactions(block_hash, start_index)
 		start_index = start_index + len(transactions)
-		for i in range(1, len(transactions)):
+		for i in range(skip_coinbase, len(transactions)):
 			for tx_input in transactions[i].vin:
 				prevout = tx_input['prevout']
 				pubkey = prevout['scriptpubkey']

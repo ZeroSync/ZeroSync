@@ -127,31 +127,38 @@ func validate_and_apply_transactions{range_check_ptr, utxo_data_reader: Reader}(
 	context: BlockValidationContext) -> (next_state_root : felt*):
 	# Validate the coinbase transaction with its special validation rules
 	validate_and_apply_coinbase(context)
+	
 	# Validate all other transactions with the regular validation rules
-	return _validate_and_apply_transactions_loop(
-		context.transaction_contexts + 1,
+	let (next_state_root, total_fees) = _validate_and_apply_transactions_loop(
+		context.transaction_contexts + TransactionValidationContext.SIZE,
 		context.header_context,
 		context.prev_state_root,
+		0,
 		context.transaction_count - 1
 	)
+	%{ print('Validate total fees', ids.total_fees) %}
+
+	return (next_state_root)
 end
 
 func _validate_and_apply_transactions_loop{range_check_ptr, utxo_data_reader: Reader}(
 	tx_contexts: TransactionValidationContext*, 
 	header_context: BlockHeaderValidationContext, 
 	prev_state_root: felt*,
-	loop_counter) -> (next_state_root: felt*):
+	total_fees,
+	loop_counter) -> (next_state_root: felt*, total_fees):
 	if loop_counter == 0:
-		return (prev_state_root)
+		return (prev_state_root, total_fees)
 	end
 	
-	let (next_state_root) = validate_and_apply_transaction(
+	let (next_state_root, tx_fee) = validate_and_apply_transaction(
 		[tx_contexts], header_context, prev_state_root)
 
 	return _validate_and_apply_transactions_loop(
 		tx_contexts + TransactionValidationContext.SIZE,
 		header_context,
 		next_state_root,
+		total_fees + tx_fee,
 		loop_counter - 1
 	)
 end

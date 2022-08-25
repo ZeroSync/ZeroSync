@@ -6,6 +6,7 @@
 
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
+from starkware.cairo.common.math import assert_le
 
 from crypto.sha256d.sha256d import sha256d, HASH_SIZE
 from buffer import Reader, Writer, read_uint8, peek_uint8, read_uint16, read_uint32, read_uint64, read_varint, read_hash, read_bytes, UINT32_SIZE, UINT64_SIZE, read_bytes_endian, write_uint32, write_varint
@@ -202,15 +203,78 @@ end
 func validate_and_apply_transaction{range_check_ptr, utxo_data_reader: Reader}(
 	context: TransactionValidationContext, 
 	header_context: BlockHeaderValidationContext,
-	prev_state: felt*) -> (next_state:felt*):
+	prev_state: felt*) -> (next_state:felt*, tx_fee):
+	alloc_locals
 
-	let (prevout, size) = read_output{reader=utxo_data_reader}()
-	%{ print('tx_input amount:', ids.prevout.amount) %}
-	
+	let (inputs_amount_sum) = validate_inputs_loop(
+		context, context.transaction.inputs, 0, context.transaction.input_count)
+
+	let (outputs_amount_sum) = validate_outputs_loop(
+		context, context.transaction.outputs, 0, context.transaction.output_count)
+
+	assert_le(outputs_amount_sum, inputs_amount_sum)
+	let tx_fee = inputs_amount_sum - outputs_amount_sum
+
 	# TODO: implement me 
 
 	let (state_root) = alloc()
-	return (state_root)
+	return (state_root, tx_fee)
+end
+
+
+func validate_inputs_loop{range_check_ptr, utxo_data_reader: Reader}(
+	context: TransactionValidationContext, input: TxInput*, total_input_amount, loop_counter) -> (total_input_amount):
+	alloc_locals
+	
+	if loop_counter == 0:
+		return (total_input_amount)
+	end
+
+	let (amount) = validate_input([input])
+
+	return validate_inputs_loop(
+		context,
+		input + TxInput.SIZE,
+		total_input_amount + amount,
+		loop_counter - 1
+	)
+end
+
+func validate_input{range_check_ptr, utxo_data_reader: Reader}(
+	input: TxInput) -> (amount):
+	# TODO: validate an inclusion proof
+	# for the tupel (txid, vout, amount, script_pub_key_size, script_pub_key)
+	let (prevout, size) = read_output{reader = utxo_data_reader}()
+
+	%{ print('TODO: prove inclusion of prevout amount:', ids.prevout.amount) %}
+	return (prevout.amount)
+end
+
+
+
+func validate_outputs_loop{range_check_ptr, utxo_data_reader: Reader}(
+	context: TransactionValidationContext, output: TxOutput*, total_output_amount, loop_counter) -> (total_output_amount):
+	alloc_locals
+	
+	if loop_counter == 0:
+		return (total_output_amount)
+	end
+
+	let (amount) = validate_output([output])
+
+	return validate_outputs_loop(
+		context,
+		output + TxOutput.SIZE,
+		total_output_amount + amount,
+		loop_counter - 1
+	)
+end
+
+func validate_output{range_check_ptr}(
+	output: TxOutput) -> (amount):
+	# TODO: implement me
+
+	return (output.amount)
 end
 
 
