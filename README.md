@@ -68,8 +68,13 @@ cairo-compile cairo/src/main.cairo --cairo_path cairo/src --output tmp/program.j
 ```
 
 ```sh
-cairo-run --program=tmp/program.json --layout=all --print_output --program_input=data/block_100000.json --trace_file=tmp/trace.bin --memory_file=tmp/memory.bin --print_info
+cairo-run --program=tmp/program.json --layout=all --print_output --program_input=data/block_100000.json --trace_file=tmp/trace.bin --memory_file=tmp/memory.bin --print_info --profile_output=tmp/profile.pb.gz
 ```
+
+```sh
+cairo-run --program=tmp/program.json --layout=all --print_output --program_input=data/block_170000.json --trace_file=tmp/trace.bin --memory_file=tmp/memory.bin --print_info
+```
+
 
 ```sh
 giza prove --trace=tmp/trace.bin --memory=tmp/memory.bin --program=tmp/program.json --output=tmp/proof.bin --num-outputs=12

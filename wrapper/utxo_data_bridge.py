@@ -1,3 +1,5 @@
+# Installation: pip install blockstream
+#
 # Example usage: 
 # 	python3 utxo_data_bridge.py 00000000000004ff83b6c10460b239ef4a6aa320e5fffd6c7bcedefa8c78593c
 # 	python3 utxo_data_bridge.py 000000000003ba27aa200b1cecaad478d2b00432346c3f1f3986da1afd33e506

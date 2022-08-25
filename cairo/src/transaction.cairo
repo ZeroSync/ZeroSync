@@ -246,10 +246,9 @@ func validate_input{range_check_ptr, utxo_data_reader: Reader}(
 	# for the tupel (txid, vout, amount, script_pub_key_size, script_pub_key)
 	let (prevout, size) = read_output{reader = utxo_data_reader}()
 
-	%{ print('TODO: prove inclusion of prevout amount:', ids.prevout.amount) %}
+	# %{ print('TODO: prove inclusion of prevout amount:', ids.prevout.amount) %}
 	return (prevout.amount)
 end
-
 
 
 func validate_outputs_loop{range_check_ptr, utxo_data_reader: Reader}(

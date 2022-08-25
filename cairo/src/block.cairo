@@ -133,7 +133,7 @@ func validate_and_apply_transactions{range_check_ptr, utxo_data_reader: Reader}(
 		context.transaction_contexts + TransactionValidationContext.SIZE,
 		context.header_context,
 		context.prev_state_root,
-		0,
+		total_fees = 0,
 		context.transaction_count - 1
 	)
 	%{ print('Validate total fees', ids.total_fees) %}
