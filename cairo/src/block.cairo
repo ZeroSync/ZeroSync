@@ -25,12 +25,14 @@ struct State:
 	member state_root: felt* 
 end
 
+
 struct BlockValidationContext:
 	member header_context: BlockHeaderValidationContext
 	member transaction_count: felt
 	member transaction_contexts: TransactionValidationContext*
 	member prev_state_root: felt*
 end
+
 
 func read_block_validation_context{reader: Reader, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
 	prev_state: State) -> (context: BlockValidationContext):
@@ -48,16 +50,20 @@ func read_block_validation_context{reader: Reader, range_check_ptr, bitwise_ptr:
 	))
 end
 
+
 func read_transaction_validation_contexts{reader: Reader, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
 	transaction_count) -> (contexts: TransactionValidationContext*):
 	alloc_locals
+
 	let (contexts: TransactionValidationContext*) = alloc()
 	_read_transaction_validation_contexts_loop(contexts, transaction_count)
 	return (contexts)
 end
 
+
 func _read_transaction_validation_contexts_loop{reader: Reader, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
 	contexts: TransactionValidationContext*, loop_counter):
+
 	if loop_counter == 0:
 		return ()
 	end
@@ -70,6 +76,7 @@ func _read_transaction_validation_contexts_loop{reader: Reader, range_check_ptr,
 	)
 end
 
+
 # Validate all properties of a block, apply it to the previous state,
 # and return the next state
 #
@@ -78,24 +85,24 @@ end
 func validate_and_apply_block{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, utxo_data_reader: Reader}(
 	context: BlockValidationContext) -> (next_state: State):
 	alloc_locals
+
 	let (next_chain_state) = validate_and_apply_block_header(context.header_context)
 	validate_merkle_root(context)
 	let (next_state_root) = validate_and_apply_transactions(context)
 	return ( State(next_chain_state, next_state_root) )
 end
 
+
 # Compute the Merkle root of all transactions in this block
 # and validate that it matches the Merkle root in the block header.
 func validate_merkle_root{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
 	context: BlockValidationContext):
 	alloc_locals
+
 	# Copy all transactions' TXIDs into an array
 	let (txids) = alloc()
 	_copy_txids_into_array_loop(
-		context.transaction_contexts, 
-		txids, 
-		context.transaction_count
-	)
+		context.transaction_contexts, txids, context.transaction_count)
 	
 	# Compute the Merkle root of the TXIDs
 	let (merkle_root) = compute_merkle_root(txids, context.transaction_count)
@@ -107,8 +114,10 @@ func validate_merkle_root{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
 	return ()
 end
 
+
 func _copy_txids_into_array_loop(
 	tx_contexts: TransactionValidationContext*, txids: felt*, loop_counter):
+
 	if loop_counter == 0:
 		return ()
 	end
@@ -125,6 +134,7 @@ end
 # apply them to the previous state and return the resulting state root
 func validate_and_apply_transactions{range_check_ptr, utxo_data_reader: Reader}(
 	context: BlockValidationContext) -> (next_state_root : felt*):
+
 	# Validate the coinbase transaction with its special validation rules
 	validate_and_apply_coinbase(context)
 	
@@ -133,7 +143,7 @@ func validate_and_apply_transactions{range_check_ptr, utxo_data_reader: Reader}(
 		context.transaction_contexts + TransactionValidationContext.SIZE,
 		context.header_context,
 		context.prev_state_root,
-		total_fees = 0,
+		0,
 		context.transaction_count - 1
 	)
 	%{ print('Validate total fees', ids.total_fees) %}
@@ -141,12 +151,14 @@ func validate_and_apply_transactions{range_check_ptr, utxo_data_reader: Reader}(
 	return (next_state_root)
 end
 
+
 func _validate_and_apply_transactions_loop{range_check_ptr, utxo_data_reader: Reader}(
 	tx_contexts: TransactionValidationContext*, 
 	header_context: BlockHeaderValidationContext, 
 	prev_state_root: felt*,
 	total_fees,
 	loop_counter) -> (next_state_root: felt*, total_fees):
+
 	if loop_counter == 0:
 		return (prev_state_root, total_fees)
 	end

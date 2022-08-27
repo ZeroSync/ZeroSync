@@ -12,7 +12,7 @@ from block import State, validate_and_apply_block, read_block_validation_context
 func main{output_ptr : felt*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}():
     alloc_locals
 
-    # Read a block from the program input
+    # Read a raw block from the program input
     let (raw_block) = alloc()
     %{ segments.write_arg(ids.raw_block, program_input["block"]) %}
     let (reader) = init_reader(raw_block)
@@ -36,12 +36,10 @@ func main{output_ptr : felt*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}():
         
         segments.write_arg(ids.prev_state_root, prev_state["prev_state_root"])
     %}
-
     let prev_chain_state = ChainState(
         block_height, total_work, best_hash,
         difficulty, epoch_start_time, prev_timestamps
     )
-
     let prev_state = State(prev_chain_state, prev_state_root)
 
 
@@ -57,10 +55,9 @@ func main{output_ptr : felt*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}():
 
     # Perform a state transition
     let (context) = read_block_validation_context{reader=reader}(prev_state)
-
-
     let (next_state) = validate_and_apply_block{utxo_data_reader=utxo_data_reader}(context)
     
+
     # Print the next state
     serialize_chain_state(next_state.chain_state)
     # serialize_array(next_state.state_root, HASH_FELT_SIZE)

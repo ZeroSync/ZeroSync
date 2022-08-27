@@ -9,8 +9,12 @@ from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.math import assert_le
 
 from crypto.sha256d.sha256d import sha256d, HASH_SIZE
-from buffer import Reader, Writer, read_uint8, peek_uint8, read_uint16, read_uint32, read_uint64, read_varint, read_hash, read_bytes, UINT32_SIZE, UINT64_SIZE, read_bytes_endian, write_uint32, write_varint
+from buffer import (
+	Reader, read_uint8, peek_uint8, read_uint16, read_uint32, read_uint64,
+	read_varint, read_hash, read_bytes, read_bytes_endian,
+	Writer,  write_uint32, write_varint, UINT32_SIZE, UINT64_SIZE )
 from block_header import BlockHeaderValidationContext
+
 
 # Definition of a Bitcoin transaction
 #
@@ -25,6 +29,7 @@ struct Transaction:
 	member locktime: felt
 end
 
+
 # A transaction input
 struct TxInput:
 	member txid: felt*
@@ -34,12 +39,14 @@ struct TxInput:
 	member sequence: felt
 end
 
+
 # A transaction output
 struct TxOutput:
 	member amount: felt
 	member script_pub_key_size: felt
 	member script_pub_key: felt*
 end
+
 
 # Read a Transaction from a buffer
 func read_transaction{reader: Reader, range_check_ptr}(
@@ -81,6 +88,7 @@ func read_transaction{reader: Reader, range_check_ptr}(
 	)
 end
 
+
 # Read transaction inputs from a buffer
 func read_inputs{reader:Reader, range_check_ptr}(
 	input_count) -> (inputs: TxInput*, byte_size):
@@ -89,6 +97,7 @@ func read_inputs{reader:Reader, range_check_ptr}(
 	let (byte_size) = _read_inputs_loop(inputs, input_count)
 	return (inputs, byte_size)
 end
+
 
 # LOOP: Read transaction inputs from a buffer
 func _read_inputs_loop{reader:Reader, range_check_ptr}(
@@ -102,6 +111,7 @@ func _read_inputs_loop{reader:Reader, range_check_ptr}(
 	let (byte_size_accu) = _read_inputs_loop(inputs + TxInput.SIZE, loop_counter - 1)
 	return (byte_size_accu + input.byte_size)
 end
+
 
 # Read a transaction input from a buffer
 func read_input{reader:Reader, range_check_ptr}(
@@ -129,6 +139,7 @@ func read_input{reader:Reader, range_check_ptr}(
 	)
 end
 
+
 # Read outputs from a buffer
 func read_outputs{reader:Reader, range_check_ptr}(
 	output_count) -> (outputs: TxOutput*, byte_size):
@@ -137,6 +148,7 @@ func read_outputs{reader:Reader, range_check_ptr}(
 	let (byte_size) = _read_outputs_loop(outputs, output_count)
 	return (outputs, byte_size)
 end
+
 
 # LOOP: Read transaction outputs
 func _read_outputs_loop{reader:Reader, range_check_ptr}(
@@ -150,6 +162,7 @@ func _read_outputs_loop{reader:Reader, range_check_ptr}(
 	let (byte_size_accu) = _read_outputs_loop(outputs + TxOutput.SIZE, loop_counter - 1)
 	return (byte_size_accu + byte_size)
 end
+
 
 # Read an output from a buffer
 func read_output{reader:Reader, range_check_ptr}(
@@ -171,6 +184,7 @@ func read_output{reader:Reader, range_check_ptr}(
 	)
 end
 
+
 # The validation context for transactions
 struct TransactionValidationContext:
 	member transaction: Transaction
@@ -181,6 +195,7 @@ struct TransactionValidationContext:
 	# member witnesses: felt**
 	# member utxo_set_root_hash: felt*
 end
+
 
 # Read a transaction from a buffer and set its validation context
 func read_transaction_validation_context{reader:Reader, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
@@ -198,6 +213,7 @@ func read_transaction_validation_context{reader:Reader, range_check_ptr, bitwise
 		transaction, transaction_raw, byte_size, txid))
 end
 
+
 # Validate all properties of a transaction, apply it to the current state
 # and return the resulting next state root
 func validate_and_apply_transaction{range_check_ptr, utxo_data_reader: Reader}(
@@ -206,14 +222,14 @@ func validate_and_apply_transaction{range_check_ptr, utxo_data_reader: Reader}(
 	prev_state: felt*) -> (next_state:felt*, tx_fee):
 	alloc_locals
 
-	let (inputs_amount_sum) = validate_inputs_loop(
+	let (total_input_amount) = validate_inputs_loop(
 		context, context.transaction.inputs, 0, context.transaction.input_count)
 
-	let (outputs_amount_sum) = validate_outputs_loop(
+	let (total_output_amount) = validate_outputs_loop(
 		context, context.transaction.outputs, 0, context.transaction.output_count)
 
-	assert_le(outputs_amount_sum, inputs_amount_sum)
-	let tx_fee = inputs_amount_sum - outputs_amount_sum
+	assert_le(total_output_amount, total_input_amount)
+	let tx_fee = total_input_amount - total_output_amount
 
 	# TODO: implement me 
 
@@ -239,6 +255,7 @@ func validate_inputs_loop{range_check_ptr, utxo_data_reader: Reader}(
 		loop_counter - 1
 	)
 end
+
 
 func validate_input{range_check_ptr, utxo_data_reader: Reader}(
 	input: TxInput) -> (amount):
@@ -268,6 +285,7 @@ func validate_outputs_loop{range_check_ptr, utxo_data_reader: Reader}(
 		loop_counter - 1
 	)
 end
+
 
 func validate_output{range_check_ptr}(
 	output: TxOutput) -> (amount):
@@ -322,5 +340,4 @@ end
 	
 # 	return ()
 #end
-
 
