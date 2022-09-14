@@ -16,7 +16,7 @@
 	- Script interpreter
 - Payment types
 	- p2pk
-	- p2pkh, p2psh
+	- p2pkh, p2sh
 	- SegWit: p2wpkh, p2wsh
 	- Taproot: p2tr; key path & script path spend
 - Crypto

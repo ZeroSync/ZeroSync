@@ -10,8 +10,8 @@ from starkware.cairo.common.math import assert_le
 
 from crypto.sha256d.sha256d import sha256d, HASH_SIZE
 from buffer import (
-	Reader, read_uint8, peek_uint8, read_uint16, read_uint32, read_uint64,
-	read_varint, read_hash, read_bytes, read_bytes_endian,
+	Reader, read_uint8, read_uint16, read_uint32, read_uint64,
+	read_varint, read_hash, read_bytes, read_bytes_endian, peek_uint8,
 	Writer,  write_uint32, write_varint, UINT32_SIZE, UINT64_SIZE )
 from block_header import BlockHeaderValidationContext
 
