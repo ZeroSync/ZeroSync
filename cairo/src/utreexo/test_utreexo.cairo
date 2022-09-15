@@ -11,7 +11,7 @@ from utreexo.utreexo import utreexo_add, utreexo_delete, utreexo_init
 
 
 @external
-func test_utreexo{range_check_ptr, pedersen_ptr: HashBuiltin*}():
+func test_utreexo_basics{range_check_ptr, pedersen_ptr: HashBuiltin*}():
 	alloc_locals
 
 	let (forest) = utreexo_init()

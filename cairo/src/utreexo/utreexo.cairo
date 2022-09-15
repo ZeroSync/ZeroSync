@@ -11,7 +11,7 @@ from starkware.cairo.common.memcpy import memcpy
 from starkware.cairo.common.memset import memset
 
 
-const UTREEXO_ROOTS_LEN = 25
+const UTREEXO_ROOTS_LEN = 20
 
 func utreexo_init() -> (forest:felt*):
 	alloc_locals
@@ -21,8 +21,8 @@ func utreexo_init() -> (forest:felt*):
 end
 
 
-
-func utreexo_add{range_check_ptr, hash_ptr: HashBuiltin*, forest: felt*}(leaf):
+func utreexo_add{range_check_ptr, hash_ptr: HashBuiltin*, forest: felt*}(
+	leaf):
 	alloc_locals
 	let (roots_out) = alloc()
 	_utreexo_add_loop(forest, roots_out, leaf, 0)
@@ -53,6 +53,7 @@ end
 func utreexo_delete{hash_ptr: HashBuiltin*, forest: felt*}(
 	proof: felt*, proof_len, index, leaf):
 	alloc_locals
+
 	utreexo_prove_inclusion(forest, proof, proof_len, index, leaf)
 	
 	let (roots_out) = alloc()
@@ -88,50 +89,48 @@ func _utreexo_delete_loop{hash_ptr: HashBuiltin*}(
 	return _utreexo_delete_loop(roots_in, roots_out, proof, proof_len, n, h + 1)
 end
 
+
 func utreexo_prove_inclusion{hash_ptr: HashBuiltin*}(
-	forest: felt*, proof: felt*, proof_len, index, leaf):
+	forest: felt*, proof: felt*, proof_len, leaf_index, leaf):
 	alloc_locals
 
-	let (root) = _utreexo_prove_inclusion_loop(proof, proof_len, index, leaf)
+	let (proof_root) = _utreexo_prove_inclusion_loop(proof, proof_len, leaf_index, leaf)
 
 	local root_index
 	%{
-        leave_index = ids.index
+        leave_index = ids.leaf_index
         bit = 1
         root_index = 0
-        while True:
-            if leave_index < bit:
-                break
-
+        while leave_index >= bit:
             if memory[ids.forest + root_index] != 0:
                 leave_index - bit
-
             bit *= 2
             root_index += 1
 
         ids.root_index = root_index
     %}
 
-	assert forest[root_index] = root
+	assert forest[root_index] = proof_root
 	return ()
 end
 
 
 func _utreexo_prove_inclusion_loop{hash_ptr: HashBuiltin*}(
-	proof: felt*, proof_len, index, prev_node) -> (root):
+	proof: felt*, proof_len, index, prev_node) -> (proof_root):
+	
 	if proof_len == 0:
 		return (prev_node)
 	end
-	alloc_locals
 
+	alloc_locals
 	local next_index
-	local bit
+	local lowest_bit
 	%{
-        ids.bit = ids.index & 1 
-        ids.next_index = (ids.index - ids.bit) // 2
+        ids.lowest_bit = ids.index & 1 
+        ids.next_index = (ids.index - ids.lowest_bit) // 2
     %}
 
-	if bit == 0:
+	if lowest_bit == 0:
 		let (next_node) = hash2(prev_node, [proof])
 	else:
 		let (next_node) = hash2([proof], prev_node)
