@@ -88,7 +88,6 @@ func _utreexo_delete_loop{hash_ptr: HashBuiltin*}(
 	return _utreexo_delete_loop(roots_in, roots_out, proof, proof_len, n, h + 1)
 end
 
-
 func utreexo_prove_inclusion{hash_ptr: HashBuiltin*}(
 	forest: felt*, proof: felt*, proof_len, index, leaf):
 	alloc_locals
@@ -96,12 +95,20 @@ func utreexo_prove_inclusion{hash_ptr: HashBuiltin*}(
 	let (root) = _utreexo_prove_inclusion_loop(proof, proof_len, index, leaf)
 
 	local root_index
-
 	%{
-        import math
-        root_index = math.floor( math.log(ids.index + 1, 2) ) 
-        while memory[ids.forest + root_index] == 0:
+        leave_index = ids.index
+        bit = 1
+        root_index = 0
+        while True:
+            if leave_index < bit:
+                break
+
+            if memory[ids.forest + root_index] != 0:
+                leave_index - bit
+
+            bit *= 2
             root_index += 1
+
         ids.root_index = root_index
     %}
 
@@ -132,6 +139,3 @@ func _utreexo_prove_inclusion_loop{hash_ptr: HashBuiltin*}(
 	
 	return _utreexo_prove_inclusion_loop(proof + 1, proof_len - 1, next_index, next_node)
 end
-
-
-
