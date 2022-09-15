@@ -13,7 +13,7 @@ from starkware.cairo.common.memset import memset
 
 const UTREEXO_ROOTS_LEN = 25
 
-func init_forest() -> (forest:felt*):
+func utreexo_init() -> (forest:felt*):
 	alloc_locals
 	let (forest) = alloc()
 	memset(forest, 0, UTREEXO_ROOTS_LEN)
@@ -21,7 +21,7 @@ func init_forest() -> (forest:felt*):
 end
 
 
-# TODO: do we have to sanitize `leaf != 0` here?
+
 func utreexo_add{range_check_ptr, hash_ptr: HashBuiltin*, forest: felt*}(leaf):
 	alloc_locals
 	let (roots_out) = alloc()
@@ -50,7 +50,7 @@ end
 
 
 
-func utreexo_delete{range_check_ptr, hash_ptr: HashBuiltin*, forest: felt*}(
+func utreexo_delete{hash_ptr: HashBuiltin*, forest: felt*}(
 	proof: felt*, proof_len, index, leaf):
 	alloc_locals
 	utreexo_prove_inclusion(forest, proof, proof_len, index, leaf)
@@ -89,7 +89,7 @@ func _utreexo_delete_loop{hash_ptr: HashBuiltin*}(
 end
 
 
-func utreexo_prove_inclusion{range_check_ptr, hash_ptr: HashBuiltin*}(
+func utreexo_prove_inclusion{hash_ptr: HashBuiltin*}(
 	forest: felt*, proof: felt*, proof_len, index, leaf):
 	alloc_locals
 
@@ -97,9 +97,12 @@ func utreexo_prove_inclusion{range_check_ptr, hash_ptr: HashBuiltin*}(
 
 	local root_index
 
-	%{ 
+	%{
         import math
-        ids.root_index = math.ceil( math.log(ids.index, 2) ) + 1 
+        root_index = math.floor( math.log(ids.index + 1, 2) ) 
+        while memory[ids.forest + root_index] == 0:
+            root_index += 1
+        ids.root_index = root_index
     %}
 
 	assert forest[root_index] = root
@@ -107,13 +110,19 @@ func utreexo_prove_inclusion{range_check_ptr, hash_ptr: HashBuiltin*}(
 end
 
 
-func _utreexo_prove_inclusion_loop{range_check_ptr, hash_ptr: HashBuiltin*}(
+func _utreexo_prove_inclusion_loop{hash_ptr: HashBuiltin*}(
 	proof: felt*, proof_len, index, prev_node) -> (root):
 	if proof_len == 0:
 		return (prev_node)
 	end
+	alloc_locals
 
-	let (index, bit) = unsigned_div_rem(index, 2)
+	local next_index
+	local bit
+	%{
+        ids.bit = ids.index & 1 
+        ids.next_index = (ids.index - ids.bit) // 2
+    %}
 
 	if bit == 0:
 		let (next_node) = hash2(prev_node, [proof])
@@ -121,8 +130,7 @@ func _utreexo_prove_inclusion_loop{range_check_ptr, hash_ptr: HashBuiltin*}(
 		let (next_node) = hash2([proof], prev_node)
 	end
 	
-	return _utreexo_prove_inclusion_loop(proof + 1, proof_len - 1, index, next_node)
-
+	return _utreexo_prove_inclusion_loop(proof + 1, proof_len - 1, next_index, next_node)
 end
 
 

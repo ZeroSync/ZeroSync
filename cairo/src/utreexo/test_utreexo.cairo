@@ -7,14 +7,14 @@
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 
-from utreexo.utreexo import utreexo_add, utreexo_delete, init_forest
+from utreexo.utreexo import utreexo_add, utreexo_delete, utreexo_init
 
 
 @external
-func test_utreexo_add{range_check_ptr, pedersen_ptr: HashBuiltin*}():
+func test_utreexo{range_check_ptr, pedersen_ptr: HashBuiltin*}():
 	alloc_locals
 
-	let (forest) = init_forest()
+	let (forest) = utreexo_init()
 
 	utreexo_add{hash_ptr=pedersen_ptr, forest=forest}(0xff00ff00ff00ff00ff00ff00)
 	assert 0xff00ff00ff00ff00ff00ff00 = forest[0]
@@ -38,7 +38,9 @@ func test_utreexo_add{range_check_ptr, pedersen_ptr: HashBuiltin*}():
 	assert proof[1] = 0x1c60c3a9a8fc2ebb9a12921bfa16c341abc787d4fa8c0806026991397925885
 
 	let proof_len = 2
-	utreexo_delete{hash_ptr=pedersen_ptr, forest=forest}(proof, proof_len, 2, 0x33ff00ff00ff00ff00ff00ff)
+	let index = 2
+	let leaf = 0x33ff00ff00ff00ff00ff00ff
+	utreexo_delete{hash_ptr=pedersen_ptr, forest=forest}(proof, proof_len, index, leaf)
 
 	return ()
 end 
