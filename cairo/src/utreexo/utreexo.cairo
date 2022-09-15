@@ -3,7 +3,6 @@
 # The algorithms for `add_utxo` and `delete_utxo` are 
 # described in [the Utreexo paper](https://eprint.iacr.org/2019/611.pdf).
 #
-from starkware.cairo.common.math import unsigned_div_rem
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.hash import hash2
 from starkware.cairo.common.cairo_builtins import HashBuiltin
@@ -21,7 +20,7 @@ func utreexo_init() -> (forest:felt*):
 end
 
 
-func utreexo_add{range_check_ptr, hash_ptr: HashBuiltin*, forest: felt*}(
+func utreexo_add{hash_ptr: HashBuiltin*, forest: felt*}(
 	leaf):
 	alloc_locals
 	let (roots_out) = alloc()
@@ -30,7 +29,8 @@ func utreexo_add{range_check_ptr, hash_ptr: HashBuiltin*, forest: felt*}(
 	return ()
 end
 
-func _utreexo_add_loop{range_check_ptr, hash_ptr: HashBuiltin*}(
+
+func _utreexo_add_loop{hash_ptr: HashBuiltin*}(
 	roots_in: felt*, roots_out: felt*, n, h):
 	alloc_locals
 
@@ -49,12 +49,11 @@ func _utreexo_add_loop{range_check_ptr, hash_ptr: HashBuiltin*}(
 end
 
 
-
 func utreexo_delete{hash_ptr: HashBuiltin*, forest: felt*}(
-	proof: felt*, proof_len, index, leaf):
+	proof: felt*, proof_len, leaf_index, leaf):
 	alloc_locals
 
-	utreexo_prove_inclusion(forest, proof, proof_len, index, leaf)
+	utreexo_prove_inclusion(forest, proof, proof_len, leaf_index, leaf)
 	
 	let (roots_out) = alloc()
 	_utreexo_delete_loop(forest, roots_out, proof, proof_len, 0, 0)
@@ -103,7 +102,7 @@ func utreexo_prove_inclusion{hash_ptr: HashBuiltin*}(
         root_index = 0
         while leave_index >= bit:
             if memory[ids.forest + root_index] != 0:
-                leave_index - bit
+                leave_index -= bit
             bit *= 2
             root_index += 1
 
@@ -126,7 +125,7 @@ func _utreexo_prove_inclusion_loop{hash_ptr: HashBuiltin*}(
 	local next_index
 	local lowest_bit
 	%{
-        ids.lowest_bit = ids.index & 1 
+        ids.lowest_bit = ids.index & 1
         ids.next_index = (ids.index - ids.lowest_bit) // 2
     %}
 

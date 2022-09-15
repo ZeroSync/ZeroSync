@@ -16,31 +16,30 @@ func test_utreexo_basics{range_check_ptr, pedersen_ptr: HashBuiltin*}():
 
 	let (forest) = utreexo_init()
 
-	utreexo_add{hash_ptr=pedersen_ptr, forest=forest}(0xff00ff00ff00ff00ff00ff00)
-	assert 0xff00ff00ff00ff00ff00ff00 = forest[0]
+	utreexo_add{hash_ptr=pedersen_ptr, forest=forest}(0x111111111111111111111111)
+	assert 0x111111111111111111111111 = forest[0]
 
-	utreexo_add{hash_ptr=pedersen_ptr, forest=forest}(0x00ff00ff00ff00ff00ff00ff)
+	utreexo_add{hash_ptr=pedersen_ptr, forest=forest}(0x222222222222222222222222)
 	assert 0 = forest[0]
-	assert 0x1c60c3a9a8fc2ebb9a12921bfa16c341abc787d4fa8c0806026991397925885 = forest[1]
+	assert 0x1b586e993478db71562f0cfe2ad81ccc463b0d18e64bde2fc825530714d8328 = forest[1]
 	
-	utreexo_add{hash_ptr=pedersen_ptr, forest=forest}(0x33ff00ff00ff00ff00ff00ff)
-	assert 0x33ff00ff00ff00ff00ff00ff = forest[0]
-	assert 0x1c60c3a9a8fc2ebb9a12921bfa16c341abc787d4fa8c0806026991397925885 = forest[1]
+	utreexo_add{hash_ptr=pedersen_ptr, forest=forest}(0x333333333333333333333333)
+	assert 0x333333333333333333333333 = forest[0]
+	assert 0x1b586e993478db71562f0cfe2ad81ccc463b0d18e64bde2fc825530714d8328 = forest[1]
 
-	utreexo_add{hash_ptr=pedersen_ptr, forest=forest}(0x44ff00ff00ff00ff00ff00ff)
+	utreexo_add{hash_ptr=pedersen_ptr, forest=forest}(0x444444444444444444444444)
 	assert 0 = forest[0]
 	assert 0 = forest[1]
-	assert 0x458c8b68353c8b2105f4ec79ff225fca660aee06df5ae56b4b8328b5edd8d71 = forest[2]
+	assert 0x155d0053a90471bdcccd6f93c7bcea38a8e4dddb190077568fb8514cf9f3392 = forest[2]
 
+	let (inclusion_proof) = alloc()
+	assert inclusion_proof[0] = 0x444444444444444444444444
+	assert inclusion_proof[1] = 0x1b586e993478db71562f0cfe2ad81ccc463b0d18e64bde2fc825530714d8328
 
-	let (proof) = alloc()
-	assert proof[0] = 0x44ff00ff00ff00ff00ff00ff
-	assert proof[1] = 0x1c60c3a9a8fc2ebb9a12921bfa16c341abc787d4fa8c0806026991397925885
-
-	let proof_len = 2
+	let inclusion_proof_len = 2
 	let index = 2
-	let leaf = 0x33ff00ff00ff00ff00ff00ff
-	utreexo_delete{hash_ptr=pedersen_ptr, forest=forest}(proof, proof_len, index, leaf)
+	let leaf = 0x333333333333333333333333
+	utreexo_delete{hash_ptr=pedersen_ptr, forest=forest}(inclusion_proof, inclusion_proof_len, index, leaf)
 
 	return ()
 end 
