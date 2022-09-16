@@ -9,6 +9,7 @@
 
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
+from starkware.cairo.common.cairo_builtins import HashBuiltin
 
 from buffer import Reader, Writer, read_varint
 from block_header import BlockHeaderValidationContext, ChainState, read_block_header_validation_context, validate_and_apply_block_header, apply_block_header
@@ -82,14 +83,15 @@ end
 #
 # TODO: read the UTXO data required to validate the TX inputs (amounts and such) and verify the corresponding proofs
 #
-func validate_and_apply_block{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, utxo_data_reader: Reader}(
+func validate_and_apply_block{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, hash_ptr: HashBuiltin*}(
 	context: BlockValidationContext) -> (next_state: State):
 	alloc_locals
 
 	let (next_chain_state) = validate_and_apply_block_header(context.header_context)
 	validate_merkle_root(context)
-	let (next_state_root) = validate_and_apply_transactions(context)
-	return ( State(next_chain_state, next_state_root) )
+	let utreexo_roots = context.prev_state_root
+	validate_and_apply_transactions{utreexo_roots=utreexo_roots}(context)
+	return ( State(next_chain_state, utreexo_roots) )
 end
 
 
@@ -132,44 +134,42 @@ end
 
 # Validate that every transaction in this block is valid,
 # apply them to the previous state and return the resulting state root
-func validate_and_apply_transactions{range_check_ptr, utxo_data_reader: Reader}(
-	context: BlockValidationContext) -> (next_state_root : felt*):
+func validate_and_apply_transactions{range_check_ptr, utreexo_roots: felt*, hash_ptr: HashBuiltin*}(
+	context: BlockValidationContext):
+	alloc_locals
 
 	# Validate the coinbase transaction with its special validation rules
 	validate_and_apply_coinbase(context)
 	
 	# Validate all other transactions with the regular validation rules
-	let (next_state_root, total_fees) = _validate_and_apply_transactions_loop(
+	let (total_fees) = _validate_and_apply_transactions_loop(
 		context.transaction_contexts + TransactionValidationContext.SIZE,
 		context.header_context,
-		context.prev_state_root,
 		0,
 		context.transaction_count - 1
 	)
 	%{ print('Validate total fees', ids.total_fees) %}
 
-	return (next_state_root)
+	return ()
 end
 
 
-func _validate_and_apply_transactions_loop{range_check_ptr, utxo_data_reader: Reader}(
+func _validate_and_apply_transactions_loop{range_check_ptr, utreexo_roots: felt*, hash_ptr: HashBuiltin*}(
 	tx_contexts: TransactionValidationContext*, 
-	header_context: BlockHeaderValidationContext, 
-	prev_state_root: felt*,
+	header_context: BlockHeaderValidationContext,
 	total_fees,
-	loop_counter) -> (next_state_root: felt*, total_fees):
+	loop_counter) -> (total_fees):
 
 	if loop_counter == 0:
-		return (prev_state_root, total_fees)
+		return (total_fees)
 	end
-	
-	let (next_state_root, tx_fee) = validate_and_apply_transaction(
-		[tx_contexts], header_context, prev_state_root)
+
+	alloc_locals	
+	let (tx_fee) = validate_and_apply_transaction([tx_contexts], header_context)
 
 	return _validate_and_apply_transactions_loop(
 		tx_contexts + TransactionValidationContext.SIZE,
 		header_context,
-		next_state_root,
 		total_fees + tx_fee,
 		loop_counter - 1
 	)

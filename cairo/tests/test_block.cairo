@@ -7,12 +7,13 @@
 
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.memcpy import memcpy
-from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
+from starkware.cairo.common.cairo_builtins import BitwiseBuiltin, HashBuiltin
 
 from utils_for_testing import setup_python_defs
 from transaction import TransactionValidationContext
 from block_header import ChainState
 from block import BlockValidationContext, State, read_block_validation_context, validate_and_apply_block
+from utreexo.utreexo import utreexo_init
 
 from buffer import init_reader
 from tests.test_block_header import dummy_prev_timestamps
@@ -26,7 +27,7 @@ from tests.test_block_header import dummy_prev_timestamps
 # - Stackoverflow: https://stackoverflow.com/questions/67631407/raw-or-hex-of-a-whole-bitcoin-block
 # - Blockchair: https://api.blockchair.com/bitcoin/raw/block/000000004d15e01d3ffc495df7bb638c2b35c5b5dd0ba405615f513e3393f0c7
 @external
-func test_read_block_validation_context{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
+func test_read_block_validation_context{range_check_ptr, bitwise_ptr : BitwiseBuiltin*, pedersen_ptr: HashBuiltin*}():
     alloc_locals
     setup_python_defs()
 
@@ -64,7 +65,7 @@ func test_read_block_validation_context{range_check_ptr, bitwise_ptr : BitwiseBu
         epoch_start_time = 0,
         prev_timestamps
     )
-    let (prev_state_root) = alloc()
+    let (prev_state_root) = utreexo_init()
 
     let prev_state = State(prev_chain_state, prev_state_root)
 
@@ -72,9 +73,9 @@ func test_read_block_validation_context{range_check_ptr, bitwise_ptr : BitwiseBu
     let (context) = read_block_validation_context{reader=reader}(prev_state)
 
     let (utxo_data_raw) = alloc()
-    let (utxo_data_reader) = init_reader(utxo_data_raw)
+    let (utreexo_roots) = init_reader(utxo_data_raw)
 
-    validate_and_apply_block{utxo_data_reader=utxo_data_reader}(context)
+    validate_and_apply_block{hash_ptr = pedersen_ptr}(context)
     return ()
 end
 
@@ -87,7 +88,7 @@ end
 # - Stackoverflow: https://stackoverflow.com/questions/67631407/raw-or-hex-of-a-whole-bitcoin-block
 # - Blockchair: https://api.blockchair.com/bitcoin/raw/block/000000000003ba27aa200b1cecaad478d2b00432346c3f1f3986da1afd33e506
 @external
-func test_read_block_with_4_transactions{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
+func test_read_block_with_4_transactions{range_check_ptr, bitwise_ptr : BitwiseBuiltin*, pedersen_ptr: HashBuiltin*}():
     alloc_locals
     setup_python_defs()
 
@@ -135,7 +136,7 @@ func test_read_block_with_4_transactions{range_check_ptr, bitwise_ptr : BitwiseB
         prev_timestamps
     )
 
-    let (prev_state_root) = alloc()
+    let (prev_state_root) = utreexo_init()
 
     let prev_state = State(prev_chain_state, prev_state_root)
 
@@ -147,18 +148,13 @@ func test_read_block_with_4_transactions{range_check_ptr, bitwise_ptr : BitwiseB
     let transaction = context.transaction_contexts[1].transaction
     assert transaction.outputs[1].amount = 4444 * 10**6
     
-
-    let (utxo_data_raw) = alloc()
-    %{
-        from_hex((
-            "00f2052a010000001976a91471d7dd96d9edda09180fe9d57a477b5acc9cad1188ac00a3e111000000001976a91435fbee6a3bf8d99f17724ec54787567393a8"
-            "a6b188ac40420f00000000001976a914c4eb47ecfdcf609a1848ee79acc2fa49d3caad7088ac"), ids.utxo_data_raw)
-    %}    
-    let (utxo_data_reader) = init_reader(utxo_data_raw)
-
-
     # Validate the block
-    validate_and_apply_block{utxo_data_reader=utxo_data_reader}(context)
+    let (next_state) = validate_and_apply_block{hash_ptr = pedersen_ptr}(context)
+
+    %{ 
+        addr = ids.next_state.state_root
+        print('Next state root:', memory[addr], memory[addr + 1], memory[addr + 2], memory[addr + 3]) 
+    %}
     return ()
 end
 
@@ -174,7 +170,7 @@ end
 # - Blockchair: https://api.blockchair.com/bitcoin/raw/block/000000000000051f68f43e9d455e72d9c4e4ce52e8a00c5e24c07340632405cb
 # TODO: fixme 
 # @external
-func test_read_block_with_27_transactions{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
+func test_read_block_with_27_transactions{range_check_ptr, bitwise_ptr : BitwiseBuiltin*, pedersen_ptr: HashBuiltin*}():
     alloc_locals
     setup_python_defs()
 
@@ -206,7 +202,7 @@ func test_read_block_with_27_transactions{range_check_ptr, bitwise_ptr : Bitwise
         prev_timestamps
     )
 
-    let (prev_state_root) = alloc()
+    let (prev_state_root) = utreexo_init()
 
     let prev_state = State(prev_chain_state, prev_state_root)
 
@@ -222,17 +218,8 @@ func test_read_block_with_27_transactions{range_check_ptr, bitwise_ptr : Bitwise
     let transaction = context.transaction_contexts[1].transaction
     assert transaction.outputs[1].amount = 5446 * 10**6
     
-    
-    let (utxo_data_raw) = alloc()
-    %{
-        from_hex((
-            "40df783a000000001976a91455a4d769e1c962135f6db3fb0e32da1afee6a6a988ac00e1f505000000001976a91483b21861bdf0b3790b9463cb0497f2d279d1ff0688ac1000141d000000001976a914e188814d384d4e041a9911488cb0f3221dac2cea88ac339a6d30010000001976a914dfddfb0da532aa5cfbcb552863c12754a239545788ac00ca9a3b000000001976a9142e9110a96dc96945d01f1685f1d00113bba374b088ac00d2496b000000001976a9146560af4326b78bb2e8e322124307dac522f11b7b88ac002d3101000000001976a91471aa21c8b0a78db89a26da56a514bee710e8ea0488ac613b6262010000001976a9149559fa2972f5244f7e93558809cda750b8c3ecd288ac0084d717000000001976a91440d98b8b08ee72c6e1e419a3ea2e61752bbdd49288ac0065cd1d000000001976a914d23521251ae9f054a7c6c55a469c8ee3e67e43e288ac00c2eb0b000000001976a914b050499be93cc03e5cca53ba4756e2b5309270af88ac00c2eb0b000000001976a914cd7c549aaef7695ed8f4e3912850f0f10f70484a88ac8bc92e01000000001976a914a3310fb6bcaef9f3a0f908d31cc5d8555e22e87488ac00bbeea0000000001976a914a3310fb6bcaef9f3a0f908d31cc5d8555e22e87488ac5795b402000000001976a914a3310fb6bcaef9f3a0f908d31cc5d8555e22e87488ac7fc85802000000001976a914a3310fb6bcaef9f3a0f908d31cc5d8555e22e87488ac070bcd02000000001976a914a3310fb6bcaef9f3a0f908d31cc5d8555e22e87488ac53155001000000001976a914a3310fb6bcaef9f3a0f908d31cc5d8555e22e87488ac7823a302000000001976a914a3310fb6bcaef9f3a0f908d31cc5d8555e22e87488ace8c6af05000000001976a914a3310fb6bcaef9f3a0f908d31cc5d8555e22e87488acc0f58c05000000001976a914a3310fb6bcaef9f3a0f908d31cc5d8555e22e87488ace6e25106000000001976a914a3310fb6bcaef9f3a0f908d31cc5d8555e22e87488ac003fc6b8000000001976a914a3310fb6bcaef9f3a0f908d31cc5d8555e22e87488acc0149716000000001976a914fc50047942de06edf7b4ced3e326fcd6d24cf37188ac80b14f01000000001976a91472f56b2ff45b27281f9fc2903322537aef66d22388ac40420f00000000001976a9149deee61a6900b879ecddef132491e777dda341b588ac80969800000000001976a91472f56b2ff45b27281f9fc2903322537aef66d22388ac80969800000000001976a91472f56b2ff45b27281f9fc2903322537aef66d22388ac80969800000000001976a91472f56b2ff45b27281f9fc2903322537aef66d22388ac20d61300000000001976a9149b3a0bb983f89ed3cf5a58ef9125ac375df6817b88ac0024f400000000001976a91472f56b2ff45b27281f9fc2903322537aef66d22388ac80cc0602000000001976a914fc50047942de06edf7b4ced3e326fcd6d24cf37188ac002d3101000000001976a91472f56b2ff45b27281f9fc2903322537aef66d22388acc0d8a700000000001976a91472f56b2ff45b27281f9fc2903322537aef66d22388ac406f4001000000001976a91472f56b2ff45b27281f9fc2903322537aef66d22388ac002d3101000000001976a91472f56b2ff45b27281f9fc2903322537aef66d22388ac001bb700000000001976a91472f56b2ff45b27281f9fc2903322537aef66d22388acc0ea2101000000001976a91472f56b2ff45b27281f9fc2903322537aef66d22388ace0b57b84000000001976a9142040c41c6683b8dfbba3585ae5d05053bbdaf48388ac9aeed96a000000001976a9149b6ae450099265ec1389749aed298db2c8d9b74488ac00e1f505000000001976a914a6eb3879467267eae9028147aae6bf0abf5cb6b388ac402c4206000000001976a914a6eb3879467267eae9028147aae6bf0abf5cb6b388acc0320a03000000001976a914a6eb3879467267eae9028147aae6bf0abf5cb6b388ac00e1f505000000001976a914a6eb3879467267eae9028147aae6bf0abf5cb6b388ac20ac0803000000001976a9149890cb2761ea6b47ca72ac15bc9019282b27b0c488acc0b06006000000001976a914a6eb3879467267eae9028147aae6bf0abf5cb6b388ac00286bee000000001976a914a7a54b90214ec3879397a76c14e5f2a6b1437e3288ac0096750c010000001976a914dda927e66f4b86cd700eb89232bf97ced798789988ac07f86501000000001976a91423ad8a278f7aa1a73d0f0b4b80941a21a1cd26f688ac4051b603000000001976a9143f36d1f09c42df8feac2dda3fe2003130ef3d77788ac40357f06000000001976a914098e6f43ee9de79c65c15eb78c508f3517a220c488ac8478713e000000001976a91460efc355033f0a754397afd0f78b63b6777ecd1288ac00f0bc57000000001976a914d503b536a4131e2623148368eab2e9245cff528688acb0582829000000001976a9140af84d3dcbe9818abd964d107d9f7a89a5c4db7d88acf40f9f02000000001976a914c9dc3b8f9ffa2c4adbd92c4a10ea18b8d55aa64988ac36b7f11d000000001976a914fed6024ca8ff8e9ca9342f74c858f0e15a741d2888acccdf641b000000001976a914119907a44442a9e931dcb3d54bc2048392eb1a8b88ac8093dc14000000001976a914a3310fb6bcaef9f3a0f908d31cc5d8555e22e87488ac78db6a0500000000434104a39b9e4fbd213ef24bb9be69de4a118dd0644082e47c01fd9159d38637b83fbcdc115a5d6e970586a012d1cfe3e3a8b1a3d04e763bdc5a071c0e827c0bd834a5ac9ad81100000000001976a91434523f0b258483e4af3440852a28effffe3926fe88acd8593600000000001976a914ec809861348ad1c6f802dbabb4580dd576e1f00688ac8ee66100000000001976a914eda26890dca275c9b36d0e42950df0dd443d152688ac80f0fa02000000001976a91445a3927eb81be32b6dba2d977c77405102330c9b88ac0d20ac00000000001976a9147776be15c0d25d7e391dfa7126099586495ddee288ac"
-            ), ids.utxo_data_raw)
-    %}    
-    let (utxo_data_reader) = init_reader(utxo_data_raw)
-
 
     # Validate the block
-    validate_and_apply_block{utxo_data_reader=utxo_data_reader}(context)
+    validate_and_apply_block{hash_ptr = pedersen_ptr}(context)
     return ()
 end

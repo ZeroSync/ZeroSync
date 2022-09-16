@@ -3,12 +3,6 @@ func setup_python_defs():
     %{
         import re
 
-        def little_endian(string):
-            splited = [str(string)[i: i + 2] for i in range(0, len(str(string)), 2)]
-            splited.reverse()
-            return "".join(splited)
-
-
         def hex_to_felt(hex_string):
             # Seperate hex_string into chunks of 8 chars.
             felts = re.findall(".?.?.?.?.?.?.?.", hex_string)
@@ -16,16 +10,6 @@ func setup_python_defs():
             while len(felts[-1]) < 8:
                 felts[-1] += "0"
             return [int(x, 16) for x in felts]
-
-        # Writes an array of hex-encoded hashes into an uint32 array
-        # Because of the quirk in Bitcoin we display hex-encoded hashes 
-        # in reverse byte order.
-        def hashes_from_hex(hashes, destination):
-            for i, hex_hash in enumerate(hashes):
-                hex_string = little_endian(hex_hash.replace("0x",""))
-                _ = from_hex(hex_string, destination + i * 8)
-            return len(hashes)
-
 
         # Writes a hex string string into an uint32 array
         #
@@ -51,6 +35,21 @@ func setup_python_defs():
             hex_string = "".join(hex_list)
             
             return from_hex(hex_string, destination)
+
+
+        def little_endian(string):
+            splited = [str(string)[i: i + 2] for i in range(0, len(str(string)), 2)]
+            splited.reverse()
+            return "".join(splited)
+
+        # Writes an array of hex-encoded hashes into an uint32 array
+        # Because of the quirk in Bitcoin we display hex-encoded hashes 
+        # in reverse byte order.
+        def hashes_from_hex(hashes, destination):
+            for i, hex_hash in enumerate(hashes):
+                hex_string = little_endian(hex_hash.replace("0x",""))
+                _ = from_hex(hex_string, destination + i * 8)
+            return len(hashes)
     %}
     return ()
 end

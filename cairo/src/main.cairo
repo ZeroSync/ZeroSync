@@ -46,7 +46,7 @@ func main{output_ptr : felt*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}():
     # Read the UTXO data from the program input
     let (raw_utxo_data) = alloc()
     %{ segments.write_arg(ids.raw_utxo_data, program_input["utxo_data"]) %}
-    let (utxo_data_reader) = init_reader(raw_utxo_data)
+    let (utreexo_roots) = init_reader(raw_utxo_data)
 
     
     # Read the inclusion proofs from the program input
@@ -55,7 +55,7 @@ func main{output_ptr : felt*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}():
 
     # Perform a state transition
     let (context) = read_block_validation_context{reader=reader}(prev_state)
-    let (next_state) = validate_and_apply_block{utxo_data_reader=utxo_data_reader}(context)
+    let (next_state) = validate_and_apply_block{utreexo_roots=utreexo_roots}(context)
     
 
     # Print the next state

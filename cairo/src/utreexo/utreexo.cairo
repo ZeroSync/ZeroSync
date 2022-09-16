@@ -10,22 +10,21 @@ from starkware.cairo.common.memcpy import memcpy
 from starkware.cairo.common.memset import memset
 
 
-const UTREEXO_ROOTS_LEN = 20
+const UTREEXO_ROOTS_LEN = 27 # ~ log2( 70,000,000 UTXOs )
 
-func utreexo_init() -> (forest:felt*):
+
+func utreexo_init() -> (utreexo_roots:felt*):
 	alloc_locals
-	let (forest) = alloc()
-	memset(forest, 0, UTREEXO_ROOTS_LEN)
-	return (forest)
+	let (utreexo_roots) = alloc()
+	memset(utreexo_roots, 0, UTREEXO_ROOTS_LEN)
+	return (utreexo_roots)
 end
 
-
-func utreexo_add{hash_ptr: HashBuiltin*, forest: felt*}(
-	leaf):
+func utreexo_add{hash_ptr: HashBuiltin*, utreexo_roots: felt*}(leaf):
 	alloc_locals
 	let (roots_out) = alloc()
-	_utreexo_add_loop(forest, roots_out, leaf, 0)
-	let forest = roots_out
+	_utreexo_add_loop(utreexo_roots, roots_out, leaf, 0)
+	let utreexo_roots = roots_out
 	return ()
 end
 
@@ -49,15 +48,15 @@ func _utreexo_add_loop{hash_ptr: HashBuiltin*}(
 end
 
 
-func utreexo_delete{hash_ptr: HashBuiltin*, forest: felt*}(
-	proof: felt*, proof_len, leaf_index, leaf):
+func utreexo_delete{hash_ptr: HashBuiltin*, utreexo_roots: felt*}(
+	leaf, leaf_index, proof: felt*, proof_len):
 	alloc_locals
 
-	utreexo_prove_inclusion(forest, proof, proof_len, leaf_index, leaf)
+	utreexo_prove_inclusion(utreexo_roots, leaf, leaf_index, proof, proof_len)
 	
 	let (roots_out) = alloc()
-	_utreexo_delete_loop(forest, roots_out, proof, proof_len, 0, 0)
-	let forest = roots_out
+	_utreexo_delete_loop(utreexo_roots, roots_out, proof, proof_len, 0, 0)
+	let utreexo_roots = roots_out
 	return ()
 end
 
@@ -90,26 +89,26 @@ end
 
 
 func utreexo_prove_inclusion{hash_ptr: HashBuiltin*}(
-	forest: felt*, proof: felt*, proof_len, leaf_index, leaf):
+	utreexo_roots: felt*, leaf, leaf_index, proof: felt*, proof_len):
 	alloc_locals
 
 	let (proof_root) = _utreexo_prove_inclusion_loop(proof, proof_len, leaf_index, leaf)
 
 	local root_index
 	%{
-        leave_index = ids.leaf_index
-        bit = 1
+        countdown = ids.leaf_index
+        power_of_2 = 1
         root_index = 0
-        while leave_index >= bit:
-            if memory[ids.forest + root_index] != 0:
-                leave_index -= bit
-            bit *= 2
+        while countdown >= power_of_2:
+            if memory[ids.utreexo_roots + root_index] != 0:
+                countdown -= power_of_2
+            power_of_2 *= 2
             root_index += 1
 
         ids.root_index = root_index
     %}
 
-	assert forest[root_index] = proof_root
+	assert utreexo_roots[root_index] = proof_root
 	return ()
 end
 
