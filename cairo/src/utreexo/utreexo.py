@@ -6,8 +6,6 @@ import json
 
 from starkware.cairo.lang.vm.crypto import pedersen_hash
 
-utreexo_roots = [0]
-
 class Node:
     def __init__(self, key, left=None, right=None):
         self.parent = None
@@ -19,7 +17,7 @@ class Node:
 # [T_1, T_2, T_4, T_8, ... ]
 forest = [ None ] * 27
 
-forest_indices = dict()
+leaves = dict()
 
 
 def parent_node(root1, root2):
@@ -29,11 +27,15 @@ def parent_node(root1, root2):
     root2.parent = root_node
     return root_node 
 
-def forest_add(leaf):
-    if leaf in forest_indices:
+
+def utreexo_add(vout_hash):
+    print('add', vout_hash)
+    leaf = int(vout_hash, 16)
+
+    if leaf in leaves:
         raise Exception('Leaf exists already')
     n = Node(leaf)
-    forest_indices[leaf] = n
+    leaves[leaf] = n
     h = 0 
     r = forest[h]
     while r != None:
@@ -64,10 +66,12 @@ def get_proof(leaf_node):
     return proof, tree_index
 
 
+def utreexo_delete(vout_hash):
+    print('delete', vout_hash)
+    leaf = int(vout_hash, 16)
 
-def forest_delete(leaf):
-    leaf_node = forest_indices[leaf]
-    del forest_indices[leaf]
+    leaf_node = leaves[leaf]
+    del leaves[leaf]
 
     proof, tree_index = get_proof(leaf_node)
 
@@ -87,24 +91,13 @@ def forest_delete(leaf):
 
     forest[h] = n
 
-    return proof, tree_index
-
-
-
-def utreexo_add(vout_hash):
-    print('add', vout_hash)
-    vout_hash = int(vout_hash, 16)
-    forest = forest_add(vout_hash)
-    print('forest', forest)
-
-
-def utreexo_delete(vout_hash):
-    print('delete', vout_hash)
-    vout_hash = int(vout_hash, 16)
-    proof, tree_index = forest_delete(vout_hash)
     proof = list(map(lambda node: hex(node.val), proof))
-    print('forest', forest)
     return proof, tree_index
+
+
+
+def compute_leaf_index():
+    print('Implement me')
 
 
 
