@@ -404,8 +404,8 @@ func validate_and_apply_input{range_check_ptr, utreexo_roots: felt*, hash_ptr: H
 	
 	let (leaf_index, proof, proof_len) = fetch_inclusion_proof(prevout_hash)
 
-	# Delete from accumulator and prove inclusion
-	# utreexo_delete(prevout_hash, leaf_index, proof, proof_len)
+	# Prove inclusion and delete from accumulator
+	utreexo_delete(prevout_hash, leaf_index, proof, proof_len)
 		
 	return (amount) 
 end
@@ -439,14 +439,15 @@ func validate_output{range_check_ptr, utreexo_roots: felt*, hash_ptr: HashBuilti
 	let (script_pub_key_len, _) = unsigned_div_rem(output.script_pub_key_size + 3, 4)
 	let (local hash) = hash_output(context.txid, output_index, output.amount, output.script_pub_key, script_pub_key_len)
 
-	# utreexo_add(hash)
+	utreexo_add(hash)
 	%{ 
-        print('>> Add hash to utreexo DB', ids.hash) 
-        http = urllib3.PoolManager()
-        url = 'http://localhost:2121/add/' + hex_hash
-        # r = http.request('GET', url)
 
-        import json
+        # print('>> Add hash to utreexo DB', ids.hash) 
+        http = urllib3.PoolManager()
+        url = 'http://localhost:2121/add/' + hex(ids.hash)
+        r = http.request('GET', url)
+
+        # import json
         # response = json.loads(r.data)
         
     %}

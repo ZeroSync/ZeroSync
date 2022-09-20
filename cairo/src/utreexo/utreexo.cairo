@@ -96,16 +96,18 @@ func utreexo_prove_inclusion{hash_ptr: HashBuiltin*}(
 
 	local root_index
 	%{
-        countdown = ids.leaf_index
-        power_of_2 = 1
         root_index = 0
-        while countdown >= power_of_2:
+        bit = 1
+        index = 0
+        while root_index < ids.UTREEXO_ROOTS_LEN:
             if memory[ids.utreexo_roots + root_index] != 0:
-                countdown -= power_of_2
-            power_of_2 *= 2
+                if index + bit < ids.leaf_index:
+                    break
+                index += bit
+            bit *= 2
             root_index += 1
 
-        ids.root_index = root_index
+        ids.root_index = root_index 
     %}
 
 	assert utreexo_roots[root_index] = proof_root
@@ -129,9 +131,9 @@ func _utreexo_prove_inclusion_loop{hash_ptr: HashBuiltin*}(
     %}
 
 	if lowest_bit == 0:
-		let (next_node) = hash2(prev_node, [proof])
-	else:
 		let (next_node) = hash2([proof], prev_node)
+	else:
+		let (next_node) = hash2(prev_node, [proof])
 	end
 	
 	return _utreexo_prove_inclusion_loop(proof + 1, proof_len - 1, next_index, next_node)
@@ -148,7 +150,7 @@ func fetch_inclusion_proof(prevout_hash) -> (leaf_index, proof:felt*, proof_len)
 
 	%{
         hex_hash = hex(ids.prevout_hash).replace('0x','')
-        print('>> Delete hash from utreexo DB', hex_hash) 
+        # print('>> Delete hash from utreexo DB', hex_hash) 
         # import urllib3
         http = urllib3.PoolManager()
         url = 'http://localhost:2121/delete/' + hex_hash

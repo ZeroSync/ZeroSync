@@ -138,7 +138,7 @@ func test_read_block_with_4_transactions{range_check_ptr, bitwise_ptr : BitwiseB
 
     let (prev_state_root) = alloc()
     %{
-        roots = [ 0x1aa9272136be702146acae34cf02dfaed63288404e0e5842ae3b60341848779, 0x78cf1dc18e3625701952352c3f000a0fbd1f4b8722d3f2b6898d6946ba9fa30, 0]
+        roots = [ 0x1aa9272136be702146acae34cf02dfaed63288404e0e5842ae3b60341848779, 0x78cf1dc18e3625701952352c3f000a0fbd1f4b8722d3f2b6898d6946ba9fa30, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         segments.write_arg(ids.prev_state_root, roots)
     %}
 
