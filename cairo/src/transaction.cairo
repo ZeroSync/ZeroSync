@@ -443,13 +443,14 @@ func validate_output{range_check_ptr, utreexo_roots: felt*, hash_ptr: HashBuilti
 	%{ 
 
         # print('>> Add hash to utreexo DB', ids.hash) 
+        import urllib3
         http = urllib3.PoolManager()
-        url = 'http://localhost:2121/add/' + hex(ids.hash)
+        hex_hash = hex(ids.hash).replace('0x','')
+        url = 'http://localhost:2121/add/' + hex_hash
         r = http.request('GET', url)
 
         # import json
         # response = json.loads(r.data)
-        
     %}
 
 	return (output.amount)

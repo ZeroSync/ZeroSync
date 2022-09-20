@@ -8,12 +8,11 @@
 # - Bitcoin Core: https://github.com/bitcoin/bitcoin/blob/7fcf53f7b4524572d1d0c9a5fdc388e87eb02416/src/primitives/block.h#L22
 
 from starkware.cairo.common.alloc import alloc
-from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
-from starkware.cairo.common.cairo_builtins import HashBuiltin
+from starkware.cairo.common.cairo_builtins import BitwiseBuiltin, HashBuiltin
 
 from buffer import Reader, Writer, read_varint
 from block_header import BlockHeaderValidationContext, ChainState, read_block_header_validation_context, validate_and_apply_block_header, apply_block_header
-from transaction import TransactionValidationContext, read_transaction_validation_context, validate_and_apply_transaction
+from transaction import TransactionValidationContext, read_transaction_validation_context, validate_and_apply_transaction, validate_output
 from merkle_tree import compute_merkle_root
 from crypto.sha256d.sha256d import assert_hashes_equal, copy_hash, HASH_FELT_SIZE
 
@@ -138,9 +137,7 @@ func validate_and_apply_transactions{range_check_ptr, utreexo_roots: felt*, hash
 	context: BlockValidationContext):
 	alloc_locals
 
-	# Validate the coinbase transaction with its special validation rules
-	validate_and_apply_coinbase(context)
-	
+
 	# Validate all other transactions with the regular validation rules
 	let (total_fees) = _validate_and_apply_transactions_loop(
 		context.transaction_contexts + TransactionValidationContext.SIZE,
@@ -149,6 +146,10 @@ func validate_and_apply_transactions{range_check_ptr, utreexo_roots: felt*, hash
 		context.transaction_count - 1
 	)
 	%{ print('Validate total fees', ids.total_fees) %}
+
+	
+	# Validate the coinbase transaction with its special validation rules
+	validate_and_apply_coinbase(context, total_fees)
 
 	return ()
 end
@@ -182,7 +183,19 @@ end
 #
 # See also:
 # - https://developer.bitcoin.org/reference/transactions.html#coinbase-input-the-input-of-the-first-transaction-in-a-block
-func validate_and_apply_coinbase(context: BlockValidationContext):
-	# TODO: implement me
+func validate_and_apply_coinbase{range_check_ptr, utreexo_roots: felt*, hash_ptr: HashBuiltin*}(
+	context: BlockValidationContext, total_fees):
+	alloc_locals
+
+	let tx_context = context.transaction_contexts[0]
+
+	# TODO: can we have multiple genesis outputs?
+	let output_index = 0
+	let output = tx_context.transaction.outputs[output_index]
+	validate_output(tx_context, output, output_index)
+
+	# TODO: compute block_reward from context.header.block_height
+	# assert block_reward + total_fees <= output.amount
+
 	return ()
 end
