@@ -3,6 +3,8 @@
 # Utreexo Bridge Node
 # 
 # The Utreexo bridge node serves inclusion proofs to the STARK prover.
+# The algorithms for `utreexo_add` and `utreexo_delete` are 
+# described in [the Utreexo paper](https://eprint.iacr.org/2019/611.pdf).
 #
 # Note that you have to run this in the python environment 
 # source ~/cairo_venv/bin/activate
@@ -44,6 +46,7 @@ def parent_node(root1, root2):
 def utreexo_add(leaf):
     if leaf in leaf_nodes:
         raise Exception('Leaf exists already')
+    
     n = Node(leaf)
     leaf_nodes[leaf] = n
     h = 0
@@ -64,7 +67,7 @@ def utreexo_delete(leaf):
     leaf_node = leaf_nodes[leaf]
     del leaf_nodes[leaf]
 
-    proof, tree_index, root_index = inclusion_proof(leaf_node)
+    proof, leaf_index_in_tree, tree_start_index = inclusion_proof(leaf_node)
 
     n = None
     h = 0
@@ -80,31 +83,35 @@ def utreexo_delete(leaf):
             root_nodes[h] = None
         h = h + 1
 
+    # TODO: is this check necessary at all?
+    if n != None:
+       n.parent = None 
+
     root_nodes[h] = n
 
     proof = list(map(lambda node: hex(node.val), proof))
-    return proof, tree_index + root_index
+    return proof, leaf_index_in_tree + tree_start_index
 
 
 # Compute a node's inclusion proof
 def inclusion_proof(node):
     if node.parent == None:
-        return [], 0, compute_root_index(node)
+        return [], 0, compute_tree_start_index(node)
     
     parent = node.parent
-    path, tree_index, root_index = inclusion_proof(parent)
+    path, leaf_index_in_tree, tree_start_index = inclusion_proof(parent)
 
     if node == parent.left:
         path.append(parent.right)
-        tree_index = tree_index * 2 
+        leaf_index_in_tree = leaf_index_in_tree * 2 
     else:
         path.append(parent.left)
-        tree_index = tree_index * 2 + 1
+        leaf_index_in_tree = leaf_index_in_tree * 2 + 1
 
-    return path, tree_index, root_index
+    return path, leaf_index_in_tree, tree_start_index
 
 
-def compute_root_index(root):
+def compute_tree_start_index(root):
     result = 0
     power_of_2 = 1
     for other_root in root_nodes:
@@ -132,7 +139,9 @@ class RequestHandler(BaseHTTPRequestHandler):
             print('add', hash_hex)
             vout_hash = int(hash_hex, 16)
             utreexo_add(vout_hash)
-            self.wfile.write(b'element added')
+            self.wfile.write(json.dumps({'leaf_index': 32, 'proof': [] }).encode())
+            print('roots:', list(map(lambda node: hex(node.val) if node != None else '0', root_nodes)) )
+            # self.wfile.write(json.dumps({'status':'success'}).encode())
             return
 
         if self.path.startswith('/delete'):

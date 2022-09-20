@@ -15,7 +15,7 @@ from buffer import (
 	read_varint, read_hash, read_bytes, read_bytes_endian, peek_uint8,
 	Writer,  write_uint32, write_varint, UINT32_SIZE, UINT64_SIZE )
 from block_header import BlockHeaderValidationContext
-from utreexo.utreexo import utreexo_add, utreexo_delete
+from utreexo.utreexo import utreexo_add, utreexo_delete, fetch_inclusion_proof
 
 
 # Definition of a Bitcoin transaction
@@ -223,7 +223,7 @@ func validate_and_apply_transaction{range_check_ptr, utreexo_roots: felt*, hash_
 	header_context: BlockHeaderValidationContext) -> (tx_fee):
 	alloc_locals
 
-	let (total_input_amount) = validate_inputs_loop(
+	let (total_input_amount) = validate_and_apply_inputs_loop(
 		context, context.transaction.inputs, 0, context.transaction.input_count)
 
 	let (total_output_amount) = validate_outputs_loop(
@@ -236,7 +236,7 @@ func validate_and_apply_transaction{range_check_ptr, utreexo_roots: felt*, hash_
 end
 
 
-func validate_inputs_loop{range_check_ptr, utreexo_roots: felt*, hash_ptr: HashBuiltin*}(
+func validate_and_apply_inputs_loop{range_check_ptr, utreexo_roots: felt*, hash_ptr: HashBuiltin*}(
 	context: TransactionValidationContext, input: TxInput*, total_input_amount, loop_counter) -> (total_input_amount):
 	alloc_locals
 	
@@ -244,9 +244,9 @@ func validate_inputs_loop{range_check_ptr, utreexo_roots: felt*, hash_ptr: HashB
 		return (total_input_amount)
 	end
 
-	let (amount) = validate_input([input])
+	let (amount) = validate_and_apply_input([input])
 
-	return validate_inputs_loop(
+	return validate_and_apply_inputs_loop(
 		context,
 		input + TxInput.SIZE,
 		total_input_amount + amount,
@@ -305,6 +305,7 @@ func hash_chain{hash_ptr : HashBuiltin*}(data_ptr : felt*, data_length) -> (hash
     return (hash=next_frame.cur_hash)
 end
 
+
 func hash_output{hash_ptr: HashBuiltin*}(
 	txid:felt*, vout, amount, script_pub_key: felt*, script_pub_key_len)->(hash):
 	alloc_locals
@@ -316,7 +317,8 @@ func hash_output{hash_ptr: HashBuiltin*}(
 	return (hash)
 end
 
-func validate_input{range_check_ptr, utreexo_roots: felt*, hash_ptr: HashBuiltin*}(
+
+func validate_and_apply_input{range_check_ptr, utreexo_roots: felt*, hash_ptr: HashBuiltin*}(
 	input: TxInput) -> (amount):
 	alloc_locals
 	# Validate an inclusion proof
@@ -350,11 +352,13 @@ func validate_input{range_check_ptr, utreexo_roots: felt*, hash_ptr: HashBuiltin
 
         txid = hash_from_memory(ids.input.txid) 
 
+
         import urllib3
         http = urllib3.PoolManager()
         url = 'https://blockstream.info/api/tx/' + txid
         r = http.request('GET', url)
         
+
         import json
         tx = json.loads(r.data)
         tx_output = tx["vout"][ids.input.vout]
@@ -362,7 +366,7 @@ func validate_input{range_check_ptr, utreexo_roots: felt*, hash_ptr: HashBuiltin
         ids.amount = tx_output["value"]       
         ids.script_pub_key_size = len(tx_output["scriptpubkey"]) // 2
         
-        
+
         import re
         def hex_to_felt(hex_string):
             # Seperate hex_string into chunks of 8 chars.
@@ -398,20 +402,14 @@ func validate_input{range_check_ptr, utreexo_roots: felt*, hash_ptr: HashBuiltin
     let (prevout_hash) = hash_output(input.txid, input.vout, amount, script_pub_key, script_pub_key_len)
 
 	
-	%{ print('output hash', ids.prevout_hash) %}
-
-
-	# get_inclusion_proof( my_hash )
-	
-	# local leaf_index
-	# local proof: felt*
-	# local proof_len
+	let (leaf_index, proof, proof_len) = fetch_inclusion_proof(prevout_hash)
 
 	# Delete from accumulator and prove inclusion
-	# utreexo_delete{utreexo_roots: felt*, hash_ptr: HashBuiltin*}(leaf, leaf_index, proof: felt*, proof_len)
+	# utreexo_delete(prevout_hash, leaf_index, proof, proof_len)
 		
 	return (amount) 
 end
+
 
 
 func validate_outputs_loop{range_check_ptr, utreexo_roots: felt*, hash_ptr: HashBuiltin*}(
@@ -439,9 +437,19 @@ func validate_output{range_check_ptr, utreexo_roots: felt*, hash_ptr: HashBuilti
 	alloc_locals
 
 	let (script_pub_key_len, _) = unsigned_div_rem(output.script_pub_key_size + 3, 4)
-	let (hash) = hash_output(context.txid, output_index, output.amount, output.script_pub_key, script_pub_key_len)
+	let (local hash) = hash_output(context.txid, output_index, output.amount, output.script_pub_key, script_pub_key_len)
 
-	utreexo_add(hash)
+	# utreexo_add(hash)
+	%{ 
+        print('>> Add hash to utreexo DB', ids.hash) 
+        http = urllib3.PoolManager()
+        url = 'http://localhost:2121/add/' + hex_hash
+        # r = http.request('GET', url)
+
+        import json
+        # response = json.loads(r.data)
+        
+    %}
 
 	return (output.amount)
 end

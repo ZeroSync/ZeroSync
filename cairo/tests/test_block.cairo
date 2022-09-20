@@ -136,7 +136,11 @@ func test_read_block_with_4_transactions{range_check_ptr, bitwise_ptr : BitwiseB
         prev_timestamps
     )
 
-    let (prev_state_root) = utreexo_init()
+    let (prev_state_root) = alloc()
+    %{
+        roots = [ 0x1aa9272136be702146acae34cf02dfaed63288404e0e5842ae3b60341848779, 0x78cf1dc18e3625701952352c3f000a0fbd1f4b8722d3f2b6898d6946ba9fa30, 0]
+        segments.write_arg(ids.prev_state_root, roots)
+    %}
 
     let prev_state = State(prev_chain_state, prev_state_root)
 
@@ -152,8 +156,8 @@ func test_read_block_with_4_transactions{range_check_ptr, bitwise_ptr : BitwiseB
     let (next_state) = validate_and_apply_block{hash_ptr = pedersen_ptr}(context)
 
     %{ 
-        addr = ids.next_state.state_root
-        print('Next state root:', memory[addr], memory[addr + 1], memory[addr + 2], memory[addr + 3]) 
+        # addr = ids.next_state.state_root
+        # print('Next state root:', memory[addr], memory[addr + 1], memory[addr + 2], memory[addr + 3]) 
     %}
     return ()
 end

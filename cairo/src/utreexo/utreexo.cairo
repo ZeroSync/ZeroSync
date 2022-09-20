@@ -1,6 +1,6 @@
 # Utreexo Accumulator
 #
-# The algorithms for `add_utxo` and `delete_utxo` are 
+# The algorithms for `utreexo_add` and `utreexo_delete` are 
 # described in [the Utreexo paper](https://eprint.iacr.org/2019/611.pdf).
 #
 from starkware.cairo.common.alloc import alloc
@@ -148,20 +148,21 @@ func fetch_inclusion_proof(prevout_hash) -> (leaf_index, proof:felt*, proof_len)
 
 	%{
         hex_hash = hex(ids.prevout_hash).replace('0x','')
-        print('get_inclusion_proof: prevout_hash', hex_hash)
+        print('>> Delete hash from utreexo DB', hex_hash) 
         # import urllib3
         http = urllib3.PoolManager()
-        url = 'http://localhost:2121/proof/' + hex_hash
+        url = 'http://localhost:2121/delete/' + hex_hash
         r = http.request('GET', url)
 
         import json
         response = json.loads(r.data)
         
-        print(response)
+        print('inclusion proof:\n',response)
 
         ids.leaf_index = response['leaf_index']
-        segments.write_arg(ids.proof, response['proof'])
-        ids.proof_len = len(response['proof'])
+        proof = list(map(lambda hash_hex: int(hash_hex, 16), response['proof']))
+        segments.write_arg(ids.proof, proof)
+        ids.proof_len = len(proof)
     %}
 
     return (leaf_index, proof, proof_len)
