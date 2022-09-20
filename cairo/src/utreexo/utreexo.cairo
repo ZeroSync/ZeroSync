@@ -136,3 +136,33 @@ func _utreexo_prove_inclusion_loop{hash_ptr: HashBuiltin*}(
 	
 	return _utreexo_prove_inclusion_loop(proof + 1, proof_len - 1, next_index, next_node)
 end
+
+
+
+# Fetch the inclusion proof for a hash from a hint
+func fetch_inclusion_proof(prevout_hash) -> (leaf_index, proof:felt*, proof_len):
+	alloc_locals
+	local leaf_index
+	let (proof) = alloc()
+	local proof_len
+
+	%{
+        hex_hash = hex(ids.prevout_hash).replace('0x','')
+        print('get_inclusion_proof: prevout_hash', hex_hash)
+        # import urllib3
+        http = urllib3.PoolManager()
+        url = 'http://localhost:2121/proof/' + hex_hash
+        r = http.request('GET', url)
+
+        import json
+        response = json.loads(r.data)
+        
+        print(response)
+
+        ids.leaf_index = response['leaf_index']
+        segments.write_arg(ids.proof, response['proof'])
+        ids.proof_len = len(response['proof'])
+    %}
+
+    return (leaf_index, proof, proof_len)
+end

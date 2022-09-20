@@ -1,1 +1,0 @@
-python3 -m http.server --directory utreexo_dummy 2121

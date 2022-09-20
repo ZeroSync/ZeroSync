@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
 
+# Utreexo Bridge Node
+# 
+# The Utreexo bridge node serves inclusion proofs to the STARK prover.
+#
+# Note that you have to run this in the python environment 
+# source ~/cairo_venv/bin/activate
+
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import urlparse
 import json
@@ -18,10 +25,10 @@ leaf_nodes = dict()
 # A node of the Utreexo forest
 class Node:
     def __init__(self, key, left=None, right=None):
-        self.parent = None
+        self.val = key
         self.left = left
         self.right = right
-        self.val = key
+        self.parent = None
 
 
 # Compute the parent node of two nodes
@@ -30,19 +37,16 @@ def parent_node(root1, root2):
     root_node = Node(root, root1, root2)
     root1.parent = root_node
     root2.parent = root_node
-    return root_node 
+    return root_node
 
 
 # Add an element to the accumulator
-def utreexo_add(hash_hex):
-    print('add', hash_hex)
-    leaf = int(hash_hex, 16)
-
+def utreexo_add(leaf):
     if leaf in leaf_nodes:
         raise Exception('Leaf exists already')
     n = Node(leaf)
     leaf_nodes[leaf] = n
-    h = 0 
+    h = 0
     r = root_nodes[h]
     while r != None:
         n = parent_node(r, n)
@@ -55,33 +59,12 @@ def utreexo_add(hash_hex):
     return root_nodes
 
 
-# Compute a node's inclusion proof
-def inclusion_proof(node):
-    if node.parent == None:
-        return [], 0
-    
-    parent = node.parent
-    proof, tree_index = inclusion_proof(parent)
-
-    if node == parent.left:
-        proof.append(parent.right)
-        tree_index = tree_index * 2 
-    else:
-        proof.append(parent.left)
-        tree_index = tree_index * 2 + 1
-
-    return proof, tree_index
-
-
 # Delete an element from the accumulator
-def utreexo_delete(hash_hex):
-    print('delete', hash_hex)
-    leaf = int(hash_hex, 16)
-
+def utreexo_delete(leaf):
     leaf_node = leaf_nodes[leaf]
     del leaf_nodes[leaf]
 
-    proof, tree_index = inclusion_proof(leaf_node)
+    proof, tree_index, root_index = inclusion_proof(leaf_node)
 
     n = None
     h = 0
@@ -100,15 +83,44 @@ def utreexo_delete(hash_hex):
     root_nodes[h] = n
 
     proof = list(map(lambda node: hex(node.val), proof))
-    return proof, tree_index
+    return proof, tree_index + root_index
 
 
+# Compute a node's inclusion proof
+def inclusion_proof(node):
+    if node.parent == None:
+        return [], 0, compute_root_index(node)
+    
+    parent = node.parent
+    path, tree_index, root_index = inclusion_proof(parent)
 
-def compute_leaf_index():
-    print('Implement me')
+    if node == parent.left:
+        path.append(parent.right)
+        tree_index = tree_index * 2 
+    else:
+        path.append(parent.left)
+        tree_index = tree_index * 2 + 1
+
+    return path, tree_index, root_index
+
+
+def compute_root_index(root):
+    result = 0
+    power_of_2 = 1
+    for other_root in root_nodes:
+        if other_root == root:
+            return result
+
+        if other_root != None:
+            result += power_of_2
+
+        power_of_2 *= 2
+
+    raise Exception('Root does not exist')
 
 
 # The server handling the GET requests
+# TODO: get rid of this hack
 class RequestHandler(BaseHTTPRequestHandler):
     
     def do_GET(self):
@@ -116,15 +128,19 @@ class RequestHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
         if self.path.startswith('/add'):
-            vout_hash = self.path.replace('/add/','')
+            hash_hex = self.path.replace('/add/','')
+            print('add', hash_hex)
+            vout_hash = int(hash_hex, 16)
             utreexo_add(vout_hash)
             self.wfile.write(b'element added')
             return
 
         if self.path.startswith('/delete'):
-            vout_hash = self.path.replace('/delete/','')
-            proof, tree_index = utreexo_delete(vout_hash)
-            self.wfile.write(json.dumps({'leaf_index': tree_index, 'proof': proof }).encode())
+            hash_hex = self.path.replace('/delete/','')
+            print('delete', hash_hex)
+            vout_hash = int(hash_hex, 16)
+            proof, leaf_index = utreexo_delete(vout_hash)
+            self.wfile.write(json.dumps({'leaf_index': leaf_index, 'proof': proof }).encode())
             return 
 
 
