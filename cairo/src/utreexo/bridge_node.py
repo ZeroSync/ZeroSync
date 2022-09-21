@@ -139,9 +139,10 @@ class RequestHandler(BaseHTTPRequestHandler):
             print('add', hash_hex)
             vout_hash = int(hash_hex, 16)
             utreexo_add(vout_hash)
-            self.wfile.write(json.dumps({'leaf_index': 32, 'proof': [] }).encode())
-            print('roots:', list(map(lambda node: hex(node.val) if node != None else '0', root_nodes)) )
             # self.wfile.write(json.dumps({'status':'success'}).encode())
+            
+            # print('roots:', list(map(lambda node: hex(node.val) if node != None else '0', root_nodes)) )
+            # self.wfile.write(json.dumps({'leaf_index': 32, 'proof': [] }).encode())
             return
 
         if self.path.startswith('/delete'):
@@ -155,5 +156,5 @@ class RequestHandler(BaseHTTPRequestHandler):
 
 if __name__ == '__main__':
     server = HTTPServer(('localhost', 2121), RequestHandler)
-    print('Starting server at http://localhost:2121')
+    print('Starting bridge node at http://localhost:2121')
     server.serve_forever()

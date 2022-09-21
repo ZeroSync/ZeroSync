@@ -1,7 +1,7 @@
-%builtins output range_check bitwise
+%builtins output pedersen range_check ecdsa bitwise ec_op
 
 from starkware.cairo.common.alloc import alloc
-from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
+from starkware.cairo.common.cairo_builtins import BitwiseBuiltin, HashBuiltin
 from starkware.cairo.common.serialize import serialize_word
 
 from block_header import ChainState
@@ -9,13 +9,10 @@ from crypto.sha256d.sha256d import HASH_FELT_SIZE
 from buffer import init_reader
 from block import State, validate_and_apply_block, read_block_validation_context
 
-func main{output_ptr : felt*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}():
-    alloc_locals
+from utreexo.utreexo import UTREEXO_ROOTS_LEN
 
-    # Read a raw block from the program input
-    let (raw_block) = alloc()
-    %{ segments.write_arg(ids.raw_block, program_input["block"]) %}
-    let (reader) = init_reader(raw_block)
+func main{output_ptr : felt*, pedersen_ptr: HashBuiltin*, range_check_ptr, ecdsa_ptr, bitwise_ptr: BitwiseBuiltin*, ec_op_ptr }():
+    alloc_locals
 
     # Read the previous state from the program input
     local block_height: felt
@@ -27,7 +24,7 @@ func main{output_ptr : felt*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}():
     let (prev_state_root) = alloc()
     %{
         prev_state = program_input["prev_state"]
-        ids.block_height = prev_state["block_height"]
+        ids.block_height = prev_state["block_height"] if prev_state["block_height"] != -1 else PRIME - 1
         ids.total_work = prev_state["total_work"]
         segments.write_arg(ids.best_hash, prev_state["best_hash"])
         ids.difficulty = prev_state["difficulty"]
@@ -36,6 +33,8 @@ func main{output_ptr : felt*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}():
         
         segments.write_arg(ids.prev_state_root, prev_state["prev_state_root"])
     %}
+
+
     let prev_chain_state = ChainState(
         block_height, total_work, best_hash,
         difficulty, epoch_start_time, prev_timestamps
@@ -43,29 +42,23 @@ func main{output_ptr : felt*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}():
     let prev_state = State(prev_chain_state, prev_state_root)
 
 
-    # Read the UTXO data from the program input
-    let (raw_utxo_data) = alloc()
-    %{ segments.write_arg(ids.raw_utxo_data, program_input["utxo_data"]) %}
-    let (utreexo_roots) = init_reader(raw_utxo_data)
-
-    
-    # Read the inclusion proofs from the program input
-    # TODO: implement me
+    # Read a raw block from the program input
+    let (raw_block) = fetch_block(block_height + 1)
+    let (reader) = init_reader(raw_block)
 
 
     # Perform a state transition
     let (context) = read_block_validation_context{reader=reader}(prev_state)
-    let (next_state) = validate_and_apply_block{utreexo_roots=utreexo_roots}(context)
+    let (next_state) = validate_and_apply_block{hash_ptr=pedersen_ptr}(context)
     
 
     # Print the next state
     serialize_chain_state(next_state.chain_state)
-    # serialize_array(next_state.state_root, HASH_FELT_SIZE)
+    serialize_array(next_state.state_root, UTREEXO_ROOTS_LEN)
 
 
     # Validate the proof for the previous block chain
     # TODO: implement me
-
     return ()
 end
 
@@ -86,4 +79,59 @@ func serialize_array{output_ptr: felt*}(array:felt*, array_len):
     serialize_word([array])
     serialize_array(array + 1, array_len - 1)
     return ()
+end
+
+
+
+
+func fetch_block(block_height) -> (block_data: felt*):
+    let (block_data) = alloc()
+
+    %{
+        block_height = ids.block_height
+
+        import urllib3
+        import json
+        http = urllib3.PoolManager()
+
+        url = 'https://blockstream.info/api/block-height/' + str(block_height)
+        r = http.request('GET', url)
+        block_hash = str(r.data, 'utf-8')
+
+        url = 'https://blockstream.info/api/block/' + block_hash + '/raw'
+        r = http.request('GET', url)
+
+        block_hex = r.data.hex()
+        # print( block_hex )
+
+
+        import re
+
+        def hex_to_felt(hex_string):
+            # Seperate hex_string into chunks of 8 chars.
+            felts = re.findall(".?.?.?.?.?.?.?.", hex_string)
+            # Fill remaining space in last chunk with 0.
+            while len(felts[-1]) < 8:
+                felts[-1] += "0"
+            return [int(x, 16) for x in felts]
+
+        # Writes a hex string string into an uint32 array
+        #
+        # Using multi-line strings in python:
+        # - https://stackoverflow.com/questions/10660435/how-do-i-split-the-definition-of-a-long-string-over-multiple-lines
+        def from_hex(hex_string, destination):
+            # To see if there are only 0..f in hex_string we can try to turn it into an int
+            try:
+                check_if_hex = int(hex_string, 16)
+            except ValueError:
+                print("ERROR: Input to from_hex contains non-hex characters.")
+            felts = hex_to_felt(hex_string)
+            segments.write_arg(destination, felts)
+
+            # Return the byte size of the uint32 array and the array length.
+            return len(hex_string) // 2, len(felts)
+
+        from_hex(block_hex, ids.block_data)
+    %}
+    return (block_data)
 end

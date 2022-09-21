@@ -332,6 +332,8 @@ func validate_and_apply_input{range_check_ptr, utreexo_roots: felt*, hash_ptr: H
 	let (script_pub_key) = alloc()
 
     %{
+        import struct
+
         def swap32(i):
             return struct.unpack("<I", struct.pack(">I", i))[0]
 

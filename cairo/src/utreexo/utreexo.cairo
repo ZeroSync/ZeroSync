@@ -20,6 +20,7 @@ func utreexo_init() -> (utreexo_roots:felt*):
 	return (utreexo_roots)
 end
 
+
 func utreexo_add{hash_ptr: HashBuiltin*, utreexo_roots: felt*}(leaf):
 	alloc_locals
 	let (roots_out) = alloc()
@@ -141,15 +142,15 @@ end
 
 
 
-# Fetch the inclusion proof for a hash from a hint
-func fetch_inclusion_proof(prevout_hash) -> (leaf_index, proof:felt*, proof_len):
+# Returns the inclusion proof for a leaf
+func fetch_inclusion_proof(leaf) -> (leaf_index, proof:felt*, proof_len):
 	alloc_locals
 	local leaf_index
 	let (proof) = alloc()
 	local proof_len
 
 	%{
-        hex_hash = hex(ids.prevout_hash).replace('0x','')
+        hex_hash = hex(ids.leaf).replace('0x','')
         # print('>> Delete hash from utreexo DB', hex_hash) 
         # import urllib3
         http = urllib3.PoolManager()

@@ -133,20 +133,17 @@ end
 
 # Validate that every transaction in this block is valid,
 # apply them to the previous state and return the resulting state root
-func validate_and_apply_transactions{range_check_ptr, utreexo_roots: felt*, hash_ptr: HashBuiltin*}(
+func validate_and_apply_transactions{range_check_ptr, hash_ptr: HashBuiltin*, utreexo_roots: felt*}(
 	context: BlockValidationContext):
 	alloc_locals
 
-
-	# Validate all other transactions with the regular validation rules
+	# Validate all transactions except for the coinbase with the regular validation rules
 	let (total_fees) = _validate_and_apply_transactions_loop(
 		context.transaction_contexts + TransactionValidationContext.SIZE,
 		context.header_context,
 		0,
 		context.transaction_count - 1
 	)
-	%{ print('Validate total fees', ids.total_fees) %}
-
 	
 	# Validate the coinbase transaction with its special validation rules
 	validate_and_apply_coinbase(context, total_fees)
@@ -155,7 +152,7 @@ func validate_and_apply_transactions{range_check_ptr, utreexo_roots: felt*, hash
 end
 
 
-func _validate_and_apply_transactions_loop{range_check_ptr, utreexo_roots: felt*, hash_ptr: HashBuiltin*}(
+func _validate_and_apply_transactions_loop{range_check_ptr, hash_ptr: HashBuiltin*, utreexo_roots: felt*}(
 	tx_contexts: TransactionValidationContext*, 
 	header_context: BlockHeaderValidationContext,
 	total_fees,
@@ -183,7 +180,7 @@ end
 #
 # See also:
 # - https://developer.bitcoin.org/reference/transactions.html#coinbase-input-the-input-of-the-first-transaction-in-a-block
-func validate_and_apply_coinbase{range_check_ptr, utreexo_roots: felt*, hash_ptr: HashBuiltin*}(
+func validate_and_apply_coinbase{range_check_ptr, hash_ptr: HashBuiltin*, utreexo_roots: felt*}(
 	context: BlockValidationContext, total_fees):
 	alloc_locals
 
@@ -199,3 +196,5 @@ func validate_and_apply_coinbase{range_check_ptr, utreexo_roots: felt*, hash_ptr
 
 	return ()
 end
+
+
