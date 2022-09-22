@@ -1,7 +1,7 @@
 import os
 import json
 
-P = 2**251 + 17 * 2**192 + 2
+P = 2**251 + 17 * 2**192 + 1
 
 def parse_cairo_output(cairo_output):
 	# Split at line break. Then cut off all lines until the start of the program output
@@ -39,6 +39,8 @@ def read_felts(felt_count):
 	return program_output[cursor-felt_count:cursor]
 
 
+cmd = 'cairo-compile cairo/src/main.cairo --cairo_path cairo/src --output tmp/program.json'
+print( os.popen(cmd).read() )
 
 file_name = 'data/block_0.json' 
 
@@ -58,20 +60,20 @@ for i in range(start_block_height, end_block_height):
 	cursor = 0
 
 	state = {
-		"block_height" : read_felt(),
-		"total_work" : read_felt(),
-		"best_hash" : read_felts(8),
-		"difficulty" : read_felt(),
-		"epoch_start_time" : read_felt(),
-		"prev_timestamps" : read_felts(11),
-		"state_roots" : read_felts(27)
+		'block_height' : read_felt(),
+		'best_block_hash' : read_felts(8),
+		'total_work' : read_felt(),
+		'difficulty' : read_felt(),
+		'prev_timestamps' : read_felts(11),
+		'epoch_start_time' : read_felt(),
+		'state_roots' : read_felts(27)
 	}
 
 	print('block height:', state['block_height'])
 
 
 	# Write the state into a json file
-	f = open("data/state.json", "w")
+	f = open('data/state.json', 'w')
 	f.write(json.dumps(state, indent=2))
 	f.close()
 

@@ -38,7 +38,8 @@ func _utreexo_add_loop{hash_ptr: HashBuiltin*}(
 
 	if r == 0:
 		assert roots_out[h] = n
-		memcpy(roots_out + h + 1, roots_in + h + 1, UTREEXO_ROOTS_LEN - h - 1)
+		let h = h + 1 
+		memcpy(roots_out + h, roots_in + h, UTREEXO_ROOTS_LEN - h)
 		return ()
 	end
 

@@ -79,7 +79,7 @@ struct ChainState:
 	member total_work: felt
 
 	# The block_hash of the current chain tip
-	member best_hash: felt*
+	member best_block_hash: felt*
 
 	# The required difficulty for targets in this epoch
 	member difficulty: felt
@@ -193,7 +193,7 @@ end
 # Validate that a block header correctly extends the current chain
 func validate_prev_block_hash(context: BlockHeaderValidationContext):
 	assert_hashes_equal(
-		context.prev_chain_state.best_hash, 
+		context.prev_chain_state.best_block_hash, 
 		context.block_header.prev_block_hash
 	)
 	return ()

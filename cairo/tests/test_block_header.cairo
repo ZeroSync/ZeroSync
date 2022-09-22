@@ -119,7 +119,7 @@ func test_read_block_header_validation_context{range_check_ptr, bitwise_ptr : Bi
     let prev_chain_state = ChainState(
         block_height = 328733,
         total_work = 0,
-        best_hash = prev_block_hash,
+        best_block_hash = prev_block_hash,
         difficulty = 0,
         epoch_start_time = 0,
         prev_timestamps

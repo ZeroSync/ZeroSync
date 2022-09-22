@@ -148,6 +148,8 @@ func read_bytes_endian{reader : Reader, range_check_ptr}(length : felt) -> (resu
     let (len_div_4, len_mod_4) = unsigned_div_rem(length, UINT32_SIZE)
     _read_into_uint32_array_endian(result, len_div_4)
 
+    # TODO: Test this offset. Might have bugs for some byte lengths 1-3
+    # TODO: Get rid of pow( )
     let (offset) = pow(BYTE, 4 - len_mod_4)
     _read_n_bytes_into_felt(result + len_div_4, 0, offset, len_mod_4)
     return (result)

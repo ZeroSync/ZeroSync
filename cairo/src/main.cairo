@@ -17,7 +17,7 @@ func main{output_ptr : felt*, pedersen_ptr: HashBuiltin*, range_check_ptr, ecdsa
     # Read the previous state from the program input
     local block_height: felt
     local total_work: felt
-    let (best_hash) = alloc()
+    let (best_block_hash) = alloc()
     local difficulty: felt
     local epoch_start_time: felt
     let (prev_timestamps) = alloc()
@@ -25,7 +25,7 @@ func main{output_ptr : felt*, pedersen_ptr: HashBuiltin*, range_check_ptr, ecdsa
     %{
         ids.block_height = program_input["block_height"] if program_input["block_height"] != -1 else PRIME - 1
         ids.total_work = program_input["total_work"]
-        segments.write_arg(ids.best_hash, program_input["best_hash"])
+        segments.write_arg(ids.best_block_hash, program_input["best_block_hash"])
         ids.difficulty = program_input["difficulty"]
         ids.epoch_start_time = program_input["epoch_start_time"]
         segments.write_arg(ids.prev_timestamps, program_input["prev_timestamps"])
@@ -34,7 +34,7 @@ func main{output_ptr : felt*, pedersen_ptr: HashBuiltin*, range_check_ptr, ecdsa
 
 
     let prev_chain_state = ChainState(
-        block_height, total_work, best_hash,
+        block_height, total_work, best_block_hash,
         difficulty, epoch_start_time, prev_timestamps
     )
     let prev_state = State(prev_chain_state, prev_state_root)
@@ -62,11 +62,11 @@ end
 
 func serialize_chain_state{output_ptr: felt*}(chain_state: ChainState):
     serialize_word(chain_state.block_height)
+    serialize_array(chain_state.best_block_hash, HASH_FELT_SIZE)
     serialize_word(chain_state.total_work)
-    serialize_array(chain_state.best_hash, HASH_FELT_SIZE)
     serialize_word(chain_state.difficulty)
-    serialize_word(chain_state.epoch_start_time)
     serialize_array(chain_state.prev_timestamps, 11)
+    serialize_word(chain_state.epoch_start_time)
     return ()
 end
 
