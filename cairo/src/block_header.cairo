@@ -290,14 +290,21 @@ func apply_block_header{range_check_ptr}(
 	let (prev_timestamps) = next_prev_timestamps(context)
 	let (total_work) = compute_total_work(context)
 
-	# TODO: recalibrate the difficulty after about 2 weeks of blocks
-	# Exactly when context.block_height % 2016 == 0:
+	# TODO: Recalibrate the difficulty after about 2 weeks of blocks
+	# Exactly when context.block_height % 2016 == 0
+	let (_, is_not_recalibrate) = unsigned_div_rem(context.block_height, 2016)
+	if is_not_recalibrate == 0:
+		tempvar epoch_start_time = context.block_header.time
+	else:
+		tempvar epoch_start_time = context.prev_chain_state.epoch_start_time
+	end
+
 	return (ChainState(
 			context.block_height,
 			total_work,
 			context.block_hash,
 			context.prev_chain_state.difficulty,
-			context.prev_chain_state.epoch_start_time,
+			epoch_start_time,
 			prev_timestamps
 		))
 end
