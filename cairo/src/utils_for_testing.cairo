@@ -25,7 +25,7 @@ func setup_python_defs():
             segments.write_arg(destination, felts)
 
             # Return the byte size of the uint32 array and the array length.
-            return len(hex_string) // 2, len(felts)
+            return (1 + len(hex_string))// 2, len(felts)
 
         # Writes a string of any length into the given destination array.
         # String is seperated into uint32 chunks.

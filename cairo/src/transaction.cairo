@@ -6,17 +6,16 @@
 
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin, HashBuiltin
-from starkware.cairo.common.math import assert_le, unsigned_div_rem
-from starkware.cairo.common.hash import hash2
+from starkware.cairo.common.math import assert_le
 
 from crypto.sha256d.sha256d import sha256d, HASH_SIZE
 from buffer import (
 	Reader, read_uint8, read_uint16, read_uint32, read_uint64,
-	read_varint, read_hash, read_bytes, read_bytes_endian, peek_uint8,
+	read_varint, read_hash, read_bytes_endian, peek_uint8,
 	Writer,  write_uint32, write_varint, UINT32_SIZE, UINT64_SIZE )
 from block_header import BlockHeaderValidationContext
-from utreexo.utreexo import utreexo_add, utreexo_delete, fetch_inclusion_proof
 
+from utxo_set.utxo_set import utxo_set_insert, utxo_set_extract
 
 # Definition of a Bitcoin transaction
 #
@@ -122,7 +121,7 @@ func read_input{reader:Reader, range_check_ptr}(
 	let (txid)			= read_hash()
 	let (vout)			= read_uint32()
 	let script_sig_size	= read_varint()
-	let (script_sig)	= read_bytes(script_sig_size.value)
+	let (script_sig)	= read_bytes_endian(script_sig_size.value)
 	let (sequence)		= read_uint32()
 	return (
 		TxInput(
@@ -172,7 +171,7 @@ func read_output{reader:Reader, range_check_ptr}(
 	alloc_locals
 	let (amount)			= read_uint64()
 	let script_pub_key_size	= read_varint()
-	let (script_pub_key)	= read_bytes(script_pub_key_size.value)
+	let (script_pub_key)	= read_bytes_endian(script_pub_key_size.value)
 	return (
 		TxOutput(
 			amount, 
@@ -254,162 +253,15 @@ func validate_and_apply_inputs_loop{range_check_ptr, utreexo_roots: felt*, hash_
 end
 
 
-
-
-
-
-
-# Computes a hash chain of a sequence whose length is given at [data_ptr] and the data starts at
-# data_ptr + 1. The hash is calculated backwards (from the highest memory address to the lowest).
-# For example, for the 3-element sequence [x, y, z] the hash is:
-#   h(3, h(x, h(y, z)))
-# If data_length = 0, the function does not return (takes more than field prime steps).
-func hash_chain{hash_ptr : HashBuiltin*}(data_ptr : felt*, data_length) -> (hash : felt):
-    struct LoopLocals:
-        member data_ptr : felt*
-        member hash_ptr : HashBuiltin*
-        member cur_hash : felt
-    end
-
-    tempvar data_ptr_end = data_ptr + data_length - 1
-    # Prepare the loop_frame for the first iteration of the hash_loop.
-    tempvar loop_frame = LoopLocals(
-        data_ptr=data_ptr_end,
-        hash_ptr=hash_ptr,
-        cur_hash=[data_ptr_end])
-
-    hash_loop:
-    let curr_frame = cast(ap - LoopLocals.SIZE, LoopLocals*)
-    let current_hash : HashBuiltin* = curr_frame.hash_ptr
-
-    tempvar new_data = [curr_frame.data_ptr - 1]
-
-    let n_elements_to_hash = [ap]
-    # Assign current_hash inputs and allocate space for n_elements_to_hash.
-    current_hash.x = new_data; ap++
-    current_hash.y = curr_frame.cur_hash
-
-    # Set the frame for the next loop iteration (going backwards).
-    tempvar next_frame = LoopLocals(
-        data_ptr=curr_frame.data_ptr - 1,
-        hash_ptr=curr_frame.hash_ptr + HashBuiltin.SIZE,
-        cur_hash=current_hash.result)
-
-    # Update n_elements_to_hash and loop accordingly. Note that the hash is calculated backwards.
-    n_elements_to_hash = next_frame.data_ptr - data_ptr
-    jmp hash_loop if n_elements_to_hash != 0
-
-    # Set the hash_ptr implicit argument and return the result.
-    let hash_ptr = next_frame.hash_ptr
-    return (hash=next_frame.cur_hash)
-end
-
-
-func hash_output{hash_ptr: HashBuiltin*}(
-	txid:felt*, vout, amount, script_pub_key: felt*, script_pub_key_len)->(hash):
-	alloc_locals
-    let (script_pub_key_hash) = hash_chain(script_pub_key, script_pub_key_len) 
-    let (txid_hash) = hash_chain(txid, 8) 
-    let (tmp1) = hash2(amount, script_pub_key_hash) 
-    let (tmp2) = hash2(vout, tmp1)
-    let (hash) = hash2(txid_hash, tmp2)
-	return (hash)
-end
-
-
 func validate_and_apply_input{range_check_ptr, utreexo_roots: felt*, hash_ptr: HashBuiltin*}(
 	input: TxInput) -> (amount):
-	alloc_locals
-	# Validate an inclusion proof
-
-	# Query (input.txid, input.vout)
-	# for the tupel T = (amount, script_pub_key_size, script_pub_key)
-
-	local amount
-	local script_pub_key_size
-	local script_pub_key_len
-	let (script_pub_key) = alloc()
-
-    %{
-        import struct
-
-        def swap32(i):
-            return struct.unpack("<I", struct.pack(">I", i))[0]
-
-        BASE = 2**32
-        def _read_i(address, i):
-            return swap32( memory[address + i] ) * BASE ** i 
-
-        def hash_from_memory(address):
-            hash = _read_i(address, 0)  \
-                 + _read_i(address, 1)  \
-                 + _read_i(address, 2)  \
-                 + _read_i(address, 3)  \
-                 + _read_i(address, 4)  \
-                 + _read_i(address, 5)  \
-                 + _read_i(address, 6)  \
-                 + _read_i(address, 7)
-            return hex(hash).replace('0x','').zfill(64)
-
-        txid = hash_from_memory(ids.input.txid) 
-        print('txid', txid)
-
-        import urllib3
-        http = urllib3.PoolManager()
-        url = 'https://blockstream.info/api/tx/' + txid
-        r = http.request('GET', url)
-        
-
-        import json
-        tx = json.loads(r.data)
-        tx_output = tx["vout"][ids.input.vout]
-
-        ids.amount = tx_output["value"]       
-        ids.script_pub_key_size = len(tx_output["scriptpubkey"]) // 2
-        
-
-        import re
-        def hex_to_felt(hex_string):
-            # Seperate hex_string into chunks of 8 chars.
-            felts = re.findall(".?.?.?.?.?.?.?.", hex_string)
-            # Fill remaining space in last chunk with 0.
-            while len(felts[-1]) < 8:
-                felts[-1] += "0"
-            return [int(x, 16) for x in felts]
-
-        # Writes a hex string string into an uint32 array
-        #
-        # Using multi-line strings in python:
-        # - https://stackoverflow.com/questions/10660435/how-do-i-split-the-definition-of-a-long-string-over-multiple-lines
-        def from_hex(hex_string, destination):
-            # To see if there are only 0..f in hex_string we can try to turn it into an int
-            try:
-                check_if_hex = int(hex_string, 16)
-            except ValueError:
-                print("ERROR: Input to from_hex contains non-hex characters.")
-            felts = hex_to_felt(hex_string)
-            segments.write_arg(destination, felts)
-
-            # Return the byte size of the uint32 array and the array length.
-            return len(hex_string) // 2, len(felts)
-
-        print('input amount', ids.amount)
-
-        _, felt_size = from_hex( tx_output["scriptpubkey"], ids.script_pub_key)
-        ids.script_pub_key_len = felt_size
-    %}
-
-	# my_hash = hash2(txid, vout, T)
-    let (prevout_hash) = hash_output(input.txid, input.vout, amount, script_pub_key, script_pub_key_len)
 	
-	let (leaf_index, proof, proof_len) = fetch_inclusion_proof(prevout_hash)
+	let (amount, script_pub_key, script_pub_key_len) = utxo_set_extract(input.txid, input.vout)
+	
+	# TODO: validate Bitcoin script
 
-	# Prove inclusion and delete from accumulator
-	utreexo_delete(prevout_hash, leaf_index, proof, proof_len)
-		
-	return (amount) 
+	return (amount)
 end
-
 
 
 func validate_outputs_loop{range_check_ptr, utreexo_roots: felt*, hash_ptr: HashBuiltin*}(
@@ -436,23 +288,8 @@ func validate_output{range_check_ptr, utreexo_roots: felt*, hash_ptr: HashBuilti
 	context: TransactionValidationContext, output: TxOutput, output_index) -> (amount):
 	alloc_locals
 
-	let (script_pub_key_len, _) = unsigned_div_rem(output.script_pub_key_size + 3, 4)
-	let (local hash) = hash_output(context.txid, output_index, output.amount, output.script_pub_key, script_pub_key_len)
-
-	utreexo_add(hash)
-	%{ 
-
-        # print('>> Add hash to utreexo DB', ids.hash) 
-        import urllib3
-        http = urllib3.PoolManager()
-        hex_hash = hex(ids.hash).replace('0x','')
-        url = 'http://localhost:2121/add/' + hex_hash
-        r = http.request('GET', url)
-
-        # import json
-        # response = json.loads(r.data)
-    %}
-
+	utxo_set_insert(context.txid, output_index, output.amount, output.script_pub_key, output.script_pub_key_size)
+	
 	return (output.amount)
 end
 
@@ -480,8 +317,6 @@ func write_transaction{writer:Writer, range_check_ptr}(
 	write_uint32(transaction.locktime)
 	return ()
 end
-
-
 
 
 

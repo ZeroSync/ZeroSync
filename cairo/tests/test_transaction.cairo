@@ -8,6 +8,7 @@
 from starkware.cairo.common.alloc import alloc
 from buffer import init_reader, init_writer, flush_writer, read_uint8
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
+from starkware.cairo.common.memcpy import memcpy
 from crypto.sha256d.sha256d import assert_hashes_equal
 from utils_for_testing import setup_python_defs
 
@@ -27,7 +28,7 @@ func test_read_transaction{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}():
 
 	# Use Python to convert hex string into uint32 array
    %{
-    from_hex((
+    from_hex(
         "0100000001352a68f58c6e69fa632a1bf77566cf83a7515fc9ecd251fa37f410"
         "460d07fb0c010000008c493046022100e30fea4f598a32ea10cd56118552090c"
         "be79f0b1a0c63a4921d2399c9ec14ffc022100ef00f238218864a909db55be9e"
@@ -36,7 +37,7 @@ func test_read_transaction{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}():
         "f9d1aae79ac2be2b1348ce622dddb974ad790b4106deffffffff02e093040000"
         "0000001976a914a18cc6dd0e38dea210390a2403622ffc09dae88688ac8152b5"
         "00000000001976a914d73441c86ea086121991877e204516f1861c194188ac00"
-        "000000"), ids.transaction_raw)
+        "000000", ids.transaction_raw)
     %}
 
 	let (reader) = init_reader(transaction_raw)
@@ -49,6 +50,19 @@ func test_read_transaction{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}():
 	assert transaction.outputs[1].amount = 11883137
 
 	assert byte_size = 259
+
+
+	let (expected_script_pub_key) = alloc()
+	local expected_script_pub_key_len
+	local expected_script_pub_key_size
+	%{
+        byte_size, felt_size = from_hex("76a914a18cc6dd0e38dea210390a2403622ffc09dae88688ac", ids.expected_script_pub_key)
+        ids.expected_script_pub_key_len = felt_size
+        ids.expected_script_pub_key_size = byte_size
+	%}
+
+	assert 0x19 = transaction.outputs[0].script_pub_key_size
+	memcpy(expected_script_pub_key, transaction.outputs[0].script_pub_key, expected_script_pub_key_len)
 	return ()
 end
 

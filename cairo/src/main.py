@@ -7,6 +7,12 @@ def parse_cairo_output(cairo_output):
 	# Split at line break. Then cut off all lines until the start of the program output
     lines = cairo_output.split('\n')
     start_index = lines.index('Program output:') + 1
+
+    print('\n')
+    prints = lines[:start_index-1]
+    for line in prints:
+        print(line)
+
     lines = lines[start_index:]
 
 	# Remove the empty lines
@@ -36,9 +42,10 @@ def read_felts(felt_count):
 
 file_name = 'data/block_0.json' 
 
-end_block_height = 171 # First Bitcoin TX ever occured in block 170
-for i in range(end_block_height):
-	if i == 1:
+start_block_height = 0
+end_block_height = 172 # First Bitcoin TX ever occured in block 170
+for i in range(start_block_height, end_block_height):
+	if i >= 1:
 		file_name = 'data/state.json'
 
 	cmd = 'cairo-run --program=tmp/program.json --layout=all --print_output --program_input=' + file_name + ' --trace_file=tmp/trace.bin --memory_file=tmp/memory.bin'
