@@ -3,9 +3,14 @@ import json
 
 P = 2**251 + 17 * 2**192 + 2
 
-def parse_cairo_output(program_output):
-	# Split at line break. Then cut off the first line. Then remove empty lines
-    lines = [x for x in program_output.split("\n")[1::] if x.strip() != "" ]
+def parse_cairo_output(cairo_output):
+	# Split at line break. Then cut off all lines until the start of the program output
+    lines = cairo_output.split('\n')
+    start_index = lines.index('Program output:') + 1
+    lines = lines[start_index:]
+
+	# Remove the empty lines
+    lines = [x for x in lines if x.strip() != '']
 
     # Cast all values to int
     lines = map(int, lines)
@@ -17,15 +22,17 @@ def parse_cairo_output(program_output):
 
 
 cursor = 0
-def read_felts(count):
-	global cursor
-	cursor += count
-	return program_output[cursor-count:cursor]
-
 def read_felt():
 	global cursor
 	cursor += 1
 	return program_output[cursor-1]
+
+def read_felts(felt_count):
+	global cursor
+	cursor += felt_count
+	return program_output[cursor-felt_count:cursor]
+
+
 
 file_name = 'data/block_0.json' 
 
@@ -44,22 +51,20 @@ for i in range(end_block_height):
 	cursor = 0
 
 	state = {
-		"prev_state" : {
-			"block_height" : read_felt(),
-			"total_work" : read_felt(),
-			"best_hash" : read_felts(8),
-			"difficulty" : read_felt(),
-			"epoch_start_time" : read_felt(),
-			"prev_timestamps" : read_felts(11),
-			"prev_state_root" : read_felts(27)
-		}
+		"block_height" : read_felt(),
+		"total_work" : read_felt(),
+		"best_hash" : read_felts(8),
+		"difficulty" : read_felt(),
+		"epoch_start_time" : read_felt(),
+		"prev_timestamps" : read_felts(11),
+		"state_roots" : read_felts(27)
 	}
 
-	print('block height:', state['prev_state']['block_height'])
+	print('block height:', state['block_height'])
 
 
 	# Write the state into a json file
 	f = open("data/state.json", "w")
-	f.write(json.dumps(state))
+	f.write(json.dumps(state, indent=2))
 	f.close()
 

@@ -1,11 +1,9 @@
-{
-	"prev_state" : {
-		"block_height" : -1,
-		"total_work" : 0,
-		"best_hash" : [ 0,0,0,0, 0,0,0,0 ],
-		"difficulty" : 0,
-		"epoch_start_time" : 0,
-		"prev_timestamps" : [ 0,0,0,0,0, 0,0,0,0,0, 0 ],
-		"prev_state_root" : [ 0,0,0,0,0, 0,0,0,0,0, 0,0,0,0,0, 0,0,0,0,0, 0,0,0,0,0, 0,0 ]
-	}
+{	
+	"block_height" : -1,
+	"total_work" : 0,
+	"best_hash" : [ 0,0,0,0, 0,0,0,0 ],
+	"difficulty" : 0,
+	"epoch_start_time" : 0,
+	"prev_timestamps" : [ 0,0,0,0,0, 0,0,0,0,0, 0 ],
+	"state_roots" : [ 0,0,0,0,0, 0,0,0,0,0, 0,0,0,0,0, 0,0,0,0,0, 0,0,0,0,0, 0,0 ]
 }

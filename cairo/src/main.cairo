@@ -23,15 +23,13 @@ func main{output_ptr : felt*, pedersen_ptr: HashBuiltin*, range_check_ptr, ecdsa
     let (prev_timestamps) = alloc()
     let (prev_state_root) = alloc()
     %{
-        prev_state = program_input["prev_state"]
-        ids.block_height = prev_state["block_height"] if prev_state["block_height"] != -1 else PRIME - 1
-        ids.total_work = prev_state["total_work"]
-        segments.write_arg(ids.best_hash, prev_state["best_hash"])
-        ids.difficulty = prev_state["difficulty"]
-        ids.epoch_start_time = prev_state["epoch_start_time"]
-        segments.write_arg(ids.prev_timestamps, prev_state["prev_timestamps"])
-        
-        segments.write_arg(ids.prev_state_root, prev_state["prev_state_root"])
+        ids.block_height = program_input["block_height"] if program_input["block_height"] != -1 else PRIME - 1
+        ids.total_work = program_input["total_work"]
+        segments.write_arg(ids.best_hash, program_input["best_hash"])
+        ids.difficulty = program_input["difficulty"]
+        ids.epoch_start_time = program_input["epoch_start_time"]
+        segments.write_arg(ids.prev_timestamps, program_input["prev_timestamps"])
+        segments.write_arg(ids.prev_state_root, program_input["state_roots"])
     %}
 
 
