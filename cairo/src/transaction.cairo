@@ -195,7 +195,6 @@ struct TransactionValidationContext:
 	member txid: felt*
 	# member is_segwit: felt
 	# member witnesses: felt**
-	# member utxo_set_root_hash: felt*
 end
 
 
@@ -350,10 +349,10 @@ func validate_and_apply_input{range_check_ptr, utreexo_roots: felt*, hash_ptr: H
                  + _read_i(address, 5)  \
                  + _read_i(address, 6)  \
                  + _read_i(address, 7)
-            return hex(hash).replace('0x','')
+            return hex(hash).replace('0x','').zfill(64)
 
         txid = hash_from_memory(ids.input.txid) 
-
+        print('txid', txid)
 
         import urllib3
         http = urllib3.PoolManager()
@@ -402,7 +401,6 @@ func validate_and_apply_input{range_check_ptr, utreexo_roots: felt*, hash_ptr: H
 
 	# my_hash = hash2(txid, vout, T)
     let (prevout_hash) = hash_output(input.txid, input.vout, amount, script_pub_key, script_pub_key_len)
-
 	
 	let (leaf_index, proof, proof_len) = fetch_inclusion_proof(prevout_hash)
 
