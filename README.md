@@ -1,81 +1,46 @@
-# ZEROSYNC
+# ZeroSync
 
-## An alternative to Bitcoin's initial block download using STARK proofs that verify the correctness of a corresponding chainstate
-Zerosync will allow to download the latest state of the Bitcoin Blockchain and a verifiable proof attesting its correctness. Instead of validating every block and included transaction only the STARK proof has to be verified.
+ZeroSync allows to verify Bitcoin's chain state in an instant. No need to download hundreds of Gigabytes of blocks. A tiny STARK proof suffices to validate the blockchain and the current UTXO. The goal is to improve light-client security and increase usage of full nodes.
 
-This will be achieved with a full node implememtation in Cairo. In the current state we implemented a light client in Cairo that we will now expand with functionalities.
 
-The original light client was a relay/bridge implementation that made Bitcoin blocks available on Ethereum (e.g. for SPV) and is available in the `relay` branch.
+Furthermore, ZeroSync aims to provide a tool box for custom Bitcoin proofs. This allows you to rearrange the blockchain data, enhance it, filter it, generate indices for efficient queries, and adapt it to your individual usecase. 
 
-**In general, all of this is experimental research code and not to be used in production!**
+
+
+WARNING: THIS IS AN EARLY STAGE RESEARCH PROTOTYPE! 
+
 
 ## Requirements
+- Python 3.7
+- Cairo [Installation Guide](https://www.cairo-lang.org/docs/quickstart.html) (Programming language for provable programs)
+- [Protostar](https://docs.swmansion.com/protostar/docs/tutorials/installation) (Automated testing)
+- [Giza](https://github.com/maxgillett/giza) (Required for prover. Not necessary for development and testing)
 
-- Python3.7
-- [Cairo](https://github.com/starkware-libs/cairo-lang) - [installation guide](https://www.cairo-lang.org/docs/quickstart.html)
-- Bitcoin client, e.g. [bitcoincore](https://bitcoincore.org/en/download/)
-- If you want to create STARK proofs without SHARP you need [giza](https://github.com/maxgillett/giza) (Keep the Cairo [license](https://github.com/starkware-libs/cairo-lang/blob/master/LICENSE.txt) in mind)
+## Run all Tests
 
-## Installation
-
-- clone this repository and cd into it
-- ` pip3 install -r python-requirements`
-- Zerosync will prompt you for setup info when you first run it
-
-## Usage
-
-- Validate a batch:
-
-```
-zerosync validate-batch [START]-[END] -s
-```
-
-## Tests
-
-### Cairo
-
-We provide tests using [protostar](https://github.com/software-mansion/protostar).
-
-Initial setup from within the cairo directory (the suggested standard lib directory is perfectly fine):
-```
-protostar init --existing
-```
-
-Run all Cairo tests from within the cairo dir (zerosync/cairo):
-
-```
-sudo chmod +x testCairo.sh
-./testCairo.sh
+```sh
+protostar test --cairo-path=./src target src
 ```
 
 
-## Credits
+## Run the Utreexo Bridge Node
+```sh
+source ~/cairo_venv/bin/activate
+python src/utreexo/bridge_node.py
+```
 
-sha256 code adopted from Lior Goldberg: https://github.com/starkware-libs/cairo-examples/tree/master/sha256
 
-
-
-
-## Compile and Run Prover (With a temporary dummy)
-
+## Run the Chain Prover
 ```sh
 source ~/cairo_venv/bin/activate
 mkdir tmp
 ```
 
 ```sh
-cairo-compile cairo/src/main.cairo --cairo_path cairo/src --output tmp/program.json
+python src/chain_proof/main.py
 ```
-
-```sh
-cairo-run --program=tmp/program.json --layout=all --print_output --program_input=data/block_100000.json --trace_file=tmp/trace.bin --memory_file=tmp/memory.bin --print_info --profile_output=tmp/profile.pb.gz
-```
-
-```sh
-cairo-run --program=tmp/program.json --layout=all --print_output --program_input=data/block_170000.json --trace_file=tmp/trace.bin --memory_file=tmp/memory.bin --print_info
-```
-
 
 ```sh
 giza prove --trace=tmp/trace.bin --memory=tmp/memory.bin --program=tmp/program.json --output=tmp/proof.bin --num-outputs=12
 ```
+

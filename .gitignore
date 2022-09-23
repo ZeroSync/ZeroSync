@@ -1,9 +1,7 @@
 bin/
 tmp_work/
-conf/starkRelay.toml
 conf/zerosync.toml
 build
-starkRelay.egg-info
 zerosync.egg-info
 .DS_Store
 tmp
