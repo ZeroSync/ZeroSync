@@ -68,7 +68,8 @@ func _utreexo_delete_loop{hash_ptr: HashBuiltin*}(
 
 	if h == proof_len:
 		assert roots_out[h] = n
-		memcpy(roots_out + h + 1, roots_in + h + 1, UTREEXO_ROOTS_LEN - h - 1)
+		let h = h + 1
+		memcpy(roots_out + h, roots_in + h, UTREEXO_ROOTS_LEN - h)
 		return ()
 	end
 
@@ -76,6 +77,7 @@ func _utreexo_delete_loop{hash_ptr: HashBuiltin*}(
 
 	if n != 0:
 		let (n) = hash2(p, n)
+		assert roots_out[h] = 0
 		return _utreexo_delete_loop(roots_in, roots_out, proof, proof_len, n, h + 1)
 	end
 
@@ -92,27 +94,10 @@ end
 
 func utreexo_prove_inclusion{hash_ptr: HashBuiltin*}(
 	utreexo_roots: felt*, leaf, leaf_index, proof: felt*, proof_len):
-	alloc_locals
 
 	let (proof_root) = _utreexo_prove_inclusion_loop(proof, proof_len, leaf_index, leaf)
 
-	local root_index
-	%{
-        root_index = 0
-        bit = 1
-        index = 0
-        while root_index < ids.UTREEXO_ROOTS_LEN:
-            if memory[ids.utreexo_roots + root_index] != 0:
-                if index + bit < ids.leaf_index:
-                    break
-                index += bit
-            bit *= 2
-            root_index += 1
-
-        ids.root_index = root_index 
-    %}
-
-	assert utreexo_roots[root_index] = proof_root
+	assert utreexo_roots[proof_len] = proof_root
 	return ()
 end
 
@@ -133,9 +118,9 @@ func _utreexo_prove_inclusion_loop{hash_ptr: HashBuiltin*}(
     %}
 
 	if lowest_bit == 0:
-		let (next_node) = hash2([proof], prev_node)
-	else:
 		let (next_node) = hash2(prev_node, [proof])
+	else:
+		let (next_node) = hash2([proof], prev_node)
 	end
 	
 	return _utreexo_prove_inclusion_loop(proof + 1, proof_len - 1, next_index, next_node)

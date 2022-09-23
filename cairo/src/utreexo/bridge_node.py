@@ -23,7 +23,6 @@ root_nodes = [ None ] * 27
 # The set of leaf nodes in the forest
 leaf_nodes = dict()
 
-
 # A node of the Utreexo forest
 class Node:
     def __init__(self, key, left=None, right=None):
@@ -67,7 +66,7 @@ def utreexo_delete(leaf):
     leaf_node = leaf_nodes[leaf]
     del leaf_nodes[leaf]
 
-    proof, leaf_index_in_tree, tree_start_index = inclusion_proof(leaf_node)
+    proof, leaf_index = inclusion_proof(leaf_node)
 
     n = None
     h = 0
@@ -90,40 +89,26 @@ def utreexo_delete(leaf):
     root_nodes[h] = n
 
     proof = list(map(lambda node: hex(node.val), proof))
-    return proof, leaf_index_in_tree + tree_start_index
+    return proof, leaf_index 
 
 
 # Compute a node's inclusion proof
 def inclusion_proof(node):
     if node.parent == None:
-        return [], 0, compute_tree_start_index(node)
+        return [], 0
     
     parent = node.parent
-    path, leaf_index_in_tree, tree_start_index = inclusion_proof(parent)
+    path, leaf_index = inclusion_proof(parent)
 
     if node == parent.left:
-        path.append(parent.right)
-        leaf_index_in_tree = leaf_index_in_tree * 2 
+        path.insert(0, parent.right)
+        leaf_index = leaf_index * 2 
     else:
-        path.append(parent.left)
-        leaf_index_in_tree = leaf_index_in_tree * 2 + 1
+        path.insert(0, parent.left)
+        leaf_index = leaf_index * 2 + 1
 
-    return path, leaf_index_in_tree, tree_start_index
+    return path, leaf_index
 
-
-def compute_tree_start_index(root):
-    result = 0
-    power_of_2 = 1
-    for other_root in root_nodes:
-        if other_root == root:
-            return result
-
-        if other_root != None:
-            result += power_of_2
-
-        power_of_2 *= 2
-
-    raise Exception('Root does not exist')
 
 
 # The server handling the GET requests
@@ -141,7 +126,7 @@ class RequestHandler(BaseHTTPRequestHandler):
             utreexo_add(vout_hash)
             # self.wfile.write(json.dumps({'status':'success'}).encode())
             
-            # print('roots:', list(map(lambda node: hex(node.val) if node != None else '0', root_nodes)) )
+            print('roots:', list(map(lambda node: node.val if node != None else 0, root_nodes)) )
             # self.wfile.write(json.dumps({'leaf_index': 32, 'proof': [] }).encode())
             return
 
@@ -150,6 +135,7 @@ class RequestHandler(BaseHTTPRequestHandler):
             print('delete', hash_hex)
             vout_hash = int(hash_hex, 16)
             proof, leaf_index = utreexo_delete(vout_hash)
+            print(proof, leaf_index)
             self.wfile.write(json.dumps({'leaf_index': leaf_index, 'proof': proof }).encode())
             return 
 
