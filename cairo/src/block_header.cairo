@@ -9,6 +9,7 @@ from starkware.cairo.common.math import assert_le, unsigned_div_rem, assert_le_f
 from starkware.cairo.common.pow import pow
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.memcpy import memcpy
+from starkware.cairo.common.uint256 import Uint256, uint256_neg, uint256_add, uint256_sub, uint256_unsigned_div_rem
 
 from buffer import Reader, Writer, read_uint32, write_uint32, read_hash, write_hash, UINT32_SIZE, BYTE, init_reader, read_bytes
 from crypto.sha256d.sha256d import sha256d_felt_sized, assert_hashes_equal
@@ -273,12 +274,15 @@ end
 # - https://github.com/bitcoin/bitcoin/blob/v0.16.2/src/validation.cpp#L3713
 #
 func compute_work_from_target{range_check_ptr}(target) -> (work):
-	# We need to compute 2**256 / (bnTarget+1), but we can't represent 2**256
-    # as it's too large for a felt.
-
-    # TODO: implement me
-	return (target)
-end 
+	# TODO: Check all boundaries. This is just a dummy implementation
+    let (hi, lo) = split_felt(target)
+    let target256 = Uint256(lo, hi)
+    let (neg_target256) = uint256_neg(target256)
+    let (not_target256) = uint256_sub(neg_target256, Uint256(1, 0))
+    let (div, _) = uint256_unsigned_div_rem(not_target256, target256)
+    let (result, _) = uint256_add(div, Uint256(1, 0))
+	return ( result.low + result.high * 2**128 )
+end
 
 
 # Apply a block header to a previous chain state to obtain the next chain state
