@@ -1,6 +1,6 @@
 # ZeroSync
 
-**Don't trust. Verify.** ZeroSync allows to verify Bitcoin's chain state in within seconds. No need to download hundreds of gigabytes. A tiny STARK proof suffices to validate the entire blockchain and its resulting UTXO set.
+**Don't trust. Verify.** ZeroSync allows to verify Bitcoin's chain state within seconds. No need to download hundreds of gigabytes. A tiny STARK proof suffices to validate the entire blockchain and its resulting UTXO set.
 
 
 Furthermore, ZeroSync aims to become a tool box for custom Bitcoin proofs. This enables you to transform the blockchain data, enhance it, filter it, generate indices for efficient queries, and adapt it to your individual use case. 
