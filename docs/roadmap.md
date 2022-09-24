@@ -5,7 +5,7 @@ This is a rough writeup of the project's roadmap. Nothing here is set in stone. 
 
 ## Milestone 1: *"assumevalid"*
 
-The goal is a chain proof that mimics the ["assumevalid" option of Bitcoin Core](https://bitcoincore.org/en/2017/03/08/release-0.14.0/#assumed-valid-blocks). It parses the blocks and its transactions, validates the chain's work, its chain of hashes, and correctly manages the set of UTXOs. It also validates coin creation, the transaction amounts, and fees. It verifies mostly everything except for the signatures. (More precisely: it verifies no witness data.)
+The goal is a chain proof that mimics the ["assumevalid" option of Bitcoin Core](https://bitcoincore.org/en/2017/03/08/release-0.14.0/#assumed-valid-blocks). It parses the blocks and its transactions, validates the chain's work, its chain of hashes, and correctly manages the UTXO set. It also validates coin creation, the transaction amounts, and fees. It verifies mostly everything except for the signatures. (More precisely: it verifies no witness data.)
 
 - ✅ Parse blocks, headers, and transactions
 - ✅ Verify the chain of hashes (block hash, previous block hash, Merkle root, TXIDs)
@@ -16,11 +16,11 @@ The goal is a chain proof that mimics the ["assumevalid" option of Bitcoin Core]
 
 ## Milestone 2: *"measure and optimise"* 
 
-The goal is to measure the performance of chain proofs using *assumevalid*, and optimise it such that we can also add to it the validation of Bitcoin Scripts.
+The goal is to measure the performance of *assumevalid* proofs, and optimise them until we can further extend them with the validation of Bitcoin Scripts.
 
 - Benchmark the *assumevalid proof* with blocks full of transactions
 - Identify the performance bottlenecks and see if there are any showstoppers
-- Optimise the bottlenecks such that we can continue with milestone 3
+- Optimise the bottlenecks such that we can start to add Script validation
 
 
 ## Milestone 3: *"Bitcoin Script"*
@@ -37,11 +37,12 @@ The goal is to measure the performance of chain proofs using *assumevalid*, and 
 	- SHA256, HASH256, SHA1, RIPEMD160, HASH160, ...
 - Chain verifier
 	- Download and prove a chainstate directory for a Bitcoin Core full node
-	- Demo for state proof in web browser?
+	- Demo the state proof in a simple web site
 
 
 ## Milestone 4: *zerosync and scan the chain efficiently*
 
 - *Block filters* for light clients to quickly check if a block is relevant to them
-- Compact blocks (compressed for light clients)
-- Merklized headers chain
+- Compact blocks for light clients to download only what's relevant
+- Merklized headers chain. Compact and flexible inclusion proofs for any transaction in the blockchain.
+- Compact ring signatures: E.g. Prove that you control outputs worth at least 1 BTC.

@@ -9,10 +9,12 @@ from crypto.sha256d.sha256d import HASH_FELT_SIZE
 from block.block_header import ChainState
 from block.block import State, validate_and_apply_block, read_block_validation_context
 from utreexo.utreexo import UTREEXO_ROOTS_LEN
+from python_utils import setup_python_defs
 
 
 func main{output_ptr : felt*, pedersen_ptr: HashBuiltin*, range_check_ptr, ecdsa_ptr, bitwise_ptr: BitwiseBuiltin*, ec_op_ptr }():
     alloc_locals
+    setup_python_defs()
 
     # Read the previous state from the program input
     local block_height: felt
@@ -25,11 +27,11 @@ func main{output_ptr : felt*, pedersen_ptr: HashBuiltin*, range_check_ptr, ecdsa
     %{
         ids.block_height = program_input["block_height"] if program_input["block_height"] != -1 else PRIME - 1
         ids.total_work = program_input["total_work"]
-        segments.write_arg(ids.best_block_hash, program_input["best_block_hash"])
+        segments.write_arg(ids.best_block_hash, felts_from_hash( program_input["best_block_hash"]) )
         ids.difficulty = program_input["difficulty"]
         ids.epoch_start_time = program_input["epoch_start_time"]
         segments.write_arg(ids.prev_timestamps, program_input["prev_timestamps"])
-        segments.write_arg(ids.prev_state_root, program_input["state_roots"])
+        segments.write_arg(ids.prev_state_root, felts_from_hex_strings( program_input["state_roots"] ) )
     %}
 
 
@@ -55,8 +57,7 @@ func main{output_ptr : felt*, pedersen_ptr: HashBuiltin*, range_check_ptr, ecdsa
     serialize_array(next_state.state_root, UTREEXO_ROOTS_LEN)
 
 
-    # Validate the proof for the previous block chain
-    # TODO: implement me
+    # TODO: validate the previous chain proof
     return ()
 end
 
@@ -113,7 +114,7 @@ func fetch_block(block_height) -> (block_data: felt*):
                 felts[-1] += "0"
             return [int(x, 16) for x in felts]
 
-        # Writes a hex string string into an uint32 array
+        # Writes a hex string into an uint32 array
         #
         # Using multi-line strings in python:
         # - https://stackoverflow.com/questions/10660435/how-do-i-split-the-definition-of-a-long-string-over-multiple-lines

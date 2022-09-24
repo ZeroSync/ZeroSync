@@ -6,6 +6,8 @@ from starkware.cairo.common.hash import hash2
 from crypto.sha256d.sha256d import HASH_FELT_SIZE
 from utreexo.utreexo import utreexo_add, utreexo_delete, fetch_inclusion_proof
 
+# TODO: Clean up all the copy pasta. This entire file looks like code smell.
+
 func utxo_set_insert{range_check_ptr, hash_ptr: HashBuiltin*, utreexo_roots: felt*}(
     txid:felt*, vout, amount, script_pub_key:felt*, script_pub_key_size):
     alloc_locals
@@ -97,6 +99,7 @@ func utxo_set_extract{hash_ptr: HashBuiltin*, utreexo_roots: felt*}(
             return (1 + len(hex_string)) // 2, len(felts)
 
 
+
         byte_size, felt_size = from_hex( tx_output["scriptpubkey"], ids.script_pub_key)
         ids.script_pub_key_len = felt_size
         ids.script_pub_key_size = byte_size
@@ -118,7 +121,6 @@ func hash_output{hash_ptr: HashBuiltin*}(
     txid:felt*, vout, amount, script_pub_key: felt*, script_pub_key_len)->(hash):
     alloc_locals
     let (script_pub_key_hash) = hash_chain(script_pub_key, script_pub_key_len)
-    let script_pub_key_hash = 42
     let (txid_hash) = hash_chain(txid, HASH_FELT_SIZE) 
     let (tmp1) = hash2(amount, script_pub_key_hash) 
     let (tmp2) = hash2(vout, tmp1)

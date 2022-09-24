@@ -11,7 +11,7 @@ func setup_python_defs():
                 felts[-1] += "0"
             return [int(x, 16) for x in felts]
 
-        # Writes a hex string string into an uint32 array
+        # Writes a hex string into an uint32 array
         #
         # Using multi-line strings in python:
         # - https://stackoverflow.com/questions/10660435/how-do-i-split-the-definition-of-a-long-string-over-multiple-lines
@@ -50,6 +50,14 @@ func setup_python_defs():
                 hex_string = little_endian(hex_hash.replace("0x",""))
                 _ = from_hex(hex_string, destination + i * 8)
             return len(hashes)
+
+
+        def felts_from_hash(hex_hash):
+            hex_hash = little_endian(hex_hash)
+            return hex_to_felt(hex_hash)
+
+        def felts_from_hex_strings(hex_strings):
+            return list( map(lambda x: int(x, 16), hex_strings ))
     %}
     return ()
 end

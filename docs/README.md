@@ -32,7 +32,6 @@ python src/utreexo/bridge_node.py
 ## Run the Chain Prover
 ```sh
 source ~/cairo_venv/bin/activate
-mkdir tmp
 ```
 
 ```sh
@@ -41,6 +40,11 @@ python src/chain_proof/main.py
 
 ```sh
 giza prove --trace=tmp/trace.bin --memory=tmp/memory.bin --program=tmp/program.json --output=tmp/proof.bin --num-outputs=12
+```
+
+## List TODOs in Code
+```sh
+ ./docs/todos
 ```
 
 
