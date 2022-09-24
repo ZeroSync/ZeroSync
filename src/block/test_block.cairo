@@ -1,6 +1,6 @@
 #
 # To run only this test suite use:
-# protostar test  --cairo-path=./src target src/block/*_block.cairo
+# protostar test --cairo-path=./src target src/block/*_block.cairo
 #
 
 %lang starknet

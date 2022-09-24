@@ -13,42 +13,13 @@ func utxo_set_insert{range_check_ptr, hash_ptr: HashBuiltin*, utreexo_roots: fel
     let (script_pub_key_len, _) = unsigned_div_rem(script_pub_key_size + 3, 4)
     let (local hash) = hash_output(txid, vout, amount, script_pub_key, script_pub_key_len)
 
+   
     %{
-
-        import struct
-
-        def swap32(i):
-            return struct.unpack("<I", struct.pack(">I", i))[0]
-
-        BASE = 2**32
-        def _read_i(address, i):
-            return swap32( memory[address + i] ) * BASE ** i 
-
-        def hash_from_memory(address):
-            hash = _read_i(address, 0)  \
-                 + _read_i(address, 1)  \
-                 + _read_i(address, 2)  \
-                 + _read_i(address, 3)  \
-                 + _read_i(address, 4)  \
-                 + _read_i(address, 5)  \
-                 + _read_i(address, 6)  \
-                 + _read_i(address, 7)
-            return hex(hash).replace('0x','').zfill(64)
-        txid = hash_from_memory(ids.txid) 
-        print('UTXOSET insert:', 'txid', txid, 'vout', ids.vout, 'amount', ids.amount, 'script_pub_key_size', ids.script_pub_key_size, 'hash', hex(ids.hash))
-    %}
-
-    %{
-
-        # print('>> Add hash to utreexo DB', ids.hash) 
         import urllib3
         http = urllib3.PoolManager()
         hex_hash = hex(ids.hash).replace('0x','')
         url = 'http://localhost:2121/add/' + hex_hash
         r = http.request('GET', url)
-
-        # import json
-        # response = json.loads(r.data)
     %}
 
     utreexo_add(hash)

@@ -1,13 +1,13 @@
 # ZeroSync
 
-ZeroSync allows to verify Bitcoin's chain state in an instant. No need to download hundreds of gigabytes. A tiny STARK proof suffices to validate the blockchain and the current UTXO set.
+**Don't trust. Verify.** ZeroSync allows to verify Bitcoin's chain state in within seconds. No need to download hundreds of gigabytes. A tiny STARK proof suffices to validate the entire blockchain and its resulting UTXO set.
 
 
-Furthermore, ZeroSync aims to provide a tool box for custom Bitcoin proofs. This allows you to rearrange the blockchain data, enhance it, filter it, generate indices for efficient queries, and adapt it to your individual usecase. 
+Furthermore, ZeroSync aims to become a tool box for custom Bitcoin proofs. This enables you to transform the blockchain data, enhance it, filter it, generate indices for efficient queries, and adapt it to your individual use case. 
 
 
 
-WARNING: THIS IS AN EARLY STAGE RESEARCH PROTOTYPE! 
+WARNING: THIS IS AN EARLY STAGE PROTOTYPE. THERE ARE MULTIPLE CRITCIAL SECURITY BUGS! EXPECT BREAKING CHANGES.
 
 
 ## Requirements
@@ -43,4 +43,5 @@ python src/chain_proof/main.py
 ```sh
 giza prove --trace=tmp/trace.bin --memory=tmp/memory.bin --program=tmp/program.json --output=tmp/proof.bin --num-outputs=12
 ```
+
 
