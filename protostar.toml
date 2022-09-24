@@ -2,9 +2,4 @@
 protostar_version = "0.3.1"
 
 ["protostar.project"]
-libs_path = "lib"
-
-["protostar.contracts"]
-main = [
-    "src/main.cairo",
-]
+libs_path = "src"
