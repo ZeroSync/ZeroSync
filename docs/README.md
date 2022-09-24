@@ -3,12 +3,11 @@
 **Don't trust. Verify.** ZeroSync allows to verify Bitcoin's chain state within seconds. No need to download hundreds of gigabytes. A tiny STARK proof suffices to validate the entire blockchain and its resulting UTXO set.
 
 
-Furthermore, ZeroSync aims to become a tool box for custom Bitcoin proofs. This enables you to transform the blockchain data, enhance it, filter it, generate indices for efficient queries, and adapt it to your individual use case. 
+Furthermore, ZeroSync aims to become a tool box for custom Bitcoin proofs. This enables you to transform the blockchain data, enhance it, filter it, index it for efficient queries, and adapt it to your individual use case. 
 
+This is an early stage project. Expect frequent breaking changes. [You can find our current roadmap here](roadmap.md).
 
-
-WARNING: THIS IS AN EARLY STAGE PROTOTYPE. THERE ARE MULTIPLE CRITCIAL SECURITY BUGS! EXPECT BREAKING CHANGES.
-
+WARNING: THIS CODE IS STILL FULL OF CRITICAL SECURITY BUGS!
 
 ## Requirements
 - Python 3.7
