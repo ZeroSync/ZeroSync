@@ -15,6 +15,7 @@ WARNING: THIS CODE IS STILL FULL OF CRITICAL SECURITY BUGS!
 - [Protostar](https://docs.swmansion.com/protostar/docs/tutorials/installation) (Automated testing)
 - [Giza](https://github.com/maxgillett/giza) (Required for prover. Not necessary for development and testing)
 
+
 ## Run all Tests
 
 ```sh

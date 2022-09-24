@@ -84,7 +84,7 @@ for i in range(start_block_height, end_block_height):
 		'difficulty' : 		 r.read(),
 		'prev_timestamps' :  r.read_n(11),
 		'epoch_start_time' : r.read(),
-		'state_roots' : 	 felts_to_hex( r.read_n(27) )
+		'utreexo_roots' : 	 felts_to_hex( r.read_n(27) )
 	}
 
 	print('block height:', state['block_height'])

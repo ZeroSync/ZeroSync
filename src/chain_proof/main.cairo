@@ -31,7 +31,7 @@ func main{output_ptr : felt*, pedersen_ptr: HashBuiltin*, range_check_ptr, ecdsa
         ids.difficulty = program_input["difficulty"]
         ids.epoch_start_time = program_input["epoch_start_time"]
         segments.write_arg(ids.prev_timestamps, program_input["prev_timestamps"])
-        segments.write_arg(ids.prev_state_root, felts_from_hex_strings( program_input["state_roots"] ) )
+        segments.write_arg(ids.prev_state_root, felts_from_hex_strings( program_input["utreexo_roots"] ) )
     %}
 
 
