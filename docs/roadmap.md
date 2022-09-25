@@ -24,7 +24,7 @@ Measure the performance of *assumevalid* proofs, and optimise them until we can 
 
 
 ## Milestone 3: *"Bitcoin Script"*
-Implement witness verification and complete the full chain proof.
+Implement witness verification and complete the full chain proof. 
 
 - Bitcoin Script
 	- Compute signature hashes (ALL, NONE, SINGLE, ANYONECANPAY, ... )
@@ -36,12 +36,14 @@ Implement witness verification and complete the full chain proof.
 - Crypto
 	- ECDSA, Schnorr
 	- SHA256, HASH256, SHA1, RIPEMD160, HASH160, ...
-- Chain verifier
+- Chain verifier 
 	- Software to download and prove a chainstate directory for a Bitcoin Core full node
 	- Demo the chainstate proof in a simple website
 
+After this milestone we can sync a pruned full node by downloading the utxo set. Running a zerosync'd full node requires no modification of the code of Bitcoin Core. We just have to write the UTXO set into Core's chainstate directory after verifying it.
 
-## Long-Term Vision: *"zerosync and scan the chain efficiently"*
+
+## Long-term Vision: *"zerosync and scan the chain efficiently"*
 
 - *Block filters* for zk-clients to quickly check if a block is relevant to them
 - *Compact blocks* for zk-clients to download only the parts of the block that is relevant to them
@@ -55,7 +57,7 @@ Implement witness verification and complete the full chain proof.
 
 
 
-# ZeroSync History
+# History of ZeroSync
 
 - ZeroSync originated in [STARK relay](https://github.com/lucidLuckylee/zerosync/tree/relay), [Lukas'](https://github.com/lucidLuckylee) bachelor thesis at TU Berlin in which he proved the headers chain of Bitcoin. This research was funded by [Geometry](https://geometryresearch.xyz).
 - In July 2022 [Robin Linus](https://github.com/robinlinus) joined the project to grow it into a full chain proof.
