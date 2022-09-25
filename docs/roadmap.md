@@ -5,7 +5,7 @@ This is a rough writeup of the project's roadmap. Nothing here is set in stone. 
 
 ## Milestone 1: *"assumevalid"*
 
-The goal is a chain proof that mimics the ["assumevalid" option of Bitcoin Core](https://bitcoincore.org/en/2017/03/08/release-0.14.0/#assumed-valid-blocks). It parses the blocks and its transactions, validates the chain's work, its chain of hashes, and correctly manages the UTXO set. It also validates coin creation, the transaction amounts, and fees. It verifies mostly everything except for the signatures. (More precisely: it verifies no witness data.)
+Implement a chain proof that mimics the ["assumevalid" option of Bitcoin Core](https://bitcoincore.org/en/2017/03/08/release-0.14.0/#assumed-valid-blocks). It parses the blocks and its transactions, validates the chain's work, its chain of hashes, and correctly manages the UTXO set. It also validates coin creation, the transaction amounts, and fees. It verifies mostly everything except for the signatures. (More precisely: it verifies no witness data.)
 
 - ✅ Parse blocks, headers, and transactions
 - ✅ Verify the chain of hashes (block hash, previous block hash, Merkle root, TXIDs)
@@ -16,7 +16,7 @@ The goal is a chain proof that mimics the ["assumevalid" option of Bitcoin Core]
 
 ## Milestone 2: *"measure and optimise"* 
 
-The goal is to measure the performance of *assumevalid* proofs, and optimise them until we can further extend them with the validation of Bitcoin Scripts.
+Measure the performance of *assumevalid* proofs, and optimise them until we can further extend them with the validation of Bitcoin Scripts.
 
 - Benchmark the *assumevalid proof* with blocks full of transactions
 - Identify the performance bottlenecks and see if there are any showstoppers
@@ -24,6 +24,7 @@ The goal is to measure the performance of *assumevalid* proofs, and optimise the
 
 
 ## Milestone 3: *"Bitcoin Script"*
+Implement witness verification. 
 
 - Bitcoin Script
 	- Compute signature hashes (ALL, NONE, SINGLE, ANYONECANPAY, ... )
