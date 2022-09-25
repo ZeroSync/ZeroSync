@@ -52,3 +52,12 @@ Implement witness verification and complete the full chain proof.
 - Instant history verification for client-side validation protocols like Omni, RGB, or Taro.
 	- Better privacy with transaction graph obfuscation. Every TX becomes a coin teleport proven in zk.
 - Enhance privacy of routing in the Lightning Network?
+
+
+
+# ZeroSync History
+
+- ZeroSync originated in [STARK relay](https://github.com/lucidLuckylee/zerosync/tree/relay), [Lukas'](https://github.com/lucidLuckylee) bachelor thesis at TU Berlin in which he proved the headers chain of Bitcoin. This research was funded by [Geometry](https://geometryresearch.xyz).
+- In July 2022 [Robin Linus](https://github.com/robinlinus) joined the project to grow it into a full chain proof.
+- [Ruben Somsen](https://medium.com/@RubenSomsen/snarks-and-the-future-of-blockchains-55b82012452b) gave the project its name ZeroSync. 
+
