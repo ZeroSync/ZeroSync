@@ -24,7 +24,7 @@ Measure the performance of *assumevalid* proofs, and optimise them until we can 
 
 
 ## Milestone 3: *"Bitcoin Script"*
-Implement witness verification. 
+Implement witness verification and complete the full chain proof.
 
 - Bitcoin Script
 	- Compute signature hashes (ALL, NONE, SINGLE, ANYONECANPAY, ... )
@@ -37,13 +37,18 @@ Implement witness verification.
 	- ECDSA, Schnorr
 	- SHA256, HASH256, SHA1, RIPEMD160, HASH160, ...
 - Chain verifier
-	- Download and prove a chainstate directory for a Bitcoin Core full node
-	- Demo the state proof in a simple web site
+	- Software to download and prove a chainstate directory for a Bitcoin Core full node
+	- Demo the chainstate proof in a simple website
 
 
-## Milestone 4: *zerosync and scan the chain efficiently*
+## Long-Term Vision: *"zerosync and scan the chain efficiently"*
 
-- *Block filters* for light clients to quickly check if a block is relevant to them
-- Compact blocks for light clients to download only what's relevant
-- Merklized headers chain. Compact and flexible inclusion proofs for any transaction in the blockchain.
-- Compact ring signatures: E.g. Prove that you control outputs worth at least 1 BTC.
+- *Block filters* for zk-clients to quickly check if a block is relevant to them
+- *Compact blocks* for zk-clients to download only the parts of the block that is relevant to them
+- Merkelized headers chain. Compact and flexible inclusion proofs for any transaction in the blockchain.
+
+### Further Ideas:
+- Compact ring signatures: E.g. Prove that you control outputs worth at least 1 BTC without revealing which ones.
+- Instant history verification for client-side validation protocols like Omni, RGB, or Taro.
+	- Better privacy with transaction graph obfuscation. Every TX becomes a coin teleport proven in zk.
+- Enhance privacy of routing in the Lightning Network?
