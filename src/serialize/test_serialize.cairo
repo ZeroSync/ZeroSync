@@ -25,7 +25,7 @@ from serialize.serialize import (
     read_uint64,
     read_varint,
     read_bytes_endian,
-    read_uint32_endian,
+    read_bytes,
 )
 
 @external
@@ -135,7 +135,7 @@ func test_read_varint{range_check_ptr}():
 end
 
 @external
-func test_read_bytes{range_check_ptr}():
+func test_a_series_of_different_reads{range_check_ptr}():
     alloc_locals
 
     let (array) = alloc()
@@ -147,21 +147,56 @@ func test_read_bytes{range_check_ptr}():
 
     let (unit8_1) = read_uint8{reader=reader}()
     let (unit8_2) = read_uint8{reader=reader}()
-    let (uint32) = read_uint32_endian{reader=reader}()
-    let (uint32_endian) = read_uint32{reader=reader}()
+    let (uint32_1) = read_uint32{reader=reader}()
+    let (uint32_2) = read_uint32{reader=reader}()
     let (uint16) = read_uint16{reader=reader}()  # read the complete buffer until the last byte
 
     assert unit8_1 = 0x01
     assert unit8_2 = 0x02
-    assert uint32 = 0x03040506
-    assert uint32_endian = 0x0a090807
+    assert uint32_1 = 0x06050403
+    assert uint32_2 = 0x0a090807
     assert uint16 = 0x0c0b
 
     return ()
 end
 
+
 @external
-func test_read_bytes_into_felt{range_check_ptr}():
+func test_read_bytes{range_check_ptr}():
+    alloc_locals
+
+    let (array) = alloc()
+    assert array[0] = 0x01020304
+    assert array[1] = 0x05060708
+    assert array[2] = 0x090a0b0c
+    assert array[3] = 0x0d0e0f10
+    assert array[4] = 0x11121314
+    assert array[5] = 0x15161718
+
+    let (reader) = init_reader(array)
+
+    let (bytes3) = read_bytes{reader=reader}(3)
+    let (bytes5) = read_bytes{reader=reader}(5)
+    let (bytes6) = read_bytes{reader=reader}(6)
+    let (bytes7) = read_bytes{reader=reader}(7)
+
+    assert bytes3[0] = 0x00030201
+
+    assert bytes5[0] = 0x07060504
+    assert bytes5[1] = 0x00000008
+
+    assert bytes6[0] = 0x0c0b0a09
+    assert bytes6[1] = 0x00000e0d
+
+    assert bytes7[0] = 0x1211100f
+    assert bytes7[1] = 0x00151413
+
+    return ()
+end
+
+
+@external
+func test_read_bytes_endian{range_check_ptr}():
     alloc_locals
 
     let (array) = alloc()
@@ -179,16 +214,17 @@ func test_read_bytes_into_felt{range_check_ptr}():
     let (bytes6) = read_bytes_endian{reader=reader}(6)
     let (bytes7) = read_bytes_endian{reader=reader}(7)
 
-    assert bytes3[0] = 0x3020100
+    # assert bytes3[0] = 0x03020100
+    assert bytes3[0] = 0x01020300
 
     assert bytes5[0] = 0x04050607
-    assert bytes5[1] = 0x08
+    assert bytes5[1] = 0x08000000
 
     assert bytes6[0] = 0x090a0b0c
-    assert bytes6[1] = 0x0d0e
+    assert bytes6[1] = 0x0d0e0000 # 0e0d0000
 
     assert bytes7[0] = 0x0f101112
-    assert bytes7[1] = 0x131415
+    assert bytes7[1] = 0x13141500
 
     return ()
 end

@@ -151,8 +151,7 @@ func read_bytes_endian{reader : Reader, range_check_ptr}(length : felt) -> (resu
 
     # TODO: Test this offset. Might have bugs for some byte lengths 1-3
     # TODO: Get rid of pow( )
-    let (offset) = pow(BYTE, 4 - len_mod_4)
-    _read_n_bytes_into_felt(result + len_div_4, 0, offset, len_mod_4)
+    _read_n_bytes_into_felt_endian(result + len_div_4, 0, BYTE ** 3, len_mod_4)
     return (result)
 end
 
@@ -160,29 +159,24 @@ func _read_into_uint32_array_endian{reader : Reader, range_check_ptr}(output : f
     if loop_counter == 0:
         return ()
     end
-    _read_n_bytes_into_felt_endian(output, 0, UINT32_SIZE)
+    _read_n_bytes_into_felt_endian(output, 0, BYTE ** 3, UINT32_SIZE)
     _read_into_uint32_array_endian(output + 1, loop_counter - 1)
     return ()
 end
 
+
 func _read_n_bytes_into_felt_endian{reader : Reader, range_check_ptr}(
-    output : felt*, value, loop_counter
+    output : felt*, value, base, loop_counter
 ):
     if loop_counter == 0:
         assert [output] = value
         return ()
     end
     let (byte) = read_uint8()
-    _read_n_bytes_into_felt_endian(output, value * BYTE + byte, loop_counter - 1)
+    _read_n_bytes_into_felt_endian(output, value + byte * base, base / BYTE, loop_counter - 1)
     return ()
 end
 
-func read_uint32_endian{reader : Reader, range_check_ptr}() -> (result : felt):
-    alloc_locals
-    let (result) = alloc()
-    _read_n_bytes_into_felt_endian(result, 0, UINT32_SIZE)
-    return ([result])
-end
 
 func read_hash{reader : Reader, range_check_ptr}() -> (result : felt*):
     return read_bytes_endian(32)
