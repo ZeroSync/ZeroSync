@@ -15,7 +15,7 @@ from python_utils import setup_python_defs
 from transaction.transaction import TransactionValidationContext
 from block.block_header import ChainState
 from block.block import BlockValidationContext, State, read_block_validation_context, validate_and_apply_block
-from utreexo.utreexo import utreexo_init
+from utreexo.utreexo import utreexo_init, utreexo_add
 
 from serialize.serialize import init_reader
 from block.test_block_header import dummy_prev_timestamps
@@ -81,6 +81,31 @@ func test_read_block_validation_context{range_check_ptr, bitwise_ptr : BitwiseBu
     return ()
 end
 
+
+func dummy_utxo_insert{hash_ptr: HashBuiltin*, utreexo_roots: felt*}(hash):
+    %{
+        import urllib3
+        http = urllib3.PoolManager()
+        hex_hash = hex(ids.hash).replace('0x','')
+        url = 'http://localhost:2121/add/' + hex_hash
+        r = http.request('GET', url)
+    %}
+
+    utreexo_add(hash)
+    return()
+end
+
+
+func reset_bridge_node():
+    %{
+        import urllib3
+        http = urllib3.PoolManager()
+        url = 'http://localhost:2121/reset/'
+        r = http.request('GET', url)
+    %}
+    return ()
+end
+
 # Test a Bitcoin block with 4 transactions.
 #
 # Example: Block at height 100000
@@ -138,15 +163,14 @@ func test_read_block_with_4_transactions{range_check_ptr, bitwise_ptr : BitwiseB
         prev_timestamps
     )
 
-    let (prev_state_root) = alloc()
-    %{  
-        roots =  [
-                0x1aa9272136be702146acae34cf02dfaed63288404e0e5842ae3b60341848779, 
-                0x78cf1dc18e3625701952352c3f000a0fbd1f4b8722d3f2b6898d6946ba9fa30, 
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-            ]
-        segments.write_arg(ids.prev_state_root, roots)
-    %}
+
+    # We need some UTXOs to spend in this block
+    reset_bridge_node()
+    let (prev_state_root) = utreexo_init()
+    dummy_utxo_insert{hash_ptr=pedersen_ptr, utreexo_roots=prev_state_root}(0x2d3ef8215980ca7bfe3aea785eb7a2f234eb33418ef4bc87683ca23287cd309)
+    dummy_utxo_insert{hash_ptr=pedersen_ptr, utreexo_roots=prev_state_root}(0x1aa9272136be702146acae34cf02dfaed63288404e0e5842ae3b60341848779)
+    dummy_utxo_insert{hash_ptr=pedersen_ptr, utreexo_roots=prev_state_root}(0x75f708000a3e08f9d6f01ced23f5e5d510bdf6dfa6d4447858586d4026b516e)
+
 
     let prev_state = State(prev_chain_state, prev_state_root)
 

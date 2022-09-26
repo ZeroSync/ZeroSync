@@ -23,6 +23,7 @@ root_nodes = [ None ] * 27
 # The set of leaf nodes in the forest
 leaf_nodes = dict()
 
+
 # A node of the Utreexo forest
 class Node:
     def __init__(self, key, left=None, right=None):
@@ -116,6 +117,8 @@ def inclusion_proof(node):
 class RequestHandler(BaseHTTPRequestHandler):
     
     def do_GET(self):
+        global root_nodes, leaf_nodes
+
         self.send_response(200)
         self.end_headers()
 
@@ -138,6 +141,12 @@ class RequestHandler(BaseHTTPRequestHandler):
             print(proof, leaf_index)
             self.wfile.write(json.dumps({'leaf_index': leaf_index, 'proof': proof }).encode())
             return 
+
+        if self.path.startswith('/reset'):
+            print('>>>>>>>>>> RESET >>>>>>>>>>')
+            root_nodes = [ None ] * 27
+            leaf_nodes = dict()
+            return
 
 
 if __name__ == '__main__':
