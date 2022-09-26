@@ -22,7 +22,7 @@ struct State:
 	# The state of the chain of block headers
 	member chain_state: ChainState
 	# The state of the UTXO set represented in a (fancy) Merkle root hash
-	member state_root: felt* 
+	member utreexo_roots: felt* 
 end
 
 
@@ -30,7 +30,7 @@ struct BlockValidationContext:
 	member header_context: BlockHeaderValidationContext
 	member transaction_count: felt
 	member transaction_contexts: TransactionValidationContext*
-	member prev_state_root: felt*
+	member prev_utreexo_roots: felt*
 end
 
 
@@ -46,7 +46,7 @@ func read_block_validation_context{reader: Reader, range_check_ptr, bitwise_ptr:
 		header_context, 
 		transaction_count,
 		transaction_contexts,
-		prev_state.state_root
+		prev_state.utreexo_roots
 	))
 end
 
@@ -86,7 +86,7 @@ func validate_and_apply_block{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, has
 
 	let (next_chain_state) = validate_and_apply_block_header(context.header_context)
 	validate_merkle_root(context)
-	let utreexo_roots = context.prev_state_root
+	let utreexo_roots = context.prev_utreexo_roots
 	validate_and_apply_transactions{utreexo_roots=utreexo_roots}(context)
 	return ( State(next_chain_state, utreexo_roots) )
 end

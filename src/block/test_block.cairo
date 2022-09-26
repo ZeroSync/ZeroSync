@@ -75,8 +75,6 @@ func test_verify_block_with_1_transaction{range_check_ptr, bitwise_ptr : Bitwise
     # Parse the block validation context 
     let (context) = read_block_validation_context{reader=reader}(prev_state)
 
-    let (utxo_data_raw) = alloc()
-    let (utreexo_roots) = init_reader(utxo_data_raw)
 
     validate_and_apply_block{hash_ptr = pedersen_ptr}(context)
     return ()
@@ -187,7 +185,7 @@ func test_verify_block_with_4_transactions{range_check_ptr, bitwise_ptr : Bitwis
     let (next_state) = validate_and_apply_block{hash_ptr = pedersen_ptr}(context)
 
     %{ 
-        # addr = ids.next_state.state_root
+        # addr = ids.next_state.utreexo_roots
         # print('Next state root:', memory[addr], memory[addr + 1], memory[addr + 2], memory[addr + 3]) 
     %}
     return ()

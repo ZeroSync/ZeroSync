@@ -23,7 +23,7 @@ func main{output_ptr : felt*, pedersen_ptr: HashBuiltin*, range_check_ptr, ecdsa
     local difficulty: felt
     local epoch_start_time: felt
     let (prev_timestamps) = alloc()
-    let (prev_state_root) = alloc()
+    let (prev_utreexo_roots) = alloc()
     %{
         ids.block_height = program_input["block_height"] if program_input["block_height"] != -1 else PRIME - 1
         ids.total_work = program_input["total_work"]
@@ -31,7 +31,7 @@ func main{output_ptr : felt*, pedersen_ptr: HashBuiltin*, range_check_ptr, ecdsa
         ids.difficulty = program_input["difficulty"]
         ids.epoch_start_time = program_input["epoch_start_time"]
         segments.write_arg(ids.prev_timestamps, program_input["prev_timestamps"])
-        segments.write_arg(ids.prev_state_root, felts_from_hex_strings( program_input["utreexo_roots"] ) )
+        segments.write_arg(ids.prev_utreexo_roots, felts_from_hex_strings( program_input["utreexo_roots"] ) )
     %}
 
 
@@ -39,7 +39,7 @@ func main{output_ptr : felt*, pedersen_ptr: HashBuiltin*, range_check_ptr, ecdsa
         block_height, total_work, best_block_hash,
         difficulty, epoch_start_time, prev_timestamps
     )
-    let prev_state = State(prev_chain_state, prev_state_root)
+    let prev_state = State(prev_chain_state, prev_utreexo_roots)
 
 
     # Read a raw block from the program input
@@ -54,7 +54,7 @@ func main{output_ptr : felt*, pedersen_ptr: HashBuiltin*, range_check_ptr, ecdsa
 
     # Print the next state
     serialize_chain_state(next_state.chain_state)
-    serialize_array(next_state.state_root, UTREEXO_ROOTS_LEN)
+    serialize_array(next_state.utreexo_roots, UTREEXO_ROOTS_LEN)
 
 
     # TODO: validate the previous chain proof
