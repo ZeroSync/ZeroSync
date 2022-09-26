@@ -51,16 +51,19 @@ def felts_to_hash(felts):
 		felt = struct.unpack("<I", struct.pack(">I", felt))[0]
 		res += pow(2**32, i) * felt
 
-	# Pretty format as hex
-	# remove leading "0x", add leading zeros to 32 bytes, but display zero as "0".
-	res = hex(res).replace('0x','').zfill(64)
-	if int(res, 16) == 0:
-		return "0"
-	return res
+	return hex(res).replace('0x','').zfill(64)
 
+
+# Pretty format as hex
+# remove leading "0x", add leading zeros to 32 bytes, but display zero as "0".
+def felt_to_hex(felt):
+	hex_felt = hex(felt).replace('0x','').zfill(64)
+	if( int(hex_felt,16) ==0 ):
+		return "0"
+	return hex_felt
 
 def felts_to_hex(felts):
-	return list( map(lambda x: hex(x).replace('0x','').zfill(64), felts ) )
+	return list( map(felt_to_hex, felts))
 
 output_dir = 'tmp'
 

@@ -129,7 +129,7 @@ class RequestHandler(BaseHTTPRequestHandler):
             utreexo_add(vout_hash)
             # self.wfile.write(json.dumps({'status':'success'}).encode())
             
-            print('roots:', list(map(lambda node: node.val if node != None else 0, root_nodes)) )
+            print('roots:', list(map(lambda node: hex(node.val) if node != None else 0, root_nodes)) )
             # self.wfile.write(json.dumps({'leaf_index': 32, 'proof': [] }).encode())
             return
 

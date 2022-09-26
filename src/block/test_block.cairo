@@ -68,9 +68,9 @@ func test_verify_block_with_1_transaction{range_check_ptr, bitwise_ptr : Bitwise
         epoch_start_time = 0,
         prev_timestamps
     )
-    let (prev_state_root) = utreexo_init()
+    let (utreexo_roots) = utreexo_init()
 
-    let prev_state = State(prev_chain_state, prev_state_root)
+    let prev_state = State(prev_chain_state, utreexo_roots)
 
     # Parse the block validation context 
     let (context) = read_block_validation_context{reader=reader}(prev_state)
@@ -167,13 +167,13 @@ func test_verify_block_with_4_transactions{range_check_ptr, bitwise_ptr : Bitwis
 
     # We need some UTXOs to spend in this block
     reset_bridge_node()
-    let (prev_state_root) = utreexo_init()
-    dummy_utxo_insert{hash_ptr=pedersen_ptr, utreexo_roots=prev_state_root}(0x2d3ef8215980ca7bfe3aea785eb7a2f234eb33418ef4bc87683ca23287cd309)
-    dummy_utxo_insert{hash_ptr=pedersen_ptr, utreexo_roots=prev_state_root}(0x1aa9272136be702146acae34cf02dfaed63288404e0e5842ae3b60341848779)
-    dummy_utxo_insert{hash_ptr=pedersen_ptr, utreexo_roots=prev_state_root}(0x75f708000a3e08f9d6f01ced23f5e5d510bdf6dfa6d4447858586d4026b516e)
+    let (prev_utreexo_roots) = utreexo_init()
+    dummy_utxo_insert{hash_ptr=pedersen_ptr, utreexo_roots=prev_utreexo_roots}(0x2d3ef8215980ca7bfe3aea785eb7a2f234eb33418ef4bc87683ca23287cd309)
+    dummy_utxo_insert{hash_ptr=pedersen_ptr, utreexo_roots=prev_utreexo_roots}(0x1aa9272136be702146acae34cf02dfaed63288404e0e5842ae3b60341848779)
+    dummy_utxo_insert{hash_ptr=pedersen_ptr, utreexo_roots=prev_utreexo_roots}(0x75f708000a3e08f9d6f01ced23f5e5d510bdf6dfa6d4447858586d4026b516e)
 
 
-    let prev_state = State(prev_chain_state, prev_state_root)
+    let prev_state = State(prev_chain_state, prev_utreexo_roots)
 
     # Parse the block validation context using the previous state
     let (context) = read_block_validation_context{reader=reader}(prev_state)
@@ -239,9 +239,9 @@ func test_verify_block_with_27_transactions{range_check_ptr, bitwise_ptr : Bitwi
 
     # We need some UTXOs to spend in this block
     reset_bridge_node()
-    let (prev_state_root) = utreexo_init()
+    let (utreexo_roots) = utreexo_init()
 
-    let prev_state = State(prev_chain_state, prev_state_root)
+    let prev_state = State(prev_chain_state, utreexo_roots)
 
     # Parse the block validation context using the previous state
     let (context) = read_block_validation_context{reader=reader}(prev_state)
