@@ -117,21 +117,22 @@ def inclusion_proof(node):
 class RequestHandler(BaseHTTPRequestHandler):
     
     def do_GET(self):
-        global root_nodes, leaf_nodes
-
         self.send_response(200)
         self.end_headers()
+        
+        global root_nodes, leaf_nodes
 
         if self.path.startswith('/add'):
             hash_hex = self.path.replace('/add/','')
             print('add', hash_hex)
             vout_hash = int(hash_hex, 16)
             utreexo_add(vout_hash)
-            # self.wfile.write(json.dumps({'status':'success'}).encode())
             
-            print('roots:', list(map(lambda node: hex(node.val) if node != None else 0, root_nodes)) )
-            # self.wfile.write(json.dumps({'leaf_index': 32, 'proof': [] }).encode())
+            print('roots:', list(map(lambda node: hex(node.val).replace('0x','') if node != None else 0, root_nodes)) )
+
+            self.wfile.write(json.dumps({'status': 'success'}).encode())
             return
+
 
         if self.path.startswith('/delete'):
             hash_hex = self.path.replace('/delete/','')
@@ -141,6 +142,7 @@ class RequestHandler(BaseHTTPRequestHandler):
             print(proof, leaf_index)
             self.wfile.write(json.dumps({'leaf_index': leaf_index, 'proof': proof }).encode())
             return 
+
 
         if self.path.startswith('/reset'):
             print('>>>>>>>>>> RESET >>>>>>>>>>')

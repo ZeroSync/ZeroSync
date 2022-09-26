@@ -9,7 +9,7 @@ Implement a chain proof that mimics the ["assumevalid" option of Bitcoin Core](h
 
 - ✅ Parse blocks, headers, and transactions
 - ✅ Verify the chain of hashes (block hash, previous block hash, Merkle root, TXIDs)
-- 👷‍♂️ Verify the chain's work (proof-of-work and difficulty retargeting)
+- 👷‍♂️ Verify the chain's work (proof-of-work ✓ and difficulty retargeting)
 - ✅ Verify the UTXO set (Utreexo accumulator and a "bridge node" to provide the inclusion proofs)
 - 👷‍♂️ Chain of proofs with recursive STARKs: Verify the previous chain proof in the current chain proof
 
@@ -33,14 +33,16 @@ Implement witness verification and complete the full chain proof.
 	- Legacy: p2pk, p2pkh, p2sh
 	- SegWit: p2wpkh, p2wsh
 	- Taproot: p2tr; key path & script path spend
-- Crypto
+- 👷‍♂️ Crypto
 	- ECDSA, Schnorr
-	- SHA256, HASH256, SHA1, RIPEMD160, HASH160, ...
+	- SHA256 ✓, HASH256 ✓, SHA1, RIPEMD160 ✓, HASH160 ✓, ...
 - Chain verifier 
 	- Software to download and prove a chainstate directory for a Bitcoin Core full node
 	- Demo the chainstate proof in a simple website
 
 After this milestone we can sync a pruned full node by downloading only the current UTXO set. Running a zerosync'd full node requires no modification of the code of Bitcoin Core. We just copy the UTXO set into Core's chainstate directory after verifying it.
+
+For the proof to become production ready we will will have to test, review, and harden the code a lot more.
 
 
 ## Long-term Vision: *"zerosync and scan the chain efficiently"*

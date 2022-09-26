@@ -16,18 +16,20 @@ WARNING: THIS CODE IS STILL FULL OF CRITICAL SECURITY BUGS!
 - [Giza](https://github.com/maxgillett/giza) (Required for prover. Not necessary for development and testing)
 
 
-## Run all Tests
-
-```sh
-protostar test --cairo-path=./src target src
-```
-
-
 ## Run the Utreexo Bridge Node
+To pass the block tests the Utreexo bridge node is required. It provides inclusion proofs for all coins spent in a block.
+
 ```sh
 source ~/cairo_venv/bin/activate
 python src/utreexo/bridge_node.py
 ```
+
+
+## Run all Tests
+```sh
+protostar test --cairo-path=./src target src
+```
+
 
 
 ## Run the Chain Prover
@@ -40,7 +42,7 @@ python src/chain_proof/main.py
 ```
 
 ```sh
-giza prove --trace=tmp/trace.bin --memory=tmp/memory.bin --program=tmp/program.json --output=tmp/proof.bin --num-outputs=12
+giza prove --trace=tmp/trace.bin --memory=tmp/memory.bin --program=tmp/program.json --output=tmp/proof.bin --num-outputs=50
 ```
 
 ## List TODOs in Code
