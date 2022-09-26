@@ -1,4 +1,7 @@
 {
-	"leaf_index": 0, 
-	"proof": []
+	"leaf_index": 2, 
+	"proof": [
+		"0x4eb2acb81e87a9d9d3a6f7296d48c37dcab6a5c92be9528b6fb6a245c3122f3", 
+		"0x670b4054e1ca60f79cf88a965f53e3feec3abced0422675352e848240fd2a18"
+	]
 }

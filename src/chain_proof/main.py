@@ -50,7 +50,13 @@ def felts_to_hash(felts):
 		# Swap endianess
 		felt = struct.unpack("<I", struct.pack(">I", felt))[0]
 		res += pow(2**32, i) * felt
-	return hex(res).replace('0x','').zfill(64)
+
+	# Pretty format as hex
+	# remove leading "0x", add leading zeros to 32 bytes, but display zero as "0".
+	res = hex(res).replace('0x','').zfill(64)
+	if int(res, 16) == 0:
+		return "0"
+	return res
 
 
 def felts_to_hex(felts):
@@ -65,9 +71,10 @@ print( os.popen(cmd).read() )
 
 file_name = 'src/chain_proof/state_0.json' 
 
-
+# The first Bitcoin TX ever occured in block 170
+# The second TX occured in block 181
 start_block_height = 0
-end_block_height = 1000 # First Bitcoin TX ever occured in block 170
+end_block_height = 1000 
 
 for i in range(start_block_height, end_block_height):
 	if i >= 1:
