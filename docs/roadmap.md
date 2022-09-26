@@ -16,11 +16,11 @@ Implement a chain proof that mimics the ["assumevalid" option of Bitcoin Core](h
 
 ## Milestone 2: *"measure and optimise"* 
 
-Measure the performance of *assumevalid* proofs, and optimise them until we can further extend them with the validation of Bitcoin Scripts.
+Measure the performance of *assumevalid* proofs and optimise them until we can further extend them with the validation of Bitcoin Scripts.
 
 - Benchmark the *assumevalid proof* with blocks full of transactions
 - Identify the performance bottlenecks and see if there are any showstoppers
-- Optimise the bottlenecks such that we can start to add Script validation
+- Optimise the bottlenecks such until we can start to add Script validation
 
 
 ## Milestone 3: *"Bitcoin Script"*
@@ -40,19 +40,19 @@ Implement witness verification and complete the full chain proof.
 	- Software to download and prove a chainstate directory for a Bitcoin Core full node
 	- Demo the chainstate proof in a simple website
 
-After this milestone we can sync a pruned full node by downloading the utxo set. Running a zerosync'd full node requires no modification of the code of Bitcoin Core. We just have to copy the UTXO set into Core's chainstate directory after verifying it.
+After this milestone we can sync a pruned full node by downloading only the current UTXO set. Running a zerosync'd full node requires no modification of the code of Bitcoin Core. We just copy the UTXO set into Core's chainstate directory after verifying it.
 
 
 ## Long-term Vision: *"zerosync and scan the chain efficiently"*
 
 - *Block filters* for zk-clients to quickly check if a block is relevant to them.
-- *Compact blocks* for zk-clients to download only the parts of the block that are relevant to them.
+- *Compact blocks* for zk-clients to download only the parts of blocks that are relevant to them.
 - Merkelized headers chain. Compact and flexible inclusion proofs for any transaction in the blockchain.
 
 ### Further Ideas:
 - Compact ring signatures: E.g. Prove that you control outputs worth at least 1 BTC without revealing which ones.
 - Instant history verification for client-side validation protocols like Omni, RGB, or Taro.
-	- Better privacy with transaction graph obfuscation. Every TX becomes a coin teleport proven in zk.
+	- Better privacy with transaction graph obfuscation. Every TX could be a coin teleport proven in zk.
 - Enhance privacy of routing in the Lightning Network?
 
 
