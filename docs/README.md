@@ -29,10 +29,6 @@ source ~/cairo_venv/bin/activate
 python src/utreexo/bridge_node.py
 ```
 
-## Run the Utreexo Bridge Node Dummy 
-```sh
-src/utreexo/bridge_node_dummy.sh
-```
 
 ## Run the Chain Prover
 ```sh
