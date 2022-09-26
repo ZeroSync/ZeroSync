@@ -77,7 +77,7 @@ func _utreexo_delete_loop{hash_ptr: HashBuiltin*}(
 
 	if n != 0:
 		let (n) = hash2(p, n)
-		assert roots_out[h] = 0
+		assert roots_out[h] = roots_in[h]
 		return _utreexo_delete_loop(roots_in, roots_out, proof, proof_len, n, h + 1)
 	end
 
