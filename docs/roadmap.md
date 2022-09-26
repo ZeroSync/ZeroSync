@@ -40,13 +40,13 @@ Implement witness verification and complete the full chain proof.
 	- Software to download and prove a chainstate directory for a Bitcoin Core full node
 	- Demo the chainstate proof in a simple website
 
-After this milestone we can sync a pruned full node by downloading the utxo set. Running a zerosync'd full node requires no modification of the code of Bitcoin Core. We just have to write the UTXO set into Core's chainstate directory after verifying it.
+After this milestone we can sync a pruned full node by downloading the utxo set. Running a zerosync'd full node requires no modification of the code of Bitcoin Core. We just have to copy the UTXO set into Core's chainstate directory after verifying it.
 
 
 ## Long-term Vision: *"zerosync and scan the chain efficiently"*
 
-- *Block filters* for zk-clients to quickly check if a block is relevant to them
-- *Compact blocks* for zk-clients to download only the parts of the block that is relevant to them
+- *Block filters* for zk-clients to quickly check if a block is relevant to them.
+- *Compact blocks* for zk-clients to download only the parts of the block that are relevant to them.
 - Merkelized headers chain. Compact and flexible inclusion proofs for any transaction in the blockchain.
 
 ### Further Ideas:
@@ -59,7 +59,8 @@ After this milestone we can sync a pruned full node by downloading the utxo set.
 
 # History of ZeroSync
 
-- ZeroSync originated in [STARK relay](https://github.com/lucidLuckylee/zerosync/tree/relay), [Lukas'](https://github.com/lucidLuckylee) bachelor thesis at TU Berlin in which he proved the headers chain of Bitcoin. This research was funded by [Geometry](https://geometryresearch.xyz).
-- In July 2022 [Robin Linus](https://github.com/robinlinus) joined the project to grow it into a full chain proof.
+- In February 2022 [Lukas George](https://github.com/lucidLuckylee) started [STARK relay](https://github.com/lucidLuckylee/zerosync/tree/relay), his bachelor thesis at TU Berlin, in which he proved the headers chain of Bitcoin.
+- In July 2022 [Robin Linus](https://github.com/robinlinus) joined the project to grow it into a full chain proof. 
+- [Geometry Research](https://geometryresearch.xyz) offered a grant to fund the development.
 - [Ruben Somsen](https://medium.com/@RubenSomsen/snarks-and-the-future-of-blockchains-55b82012452b) gave the project its name ZeroSync. 
 

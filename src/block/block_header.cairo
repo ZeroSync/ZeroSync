@@ -275,6 +275,7 @@ end
 #
 func compute_work_from_target{range_check_ptr}(target) -> (work):
 	# TODO: Check all boundaries. This is just a dummy implementation
+	# TODO: Write tests for compute_work_from_target 
     let (hi, lo) = split_felt(target)
     let target256 = Uint256(lo, hi)
     let (neg_target256) = uint256_neg(target256)
