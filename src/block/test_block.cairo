@@ -2,8 +2,9 @@
 # To run only this test suite use:
 # protostar test --cairo-path=./src target src/block/*_block.cairo
 #
-# Note that you have to run the dummy bridge node to make all this tests pass
+# Note that you have to run the bridge node to make all this tests pass
 #
+
 
 %lang starknet
 
@@ -29,7 +30,7 @@ from block.test_block_header import dummy_prev_timestamps
 # - Stackoverflow: https://stackoverflow.com/questions/67631407/raw-or-hex-of-a-whole-bitcoin-block
 # - Blockchair: https://api.blockchair.com/bitcoin/raw/block/000000004d15e01d3ffc495df7bb638c2b35c5b5dd0ba405615f513e3393f0c7
 @external
-func test_read_block_validation_context{range_check_ptr, bitwise_ptr : BitwiseBuiltin*, pedersen_ptr: HashBuiltin*}():
+func test_verify_block_with_1_transaction{range_check_ptr, bitwise_ptr : BitwiseBuiltin*, pedersen_ptr: HashBuiltin*}():
     alloc_locals
     setup_python_defs()
 
@@ -115,7 +116,7 @@ end
 # - Stackoverflow: https://stackoverflow.com/questions/67631407/raw-or-hex-of-a-whole-bitcoin-block
 # - Blockchair: https://api.blockchair.com/bitcoin/raw/block/000000000003ba27aa200b1cecaad478d2b00432346c3f1f3986da1afd33e506
 @external
-func test_read_block_with_4_transactions{range_check_ptr, bitwise_ptr : BitwiseBuiltin*, pedersen_ptr: HashBuiltin*}():
+func test_verify_block_with_4_transactions{range_check_ptr, bitwise_ptr : BitwiseBuiltin*, pedersen_ptr: HashBuiltin*}():
     alloc_locals
     setup_python_defs()
 
@@ -204,7 +205,7 @@ end
 # - Blockchair: https://api.blockchair.com/bitcoin/raw/block/000000000000051f68f43e9d455e72d9c4e4ce52e8a00c5e24c07340632405cb
 # TODO: fixme 
 # @external
-func test_read_block_with_27_transactions{range_check_ptr, bitwise_ptr : BitwiseBuiltin*, pedersen_ptr: HashBuiltin*}():
+func test_verify_block_with_27_transactions{range_check_ptr, bitwise_ptr : BitwiseBuiltin*, pedersen_ptr: HashBuiltin*}():
     alloc_locals
     setup_python_defs()
 
@@ -236,6 +237,8 @@ func test_read_block_with_27_transactions{range_check_ptr, bitwise_ptr : Bitwise
         prev_timestamps
     )
 
+    # We need some UTXOs to spend in this block
+    reset_bridge_node()
     let (prev_state_root) = utreexo_init()
 
     let prev_state = State(prev_chain_state, prev_state_root)
@@ -254,6 +257,6 @@ func test_read_block_with_27_transactions{range_check_ptr, bitwise_ptr : Bitwise
     
 
     # Validate the block
-    validate_and_apply_block{hash_ptr = pedersen_ptr}(context)
+    # validate_and_apply_block{hash_ptr = pedersen_ptr}(context)
     return ()
 end
