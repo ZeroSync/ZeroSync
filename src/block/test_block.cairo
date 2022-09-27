@@ -42,6 +42,34 @@ func dummy_prev_timestamps() -> (timestamps: felt*) {
     return (prev_timestamps,);
 }
 
+
+// Insert elements into the UTXO set to consume them in a block test
+func dummy_utxo_insert{hash_ptr: HashBuiltin*, utreexo_roots: felt*}(hash) {
+    %{
+        import urllib3
+        http = urllib3.PoolManager()
+        hex_hash = hex(ids.hash).replace('0x','')
+        url = 'http://localhost:2121/add/' + hex_hash
+        r = http.request('GET', url)
+    %}
+
+    utreexo_add(hash);
+    return ();
+}
+
+
+// Flash the UTXO set of the bridge node
+func reset_bridge_node() {
+    %{
+        import urllib3
+        http = urllib3.PoolManager()
+        url = 'http://localhost:2121/reset/'
+        r = http.request('GET', url)
+    %}
+    return ();
+}
+
+
 // Test a simple Bitcoin block with only a single transaction.
 //
 // Example: Block at height 6425
@@ -86,28 +114,6 @@ func test_verify_block_with_1_transaction{
     return ();
 }
 
-func dummy_utxo_insert{hash_ptr: HashBuiltin*, utreexo_roots: felt*}(hash) {
-    %{
-        import urllib3
-        http = urllib3.PoolManager()
-        hex_hash = hex(ids.hash).replace('0x','')
-        url = 'http://localhost:2121/add/' + hex_hash
-        r = http.request('GET', url)
-    %}
-
-    utreexo_add(hash);
-    return ();
-}
-
-func reset_bridge_node() {
-    %{
-        import urllib3
-        http = urllib3.PoolManager()
-        url = 'http://localhost:2121/reset/'
-        r = http.request('GET', url)
-    %}
-    return ();
-}
 
 // Test a Bitcoin block with 4 transactions.
 //

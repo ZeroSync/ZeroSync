@@ -36,7 +36,7 @@ Implement witness verification and complete the full chain proof.
 - 👷‍♂️ Crypto
 	- ECDSA, Schnorr
 	- SHA256 ✓, HASH256 ✓, SHA1, RIPEMD160 ✓, HASH160 ✓
-- Chain verifier 
+- Chain verifier
 	- Software to download and prove a chainstate directory for a Bitcoin Core full node
 	- Demo the chainstate proof in a simple website
 

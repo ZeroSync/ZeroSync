@@ -35,10 +35,7 @@ protostar test --cairo-path=./src target src
 ## Run the Chain Prover
 ```sh
 source ~/cairo_venv/bin/activate
-```
-
-```sh
-python src/chain_proof/main.py
+python3 src/chain_proof/main.py
 ```
 
 ```sh

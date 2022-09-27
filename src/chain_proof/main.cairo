@@ -45,12 +45,8 @@ func main{
     );
     let prev_state = State(prev_chain_state, prev_utreexo_roots);
 
-    // Read a raw block from a hint
-    let (raw_block) = fetch_block(block_height + 1);
-    let (reader) = init_reader(raw_block);
-
     // Perform a state transition
-    let (context) = read_block_validation_context{reader=reader}(prev_state);
+    let (context) = read_block_validation_context(prev_state);
     let (next_state) = validate_and_apply_block{hash_ptr=pedersen_ptr}(context);
 
     // Print the next state
