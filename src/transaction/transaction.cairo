@@ -196,7 +196,6 @@ func read_output{reader: Reader, range_check_ptr}() -> (output: TxOutput, byte_s
 // The validation context for transactions
 struct TransactionValidationContext {
     transaction: Transaction,
-    transaction_raw: felt*,
     transaction_size: felt,
     txid: felt*,
     // member is_segwit: felt
@@ -215,7 +214,7 @@ func fetch_transaction(block_height, tx_index) -> (raw_transaction: felt*) {
         r = http.request('GET', url)
         block_hash = str(r.data, 'utf-8')
 
-        url = 'https://blockstream.info/api/block/' + block_hash + '/txid/' + str(ids.tx_index)
+        url = f'https://blockstream.info/api/block/{block_hash}/txid/' + str(ids.tx_index)
         r = http.request('GET', url)
         txid = r.data.decode('utf-8')
 
@@ -240,7 +239,7 @@ func read_transaction_validation_context{
     let (txid) = sha256d(transaction_raw, byte_size);
 
     return (TransactionValidationContext(
-        transaction, transaction_raw, byte_size, txid),);
+        transaction, byte_size, txid),);
 }
 
 // Validate all properties of a transaction, apply it to the current state
@@ -285,7 +284,7 @@ func validate_and_apply_input{range_check_ptr, utreexo_roots: felt*, hash_ptr: H
 ) -> (amount: felt) {
     let (amount, script_pub_key, script_pub_key_len) = utxo_set_extract(input.txid, input.vout);
 
-    // TODO: validate Bitcoin script
+    // TODO: validate the Bitcoin Script
 
     return (amount,);
 }

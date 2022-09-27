@@ -9,6 +9,7 @@
 
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin, HashBuiltin
+from starkware.cairo.common.math import assert_le
 
 from serialize.serialize import Reader, Writer, read_varint
 from block.block_header import (
@@ -31,7 +32,7 @@ from crypto.sha256d.sha256d import assert_hashes_equal, copy_hash, HASH_FELT_SIZ
 struct State {
     // The state of the chain of block headers
     chain_state: ChainState,
-    // The state of the UTXO set represented in a (fancy) Merkle root hash
+    // The UTXO set represented as the roots of all trees in a Utreexo forest
     utreexo_roots: felt*,
 }
 
@@ -219,13 +220,22 @@ func validate_and_apply_coinbase{range_check_ptr, hash_ptr: HashBuiltin*, utreex
 
     let tx_context = context.transaction_contexts[0];
 
-    // TODO: can we have multiple genesis outputs?
+    // TODO: Check if we can we have multiple genesis outputs
     let output_index = 0;
     let output = tx_context.transaction.outputs[output_index];
     validate_output(tx_context, output, output_index);
 
-    // TODO: compute block_reward from context.header.block_height
-    // assert block_reward + total_fees <= output.amount
+    let (block_reward) = compute_block_reward(context.header_context.block_height);
+    assert_le(output.amount, block_reward + total_fees);
 
     return ();
+}
+
+
+// Compute the miner's block reward with respect to the block height
+// 
+func compute_block_reward(block_height) -> (block_reward: felt){
+    // TODO: implement compute_block_reward 
+    let block_reward = 50 * 10**8;
+    return (block_reward,);
 }
