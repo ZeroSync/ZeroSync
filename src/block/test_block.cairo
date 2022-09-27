@@ -300,3 +300,71 @@ func test_verify_block_with_27_transactions{
     validate_and_apply_block{hash_ptr = pedersen_ptr}(context);
     return ();
 }
+
+
+
+
+
+
+
+
+
+// Test a Bitcoin block with 49 transactions.
+//
+// Example: Block at height 170000
+//
+// - Block hash: 000000000000000009a11b3972c8e532fe964de937c9e0096b43814e67af3728
+// - Block explorer: https://blockstream.info/block/000000000000000009a11b3972c8e532fe964de937c9e0096b43814e67af3728
+// - Blockchair: https://api.blockchair.com/bitcoin/raw/block/000000000000000009a11b3972c8e532fe964de937c9e0096b43814e67af3728
+// @external
+func test_verify_block_with_49_transactions{
+    range_check_ptr, bitwise_ptr: BitwiseBuiltin*, pedersen_ptr: HashBuiltin*
+}() {
+    alloc_locals;
+    setup_python_defs();
+
+    // Create a dummy for the previous chain state
+    // Block 299999: https://blockstream.info/block/00000000000000000cca48eb4b330d91e8d946d344ca302a86a280161b0bffb6
+    let (prev_block_hash) = alloc();
+    %{
+        hashes_from_hex([
+            "00000000000000000cca48eb4b330d91e8d946d344ca302a86a280161b0bffb6"
+        ], ids.prev_block_hash)
+    %}
+
+    let (prev_timestamps) = dummy_prev_timestamps();
+
+    let prev_chain_state = ChainState(
+        block_height=328733,
+        total_work=0,
+        best_block_hash=prev_block_hash,
+        difficulty=0,
+        epoch_start_time=0,
+        prev_timestamps,
+    );
+
+    // We need some UTXOs to spend in this block
+    reset_bridge_node();
+    let (utreexo_roots) = utreexo_init();
+    
+    
+    let prev_state = State(prev_chain_state, utreexo_roots);
+
+    // Parse the block validation context using the previous state
+    let (context) = read_block_validation_context(prev_state);
+
+    // Sanity Check
+    // Transaction count should be 49
+    assert context.transaction_count = 49;
+
+    // Sanity Check
+    // The second output of the second transaction should be 1.83180058 BTC
+
+    let transaction = context.transaction_contexts[1].transaction;
+    assert transaction.outputs[1].amount = 183180058
+
+
+    // Validate the block
+    // validate_and_apply_block{hash_ptr = pedersen_ptr}(context);
+    return ();
+}
