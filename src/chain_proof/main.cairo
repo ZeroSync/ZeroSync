@@ -12,7 +12,7 @@ from utreexo.utreexo import UTREEXO_ROOTS_LEN
 from python_utils import setup_python_defs
 
 
-func main{output_ptr : felt*, pedersen_ptr: HashBuiltin*, range_check_ptr, ecdsa_ptr, bitwise_ptr: BitwiseBuiltin*, ec_op_ptr }():
+func main{output_ptr : felt*, pedersen_ptr: HashBuiltin*, range_check_ptr, ecdsa_ptr, bitwise_ptr: BitwiseBuiltin*, ec_op_ptr}():
     alloc_locals
     setup_python_defs()
 
@@ -42,7 +42,7 @@ func main{output_ptr : felt*, pedersen_ptr: HashBuiltin*, range_check_ptr, ecdsa
     let prev_state = State(prev_chain_state, prev_utreexo_roots)
 
 
-    # Read a raw block from the program input
+    # Read a raw block from a hint
     let (raw_block) = fetch_block(block_height + 1)
     let (reader) = init_reader(raw_block)
 
@@ -82,7 +82,6 @@ end
 
 
 
-
 func fetch_block(block_height) -> (block_data: felt*):
     let (block_data) = alloc()
 
@@ -101,34 +100,6 @@ func fetch_block(block_height) -> (block_data: felt*):
         r = http.request('GET', url)
 
         block_hex = r.data.hex()
-        # print( block_hex )
-
-
-        import re
-
-        def hex_to_felt(hex_string):
-            # Seperate hex_string into chunks of 8 chars.
-            felts = re.findall(".?.?.?.?.?.?.?.", hex_string)
-            # Fill remaining space in last chunk with 0.
-            while len(felts[-1]) < 8:
-                felts[-1] += "0"
-            return [int(x, 16) for x in felts]
-
-        # Writes a hex string into an uint32 array
-        #
-        # Using multi-line strings in python:
-        # - https://stackoverflow.com/questions/10660435/how-do-i-split-the-definition-of-a-long-string-over-multiple-lines
-        def from_hex(hex_string, destination):
-            # To see if there are only 0..f in hex_string we can try to turn it into an int
-            try:
-                check_if_hex = int(hex_string, 16)
-            except ValueError:
-                print("ERROR: Input to from_hex contains non-hex characters.")
-            felts = hex_to_felt(hex_string)
-            segments.write_arg(destination, felts)
-
-            # Return the byte size of the uint32 array and the array length.
-            return len(hex_string) // 2, len(felts)
 
         from_hex(block_hex, ids.block_data)
     %}
