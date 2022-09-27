@@ -1,6 +1,6 @@
 //
 // To run only this test suite use:
-// protostar test  --cairo-path=./src target tests/*_transaction*
+// protostar test  --cairo-path=./src target src/**/*_transaction*
 //
 
 %lang starknet
@@ -110,30 +110,16 @@ func test_read_transaction_validation_context{range_check_ptr, bitwise_ptr: Bitw
     alloc_locals;
     setup_python_defs();
 
-    let (transaction_raw) = alloc();
     let (txid_expected) = alloc();
 
     // Use Python to convert hex string into uint32 array
     %{
-        from_hex((
-            "0100000001352a68f58c6e69fa632a1bf77566cf83a7515fc9ecd251fa37f410"
-            "460d07fb0c010000008c493046022100e30fea4f598a32ea10cd56118552090c"
-            "be79f0b1a0c63a4921d2399c9ec14ffc022100ef00f238218864a909db55be9e"
-            "2e464ccdd0c42d645957ea80fa92441e90b4c6014104b01cf49815496b5ef83a"
-            "bd1a3891996233f0047ada682d56687dd58feb39e969409ce70be398cf73634f"
-            "f9d1aae79ac2be2b1348ce622dddb974ad790b4106deffffffff02e093040000"
-            "0000001976a914a18cc6dd0e38dea210390a2403622ffc09dae88688ac8152b5"
-            "00000000001976a914d73441c86ea086121991877e204516f1861c194188ac00"
-            "000000"), ids.transaction_raw)
-
         hashes_from_hex([
         	"b9818f9eb8925f2b5b9aaf3e804306efa1a0682a7173c0b7edb5f2e05cc435bd"
         	], ids.txid_expected)
     %}
 
-    let (reader) = init_reader(transaction_raw);
-
-    let (context) = read_transaction_validation_context{reader=reader}();
+    let (context) = read_transaction_validation_context(328734, 1);
 
     assert context.transaction.version = 0x01;
 
@@ -141,50 +127,6 @@ func test_read_transaction_validation_context{range_check_ptr, bitwise_ptr: Bitw
     assert context.transaction.outputs[1].amount = 11883137;
 
     assert context.transaction_size = 259;
-
-    assert_hashes_equal(context.txid, txid_expected);
-    return ();
-}
-
-// Read transaction from serialize.serialize with an offset
-//
-// See also
-// - https://blockstream.info/tx/a4bc0a85369d04454ec7e006ece017f21549fdfe7df128d61f9f107479bfdf7e
-// - https://blockstream.info/api/tx/a4bc0a85369d04454ec7e006ece017f21549fdfe7df128d61f9f107479bfdf7e/hex
-@external
-func test_read_transaction_with_offset{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
-    alloc_locals;
-    setup_python_defs();
-
-    let (transaction_raw) = alloc();
-    let (txid_expected) = alloc();
-
-    // Use Python to convert hex string into uint32 array
-    %{
-        from_hex((
-            "010100000001000000000000000000000000000000000000000000000000000000"
-            "0000000000ffffffff0804ffff001d024f02ffffffff0100f2052a0100000043"
-            "41048a5294505f44683bbc2be81e0f6a91ac1a197d6050accac393aad3b86b23"
-            "98387e34fedf0de5d9f185eb3f2c17f3564b9170b9c262aa3ac91f371279beca"
-            "0cafac00000000"), ids.transaction_raw)
-
-        hashes_from_hex([
-        	"a4bc0a85369d04454ec7e006ece017f21549fdfe7df128d61f9f107479bfdf7e"
-        	], ids.txid_expected)
-    %}
-
-    let (reader) = init_reader(transaction_raw);
-
-    // Create some offset
-    read_uint8{reader=reader}();
-
-    let (context) = read_transaction_validation_context{reader=reader}();
-
-    assert context.transaction.version = 0x01;
-
-    assert context.transaction.outputs[0].amount = 50 * 10 ** 8;  // 50 BTC
-
-    assert context.transaction_size = 135;
 
     assert_hashes_equal(context.txid, txid_expected);
     return ();

@@ -19,11 +19,8 @@ from starkware.cairo.common.uint256 import (
 
 from serialize.serialize import (
     Reader,
-    Writer,
     read_uint32,
-    write_uint32,
     read_hash,
-    write_hash,
     UINT32_SIZE,
     BYTE,
     init_reader,
@@ -75,16 +72,6 @@ func read_block_header{reader: Reader, range_check_ptr}() -> (result: BlockHeade
         version, prev_block_hash, merkle_root_hash, time, bits, nonce),);
 }
 
-// Write a BlockHeader into a Uint32 array
-func write_block_header{writer: Writer, range_check_ptr}(header: BlockHeader) {
-    write_uint32(header.version);
-    write_hash(header.prev_block_hash);
-    write_hash(header.merkle_root_hash);
-    write_uint32(header.time);
-    write_uint32(header.bits);
-    write_uint32(header.nonce);
-    return ();
-}
 
 // A summary of the current state of a block chain
 struct ChainState {
@@ -110,8 +97,6 @@ struct ChainState {
 
 // The validation context for block headers
 struct BlockHeaderValidationContext {
-    // The block header serialized as uint32 array
-    block_header_raw: felt*,
 
     // The block header parsed into a struct
     // TODO: should be a pointer
@@ -131,29 +116,51 @@ struct BlockHeaderValidationContext {
     block_height: felt,
 }
 
+
+func fetch_block_header(block_height) -> (raw_block_header: felt*) {
+    let (raw_block_header) = alloc();
+
+    %{
+        block_height = ids.block_height
+
+        import urllib3
+        import json
+        http = urllib3.PoolManager()
+
+        url = 'https://blockstream.info/api/block-height/' + str(block_height)
+        r = http.request('GET', url)
+        block_hash = str(r.data, 'utf-8')
+
+        url = 'https://blockstream.info/api/block/' + block_hash + '/header'
+        r = http.request('GET', url)
+        block_hex = r.data.decode('utf-8')
+
+        from_hex(block_hex, ids.raw_block_header)
+    %}
+    return (raw_block_header,);
+}
+
 // Read a block header and its validation context from a reader and a previous validation context
 func read_block_header_validation_context{
-    reader: Reader, range_check_ptr, bitwise_ptr: BitwiseBuiltin*
+    range_check_ptr, bitwise_ptr: BitwiseBuiltin*
 }(prev_chain_state: ChainState) -> (context: BlockHeaderValidationContext) {
     alloc_locals;
 
-    // TODO: what if reader.offset > 0 here?
-    // block_header_raw should be a "pointer" into the raw byte string
-    // (actually, that's just the same as a Reader)
-    assert reader.offset = 0;
-    let block_header_raw = reader.head;
+    // Retrieve the block header from a hint
+    let (raw_block_header) = fetch_block_header(prev_chain_state.block_height + 1);
+    let (reader) = init_reader(raw_block_header);
 
-    let (block_header) = read_block_header();
+
+    let (block_header) = read_block_header{reader=reader}();
 
     let (target) = bits_to_target(block_header.bits);
 
-    let (block_hash) = sha256d_felt_sized(block_header_raw, BLOCK_HEADER_FELT_SIZE);
+    let (block_hash) = sha256d_felt_sized(raw_block_header, BLOCK_HEADER_FELT_SIZE);
 
     let block_height = prev_chain_state.block_height + 1;
 
     return (
         BlockHeaderValidationContext(
-        block_header_raw,
         block_header,
         block_hash,
         target,
