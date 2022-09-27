@@ -20,7 +20,7 @@ Measure the performance of *assumevalid* proofs and optimise them until we can f
 
 - Benchmark the *assumevalid proof* with blocks full of transactions
 - Identify the performance bottlenecks and see if there are any showstoppers
-- Optimise the bottlenecks such until we can start to add Script validation
+- Optimise the bottlenecks until we can start to add Script validation
 
 
 ## Milestone 3: *"Bitcoin Script"*
@@ -28,28 +28,28 @@ Implement witness verification and complete the full chain proof.
 
 - Bitcoin Script
 	- Compute signature hashes (ALL, NONE, SINGLE, ANYONECANPAY, ... )
-	- Script interpreter (All opcodes)
+	- Script interpreter (implement all opcodes)
 - Payment types
 	- Legacy: p2pk, p2pkh, p2sh
 	- SegWit: p2wpkh, p2wsh
 	- Taproot: p2tr; key path & script path spend
 - 👷‍♂️ Crypto
 	- ECDSA, Schnorr
-	- SHA256 ✓, HASH256 ✓, SHA1, RIPEMD160 ✓, HASH160 ✓, ...
+	- SHA256 ✓, HASH256 ✓, SHA1, RIPEMD160 ✓, HASH160 ✓
 - Chain verifier 
 	- Software to download and prove a chainstate directory for a Bitcoin Core full node
 	- Demo the chainstate proof in a simple website
 
 After this milestone we can sync a pruned full node by downloading only the current UTXO set. Running a zerosync'd full node requires no modification of the code of Bitcoin Core. We just copy the UTXO set into Core's chainstate directory after verifying it.
 
-For the proof to become production ready we will will have to test, review, and harden the code a lot more.
+Still, for the proof to become production ready we will will have to test, review, and harden the code a lot more.
 
 
 ## Long-term Vision: *"zerosync and scan the chain efficiently"*
 
+- Merkelized headers chain. Compact and flexible inclusion proofs for any transaction in the blockchain.
 - *Block filters* for zk-clients to quickly check if a block is relevant to them.
 - *Compact blocks* for zk-clients to download only the parts of blocks that are relevant to them.
-- Merkelized headers chain. Compact and flexible inclusion proofs for any transaction in the blockchain.
 
 ### Further Ideas:
 - Compact ring signatures: E.g. Prove that you control outputs worth at least 1 BTC without revealing which ones.
@@ -62,7 +62,7 @@ For the proof to become production ready we will will have to test, review, and 
 # History of ZeroSync
 
 - In February 2022 [Lukas George](https://github.com/lucidLuckylee) started [STARK relay](https://github.com/lucidLuckylee/zerosync/tree/relay), his bachelor thesis at TU Berlin, in which he proved the headers chain of Bitcoin.
-- In July 2022 [Robin Linus](https://github.com/robinlinus) joined the project to grow it into a full chain proof. 
 - [Geometry Research](https://geometryresearch.xyz) offered a grant to fund the development.
+- In July 2022 [Robin Linus](https://github.com/robinlinus) joined the project to grow it into a full chain proof.
 - [Ruben Somsen](https://medium.com/@RubenSomsen/snarks-and-the-future-of-blockchains-55b82012452b) gave the project its name ZeroSync. 
 

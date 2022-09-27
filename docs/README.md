@@ -17,7 +17,7 @@ WARNING: THIS CODE IS STILL FULL OF CRITICAL SECURITY BUGS!
 
 
 ## Run the Utreexo Bridge Node
-To pass the block tests the Utreexo bridge node is required. It provides inclusion proofs for all coins spent in a block.
+The Utreexo bridge node is required to pass the tests for block verification. It provides the inclusion proofs for the coins spent in a block.
 
 ```sh
 source ~/cairo_venv/bin/activate
