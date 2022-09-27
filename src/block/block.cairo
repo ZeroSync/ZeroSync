@@ -42,14 +42,43 @@ struct BlockValidationContext {
     prev_utreexo_roots: felt*,
 }
 
-func read_block_validation_context{reader: Reader, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
+func fetch_transaction_count(block_height) -> (transaction_count: felt) {
+    alloc_locals;
+    local transaction_count;
+
+    %{
+
+        import urllib3
+        import json
+        http = urllib3.PoolManager()
+
+        url = 'https://blockstream.info/api/block-height/' + str(ids.block_height)
+        r = http.request('GET', url)
+        block_hash = str(r.data, 'utf-8')
+
+        url = 'https://blockstream.info/api/block/' + block_hash 
+        r = http.request('GET', url)
+        
+        import json
+        block = json.loads(r.data)
+
+        ids.transaction_count = block["tx_count"]
+        print('tx count:', ids.transaction_count)
+    %}
+    return (transaction_count,);
+}
+
+func read_block_validation_context{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
     prev_state: State
 ) -> (context: BlockValidationContext) {
     alloc_locals;
 
     let (header_context) = read_block_header_validation_context(prev_state.chain_state);
-    let (transaction_count, _) = read_varint();
-    let (transaction_contexts) = read_transaction_validation_contexts(transaction_count);
+    
+    let block_height = prev_state.chain_state.block_height + 1;
+    let (transaction_count) = fetch_transaction_count(block_height);
+
+    let (transaction_contexts) = read_transaction_validation_contexts(block_height, transaction_count);
 
     return (
         BlockValidationContext(
@@ -62,26 +91,27 @@ func read_block_validation_context{reader: Reader, range_check_ptr, bitwise_ptr:
 }
 
 func read_transaction_validation_contexts{
-    reader: Reader, range_check_ptr, bitwise_ptr: BitwiseBuiltin*
-}(transaction_count) -> (contexts: TransactionValidationContext*) {
+    range_check_ptr, bitwise_ptr: BitwiseBuiltin*
+}(block_height, transaction_count) -> (contexts: TransactionValidationContext*) {
     alloc_locals;
 
     let (contexts: TransactionValidationContext*) = alloc();
-    _read_transaction_validation_contexts_loop(contexts, transaction_count);
+    _read_transaction_validation_contexts_loop(contexts, block_height, transaction_count, transaction_count);
     return (contexts,);
 }
 
 func _read_transaction_validation_contexts_loop{
-    reader: Reader, range_check_ptr, bitwise_ptr: BitwiseBuiltin*
-}(contexts: TransactionValidationContext*, loop_counter) {
+    range_check_ptr, bitwise_ptr: BitwiseBuiltin*
+}(contexts: TransactionValidationContext*, block_height, loop_counter, transaction_count) {
     if (loop_counter == 0) {
         return ();
     }
-    let (context) = read_transaction_validation_context();
+
+    let (context) = read_transaction_validation_context(block_height, transaction_count - loop_counter);
     assert [contexts] = context;
 
     return _read_transaction_validation_contexts_loop(
-        contexts + TransactionValidationContext.SIZE, loop_counter - 1
+        contexts + TransactionValidationContext.SIZE, block_height, loop_counter - 1, transaction_count
     );
 }
 

@@ -10,6 +10,7 @@ from starkware.cairo.common.math import assert_le
 
 from crypto.sha256d.sha256d import sha256d, HASH_SIZE
 from serialize.serialize import (
+    init_reader,
     Reader,
     read_uint8,
     read_uint16,
@@ -202,17 +203,40 @@ struct TransactionValidationContext {
     // member witnesses: felt**
 }
 
+func fetch_transaction(block_height, tx_index) -> (raw_transaction: felt*) {
+    let (raw_transaction) = alloc();
+
+    %{
+        import urllib3
+        import json
+        http = urllib3.PoolManager()
+
+        url = 'https://blockstream.info/api/block-height/' + str(ids.block_height)
+        r = http.request('GET', url)
+        block_hash = str(r.data, 'utf-8')
+
+        url = 'https://blockstream.info/api/block/' + block_hash + '/txid/' + str(ids.tx_index)
+        r = http.request('GET', url)
+        txid = r.data.decode('utf-8')
+
+        url = f"https://blockstream.info/api/tx/{txid}/hex"
+        r = http.request('GET', url)
+        tx_hex = r.data.decode('utf-8')
+
+        from_hex(tx_hex, ids.raw_transaction)
+    %}
+    return (raw_transaction,);
+}
+
 // Read a transaction from a buffer and set its validation context
 func read_transaction_validation_context{
-    reader: Reader, range_check_ptr, bitwise_ptr: BitwiseBuiltin*
-}() -> (result: TransactionValidationContext) {
+    range_check_ptr, bitwise_ptr: BitwiseBuiltin*
+    }( block_height, transaction_index ) -> (result: TransactionValidationContext) {
     alloc_locals;
 
-    // TODO: Fix me properly. This is just a quick fix to prevent
-    // the bug occuring when reader.offset > 0.
-    let raw_reader = reader;
-    let (transaction, byte_size) = read_transaction();
-    let (transaction_raw) = read_bytes_endian{reader=raw_reader}(byte_size);
+    let (transaction_raw) = fetch_transaction(block_height, transaction_index);
+    let (reader) = init_reader(transaction_raw);
+    let (transaction, byte_size) = read_transaction{reader=reader}();
     let (txid) = sha256d(transaction_raw, byte_size);
 
     return (TransactionValidationContext(
