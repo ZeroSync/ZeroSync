@@ -11,19 +11,25 @@ from block.block import State, validate_and_apply_block, read_block_validation_c
 from utreexo.utreexo import UTREEXO_ROOTS_LEN
 from python_utils import setup_python_defs
 
+func main{
+    output_ptr: felt*,
+    pedersen_ptr: HashBuiltin*,
+    range_check_ptr,
+    ecdsa_ptr,
+    bitwise_ptr: BitwiseBuiltin*,
+    ec_op_ptr,
+}() {
+    alloc_locals;
+    setup_python_defs();
 
-func main{output_ptr : felt*, pedersen_ptr: HashBuiltin*, range_check_ptr, ecdsa_ptr, bitwise_ptr: BitwiseBuiltin*, ec_op_ptr}():
-    alloc_locals
-    setup_python_defs()
-
-    # Read the previous state from the program input
-    local block_height: felt
-    local total_work: felt
-    let (best_block_hash) = alloc()
-    local difficulty: felt
-    local epoch_start_time: felt
-    let (prev_timestamps) = alloc()
-    let (prev_utreexo_roots) = alloc()
+    // Read the previous state from the program input
+    local block_height: felt;
+    local total_work: felt;
+    let (best_block_hash) = alloc();
+    local difficulty: felt;
+    local epoch_start_time: felt;
+    let (prev_timestamps) = alloc();
+    let (prev_utreexo_roots) = alloc();
     %{
         ids.block_height = program_input["block_height"] if program_input["block_height"] != -1 else PRIME - 1
         ids.total_work = program_input["total_work"]
@@ -34,56 +40,48 @@ func main{output_ptr : felt*, pedersen_ptr: HashBuiltin*, range_check_ptr, ecdsa
         segments.write_arg(ids.prev_utreexo_roots, felts_from_hex_strings( program_input["utreexo_roots"] ) )
     %}
 
-
     let prev_chain_state = ChainState(
-        block_height, total_work, best_block_hash,
-        difficulty, epoch_start_time, prev_timestamps
-    )
-    let prev_state = State(prev_chain_state, prev_utreexo_roots)
+        block_height, total_work, best_block_hash, difficulty, epoch_start_time, prev_timestamps
+    );
+    let prev_state = State(prev_chain_state, prev_utreexo_roots);
 
+    // Read a raw block from a hint
+    let (raw_block) = fetch_block(block_height + 1);
+    let (reader) = init_reader(raw_block);
 
-    # Read a raw block from a hint
-    let (raw_block) = fetch_block(block_height + 1)
-    let (reader) = init_reader(raw_block)
+    // Perform a state transition
+    let (context) = read_block_validation_context{reader=reader}(prev_state);
+    let (next_state) = validate_and_apply_block{hash_ptr=pedersen_ptr}(context);
 
+    // Print the next state
+    serialize_chain_state(next_state.chain_state);
+    serialize_array(next_state.utreexo_roots, UTREEXO_ROOTS_LEN);
 
-    # Perform a state transition
-    let (context) = read_block_validation_context{reader=reader}(prev_state)
-    let (next_state) = validate_and_apply_block{hash_ptr=pedersen_ptr}(context)
-    
+    // TODO: validate the previous chain proof
+    return ();
+}
 
-    # Print the next state
-    serialize_chain_state(next_state.chain_state)
-    serialize_array(next_state.utreexo_roots, UTREEXO_ROOTS_LEN)
+func serialize_chain_state{output_ptr: felt*}(chain_state: ChainState) {
+    serialize_word(chain_state.block_height);
+    serialize_array(chain_state.best_block_hash, HASH_FELT_SIZE);
+    serialize_word(chain_state.total_work);
+    serialize_word(chain_state.difficulty);
+    serialize_array(chain_state.prev_timestamps, 11);
+    serialize_word(chain_state.epoch_start_time);
+    return ();
+}
 
+func serialize_array{output_ptr: felt*}(array: felt*, array_len) {
+    if (array_len == 0) {
+        return ();
+    }
+    serialize_word([array]);
+    serialize_array(array + 1, array_len - 1);
+    return ();
+}
 
-    # TODO: validate the previous chain proof
-    return ()
-end
-
-func serialize_chain_state{output_ptr: felt*}(chain_state: ChainState):
-    serialize_word(chain_state.block_height)
-    serialize_array(chain_state.best_block_hash, HASH_FELT_SIZE)
-    serialize_word(chain_state.total_work)
-    serialize_word(chain_state.difficulty)
-    serialize_array(chain_state.prev_timestamps, 11)
-    serialize_word(chain_state.epoch_start_time)
-    return ()
-end
-
-func serialize_array{output_ptr: felt*}(array:felt*, array_len):
-    if array_len == 0:
-        return ()
-    end
-    serialize_word([array])
-    serialize_array(array + 1, array_len - 1)
-    return ()
-end
-
-
-
-func fetch_block(block_height) -> (block_data: felt*):
-    let (block_data) = alloc()
+func fetch_block(block_height) -> (block_data: felt*) {
+    let (block_data) = alloc();
 
     %{
         block_height = ids.block_height
@@ -103,5 +101,5 @@ func fetch_block(block_height) -> (block_data: felt*):
 
         from_hex(block_hex, ids.block_data)
     %}
-    return (block_data)
-end
+    return (block_data,);
+}

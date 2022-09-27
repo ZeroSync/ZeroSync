@@ -1,6 +1,6 @@
-# Use this to import the ripemd160 python implementation
+// Use this to import the ripemd160 python implementation
 
-func setup_python_ripemd160():
+func setup_python_ripemd160() {
     %{
         # The below implementation from https://github.com/jcook/python-crypto-debian/blob/master/lib/Crypto/Hash/RIPEMD160.py was adjusted to python 3.7
 
@@ -293,5 +293,5 @@ func setup_python_ripemd160():
             digest_size = 20
     %}
 
-    return ()
-end
+    return ();
+}

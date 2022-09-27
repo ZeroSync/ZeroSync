@@ -1,5 +1,5 @@
-# Defines hashes_from_hex for tests
-func setup_python_defs():
+// Defines hashes_from_hex for tests
+func setup_python_defs() {
     %{
         import re
 
@@ -59,5 +59,5 @@ func setup_python_defs():
         def felts_from_hex_strings(hex_strings):
             return list( map(lambda x: int(x, 16), hex_strings ))
     %}
-    return ()
-end
+    return ();
+}

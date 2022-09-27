@@ -1,10 +1,10 @@
-# Note that Bitcoin Core and most block explorers swap the endianess when displaying a hash
-# So, we have to reverse the byte order to compute the merkle tree
+// Note that Bitcoin Core and most block explorers swap the endianess when displaying a hash
+// So, we have to reverse the byte order to compute the merkle tree
 
-#
-# To run only this test suite use:
-# protostar test --cairo-path=./src target src/block/test_merkle_tree.cairo
-#
+//
+// To run only this test suite use:
+// protostar test --cairo-path=./src target src/block/test_merkle_tree.cairo
+//
 %lang starknet
 
 from starkware.cairo.common.alloc import alloc
@@ -13,16 +13,16 @@ from crypto.sha256d.sha256d import assert_hashes_equal
 from block.merkle_tree import compute_merkle_root
 from python_utils import setup_python_defs
 
-# Simple test case (2 TXs)
-# Test case from https://medium.com/coinmonks/how-to-manually-verify-the-merkle-root-of-a-bitcoin-block-command-line-7881397d4db1
+// Simple test case (2 TXs)
+// Test case from https://medium.com/coinmonks/how-to-manually-verify-the-merkle-root-of-a-bitcoin-block-command-line-7881397d4db1
 @external
-func test_compute_merkle_root{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
-    alloc_locals
-    # Call setup_python_defs at least once to make sure the python functions for the next hint are defined
-    setup_python_defs()
-    let (leaves) = alloc()
-    let (root_expected) = alloc()
-    local leaves_len
+func test_compute_merkle_root{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
+    alloc_locals;
+    // Call setup_python_defs at least once to make sure the python functions for the next hint are defined
+    setup_python_defs();
+    let (leaves) = alloc();
+    let (root_expected) = alloc();
+    local leaves_len;
     %{
         # For new test cases simply change the hashes and root_expected lists
         ids.leaves_len = hashes_from_hex([
@@ -34,21 +34,21 @@ func test_compute_merkle_root{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
         ], ids.root_expected)
     %}
 
-    let (root) = compute_merkle_root(leaves, leaves_len)
-    assert_hashes_equal(root, root_expected)
-    return ()
-end
+    let (root) = compute_merkle_root(leaves, leaves_len);
+    assert_hashes_equal(root, root_expected);
+    return ();
+}
 
-# Power of 2 test case (8 TXs)
-# https://blockchain.info/block/000000000000307b75c9b213f61b2a0c429a34b41b628daae9774cb9b5ff1059
-# Test case from https://gist.github.com/thereal1024/45bb035e580430988a34
+// Power of 2 test case (8 TXs)
+// https://blockchain.info/block/000000000000307b75c9b213f61b2a0c429a34b41b628daae9774cb9b5ff1059
+// Test case from https://gist.github.com/thereal1024/45bb035e580430988a34
 @external
-func test_compute_merkle_root_power_of_2{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
-    alloc_locals
-    setup_python_defs()
-    let (leaves) = alloc()
-    let (root_expected) = alloc()
-    local leaves_len
+func test_compute_merkle_root_power_of_2{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
+    alloc_locals;
+    setup_python_defs();
+    let (leaves) = alloc();
+    let (root_expected) = alloc();
+    local leaves_len;
     %{
         ids.leaves_len = hashes_from_hex([
             "04a2808134e646ba67ff83f0bc7535a008b6e154c98953f5e2c9d40429880faf",
@@ -66,21 +66,21 @@ func test_compute_merkle_root_power_of_2{range_check_ptr, bitwise_ptr : BitwiseB
         ], ids.root_expected)
     %}
 
-    let (root) = compute_merkle_root(leaves, leaves_len)
-    assert_hashes_equal(root, root_expected)
-    return ()
-end
+    let (root) = compute_merkle_root(leaves, leaves_len);
+    assert_hashes_equal(root, root_expected);
+    return ();
+}
 
-# Uneven test case (13 TXs)
-# https://blockchain.info/block/0000000000004563d49a8e7f7f2a2f0aec01101fa971fb63714b8fbf32f62f91
-# Test case from https://gist.github.com/thereal1024/45bb035e580430988a34
+// Uneven test case (13 TXs)
+// https://blockchain.info/block/0000000000004563d49a8e7f7f2a2f0aec01101fa971fb63714b8fbf32f62f91
+// Test case from https://gist.github.com/thereal1024/45bb035e580430988a34
 @external
-func test_compute_merkle_root_uneven{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}():
-    alloc_locals
-    setup_python_defs()
-    let (leaves) = alloc()
-    let (root_expected) = alloc()
-    local leaves_len
+func test_compute_merkle_root_uneven{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
+    alloc_locals;
+    setup_python_defs();
+    let (leaves) = alloc();
+    let (root_expected) = alloc();
+    local leaves_len;
     %{
         ids.leaves_len = hashes_from_hex([
             "df70f26b6df54332ad29c08aab5e5d5560d1468311e90484ebd89f87ac6264e8",
@@ -103,7 +103,7 @@ func test_compute_merkle_root_uneven{range_check_ptr, bitwise_ptr : BitwiseBuilt
         ], ids.root_expected)
     %}
 
-    let (root) = compute_merkle_root(leaves, leaves_len)
-    assert_hashes_equal(root, root_expected)
-    return ()
-end
+    let (root) = compute_merkle_root(leaves, leaves_len);
+    assert_hashes_equal(root, root_expected);
+    return ();
+}
