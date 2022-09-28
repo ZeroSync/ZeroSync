@@ -10,28 +10,16 @@ from starkware.cairo.common.pow import pow
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.memcpy import memcpy
 from starkware.cairo.common.uint256 import (
-    Uint256,
-    uint256_neg,
-    uint256_add,
-    uint256_sub,
-    uint256_unsigned_div_rem,
-)
-
+    Uint256, uint256_neg, uint256_add, uint256_sub, uint256_unsigned_div_rem )
 from serialize.serialize import (
-    Reader,
-    read_uint32,
-    read_hash,
-    UINT32_SIZE,
-    BYTE,
-    init_reader,
-    read_bytes,
-)
+    Reader, read_uint32, read_hash, UINT32_SIZE, BYTE, init_reader, read_bytes )
 from crypto.sha256d.sha256d import sha256d_felt_sized, assert_hashes_equal
 
 // The size of a block header is 80 bytes
 const BLOCK_HEADER_SIZE = 80;
 // The size of a block header encoded as an array of Uint32 is 20 felts
 const BLOCK_HEADER_FELT_SIZE = BLOCK_HEADER_SIZE / UINT32_SIZE;
+
 
 // Definition of a Bitcoin block header
 //
@@ -56,6 +44,7 @@ struct BlockHeader {
     // The lucky nonce which solves the proof-of-work
     nonce: felt,
 }
+
 
 // Read a BlockHeader from a Uint32 array
 func read_block_header{reader: Reader, range_check_ptr}() -> (result: BlockHeader) {
@@ -95,6 +84,7 @@ struct ChainState {
     prev_timestamps: felt*,
 }
 
+
 // The validation context for block headers
 struct BlockHeaderValidationContext {
 
@@ -116,7 +106,7 @@ struct BlockHeaderValidationContext {
     block_height: felt,
 }
 
-
+// Fetch a block header from our blockchain data provider
 func fetch_block_header(block_height) -> (raw_block_header: felt*) {
     let (raw_block_header) = alloc();
 
@@ -131,14 +121,16 @@ func fetch_block_header(block_height) -> (raw_block_header: felt*) {
         r = http.request('GET', url)
         block_hash = str(r.data, 'utf-8')
 
-        url = 'https://blockstream.info/api/block/' + block_hash + '/header'
+        url = f'https://blockstream.info/api/block/{ block_hash }/header'
         r = http.request('GET', url)
         block_hex = r.data.decode('utf-8')
 
         from_hex(block_hex, ids.raw_block_header)
     %}
+
     return (raw_block_header,);
 }
+
 
 // Read a block header and its validation context from a reader and a previous validation context
 func read_block_header_validation_context{
@@ -146,18 +138,16 @@ func read_block_header_validation_context{
 }(prev_chain_state: ChainState) -> (context: BlockHeaderValidationContext) {
     alloc_locals;
 
-    // Retrieve the block header from a hint
-    let (raw_block_header) = fetch_block_header(prev_chain_state.block_height + 1);
-    let (reader) = init_reader(raw_block_header);
+    let block_height = prev_chain_state.block_height + 1;
 
+    let (raw_block_header) = fetch_block_header(block_height);
+    let (reader) = init_reader(raw_block_header);
 
     let (block_header) = read_block_header{reader=reader}();
 
     let (target) = bits_to_target(block_header.bits);
 
     let (block_hash) = sha256d_felt_sized(raw_block_header, BLOCK_HEADER_FELT_SIZE);
-
-    let block_height = prev_chain_state.block_height + 1;
 
     return (
         BlockHeaderValidationContext(
@@ -169,6 +159,7 @@ func read_block_header_validation_context{
         ),
     );
 }
+
 
 // Calculate target from bits
 //
@@ -187,6 +178,7 @@ func bits_to_target{range_check_ptr}(bits) -> (target: felt) {
     let (shift_left) = pow(BYTE, exponent - 3);
     return (significand * shift_left,);
 }
+
 
 // Validate a block header, apply it to the previous state
 // and return the next state
@@ -213,6 +205,7 @@ func validate_and_apply_block_header{range_check_ptr}(context: BlockHeaderValida
     return (next_state,);
 }
 
+
 // Validate that a block header correctly extends the current chain
 func validate_prev_block_hash(context: BlockHeaderValidationContext) {
     assert_hashes_equal(
@@ -220,6 +213,7 @@ func validate_prev_block_hash(context: BlockHeaderValidationContext) {
     );
     return ();
 }
+
 
 // Validate a block header's proof-of-work matches its target.
 // Expects that the 4 most significant bytes of `block_hash` are zero.
@@ -235,17 +229,18 @@ func validate_proof_of_work{range_check_ptr}(context: BlockHeaderValidationConte
     // Sum up the other 7 uint32 chunks of the hash into 1 felt
     const BASE = 2 ** 32;
     let hash_felt = hash[0] * BASE ** 0 +
-        hash[1] * BASE ** 1 +
-        hash[2] * BASE ** 2 +
-        hash[3] * BASE ** 3 +
-        hash[4] * BASE ** 4 +
-        hash[5] * BASE ** 5 +
-        hash[6] * BASE ** 6;
+                    hash[1] * BASE ** 1 +
+                    hash[2] * BASE ** 2 +
+                    hash[3] * BASE ** 3 +
+                    hash[4] * BASE ** 4 +
+                    hash[5] * BASE ** 5 +
+                    hash[6] * BASE ** 6;
 
     // Validate that the hash is smaller than the target
     assert_le_felt(hash_felt, context.target);
     return ();
 }
+
 
 // Validate that the proof-of-work target is sufficiently difficult
 //
@@ -256,22 +251,24 @@ func validate_target(context: BlockHeaderValidationContext) {
     return ();
 }
 
+
 // Validate that the timestamp of a block header is strictly greater than the median time
 // of the 11 most recent blocks.
 //
 // See also:
 // - https://developer.bitcoin.org/reference/block_chain.html#block-headers
 // - https://github.com/bitcoin/bitcoin/blob/36c83b40bd68a993ab6459cb0d5d2c8ce4541147/src/chain.h#L290
+//
 func validate_timestamp{range_check_ptr}(context: BlockHeaderValidationContext) {
     alloc_locals;
 
-    let prev_timestamps = context.prev_chain_state.prev_timestamps;
-    // TODO: validate median
+    // TODO: implement validation of median
     // Step 1: Let Python sort the array and compute a permutation (array of indexes)
     // Step 2: Use that permutation to create a sorted array of pointers in Cairo
     // Step 3: Prove sortedness of the sorted array in linear time
     // Step 4: Read the median from the sorted array
-
+    
+    let prev_timestamps = context.prev_chain_state.prev_timestamps;
     local median_time;
     %{
         timestamps = []
@@ -294,6 +291,7 @@ func compute_total_work{range_check_ptr}(context: BlockHeaderValidationContext) 
     return (context.prev_chain_state.total_work + work_in_block,);
 }
 
+
 // Convert a target into units of work.
 // Work is the expected number of hashes required to hit a target.
 //
@@ -314,36 +312,22 @@ func compute_work_from_target{range_check_ptr}(target) -> (work: felt) {
     return (result.low + result.high * 2 ** 128,);
 }
 
-// Apply a block header to a previous chain state to obtain the next chain state
-//
-func apply_block_header{range_check_ptr}(context: BlockHeaderValidationContext) -> (
-    next_state: ChainState
-) {
-    alloc_locals;
 
-    let (prev_timestamps) = next_prev_timestamps(context);
-    let (total_work) = compute_total_work(context);
+// Recalibrate the difficulty after about 2 weeks of blocks
+func recalibrate_difficulty{range_check_ptr}(context: BlockHeaderValidationContext) -> (difficulty:felt, epoch_start_time:felt){
+    let difficulty = context.prev_chain_state.difficulty;
 
-    // TODO: Recalibrate the difficulty after about 2 weeks of blocks
-    // Exactly when context.block_height % 2016 == 0
     let (_, is_not_recalibrate) = unsigned_div_rem(context.block_height, 2016);
     if (is_not_recalibrate == 0) {
-        tempvar epoch_start_time = context.block_header.time;
+        // TODO: Recalibrate the difficulty here
+        let epoch_start_time = context.block_header.time;
+        return (difficulty, epoch_start_time);
     } else {
-        tempvar epoch_start_time = context.prev_chain_state.epoch_start_time;
+        let epoch_start_time = context.prev_chain_state.epoch_start_time;
+        return (difficulty, epoch_start_time);
     }
-
-    return (
-        ChainState(
-            context.block_height,
-            total_work,
-            context.block_hash,
-            context.prev_chain_state.difficulty,
-            epoch_start_time,
-            prev_timestamps
-        ),
-    );
 }
+
 
 // Compute the 11 most recent timestamps for the next state
 //
@@ -357,4 +341,28 @@ func next_prev_timestamps(context: BlockHeaderValidationContext) -> (timestamps:
     let prev_timestamps = context.prev_chain_state.prev_timestamps;
     memcpy(timestamps + 1, prev_timestamps, 10);
     return (timestamps,);
+}
+
+
+// Apply a block header to a previous chain state to obtain the next chain state
+//
+func apply_block_header{range_check_ptr}(context: BlockHeaderValidationContext) -> (
+    next_state: ChainState
+) {
+    alloc_locals;
+
+    let (prev_timestamps) = next_prev_timestamps(context);
+    let (total_work) = compute_total_work(context);
+    let (difficulty, epoch_start_time) = recalibrate_difficulty(context);
+
+    return (
+        ChainState(
+            context.block_height,
+            total_work,
+            context.block_hash,
+            difficulty,
+            epoch_start_time,
+            prev_timestamps
+        ),
+    );
 }

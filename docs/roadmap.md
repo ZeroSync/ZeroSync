@@ -9,7 +9,7 @@ Implement a chain proof that mimics the ["assumevalid" option of Bitcoin Core](h
 
 - ✅ Parse blocks, headers, and transactions
 - ✅ Verify the chain of hashes (block hash, previous block hash, Merkle root, TXIDs)
-- 👷‍♂️ Verify the chain's work (proof-of-work ✓ and difficulty retargeting)
+- 👷‍♂️ Verify the chain's work (proof-of-work ✓ and difficulty recalibration)
 - ✅ Verify the UTXO set (Utreexo accumulator and a "bridge node" to provide the inclusion proofs)
 - 👷‍♂️ Chain of proofs with recursive STARKs: Verify the previous chain proof in the current chain proof
 
@@ -24,6 +24,7 @@ Measure the performance of *assumevalid* proofs and optimise them until we can f
 
 
 ## Milestone 3: *"Bitcoin Script"*
+
 Implement witness verification and complete the full chain proof. 
 
 - Bitcoin Script
@@ -42,7 +43,14 @@ Implement witness verification and complete the full chain proof.
 
 After this milestone we can sync a pruned full node by downloading only the current UTXO set. Running a zerosync'd full node requires no modification of the code of Bitcoin Core. We just copy the UTXO set into Core's chainstate directory after verifying it.
 
-Still, for the proof to become production ready we will will have to test, review, and harden the code a lot more.
+
+## Milestone 4: *Hardening*
+For the proof to become production ready we will will have to test, review, and harden the code a lot.
+
+- Gather community feedback
+- Perform code reviews
+- More testing. Also add fuzzing
+- Bug Bounty program
 
 
 ## Long-term Vision: *"zerosync and scan the chain efficiently"*

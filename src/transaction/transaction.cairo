@@ -10,22 +10,8 @@ from starkware.cairo.common.math import assert_le
 
 from crypto.sha256d.sha256d import sha256d, HASH_SIZE
 from serialize.serialize import (
-    init_reader,
-    Reader,
-    read_uint8,
-    read_uint16,
-    read_uint32,
-    read_uint64,
-    read_varint,
-    read_hash,
-    read_bytes_endian,
-    peek_uint8,
-    Writer,
-    write_uint32,
-    write_varint,
-    UINT32_SIZE,
-    UINT64_SIZE,
-)
+    init_reader, Reader, read_uint8, read_uint16, read_uint32, read_uint64, read_varint, read_hash, 
+    read_bytes_endian, peek_uint8, Writer, write_uint32, write_varint, UINT32_SIZE, UINT64_SIZE )
 from block.block_header import BlockHeaderValidationContext
 
 from utxo_set.utxo_set import utxo_set_insert, utxo_set_extract
@@ -34,6 +20,7 @@ from utxo_set.utxo_set import utxo_set_insert, utxo_set_extract
 //
 // See also:
 // - https://developer.bitcoin.org/reference/transactions.html#raw-transaction-format
+//
 struct Transaction {
     version: felt,
     input_count: felt,
@@ -85,19 +72,19 @@ func read_transaction{reader: Reader, range_check_ptr}() -> (
     // Compute the byte size of the transaction
     return (
         Transaction(
-        version,
-        input_count.value,
-        inputs.inputs,
-        output_count.value,
-        outputs.outputs,
-        locktime
+            version,
+            input_count.value,
+            inputs.inputs,
+            output_count.value,
+            outputs.outputs,
+            locktime
         ),
-        UINT32_SIZE +
-        input_count.byte_size +
-        inputs.byte_size +
-        output_count.byte_size +
-        outputs.byte_size +
-        UINT32_SIZE,
+            UINT32_SIZE +
+            input_count.byte_size +
+            inputs.byte_size +
+            output_count.byte_size +
+            outputs.byte_size +
+            UINT32_SIZE,
     );
 }
 
@@ -136,17 +123,17 @@ func read_input{reader: Reader, range_check_ptr}() -> (input: TxInput, byte_size
     // Compute the input's byte size
     return (
         TxInput(
-        txid,
-        vout,
-        script_sig_size.value,
-        script_sig,
-        sequence
+            txid,
+            vout,
+            script_sig_size.value,
+            script_sig,
+            sequence
         ),
-        HASH_SIZE +
-        UINT32_SIZE +
-        script_sig_size.byte_size +
-        script_sig_size.value +
-        UINT32_SIZE,
+            HASH_SIZE +
+            UINT32_SIZE +
+            script_sig_size.byte_size +
+            script_sig_size.value +
+            UINT32_SIZE,
     );
 }
 
@@ -183,13 +170,13 @@ func read_output{reader: Reader, range_check_ptr}() -> (output: TxOutput, byte_s
     let (script_pub_key) = read_bytes_endian(script_pub_key_size.value);
     return (
         TxOutput(
-        amount,
-        script_pub_key_size.value,
-        script_pub_key
+            amount,
+            script_pub_key_size.value,
+            script_pub_key
         ),
-        UINT64_SIZE +
-        script_pub_key_size.byte_size +
-        script_pub_key_size.value,
+            UINT64_SIZE +
+            script_pub_key_size.byte_size +
+            script_pub_key_size.value,
     );
 }
 

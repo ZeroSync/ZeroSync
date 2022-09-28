@@ -181,6 +181,7 @@ func test_verify_block_with_4_transactions{
     return ();
 }
 
+
 // Test a Bitcoin block with 27 transactions.
 //
 // Example: Block at height 170000
@@ -305,13 +306,6 @@ func test_verify_block_with_27_transactions{
     validate_and_apply_block{hash_ptr = pedersen_ptr}(context);
     return ();
 }
-
-
-
-
-
-
-
 
 
 // Test a Bitcoin block with 49 transactions.

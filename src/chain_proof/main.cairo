@@ -80,13 +80,11 @@ func fetch_block(block_height) -> (block_data: felt*) {
     let (block_data) = alloc();
 
     %{
-        block_height = ids.block_height
-
         import urllib3
         import json
         http = urllib3.PoolManager()
 
-        url = 'https://blockstream.info/api/block-height/' + str(block_height)
+        url = 'https://blockstream.info/api/block-height/' + str(ids.block_height)
         r = http.request('GET', url)
         block_hash = str(r.data, 'utf-8')
 
@@ -97,5 +95,6 @@ func fetch_block(block_height) -> (block_data: felt*) {
 
         from_hex(block_hex, ids.block_data)
     %}
+    
     return (block_data,);
 }

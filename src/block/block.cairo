@@ -48,7 +48,6 @@ func fetch_transaction_count(block_height) -> (transaction_count: felt) {
     local transaction_count;
 
     %{
-
         import urllib3
         import json
         http = urllib3.PoolManager()
@@ -57,14 +56,11 @@ func fetch_transaction_count(block_height) -> (transaction_count: felt) {
         r = http.request('GET', url)
         block_hash = str(r.data, 'utf-8')
 
-        url = 'https://blockstream.info/api/block/' + block_hash 
+        url = f'https://blockstream.info/api/block/{ block_hash }' 
         r = http.request('GET', url)
-        
-        import json
         block = json.loads(r.data)
 
         ids.transaction_count = block["tx_count"]
-        print('tx count:', ids.transaction_count)
     %}
     return (transaction_count,);
 }
