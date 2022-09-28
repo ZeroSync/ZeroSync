@@ -45,12 +45,8 @@ func main{
     );
     let prev_state = State(prev_chain_state, prev_utreexo_roots);
 
-    // Read a raw block from a hint
-    let (raw_block) = fetch_block(block_height + 1);
-    let (reader) = init_reader(raw_block);
-
     // Perform a state transition
-    let (context) = read_block_validation_context{reader=reader}(prev_state);
+    let (context) = read_block_validation_context(prev_state);
     let (next_state) = validate_and_apply_block{hash_ptr=pedersen_ptr}(context);
 
     // Print the next state
@@ -84,22 +80,21 @@ func fetch_block(block_height) -> (block_data: felt*) {
     let (block_data) = alloc();
 
     %{
-        block_height = ids.block_height
-
         import urllib3
         import json
         http = urllib3.PoolManager()
 
-        url = 'https://blockstream.info/api/block-height/' + str(block_height)
+        url = 'https://blockstream.info/api/block-height/' + str(ids.block_height)
         r = http.request('GET', url)
         block_hash = str(r.data, 'utf-8')
 
-        url = 'https://blockstream.info/api/block/' + block_hash + '/raw'
+        url = f'https://blockstream.info/api/block/{ block_hash }/raw'
         r = http.request('GET', url)
 
         block_hex = r.data.hex()
 
         from_hex(block_hex, ids.block_data)
     %}
+    
     return (block_data,);
 }

@@ -77,13 +77,13 @@ file_name = 'src/chain_proof/state_0.json'
 # The first Bitcoin TX ever occured in block 170
 # The second TX occured in block 181
 start_block_height = 0
-end_block_height = 1000 
+end_block_height = 5 
 
 for i in range(start_block_height, end_block_height):
 	if i >= 1:
 		file_name = f'{output_dir}/chain_state.json'
 
-	cmd = f'cairo-run --program=tmp/program.json --layout=all --print_output --program_input={file_name} --trace_file=tmp/trace.bin --memory_file=tmp/memory.bin'
+	cmd = f'cairo-run --program={output_dir}/program.json --layout=all --print_output --program_input={file_name} --trace_file={output_dir}/trace.bin --memory_file={output_dir}/memory.bin'
 
 	program_output_string = os.popen(cmd).read()
 	program_output = parse_cairo_output(program_output_string)
@@ -102,6 +102,9 @@ for i in range(start_block_height, end_block_height):
 
 	print('block height:', chain_state['block_height'])
 
+	# TODO: Run Giza prover
+	# cmd = f'giza prove --trace={output_dir}/trace.bin --memory={output_dir}/memory.bin --program={output_dir}/program.json --output={output_dir}/proof.bin --num-outputs=50'
+	# program_output_string = os.popen(cmd).read()
 
 	# Write the chain state into a json file
 	f = open(f'{output_dir}/chain_state.json', 'w')
