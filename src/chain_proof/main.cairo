@@ -11,6 +11,48 @@ from block.block import State, validate_and_apply_block, read_block_validation_c
 from utreexo.utreexo import UTREEXO_ROOTS_LEN
 from python_utils import setup_python_defs
 
+func serialize_chain_state{output_ptr: felt*}(chain_state: ChainState) {
+    serialize_word(chain_state.block_height);
+    serialize_array(chain_state.best_block_hash, HASH_FELT_SIZE);
+    serialize_word(chain_state.total_work);
+    serialize_word(chain_state.difficulty);
+    serialize_array(chain_state.prev_timestamps, 11);
+    serialize_word(chain_state.epoch_start_time);
+    return ();
+}
+
+func serialize_array{output_ptr: felt*}(array: felt*, array_len) {
+    if (array_len == 0) {
+        return ();
+    }
+    serialize_word([array]);
+    serialize_array(array + 1, array_len - 1);
+    return ();
+}
+
+func fetch_block(block_height) -> (block_data: felt*) {
+    let (block_data) = alloc();
+
+    %{
+        import urllib3
+        import json
+        http = urllib3.PoolManager()
+
+        url = 'https://blockstream.info/api/block-height/' + str(ids.block_height)
+        r = http.request('GET', url)
+        block_hash = str(r.data, 'utf-8')
+
+        url = f'https://blockstream.info/api/block/{ block_hash }/raw'
+        r = http.request('GET', url)
+
+        block_hex = r.data.hex()
+
+        from_hex(block_hex, ids.block_data)
+    %}
+    
+    return (block_data,);
+}
+
 func main{
     output_ptr: felt*,
     pedersen_ptr: HashBuiltin*,
@@ -55,46 +97,4 @@ func main{
 
     // TODO: validate the previous chain proof
     return ();
-}
-
-func serialize_chain_state{output_ptr: felt*}(chain_state: ChainState) {
-    serialize_word(chain_state.block_height);
-    serialize_array(chain_state.best_block_hash, HASH_FELT_SIZE);
-    serialize_word(chain_state.total_work);
-    serialize_word(chain_state.difficulty);
-    serialize_array(chain_state.prev_timestamps, 11);
-    serialize_word(chain_state.epoch_start_time);
-    return ();
-}
-
-func serialize_array{output_ptr: felt*}(array: felt*, array_len) {
-    if (array_len == 0) {
-        return ();
-    }
-    serialize_word([array]);
-    serialize_array(array + 1, array_len - 1);
-    return ();
-}
-
-func fetch_block(block_height) -> (block_data: felt*) {
-    let (block_data) = alloc();
-
-    %{
-        import urllib3
-        import json
-        http = urllib3.PoolManager()
-
-        url = 'https://blockstream.info/api/block-height/' + str(ids.block_height)
-        r = http.request('GET', url)
-        block_hash = str(r.data, 'utf-8')
-
-        url = f'https://blockstream.info/api/block/{ block_hash }/raw'
-        r = http.request('GET', url)
-
-        block_hex = r.data.hex()
-
-        from_hex(block_hex, ids.block_data)
-    %}
-    
-    return (block_data,);
 }
