@@ -161,11 +161,11 @@ func read_block_header_validation_context{
 
     return (
         BlockHeaderValidationContext(
-        block_header,
-        block_hash,
-        target,
-        prev_chain_state,
-        block_height
+            block_header,
+            block_hash,
+            target,
+            prev_chain_state,
+            block_height
         ),
     );
 }
@@ -204,7 +204,7 @@ func validate_and_apply_block_header{range_check_ptr}(context: BlockHeaderValida
     validate_target(context);
 
     // Validate the block's timestamp
-    validate_median_time(context);
+    validate_timestamp(context);
 
     // Apply this block to the previous state
     // and return the next state
@@ -262,15 +262,30 @@ func validate_target(context: BlockHeaderValidationContext) {
 // See also:
 // - https://developer.bitcoin.org/reference/block_chain.html#block-headers
 // - https://github.com/bitcoin/bitcoin/blob/36c83b40bd68a993ab6459cb0d5d2c8ce4541147/src/chain.h#L290
-func validate_median_time(context: BlockHeaderValidationContext) {
+func validate_timestamp{range_check_ptr}(context: BlockHeaderValidationContext) {
+    alloc_locals;
+
     let prev_timestamps = context.prev_chain_state.prev_timestamps;
-    // TODO: implement me using nondeterminism
+    // TODO: validate median
     // Step 1: Let Python sort the array and compute a permutation (array of indexes)
     // Step 2: Use that permutation to create a sorted array of pointers in Cairo
     // Step 3: Prove sortedness of the sorted array in linear time
     // Step 4: Read the median from the sorted array
+
+    local median_time;
+    %{
+        timestamps = []
+        for i in range(11):
+            timestamp = memory[ids.prev_timestamps + i]
+            timestamps.append(timestamp)
+        timestamps.sort()
+        ids.median_time = timestamps[5]
+    %}
+
+    assert_le(median_time, context.block_header.time);
     return ();
 }
+
 
 // Compute the total work invested into the longest chain
 //
@@ -320,12 +335,12 @@ func apply_block_header{range_check_ptr}(context: BlockHeaderValidationContext) 
 
     return (
         ChainState(
-        context.block_height,
-        total_work,
-        context.block_hash,
-        context.prev_chain_state.difficulty,
-        epoch_start_time,
-        prev_timestamps
+            context.block_height,
+            total_work,
+            context.block_hash,
+            context.prev_chain_state.difficulty,
+            epoch_start_time,
+            prev_timestamps
         ),
     );
 }

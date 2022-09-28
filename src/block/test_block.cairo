@@ -84,6 +84,7 @@ func test_verify_block_with_1_transaction{
 }() {
     alloc_locals;
     setup_python_defs();
+    reset_bridge_node();
 
     // Create a dummy for the previous chain state
     let (prev_block_hash) = alloc();
@@ -129,6 +130,7 @@ func test_verify_block_with_4_transactions{
 }() {
     alloc_locals;
     setup_python_defs();
+    reset_bridge_node();
 
     // Create a dummy for the previous chain state
     // Block 99999: https://blockstream.info/block/000000000002d01c1fccc21636b607dfd930d31d01c3a62104612a1719011250
@@ -151,7 +153,7 @@ func test_verify_block_with_4_transactions{
     );
 
     // We need some UTXOs to spend in this block
-    reset_bridge_node();
+    
     let (prev_utreexo_roots) = utreexo_init();
     dummy_utxo_insert{hash_ptr=pedersen_ptr, utreexo_roots=prev_utreexo_roots}(
         0x2d3ef8215980ca7bfe3aea785eb7a2f234eb33418ef4bc87683ca23287cd309
@@ -192,6 +194,7 @@ func test_verify_block_with_27_transactions{
 }() {
     alloc_locals;
     setup_python_defs();
+    reset_bridge_node();
 
     // Create a dummy for the previous chain state
     // Block 169999: https://blockstream.info/block/000000000000096b85408520f97770876fc88944b8cc72083a6e6dca9f167b33
@@ -313,7 +316,7 @@ func test_verify_block_with_27_transactions{
 
 // Test a Bitcoin block with 49 transactions.
 //
-// Example: Block at height 170000
+// Example: Block at height 328734
 //
 // - Block hash: 000000000000000009a11b3972c8e532fe964de937c9e0096b43814e67af3728
 // - Block explorer: https://blockstream.info/block/000000000000000009a11b3972c8e532fe964de937c9e0096b43814e67af3728
@@ -326,7 +329,7 @@ func test_verify_block_with_49_transactions{
     setup_python_defs();
 
     // Create a dummy for the previous chain state
-    // Block 299999: https://blockstream.info/block/00000000000000000cca48eb4b330d91e8d946d344ca302a86a280161b0bffb6
+    // Block 328733: https://blockstream.info/block/00000000000000000cca48eb4b330d91e8d946d344ca302a86a280161b0bffb6
     let (prev_block_hash) = alloc();
     %{
         hashes_from_hex([

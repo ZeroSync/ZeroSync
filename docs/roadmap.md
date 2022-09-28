@@ -5,7 +5,7 @@ This is a rough writeup of the project's roadmap. Nothing here is set in stone. 
 
 ## Milestone 1: *"assumevalid"*
 
-Implement a chain proof that mimics the ["assumevalid" option of Bitcoin Core](https://bitcoincore.org/en/2017/03/08/release-0.14.0/#assumed-valid-blocks). It parses the blocks and its transactions, validates the chain's work, its chain of hashes, and correctly manages the UTXO set. It also validates coin creation, the transaction amounts, and fees. It verifies mostly everything except for the signatures. (More precisely: it verifies no witness data.)
+Implement a chain proof that mimics the ["assumevalid" option of Bitcoin Core](https://bitcoincore.org/en/2017/03/08/release-0.14.0/#assumed-valid-blocks). It parses the blocks and its transactions, validates the chain's work, its chain of hashes, and correctly manages the UTXO set. It also validates the coin supply, the transaction amounts, and fees. It verifies mostly everything except for the signatures. (More precisely: it verifies no witness data.)
 
 - ✅ Parse blocks, headers, and transactions
 - ✅ Verify the chain of hashes (block hash, previous block hash, Merkle root, TXIDs)
@@ -18,9 +18,9 @@ Implement a chain proof that mimics the ["assumevalid" option of Bitcoin Core](h
 
 Measure the performance of *assumevalid* proofs and optimise them until we can further extend them with the validation of Bitcoin Scripts.
 
-- Benchmark the *assumevalid proof* with blocks full of transactions
-- Identify the performance bottlenecks and see if there are any showstoppers
-- Optimise the bottlenecks until we can start to add Script validation
+- 👷‍♂️ Benchmark the *assumevalid proof* with blocks full of transactions
+- 👷‍♂️ Identify the performance bottlenecks and see if there are any showstoppers
+- 👷‍♂️ Optimise the bottlenecks until we can start to add Script validation
 
 
 ## Milestone 3: *"Bitcoin Script"*
@@ -50,6 +50,7 @@ Still, for the proof to become production ready we will will have to test, revie
 - Merkelized headers chain. Compact and flexible inclusion proofs for any transaction in the blockchain.
 - *Block filters* for zk-clients to quickly check if a block is relevant to them.
 - *Compact blocks* for zk-clients to download only the parts of blocks that are relevant to them.
+
 
 ### Further Ideas:
 - Compact ring signatures: E.g. Prove that you control outputs worth at least 1 BTC without revealing which ones.

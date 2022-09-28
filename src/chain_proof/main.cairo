@@ -90,7 +90,7 @@ func fetch_block(block_height) -> (block_data: felt*) {
         r = http.request('GET', url)
         block_hash = str(r.data, 'utf-8')
 
-        url = 'https://blockstream.info/api/block/' + block_hash + '/raw'
+        url = f'https://blockstream.info/api/block/{ block_hash }/raw'
         r = http.request('GET', url)
 
         block_hex = r.data.hex()
