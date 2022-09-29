@@ -53,6 +53,7 @@ func fetch_block(block_height) -> (block_data: felt*) {
     return (block_data,);
 }
 
+
 func main{
     output_ptr: felt*,
     pedersen_ptr: HashBuiltin*,
@@ -98,3 +99,7 @@ func main{
     // TODO: validate the previous chain proof
     return ();
 }
+
+//
+// CAUTION!! `main` has to be the last function in this file! 
+//

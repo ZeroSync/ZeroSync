@@ -18,7 +18,7 @@ Implement a chain proof that mimics the ["assumevalid" option of Bitcoin Core](h
 
 Measure the performance of *assumevalid* proofs and optimise them until we can further extend them with the validation of Bitcoin Scripts.
 
-- 👷‍♂️ Benchmark the *assumevalid proof* with blocks full of transactions
+- 👷‍♂️ Benchmark the *assumevalid proof* with blocks full of transactions (e.g. up to 3500 TXs)
 - 👷‍♂️ Identify the performance bottlenecks and see if there are any showstoppers
 - 👷‍♂️ Optimise the bottlenecks until we can start to add Script validation
 
