@@ -37,9 +37,9 @@ Implement witness verification and complete the full chain proof.
 - 👷‍♂️ Crypto
 	- ECDSA, Schnorr
 	- SHA256 ✓, HASH256 ✓, SHA1, RIPEMD160 ✓, HASH160 ✓
-- Chain verifier
+- 👷‍♂️ Chain verifier
 	- Software to download and prove a chainstate directory for a Bitcoin Core full node
-	- ✅ Demo the chainstate proof in <a href="https://zerosync.org" target="_blank">a simple website</a>
+	- ✓ Demo the chainstate proof in <a href="https://zerosync.org" target="_blank">a simple website</a>
 
 After this milestone we can sync a pruned full node by downloading only the current UTXO set. Running a zerosync'd full node requires no modification of the code of Bitcoin Core. We just copy the UTXO set into Core's chainstate directory after verifying it.
 
