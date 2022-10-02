@@ -72,6 +72,6 @@ For the proof to become production ready we will will have to test, review, and 
 
 - In February 2022 [Lukas George](https://github.com/lucidLuckylee) started [STARK relay](https://github.com/lucidLuckylee/zerosync/tree/relay), his bachelor thesis at TU Berlin, in which he proved the headers chain of Bitcoin.
 - [Geometry Research](https://geometryresearch.xyz) offered a grant to fund the development.
-- In July 2022 [Robin Linus](https://github.com/robinlinus) joined the project to grow it into a full chain proof.
+- In July 2022 [Robin Linus](https://robinlinus.com) joined as lead developer and together they founded ZeroSync to grow the project into a full chain proof.
 - [Ruben Somsen](https://medium.com/@RubenSomsen/snarks-and-the-future-of-blockchains-55b82012452b) gave the project its name ZeroSync. 
-
+- In September 2022 [Max Gillet](https://github.com/maxgillett), who developed the Giza prover, joined the team to implement recursive proofs.

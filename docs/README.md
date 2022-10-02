@@ -10,7 +10,7 @@ WARNING: THIS CODE IS STILL FULL OF CRITICAL SECURITY BUGS!
 
 ## Requirements
 - Python 3.7
-- Cairo [Installation Guide](https://www.cairo-lang.org/docs/quickstart.html) (Programming language for provable programs)
+- Cairo. [Installation Guide](https://www.cairo-lang.org/docs/quickstart.html) (Programming language for provable programs)
 - [Protostar](https://docs.swmansion.com/protostar/docs/tutorials/installation) (Automated testing)
 - [Giza](https://github.com/maxgillett/giza) (Required for prover. Not necessary for development and testing)
 

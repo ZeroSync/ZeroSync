@@ -101,5 +101,5 @@ func main{
 }
 
 //
-// CAUTION!! `main` has to be the last function in this file! 
+// CAUTION!! `main` has to be the last function in this file! Otherwise, `giza prove` breaks.
 //
