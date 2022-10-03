@@ -21,12 +21,14 @@ from crypto.sha256d.sha256d import sha256d_felt_sized, assert_hashes_equal
 const BLOCK_HEADER_SIZE = 80;
 // The size of a block header encoded as an array of Uint32 is 20 felts
 const BLOCK_HEADER_FELT_SIZE = BLOCK_HEADER_SIZE / UINT32_SIZE;
+
 // The minimum amount of work required for a block to be valid (represented as `bits`)
 const MAX_BITS = 0x1d00FFFF;
 // The minimum amount of work required for a block to be valid (represented as `target`)
 const MAX_TARGET = 0x00000000FFFF0000000000000000000000000000000000000000000000000000;
 // An epoch should be two weeks (represented as number of seconds)
-const EXPECTED_EPOCH_TIMESPAN = 60 * 10 * 6 * 24 * 14;
+// seconds/minute * minutes/hour * hours/day * 14 days 
+const EXPECTED_EPOCH_TIMESPAN = 60 * 60 * 24 * 14;
 // Number of blocks per epoch 
 const BLOCKS_PER_EPOCH = 2016;
 
@@ -35,6 +37,7 @@ const BLOCKS_PER_EPOCH = 2016;
 //
 // See also:
 // - https://developer.bitcoin.org/reference/block_chain.html#block-headers
+//
 struct BlockHeader {
     // The block version number indicates which set of block validation rules to follow
     version: felt,
@@ -57,6 +60,7 @@ struct BlockHeader {
 
 
 // Read a BlockHeader from a Uint32 array
+//
 func read_block_header{reader: Reader, range_check_ptr}() -> (result: BlockHeader) {
     alloc_locals;
 
@@ -73,6 +77,7 @@ func read_block_header{reader: Reader, range_check_ptr}() -> (result: BlockHeade
 
 
 // A summary of the current state of a block chain
+//
 struct ChainState {
     // The number of blocks in the longest chain
     block_height: felt,
@@ -97,6 +102,7 @@ struct ChainState {
 
 
 // The validation context for block headers
+//
 struct BlockHeaderValidationContext {
 
     // The block header parsed into a struct
@@ -117,6 +123,7 @@ struct BlockHeaderValidationContext {
 }
 
 // Fetch a block header from our blockchain data provider
+//
 func fetch_block_header(block_height) -> (raw_block_header: felt*) {
     let (raw_block_header) = alloc();
 
@@ -143,9 +150,9 @@ func fetch_block_header(block_height) -> (raw_block_header: felt*) {
 
 
 // Read a block header and its validation context from a reader and a previous validation context
-func read_block_header_validation_context{
-    range_check_ptr, bitwise_ptr: BitwiseBuiltin*
-}(prev_chain_state: ChainState) -> (context: BlockHeaderValidationContext) {
+//
+func read_block_header_validation_context{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
+    prev_chain_state: ChainState) -> (context: BlockHeaderValidationContext) {
     alloc_locals;
 
     let block_height = prev_chain_state.block_height + 1;
@@ -175,6 +182,7 @@ func read_block_header_validation_context{
 //
 // See also:
 // - https://developer.bitcoin.org/reference/block_chain.html#target-nbits
+//
 func bits_to_target{range_check_ptr}(bits) -> (target: felt) {
     alloc_locals;
     // Ensure that the max target is not exceeded (0x1d00FFFF)
@@ -192,9 +200,9 @@ func bits_to_target{range_check_ptr}(bits) -> (target: felt) {
 
 // Validate a block header, apply it to the previous state
 // and return the next state
-func validate_and_apply_block_header{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(context: BlockHeaderValidationContext) -> (
-    next_state: ChainState
-) {
+//
+func validate_and_apply_block_header{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
+    context: BlockHeaderValidationContext) -> (next_state: ChainState) {
     alloc_locals;
     // Validate previous block hash
     validate_prev_block_hash(context);
@@ -217,6 +225,7 @@ func validate_and_apply_block_header{range_check_ptr, bitwise_ptr : BitwiseBuilt
 
 
 // Validate that a block header correctly extends the current chain
+//
 func validate_prev_block_hash(context: BlockHeaderValidationContext) {
     assert_hashes_equal(
         context.prev_chain_state.best_block_hash, context.block_header.prev_block_hash
@@ -227,6 +236,7 @@ func validate_prev_block_hash(context: BlockHeaderValidationContext) {
 
 // Validate a block header's proof-of-work matches its target.
 // Expects that the 4 most significant bytes of `block_hash` are zero.
+//
 func validate_proof_of_work{range_check_ptr}(context: BlockHeaderValidationContext) {
     // Swap the endianess in the uint32 chunks of the hash
     let (reader) = init_reader(context.block_hash);
@@ -257,6 +267,7 @@ func validate_proof_of_work{range_check_ptr}(context: BlockHeaderValidationConte
 // See also:
 // - https://github.com/bitcoin/bitcoin/blob/7fcf53f7b4524572d1d0c9a5fdc388e87eb02416/src/pow.cpp#L13
 // - https://github.com/bitcoin/bitcoin/blob/3a7e0a210c86e3c1750c7e04e3d1d689cf92ddaa/src/rpc/blockchain.cpp#L76
+//
 func validate_target(context: BlockHeaderValidationContext) {    
     assert context.prev_chain_state.current_target = context.block_header.bits;
     return ();
@@ -298,7 +309,8 @@ func validate_timestamp{range_check_ptr}(context: BlockHeaderValidationContext) 
 
 // Compute the total work invested into the longest chain
 //
-func compute_total_work{range_check_ptr}(context: BlockHeaderValidationContext) -> (work: felt) {
+func compute_total_work{range_check_ptr}(
+    context: BlockHeaderValidationContext) -> (work: felt) {
     let (work_in_block) = compute_work_from_target(context.target);
     return (context.prev_chain_state.total_work + work_in_block,);
 }
@@ -342,9 +354,8 @@ func next_prev_timestamps(context: BlockHeaderValidationContext) -> (timestamps:
 
 // Apply a block header to a previous chain state to obtain the next chain state
 //
-func apply_block_header{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(context: BlockHeaderValidationContext) -> (
-    next_state: ChainState
-) {
+func apply_block_header{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
+    context: BlockHeaderValidationContext) -> (next_state: ChainState) {
     alloc_locals;
 
     let (prev_timestamps) = next_prev_timestamps(context);
@@ -406,7 +417,7 @@ func adjust_difficulty{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
         let actual_timespan = felt_to_uint256(fe_actual_timespan);
 
         // Retarget
-        let bn_pow_limit = felt_to_uint256(MAX_TARGET);        
+        let bn_pow_limit = felt_to_uint256(MAX_TARGET);
 
         let ( fe_target ) = bits_to_target(state.current_target);
         let bn_new = felt_to_uint256( fe_target );
@@ -471,6 +482,7 @@ func target_to_bits{range_check_ptr}(target) -> (bits: felt) {
         nCompact |= nSize << 24
         nCompact |= 0x00800000 if fNegative and (nCompact & 0x007fffff) else 0
         
+        
         ids.bits = nCompact
     %}
 
@@ -487,7 +499,8 @@ func target_to_bits{range_check_ptr}(target) -> (bits: felt) {
 }
 
 
-// Convert a felt to a Uint256 
+// Convert a felt to a Uint256
+//
 func felt_to_uint256{range_check_ptr}(value) -> Uint256{
     let (high, low) = split_felt(value);
     let value256 = Uint256(low, high);
