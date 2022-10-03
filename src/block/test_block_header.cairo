@@ -109,7 +109,7 @@ func test_read_block_header_validation_context{range_check_ptr, bitwise_ptr: Bit
         block_height = 328733,
         total_work = 0,
         best_block_hash = prev_block_hash,
-        difficulty = 0x181bc330,
+        current_target = 0x181bc330,
         epoch_start_time = 0,
         prev_timestamps,
     );
@@ -171,18 +171,19 @@ func test_target_to_bits{bitwise_ptr: BitwiseBuiltin*, range_check_ptr}() {
 
 
 
-// Test a difficulty recalibration
+// Test an current_target adjustment
+// After this block the current_target gets adjusted because it is a last block of an epoch.
 //
-//
-// Block at height 201599:
+// Block at height 201599 ( because 201599 % 2016 == 2015 )
 // - https://blockstream.info/block/000000000000041fb61665c8a31b8b5c3ae8fe81903ea81530c979d5094e6f9d
 // - https://blockstream.info/api/block/000000000000041fb61665c8a31b8b5c3ae8fe81903ea81530c979d5094e6f9d
 // - https://blockstream.info/api/block/000000000000041fb61665c8a31b8b5c3ae8fe81903ea81530c979d5094e6f9d/header
 //
 // Block at height 201598:
 // - https://blockstream.info/block/00000000000000ccb28f2e462f46ee762e801995862388f11ba9a682670e7590
+//
 @external
-func test_recalibrate_difficulty{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
+func test_adjust_current_target{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     alloc_locals;
     setup_python_defs();
 
@@ -200,8 +201,8 @@ func test_recalibrate_difficulty{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
     // https://blockstream.info/api/block/000000000000002e00a243fe9aa49c78f573091d17372c2ae0ae5e0f24f55b52
     let epoch_start_time = 1348092851;
 
-    // The difficulty of the previous epoch 
-    let prev_difficulty = 0x1a05db8b;
+    // The current_target of the previous epoch 
+    let prev_current_target = 0x1a05db8b;
 
     let (prev_timestamps) = dummy_prev_timestamps();
 
@@ -209,7 +210,7 @@ func test_recalibrate_difficulty{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
         block_height = 201598,
         total_work = 0,
         best_block_hash = prev_block_hash,
-        difficulty = prev_difficulty,
+        current_target = prev_current_target,
         epoch_start_time = epoch_start_time,
         prev_timestamps,
     );
@@ -237,8 +238,8 @@ func test_recalibrate_difficulty{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
     // This should succeed for valid block headers
     let (next_state) = validate_and_apply_block_header(context);
 
-    // Verify that the difficulty was correctly adjusted
-    assert next_state.difficulty = 0x1a057e08;
+    // Verify that the current_target was correctly adjusted
+    assert next_state.current_target = 0x1a057e08;
     
     return ();
 }

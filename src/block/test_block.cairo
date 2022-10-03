@@ -100,7 +100,7 @@ func test_verify_block_with_1_transaction{
         block_height = 6424,
         total_work = 0,
         best_block_hash = prev_block_hash,
-        difficulty = 0x1d00ffff,
+        current_target = 0x1d00ffff,
         epoch_start_time = 0,
         prev_timestamps,
     );
@@ -147,7 +147,7 @@ func test_verify_block_with_4_transactions{
         block_height=99999,
         total_work=0,
         best_block_hash=prev_block_hash,
-        difficulty=0x1b04864c,
+        current_target=0x1b04864c,
         epoch_start_time=0,
         prev_timestamps,
     );
@@ -212,7 +212,7 @@ func test_verify_block_with_27_transactions{
         block_height=169999,
         total_work=0,
         best_block_hash=prev_block_hash,
-        difficulty=0x1a0b350c,
+        current_target=0x1a0b350c,
         epoch_start_time=0,
         prev_timestamps,
     );
@@ -337,7 +337,7 @@ func test_verify_block_with_49_transactions{
         block_height = 328733,
         total_work = 0,
         best_block_hash = prev_block_hash,
-        difficulty = 0x181bc330,
+        current_target = 0x181bc330,
         epoch_start_time = 0,
         prev_timestamps,
     );

@@ -74,8 +74,7 @@ print( os.popen(cmd).read() )
 
 file_name = 'src/chain_proof/state_0.json' 
 
-# The first Bitcoin TX ever occured in block 170
-# The second TX occured in block 181
+# The first Bitcoin TX ever occured in block 170. The second TX occured in block 181.
 start_block_height = 0
 end_block_height = 100
 
@@ -91,13 +90,13 @@ for i in range(start_block_height, end_block_height):
 	r = FeltsReader(program_output)
 
 	chain_state = {
-		'block_height' : 	 r.read(),
+		'block_height' :     r.read(),
 		'best_block_hash' :  felts_to_hash( r.read_n(8) ),
-		'total_work' : 		 r.read(),
-		'difficulty' : 		 r.read(),
+		'total_work' :       r.read(),
+		'current_target' :   r.read(),
 		'prev_timestamps' :  r.read_n(11),
 		'epoch_start_time' : r.read(),
-		'utreexo_roots' : 	 felts_to_hex( r.read_n(27) )
+		'utreexo_roots' :    felts_to_hex( r.read_n(27) )
 	}
 
 	print('block height:', chain_state['block_height'])

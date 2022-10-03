@@ -85,9 +85,9 @@ struct ChainState {
 
     // The required difficulty for targets in this epoch
     // In Bitcoin Core this is the result of GetNextWorkRequired
-    difficulty: felt,
+    current_target: felt,
 
-    // The start time used to recalibrate the difficulty
+    // The start time used to recalibrate the current_target
     // after an epoch of about 2 weeks (exactly 2016 blocks)
     epoch_start_time: felt,
 
@@ -202,7 +202,7 @@ func validate_and_apply_block_header{range_check_ptr, bitwise_ptr : BitwiseBuilt
     // Validate the proof-of-work
     validate_proof_of_work(context);
 
-    // Validate the difficulty of the proof-of-work
+    // Validate the current_target of the proof-of-work
     validate_target(context);
 
     // Validate the block's timestamp
@@ -258,7 +258,7 @@ func validate_proof_of_work{range_check_ptr}(context: BlockHeaderValidationConte
 // - https://github.com/bitcoin/bitcoin/blob/7fcf53f7b4524572d1d0c9a5fdc388e87eb02416/src/pow.cpp#L13
 // - https://github.com/bitcoin/bitcoin/blob/3a7e0a210c86e3c1750c7e04e3d1d689cf92ddaa/src/rpc/blockchain.cpp#L76
 func validate_target(context: BlockHeaderValidationContext) {    
-    assert context.prev_chain_state.difficulty = context.block_header.bits;
+    assert context.prev_chain_state.current_target = context.block_header.bits;
     return ();
 }
 
@@ -349,14 +349,14 @@ func apply_block_header{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(context:
 
     let (prev_timestamps) = next_prev_timestamps(context);
     let (total_work) = compute_total_work(context);
-    let (difficulty, epoch_start_time) = adjust_difficulty(context);
+    let (current_target, epoch_start_time) = adjust_difficulty(context);
 
     return (
         ChainState(
             context.block_height,
             total_work,
             context.block_hash,
-            difficulty,
+            current_target,
             epoch_start_time,
             prev_timestamps
         ),
@@ -366,20 +366,20 @@ func apply_block_header{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(context:
 
 
 
-// Adjust the difficulty after about 2 weeks of blocks
+// Adjust the current_target after about 2 weeks of blocks
 // See also:
 // - https://en.bitcoin.it/wiki/Difficulty
 // - https://en.bitcoin.it/wiki/Target
 // - https://github.com/bitcoin/bitcoin/blob/7fcf53f7b4524572d1d0c9a5fdc388e87eb02416/src/pow.cpp#L49
 //
 func adjust_difficulty{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
-    context: BlockHeaderValidationContext) -> (difficulty:felt, epoch_start_time:felt){
+    context: BlockHeaderValidationContext) -> (current_target:felt, epoch_start_time:felt){
     alloc_locals;
-    let difficulty = context.prev_chain_state.difficulty;
+    let current_target = context.prev_chain_state.current_target;
 
     let (_, position_in_epoch) = unsigned_div_rem(context.block_height, BLOCKS_PER_EPOCH);
     if (position_in_epoch == BLOCKS_PER_EPOCH - 1) {
-        // This is the last block of this epoch, so we recalibrate the difficulty.
+        // This is the last block of the current epoch, so we adjust the current_target now.
         
         let state = context.prev_chain_state;
 
@@ -389,7 +389,8 @@ func adjust_difficulty{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
         //
 
         let fe_actual_timespan = context.block_header.time - state.epoch_start_time;
-        
+
+        // Limit adjustment step        
         let is_too_large = is_le_felt(EXPECTED_EPOCH_TIMESPAN * 4, fe_actual_timespan);
         let is_too_small = is_le_felt(fe_actual_timespan, EXPECTED_EPOCH_TIMESPAN / 4);
 
@@ -402,12 +403,12 @@ func adjust_difficulty{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
                 tempvar fe_actual_timespan = fe_actual_timespan;
             }
         }
-
         let actual_timespan = felt_to_uint256(fe_actual_timespan);
 
+        // Retarget
         let bn_pow_limit = felt_to_uint256(MAX_TARGET);        
 
-        let ( fe_target ) = bits_to_target(state.difficulty);
+        let ( fe_target ) = bits_to_target(state.current_target);
         let bn_new = felt_to_uint256( fe_target );
 
         let (bn_new, _) = uint256_mul( bn_new, actual_timespan );
@@ -415,14 +416,12 @@ func adjust_difficulty{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
         let UINT256_MAX_TARGET = felt_to_uint256(EXPECTED_EPOCH_TIMESPAN);
         let (bn_new, _) = uint256_unsigned_div_rem(bn_new, UINT256_MAX_TARGET);
 
-        let (difficulty) = target_to_bits(bn_new.low + bn_new.high * 2**128);
+        let (next_target) = target_to_bits(bn_new.low + bn_new.high * 2**128);
 
-
-        let epoch_start_time = context.block_header.time;
-        return (difficulty, epoch_start_time);
+        // Return next target and reset the epoch start time
+        return (next_target, context.block_header.time);
     } else {
-        let epoch_start_time = context.prev_chain_state.epoch_start_time;
-        return (difficulty, epoch_start_time);
+        return (current_target, context.prev_chain_state.epoch_start_time);
     }
 }
 
