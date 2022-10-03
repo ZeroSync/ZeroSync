@@ -58,15 +58,19 @@ For the proof to become production ready we will have to test, review, and harde
 
 - Merkelized headers chain. Compact and flexible inclusion proofs for any transaction in the blockchain.
 - *Block filters* for zk-clients to quickly check if a block is relevant to them.
-- *Compact blocks* for zk-clients to download only the parts of blocks that are relevant to them.
+- *Compact blocks* for zk-clients to download only the parts of blocks that are relevant to them. (E.g. for lightning nodes to scan the blockchain quickly they could use specific zk-blocks reduced to only the hash preimages revealed in unilateral channel closes)
 
 
 ### Further Ideas:
-- Compact ring signatures: E.g. Prove that you control outputs worth at least 1 BTC without revealing which ones.
-- Instant history verification for client-side validation protocols like Omni, RGB, or Taro.
+- Prove of reserve / compact ring signatures
+	- E.g. Prove that you control outputs worth at least 1 BTC without revealing which ones. 
+	- Or a voting amongst all Bitcoiners weighted by their stake
+- Instant history verification for client-side validation (CSV) protocols like Omni, RGB, or Taro. 
 	- Better privacy with transaction graph obfuscation. Every TX could be a coin teleport proven in zk.
+	- A CSV protocol with a zk-VM, in theory capable of processing infinite amounts of data without bloating a token's history.
 - Enhance privacy of routing in the Lightning Network?
-
+- Very long-term vision: Verify STARKs in Simplicity (Mid-term: verify STARKs in [Simplicity on Liquid soon?](https://www.youtube.com/watch?t=1185&v=i1g9fm6g5Cg)) 
+	- STARK sidechains with trustless two-way pegs
 
 
 # History of ZeroSync
