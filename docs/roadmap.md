@@ -7,9 +7,9 @@ This is a rough writeup of the project's roadmap. Nothing here is set in stone. 
 
 Implement a chain proof that mimics the ["assumevalid" option of Bitcoin Core](https://bitcoincore.org/en/2017/03/08/release-0.14.0/#assumed-valid-blocks). It parses the blocks and its transactions, validates the chain's work, its chain of hashes, and correctly manages the UTXO set. It also validates the coin supply, the transaction amounts, and fees. It verifies mostly everything except for the signatures. (More precisely: it verifies no witness data.)
 
-- ✅ Parse blocks, headers, and transactions
+- ✅ Parse headers, transactions, and blocks
 - ✅ Verify the chain of hashes (block hash, previous block hash, Merkle root, TXIDs)
-- ✅ Verify the chain's work (proof-of-work and difficulty adjustment)
+- ✅ Verify the work in the chain (proof-of-work, median time, and difficulty adjustment)
 - ✅ Verify the UTXO set (Utreexo accumulator and a "bridge node" to provide the inclusion proofs)
 - 👷‍♂️ Chain of proofs with recursive STARKs: Verify the previous chain proof in the current chain proof
 
@@ -20,7 +20,7 @@ Measure the performance of *assumevalid* proofs and optimise them until we can f
 
 - 👷‍♂️ Benchmark the *assumevalid proof* with blocks full of transactions (e.g. up to 3500 TXs)
 - 👷‍♂️ Identify the performance bottlenecks and see if there are any showstoppers
-- 👷‍♂️ Optimise the bottlenecks until we can start to add Script validation
+- 👷‍♂️ Optimise the bottlenecks until we can start to add validation of Bitcoin Script
 
 
 ## Milestone 3: *"Bitcoin Script"*
@@ -38,16 +38,17 @@ Implement witness verification and complete the full chain proof.
 	- ECDSA, Schnorr
 	- SHA256 ✓, HASH256 ✓, SHA1, RIPEMD160 ✓, HASH160 ✓
 - 👷‍♂️ Chain verifier
-	- Software to download and prove a chainstate directory for a Bitcoin Core full node
-	- ✓ Demo the chainstate proof in <a href="https://zerosync.org" target="_blank">a simple website</a>
+	- ✓ Demo the chain verifier in <a href="https://zerosync.org" target="_blank">a simple website</a>
+	- Client to download and prove a chainstate directory for a Bitcoin Core full node
+	
 
 After this milestone we can sync a pruned full node by downloading only the current UTXO set. Running a zerosync'd full node requires no modification of the code of Bitcoin Core. We just copy the UTXO set into Core's chainstate directory after verifying it.
 
 
 ## Milestone 4: *Hardening*
-For the proof to become production ready we will will have to test, review, and harden the code a lot.
+For the proof to become production ready we will have to test, review, and harden the code thoroughly.
 
-- Gather community feedback
+- Gather Bitcoin developer feedback
 - Perform code reviews
 - More testing. Also add fuzzing
 - Bug Bounty program
