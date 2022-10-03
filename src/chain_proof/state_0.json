@@ -2,7 +2,7 @@
 	"block_height" : -1,
 	"total_work" : 0,
 	"best_block_hash" : "0000000000000000000000000000000000000000000000000000000000000000",
-	"difficulty" : 1,
+	"difficulty" : 486604799,
 	"epoch_start_time" : 0,
 	"prev_timestamps" : [ 0,0,0,0,0, 0,0,0,0,0, 0 ],
 	"utreexo_roots" : [ 

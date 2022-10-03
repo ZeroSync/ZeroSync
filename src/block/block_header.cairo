@@ -5,12 +5,14 @@
 // - Bitcoin Core: https://github.com/bitcoin/bitcoin/blob/7fcf53f7b4524572d1d0c9a5fdc388e87eb02416/src/primitives/block.h#L22
 
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
+from starkware.cairo.common.bitwise import bitwise_and
 from starkware.cairo.common.math import assert_le, unsigned_div_rem, assert_le_felt, split_felt
+from starkware.cairo.common.math_cmp import is_le_felt
 from starkware.cairo.common.pow import pow
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.memcpy import memcpy
 from starkware.cairo.common.uint256 import (
-    Uint256, uint256_neg, uint256_add, uint256_sub, uint256_unsigned_div_rem )
+    Uint256, uint256_neg, uint256_add, uint256_sub, uint256_mul, uint256_unsigned_div_rem )
 from serialize.serialize import (
     Reader, read_uint32, read_hash, UINT32_SIZE, BYTE, init_reader, read_bytes )
 from crypto.sha256d.sha256d import sha256d_felt_sized, assert_hashes_equal
@@ -19,6 +21,14 @@ from crypto.sha256d.sha256d import sha256d_felt_sized, assert_hashes_equal
 const BLOCK_HEADER_SIZE = 80;
 // The size of a block header encoded as an array of Uint32 is 20 felts
 const BLOCK_HEADER_FELT_SIZE = BLOCK_HEADER_SIZE / UINT32_SIZE;
+// The minimum amount of work required for a block to be valid (represented as `bits`)
+const MAX_BITS = 0x1d00FFFF;
+// The minimum amount of work required for a block to be valid (represented as `target`)
+const MAX_TARGET = 0x00000000FFFF0000000000000000000000000000000000000000000000000000;
+// An epoch should be two weeks (represented as number of seconds)
+const EXPECTED_EPOCH_TIMESPAN = 60 * 10 * 6 * 24 * 14;
+// Number of blocks per epoch 
+const BLOCKS_PER_EPOCH = 2016;
 
 
 // Definition of a Bitcoin block header
@@ -74,6 +84,7 @@ struct ChainState {
     best_block_hash: felt*,
 
     // The required difficulty for targets in this epoch
+    // In Bitcoin Core this is the result of GetNextWorkRequired
     difficulty: felt,
 
     // The start time used to recalibrate the difficulty
@@ -89,7 +100,6 @@ struct ChainState {
 struct BlockHeaderValidationContext {
 
     // The block header parsed into a struct
-    // TODO: should be a pointer
     block_header: BlockHeader,
 
     // The hash of this block header
@@ -168,7 +178,7 @@ func read_block_header_validation_context{
 func bits_to_target{range_check_ptr}(bits) -> (target: felt) {
     alloc_locals;
     // Ensure that the max target is not exceeded (0x1d00FFFF)
-    assert_le(bits, 0x1d00FFFF);
+    assert_le(bits, MAX_BITS);
 
     // Decode the 4 bytes of `bits` into exponent and significand.
     // There's 1 byte for the exponent followed by 3 bytes for the significand
@@ -182,7 +192,7 @@ func bits_to_target{range_check_ptr}(bits) -> (target: felt) {
 
 // Validate a block header, apply it to the previous state
 // and return the next state
-func validate_and_apply_block_header{range_check_ptr}(context: BlockHeaderValidationContext) -> (
+func validate_and_apply_block_header{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(context: BlockHeaderValidationContext) -> (
     next_state: ChainState
 ) {
     alloc_locals;
@@ -246,8 +256,9 @@ func validate_proof_of_work{range_check_ptr}(context: BlockHeaderValidationConte
 //
 // See also:
 // - https://github.com/bitcoin/bitcoin/blob/7fcf53f7b4524572d1d0c9a5fdc388e87eb02416/src/pow.cpp#L13
-func validate_target(context: BlockHeaderValidationContext) {
-    // TODO: implement me
+// - https://github.com/bitcoin/bitcoin/blob/3a7e0a210c86e3c1750c7e04e3d1d689cf92ddaa/src/rpc/blockchain.cpp#L76
+func validate_target(context: BlockHeaderValidationContext) {    
+    assert context.prev_chain_state.difficulty = context.block_header.bits;
     return ();
 }
 
@@ -279,6 +290,7 @@ func validate_timestamp{range_check_ptr}(context: BlockHeaderValidationContext) 
         ids.median_time = timestamps[5]
     %}
 
+    // Compare this block's timestamp to the median time
     assert_le(median_time, context.block_header.time);
     return ();
 }
@@ -313,22 +325,6 @@ func compute_work_from_target{range_check_ptr}(target) -> (work: felt) {
 }
 
 
-// Recalibrate the difficulty after about 2 weeks of blocks
-func recalibrate_difficulty{range_check_ptr}(context: BlockHeaderValidationContext) -> (difficulty:felt, epoch_start_time:felt){
-    let difficulty = context.prev_chain_state.difficulty;
-
-    let (_, is_not_recalibrate) = unsigned_div_rem(context.block_height, 2016);
-    if (is_not_recalibrate == 0) {
-        // TODO: Recalibrate the difficulty here
-        let epoch_start_time = context.block_header.time;
-        return (difficulty, epoch_start_time);
-    } else {
-        let epoch_start_time = context.prev_chain_state.epoch_start_time;
-        return (difficulty, epoch_start_time);
-    }
-}
-
-
 // Compute the 11 most recent timestamps for the next state
 //
 func next_prev_timestamps(context: BlockHeaderValidationContext) -> (timestamps: felt*) {
@@ -346,14 +342,14 @@ func next_prev_timestamps(context: BlockHeaderValidationContext) -> (timestamps:
 
 // Apply a block header to a previous chain state to obtain the next chain state
 //
-func apply_block_header{range_check_ptr}(context: BlockHeaderValidationContext) -> (
+func apply_block_header{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(context: BlockHeaderValidationContext) -> (
     next_state: ChainState
 ) {
     alloc_locals;
 
     let (prev_timestamps) = next_prev_timestamps(context);
     let (total_work) = compute_total_work(context);
-    let (difficulty, epoch_start_time) = recalibrate_difficulty(context);
+    let (difficulty, epoch_start_time) = adjust_difficulty(context);
 
     return (
         ChainState(
@@ -365,4 +361,136 @@ func apply_block_header{range_check_ptr}(context: BlockHeaderValidationContext) 
             prev_timestamps
         ),
     );
+}
+
+
+
+
+// Adjust the difficulty after about 2 weeks of blocks
+// See also:
+// - https://en.bitcoin.it/wiki/Difficulty
+// - https://en.bitcoin.it/wiki/Target
+// - https://github.com/bitcoin/bitcoin/blob/7fcf53f7b4524572d1d0c9a5fdc388e87eb02416/src/pow.cpp#L49
+//
+func adjust_difficulty{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
+    context: BlockHeaderValidationContext) -> (difficulty:felt, epoch_start_time:felt){
+    alloc_locals;
+    let difficulty = context.prev_chain_state.difficulty;
+
+    let (_, position_in_epoch) = unsigned_div_rem(context.block_height, BLOCKS_PER_EPOCH);
+    if (position_in_epoch == BLOCKS_PER_EPOCH - 1) {
+        // This is the last block of this epoch, so we recalibrate the difficulty.
+        
+        let state = context.prev_chain_state;
+
+        //
+        // This code is ported from Bitcoin Core
+        // https://github.com/bitcoin/bitcoin/blob/7fcf53f7b4524572d1d0c9a5fdc388e87eb02416/src/pow.cpp#L49
+        //
+
+        let fe_actual_timespan = context.block_header.time - state.epoch_start_time;
+        
+        let is_too_large = is_le_felt(EXPECTED_EPOCH_TIMESPAN * 4, fe_actual_timespan);
+        let is_too_small = is_le_felt(fe_actual_timespan, EXPECTED_EPOCH_TIMESPAN / 4);
+
+        if (is_too_large == 1){
+            tempvar fe_actual_timespan = EXPECTED_EPOCH_TIMESPAN * 4;
+        } else {
+            if (is_too_small == 1){
+                tempvar fe_actual_timespan = EXPECTED_EPOCH_TIMESPAN / 4;
+            } else {
+                tempvar fe_actual_timespan = fe_actual_timespan;
+            }
+        }
+
+        let actual_timespan = felt_to_uint256(fe_actual_timespan);
+
+        let bn_pow_limit = felt_to_uint256(MAX_TARGET);        
+
+        let ( fe_target ) = bits_to_target(state.difficulty);
+        let bn_new = felt_to_uint256( fe_target );
+
+        let (bn_new, _) = uint256_mul( bn_new, actual_timespan );
+
+        let UINT256_MAX_TARGET = felt_to_uint256(EXPECTED_EPOCH_TIMESPAN);
+        let (bn_new, _) = uint256_unsigned_div_rem(bn_new, UINT256_MAX_TARGET);
+
+        let (difficulty) = target_to_bits(bn_new.low + bn_new.high * 2**128);
+
+
+        let epoch_start_time = context.block_header.time;
+        return (difficulty, epoch_start_time);
+    } else {
+        let epoch_start_time = context.prev_chain_state.epoch_start_time;
+        return (difficulty, epoch_start_time);
+    }
+}
+
+
+// Calculate bits from target
+//
+func target_to_bits{range_check_ptr}(target) -> (bits: felt) {
+    alloc_locals;
+    local bits;
+    
+    %{
+        # Same as ceil( log2(target) )
+        def bits(target):
+            count = 0
+            while target != 0:
+                target //= 2 
+                count += 1
+            return count + 1
+
+        def get_low64(target):
+            return (2**64 - 1) & target
+
+        target = ids.target
+        fNegative = False 
+
+        #
+        # This code is ported from Bitcoin Core
+        # https://github.com/bitcoin/bitcoin/blob/8e3c266a4f02093d57d563f32ba73d3ab4b5f208/src/arith_uint256.cpp#L218
+        #
+        
+        nSize = (bits(target) + 7) // 8
+        nCompact = 0
+        if nSize <= 3:
+            nCompact = get_low64(target) << 8 * (3 - nSize)
+        else:
+            bn = target >> 8 * (nSize - 3)
+            nCompact = get_low64(bn)
+        
+        # The 0x00800000 bit denotes the sign.
+        # Thus, if it is already set, divide the mantissa by 256 and increase the exponent.
+        if nCompact & 0x00800000:
+            nCompact >>= 8
+            nSize += 1
+        
+        assert((nCompact & ~0x007fffff) == 0)
+        assert(nSize < 256)
+        nCompact |= nSize << 24
+        nCompact |= 0x00800000 if fNegative and (nCompact & 0x007fffff) else 0
+        
+        ids.bits = nCompact
+    %}
+
+    // TODO: verify the python output using `bits_to_target`
+
+    // cast bits to uint32 
+    // exponent == highest_bit_target
+
+    // const TARGET_BITMASK = 0xffff; // ???
+    // let target = bitwise_and(target, TARGET_BITMASK);
+    // assert bits_to_target(bits) = target;
+
+    return (bits,);
+}
+
+
+// Convert a felt to a Uint256 
+func felt_to_uint256{range_check_ptr}(value) -> Uint256{
+    let (high, low) = split_felt(value);
+    let value256 = Uint256(low, high);
+    return value256;
 }

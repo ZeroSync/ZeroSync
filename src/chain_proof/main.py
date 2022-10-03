@@ -77,7 +77,7 @@ file_name = 'src/chain_proof/state_0.json'
 # The first Bitcoin TX ever occured in block 170
 # The second TX occured in block 181
 start_block_height = 0
-end_block_height = 5 
+end_block_height = 100
 
 for i in range(start_block_height, end_block_height):
 	if i >= 1:

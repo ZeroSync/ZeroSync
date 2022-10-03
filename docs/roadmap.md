@@ -9,7 +9,7 @@ Implement a chain proof that mimics the ["assumevalid" option of Bitcoin Core](h
 
 - ✅ Parse blocks, headers, and transactions
 - ✅ Verify the chain of hashes (block hash, previous block hash, Merkle root, TXIDs)
-- 👷‍♂️ Verify the chain's work (proof-of-work ✓ and difficulty recalibration)
+- ✅ Verify the chain's work (proof-of-work and difficulty recalibration)
 - ✅ Verify the UTXO set (Utreexo accumulator and a "bridge node" to provide the inclusion proofs)
 - 👷‍♂️ Chain of proofs with recursive STARKs: Verify the previous chain proof in the current chain proof
 
