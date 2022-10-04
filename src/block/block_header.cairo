@@ -244,8 +244,9 @@ func validate_proof_of_work{range_check_ptr}(context: BlockHeaderValidationConte
 
     // Validate that the hash's most significant uint32 chunk is zero
     // This guarantees that the hash fits into a felt.
-    assert 0 = hash[7];
-
+    with_attr error_message("Hash's most significant uint32 chunk is not zero.") {
+        assert 0 = hash[7];
+    }
     // Sum up the other 7 uint32 chunks of the hash into 1 felt
     const BASE = 2 ** 32;
     let hash_felt = hash[0] * BASE ** 0 +
@@ -257,7 +258,9 @@ func validate_proof_of_work{range_check_ptr}(context: BlockHeaderValidationConte
                     hash[6] * BASE ** 6;
 
     // Validate that the hash is smaller than the target
-    assert_le_felt(hash_felt, context.target);
+    with_attr error_message("Insufficient proof of work. Expected block hash to be less than or equal to target.") {
+        assert_le_felt(hash_felt, context.target);
+    }
     return ();
 }
 
