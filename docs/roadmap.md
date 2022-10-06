@@ -11,7 +11,7 @@ Implement a chain proof that mimics the ["assumevalid" option of Bitcoin Core](h
 - ✅ Verify the chain of hashes (block hash, previous block hash, Merkle root, TXIDs)
 - ✅ Verify the work in the chain (proof-of-work, median time, and difficulty adjustment)
 - ✅ Verify the UTXO set (Utreexo accumulator and a "bridge node" to provide the inclusion proofs)
-- 👷‍♂️ Chain of proofs with recursive STARKs: Verify the previous chain proof in the current chain proof
+- 👷‍♂️ Chain of proofs with recursive STARKs: Verify the previous chain proof in the next chain proof
 
 
 ## Milestone 2: *"measure and optimise"* 
@@ -48,7 +48,7 @@ After this milestone we can sync a pruned full node by downloading only the curr
 ## Milestone 4: *Hardening*
 For the proof to become production ready we will have to test, review, and harden the code thoroughly.
 
-- Gather Bitcoin developer feedback
+- Gather feedback from the Bitcoin developer community
 - Perform code reviews
 - More testing. Also add fuzzing
 - Bug Bounty program
@@ -62,14 +62,15 @@ For the proof to become production ready we will have to test, review, and harde
 
 
 ### Further Ideas:
-- Prove of reserve / compact ring signatures
+- Prove-of-reserves and compact ring signatures
 	- E.g. Prove that you control outputs worth at least 1 BTC without revealing which ones. 
-	- Or a voting amongst all Bitcoiners weighted by their stake
+	- Or a secret voting amongst all Bitcoiners weighted by their stake
 - Instant history verification for client-side validation (CSV) protocols like Omni, RGB, or Taro. 
 	- Better privacy with transaction graph obfuscation. Every TX could be a coin teleport proven in zk.
 	- A CSV protocol with a zk-VM, in theory capable of processing infinite amounts of data without bloating a token's history.
+	- A two-way peg from tokens on EVM-like networks to CSV tokens Bitcoin
 - Enhance privacy of routing in the Lightning Network?
-- Very long-term vision: Verify STARKs in Simplicity (Mid-term: verify STARKs in [Simplicity on Liquid soon?](https://www.youtube.com/watch?t=1185&v=i1g9fm6g5Cg)) 
+- Very long-term vision: Verify STARKs in Bitcoin using Simplicity (Mid-term: verify STARKs in Simplicity [on Liquid soon?](https://www.youtube.com/watch?t=1185&v=i1g9fm6g5Cg)) 
 	- STARK sidechains with trustless two-way pegs
 
 
