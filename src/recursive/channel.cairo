@@ -4,9 +4,8 @@ from starkware.cairo.common.uint256 import Uint256
 
 from recursive.air.stark_proof import (
     Commitments,
-    ConstraintQueries,
+    Queries,
     StarkProof,
-    TraceQueries,
 )
 from recursive.air.air_instance import AirInstance
 from recursive.air.transitions.frame import EvaluationFrame
@@ -14,10 +13,10 @@ from recursive.air.transitions.frame import EvaluationFrame
 struct Channel {
     // Trace queries
     trace_roots: Uint256*,
-    trace_queries: TraceQueries,
+    trace_queries: Queries*,
     // Constraint queries
     constraint_root: Uint256,
-    constraint_queries: ConstraintQueries,
+    constraint_queries: Queries,
 }
 
 struct TraceOodFrame {

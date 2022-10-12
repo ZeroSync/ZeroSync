@@ -30,13 +30,14 @@ from recursive.air.air_instance import (
 )
 from recursive.air.pub_inputs import PublicInputs
 from recursive.air.stark_proof import (
-    ConstraintQueries,
+    Queries,
     Context,
+    TraceLayout,
+    ProofOptions,
     Commitments,
     FriProof,
     OodFrame,
     StarkProof,
-    TraceQueries,
 )
 
 // Verifies that the specified computation was executed correctly against the specified inputs.
@@ -126,37 +127,38 @@ func perform_verification{
 
     // Read the out-of-domain trace frames (the main trace frame and auxiliary trace frame, if
     // provided) sent by the prover.
-    let (ood_main_trace_frame, ood_aux_trace_frame) = read_ood_trace_frame();
+    // let (ood_main_trace_frame, ood_aux_trace_frame) = read_ood_trace_frame();
 
     // Evaluate constraints over the OOD frames.
-    let (ood_constraint_evaluation_1) = evaluate_constraints(
-        air=air,
-        constraint_coeffs=constraint_coeffs,
-        ood_main_trace_frame=ood_main_trace_frame,
-        ood_aux_trace_frame=ood_aux_trace_frame,
-        aux_trace_rand_elements=aux_trace_rand_elements,
-        z=z,
-    );
+    // let (ood_constraint_evaluation_1) = evaluate_constraints(
+    //     air=air,
+    //     constraint_coeffs=constraint_coeffs,
+    //     ood_main_trace_frame=ood_main_trace_frame,
+    //     ood_aux_trace_frame=ood_aux_trace_frame,
+    //     aux_trace_rand_elements=aux_trace_rand_elements,
+    //     z=z,
+    // );
 
     // Reseed the public coin with the OOD frames.
-    reseed_with_ood_frames(
-        ood_main_trace_frame=ood_main_trace_frame,
-        ood_aux_trace_frame=ood_aux_trace_frame,
-    );
+    // reseed_with_ood_frames(
+    //     ood_main_trace_frame=ood_main_trace_frame,
+    //     ood_aux_trace_frame=ood_aux_trace_frame,
+    // );
 
     // read evaluations of composition polynomial columns sent by the prover, and reduce them into
     // a single value by computing sum(z^i * value_i), where value_i is the evaluation of the ith
     // column polynomial at z^m, where m is the total number of column polynomials; also, reseed
     // the public coin with the OOD constraint evaluations received from the prover.
-    let (ood_constraint_evaluations) = read_ood_constraint_evaluations();
-    let (ood_constraint_evaluation_2) = reduce_evaluations(evaluations=ood_constraint_evaluations);
-    reseed(value=hash_elements(
-        n_elements=ood_constraint_evaluations.n_elements,
-        elements=ood_constraint_evaluations.elements,
-    ));
+    // let (ood_constraint_evaluations) = read_ood_constraint_evaluations();
+
+    // let (ood_constraint_evaluation_2) = reduce_evaluations(evaluations=ood_constraint_evaluations);
+    // reseed(value=hash_elements(
+    //     n_elements=ood_constraint_evaluations.n_elements,
+    //     elements=ood_constraint_evaluations.elements,
+    // ));
 
     // finally, make sure the values are the same
-    assert ood_constraint_evaluation_1 == ood_constraint_evaluation_2;
+    // assert ood_constraint_evaluation_1 == ood_constraint_evaluation_2;
 
     return ();
 }
@@ -173,12 +175,16 @@ func main{
     range_check_ptr,
     bitwise_ptr: BitwiseBuiltin*,
 }() -> () {
+    
     // TODO: Deserialize proof
+    let (constraint_queries: Queries*) = alloc();
+    let (trace_meta) = alloc();
+    let (field_modulus_bytes) = alloc();
     let proof = StarkProof(
-        context=Context(),
+        context=Context(TraceLayout(0,0,0,0), 0, trace_meta, field_modulus_bytes, ProofOptions(0,0,0,0,0,0,0) ),
         commitments=Commitments(),
-        trace_queries=TraceQueries(),
-        constraint_queries=ConstraintQueries(),
+        trace_queries=Queries(),
+        constraint_queries=constraint_queries,
         ood_frame=OodFrame(),
         fri_proof=FriProof(),
         pow_nonce=0,
