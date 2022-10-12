@@ -64,9 +64,9 @@ For the proof to become production ready we will have to test, review, and harde
 ### Further Ideas:
 - Proof-of-reserves / compact ring signatures
 	- E.g. Prove that you control outputs worth at least 1 BTC without revealing which ones. 
-	- Or a voting amongst all Bitcoiners weighted by their stake.
+	- Or an anonymous voting amongst all Bitcoiners weighted by their stake.
 - Instant history verification for client-side validation (CSV) protocols like Omni, RGB, or Taro. 
-	- Better privacy with transaction graph obfuscation. Every TX could be a coin teleport proven in zk.
+	- Better privacy with transaction graph obfuscation. Every TX could be a teleport between two unrelated UTXOs proven in zk.
 	- A CSV protocol with a zk-VM, in theory capable of processing infinite amounts of data without bloating a token's history.
 - Enhance privacy of routing in the Lightning Network?
 - Very long-term vision: Verify STARKs in Simplicity (Mid-term: verify STARKs in [Simplicity on Liquid soon?](https://www.youtube.com/watch?t=1185&v=i1g9fm6g5Cg)) 
