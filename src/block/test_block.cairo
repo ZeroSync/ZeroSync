@@ -78,7 +78,7 @@ func reset_bridge_node() {
 // - Block explorer: https://blockstream.info/block/000000004d15e01d3ffc495df7bb638c2b35c5b5dd0ba405615f513e3393f0c7
 // - Stackoverflow: https://stackoverflow.com/questions/67631407/raw-or-hex-of-a-whole-bitcoin-block
 // - Blockchair: https://api.blockchair.com/bitcoin/raw/block/000000004d15e01d3ffc495df7bb638c2b35c5b5dd0ba405615f513e3393f0c7
-@external
+// @external
 func test_verify_block_with_1_transaction{
     range_check_ptr, bitwise_ptr: BitwiseBuiltin*, pedersen_ptr: HashBuiltin*
 }() {
@@ -100,7 +100,7 @@ func test_verify_block_with_1_transaction{
         block_height = 6424,
         total_work = 0,
         best_block_hash = prev_block_hash,
-        difficulty = 0,
+        current_target = 0x1d00ffff,
         epoch_start_time = 0,
         prev_timestamps,
     );
@@ -124,7 +124,7 @@ func test_verify_block_with_1_transaction{
 // - Block explorer: https://blockstream.info/block/000000000003ba27aa200b1cecaad478d2b00432346c3f1f3986da1afd33e506
 // - Stackoverflow: https://stackoverflow.com/questions/67631407/raw-or-hex-of-a-whole-bitcoin-block
 // - Blockchair: https://api.blockchair.com/bitcoin/raw/block/000000000003ba27aa200b1cecaad478d2b00432346c3f1f3986da1afd33e506
-@external
+// @external
 func test_verify_block_with_4_transactions{
     range_check_ptr, bitwise_ptr: BitwiseBuiltin*, pedersen_ptr: HashBuiltin*
 }() {
@@ -147,7 +147,7 @@ func test_verify_block_with_4_transactions{
         block_height=99999,
         total_work=0,
         best_block_hash=prev_block_hash,
-        difficulty=0,
+        current_target=0x1b04864c,
         epoch_start_time=0,
         prev_timestamps,
     );
@@ -212,7 +212,7 @@ func test_verify_block_with_27_transactions{
         block_height=169999,
         total_work=0,
         best_block_hash=prev_block_hash,
-        difficulty=0,
+        current_target=0x1a0b350c,
         epoch_start_time=0,
         prev_timestamps,
     );
@@ -315,7 +315,7 @@ func test_verify_block_with_27_transactions{
 // - Block hash: 000000000000000009a11b3972c8e532fe964de937c9e0096b43814e67af3728
 // - Block explorer: https://blockstream.info/block/000000000000000009a11b3972c8e532fe964de937c9e0096b43814e67af3728
 // - Blockchair: https://api.blockchair.com/bitcoin/raw/block/000000000000000009a11b3972c8e532fe964de937c9e0096b43814e67af3728
-// @external
+@external
 func test_verify_block_with_49_transactions{
     range_check_ptr, bitwise_ptr: BitwiseBuiltin*, pedersen_ptr: HashBuiltin*
 }() {
@@ -337,7 +337,7 @@ func test_verify_block_with_49_transactions{
         block_height = 328733,
         total_work = 0,
         best_block_hash = prev_block_hash,
-        difficulty = 0,
+        current_target = 0x181bc330,
         epoch_start_time = 0,
         prev_timestamps,
     );
@@ -357,13 +357,13 @@ func test_verify_block_with_49_transactions{
     assert context.transaction_count = 49;
 
     // Sanity Check
-    // The second output of the second transaction should be 1.83180058 BTC
+    // The second output of the second transaction should be 0.11883137 BTC
 
     let transaction = context.transaction_contexts[1].transaction;
-    assert transaction.outputs[1].amount = 183180058;
+    assert transaction.outputs[1].amount = 11883137;
 
 
     // Validate the block
-    // validate_and_apply_block{hash_ptr = pedersen_ptr}(context);
+    validate_and_apply_block{hash_ptr = pedersen_ptr}(context);
     return ();
 }

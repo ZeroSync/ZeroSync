@@ -11,52 +11,6 @@ from block.block import State, validate_and_apply_block, read_block_validation_c
 from utreexo.utreexo import UTREEXO_ROOTS_LEN
 from python_utils import setup_python_defs
 
-func main{
-    output_ptr: felt*,
-    pedersen_ptr: HashBuiltin*,
-    range_check_ptr,
-    ecdsa_ptr,
-    bitwise_ptr: BitwiseBuiltin*,
-    ec_op_ptr,
-}() {
-    alloc_locals;
-    setup_python_defs();
-
-    // Read the previous state from the program input
-    local block_height: felt;
-    local total_work: felt;
-    let (best_block_hash) = alloc();
-    local difficulty: felt;
-    local epoch_start_time: felt;
-    let (prev_timestamps) = alloc();
-    let (prev_utreexo_roots) = alloc();
-    %{
-        ids.block_height = program_input["block_height"] if program_input["block_height"] != -1 else PRIME - 1
-        ids.total_work = program_input["total_work"]
-        segments.write_arg(ids.best_block_hash, felts_from_hash( program_input["best_block_hash"]) )
-        ids.difficulty = program_input["difficulty"]
-        ids.epoch_start_time = program_input["epoch_start_time"]
-        segments.write_arg(ids.prev_timestamps, program_input["prev_timestamps"])
-        segments.write_arg(ids.prev_utreexo_roots, felts_from_hex_strings( program_input["utreexo_roots"] ) )
-    %}
-
-    let prev_chain_state = ChainState(
-        block_height, total_work, best_block_hash, difficulty, epoch_start_time, prev_timestamps
-    );
-    let prev_state = State(prev_chain_state, prev_utreexo_roots);
-
-    // Perform a state transition
-    let (context) = read_block_validation_context(prev_state);
-    let (next_state) = validate_and_apply_block{hash_ptr=pedersen_ptr}(context);
-
-    // Print the next state
-    serialize_chain_state(next_state.chain_state);
-    serialize_array(next_state.utreexo_roots, UTREEXO_ROOTS_LEN);
-
-    // TODO: validate the previous chain proof
-    return ();
-}
-
 func serialize_chain_state{output_ptr: felt*}(chain_state: ChainState) {
     serialize_word(chain_state.block_height);
     serialize_array(chain_state.best_block_hash, HASH_FELT_SIZE);
@@ -98,3 +52,54 @@ func fetch_block(block_height) -> (block_data: felt*) {
     
     return (block_data,);
 }
+
+
+func main{
+    output_ptr: felt*,
+    pedersen_ptr: HashBuiltin*,
+    range_check_ptr,
+    ecdsa_ptr,
+    bitwise_ptr: BitwiseBuiltin*,
+    ec_op_ptr,
+}() {
+    alloc_locals;
+    setup_python_defs();
+
+    // Read the previous state from the program input
+    local block_height: felt;
+    local total_work: felt;
+    let (best_block_hash) = alloc();
+    local current_target: felt;
+    local epoch_start_time: felt;
+    let (prev_timestamps) = alloc();
+    let (prev_utreexo_roots) = alloc();
+    %{
+        ids.block_height = program_input["block_height"] if program_input["block_height"] != -1 else PRIME - 1
+        ids.total_work = program_input["total_work"]
+        segments.write_arg(ids.best_block_hash, felts_from_hash( program_input["best_block_hash"]) )
+        ids.current_target = program_input["current_target"]
+        ids.epoch_start_time = program_input["epoch_start_time"]
+        segments.write_arg(ids.prev_timestamps, program_input["prev_timestamps"])
+        segments.write_arg(ids.prev_utreexo_roots, felts_from_hex_strings( program_input["utreexo_roots"] ) )
+    %}
+
+    let prev_chain_state = ChainState(
+        block_height, total_work, best_block_hash, current_target, epoch_start_time, prev_timestamps
+    );
+    let prev_state = State(prev_chain_state, prev_utreexo_roots);
+
+    // Perform a state transition
+    let (context) = read_block_validation_context(prev_state);
+    let (next_state) = validate_and_apply_block{hash_ptr=pedersen_ptr}(context);
+
+    // Print the next state
+    serialize_chain_state(next_state.chain_state);
+    serialize_array(next_state.utreexo_roots, UTREEXO_ROOTS_LEN);
+
+    // TODO: validate the previous chain proof
+    return ();
+}
+
+//
+// CAUTION!! `main` has to be the last function in this file! Otherwise, `giza prove` breaks.
+//
