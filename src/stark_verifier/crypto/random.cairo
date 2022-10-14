@@ -8,8 +8,8 @@ from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.math import assert_nn_le
 from starkware.cairo.common.uint256 import Uint256, uint256_lt
 
-from recursive.air.pub_inputs import PublicInputs
-from recursive.air.stark_proof import Context
+from stark_verifier.air.pub_inputs import PublicInputs
+from stark_verifier.air.stark_proof import Context
 
 // Montgomery constant
 const R_MONTGOMERY = 2 ** 256;

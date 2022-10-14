@@ -5,7 +5,7 @@ from starkware.cairo.common.cairo_blake2s.blake2s import finalize_blake2s
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.uint256 import Uint256
 
-from recursive.channel import (
+from stark_verifier.channel import (
     Channel,
     channel_new,
     read_constraint_commitment,
@@ -13,7 +13,7 @@ from recursive.channel import (
     read_ood_constraint_evaluations,
     read_trace_commitments,
 )
-from recursive.crypto.random import (
+from stark_verifier.crypto.random import (
     PublicCoin,
     draw_random,
     hash_elements,
@@ -23,13 +23,13 @@ from recursive.crypto.random import (
     seed_with_pub_inputs,
     seed_with_proof_context,
 )
-from recursive.air.air_instance import (
+from stark_verifier.air.air_instance import (
     AirInstance,
     air_instance_new,
     get_constraint_composition_coefficients,
 )
-from recursive.air.pub_inputs import PublicInputs
-from recursive.air.stark_proof import (
+from stark_verifier.air.pub_inputs import PublicInputs
+from stark_verifier.air.stark_proof import (
     Queries,
     Context,
     TraceLayout,
@@ -38,6 +38,7 @@ from recursive.air.stark_proof import (
     FriProof,
     OodFrame,
     StarkProof,
+    read_stark_proof,
 )
 
 // Verifies that the specified computation was executed correctly against the specified inputs.

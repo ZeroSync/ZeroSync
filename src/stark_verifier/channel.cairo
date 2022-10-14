@@ -2,13 +2,13 @@ from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.uint256 import Uint256
 
-from recursive.air.stark_proof import (
+from stark_verifier.air.stark_proof import (
     Commitments,
     Queries,
     StarkProof,
 )
-from recursive.air.air_instance import AirInstance
-from recursive.air.transitions.frame import EvaluationFrame
+from stark_verifier.air.air_instance import AirInstance
+from stark_verifier.air.transitions.frame import EvaluationFrame
 
 struct Channel {
     // Trace queries

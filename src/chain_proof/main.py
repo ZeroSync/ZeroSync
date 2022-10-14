@@ -69,6 +69,7 @@ output_dir = 'tmp'
 
 os.popen(f'mkdir -p {output_dir}')
 
+# Run the Cairo compiler
 cmd = f'cairo-compile src/chain_proof/main.cairo --cairo_path src --output {output_dir}/program.json'
 print( os.popen(cmd).read() )
 
@@ -82,13 +83,13 @@ for i in range(start_block_height, end_block_height):
 	if i >= 1:
 		file_name = f'{output_dir}/chain_state.json'
 
+	# Run the Cairo runner
 	cmd = f'cairo-run --program={output_dir}/program.json --layout=all --print_output --program_input={file_name} --trace_file={output_dir}/trace.bin --memory_file={output_dir}/memory.bin'
-
 	program_output_string = os.popen(cmd).read()
 	program_output = parse_cairo_output(program_output_string)
 
+	# Parse outputs
 	r = FeltsReader(program_output)
-
 	chain_state = {
 		'block_height' :     r.read(),
 		'best_block_hash' :  felts_to_hash( r.read_n(8) ),
@@ -101,7 +102,8 @@ for i in range(start_block_height, end_block_height):
 
 	print('block height:', chain_state['block_height'])
 
-	# TODO: Run Giza prover
+
+	# Run Giza prover
 	cmd = f'giza prove --trace={output_dir}/trace.bin --memory={output_dir}/memory.bin --program={output_dir}/program.json --output={output_dir}/proof_{i}.bin --num-outputs=50'
 	program_output_string = os.popen(cmd).read()
 

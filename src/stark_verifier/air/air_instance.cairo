@@ -1,7 +1,7 @@
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 
-from recursive.crypto.random import (
+from stark_verifier.crypto.random import (
     PublicCoin,
     draw_pair,
     random_coin_new,

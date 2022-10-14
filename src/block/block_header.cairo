@@ -492,9 +492,9 @@ func target_to_bits{range_check_ptr}(target) -> (bits: felt) {
     // TODO: verify the python output using `bits_to_target`
 
     // cast bits to uint32 
-    // exponent == highest_bit_target
+    // exponent <- highest_bit_of_target
 
-    // const TARGET_BITMASK = 0xffff; // ???
+    // const TARGET_BITMASK = 0xffffff * pow(2**32, exponent); // ???
     // let target = bitwise_and(target, TARGET_BITMASK);
     // assert bits_to_target(bits) = target;
 
