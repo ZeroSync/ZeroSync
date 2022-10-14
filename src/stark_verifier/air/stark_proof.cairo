@@ -121,7 +121,8 @@ func read_stark_proof() -> StarkProof2 {
         addr = ids.data_ptr
         import os
         import json
-        cmd = f'src/stark_verifier/parser/target/debug/parser'
+        pwd = os.popen('pwd').read()
+        cmd = f'src/stark_verifier/parser/target/debug/parser src/stark_verifier/parser/src/proof_9.bin'
         program_output_string = os.popen(cmd).read()
         print(program_output_string)
         json_arr = json.loads(program_output_string)

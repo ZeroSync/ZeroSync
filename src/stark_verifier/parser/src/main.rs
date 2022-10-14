@@ -9,9 +9,9 @@ use std::env;
 
 fn main() -> Result<()> {
     let args: Vec<String> = env::args().collect();
-    // let address = (&args[1]).parse::<u64>().unwrap();
+    let proof_path = &args[1];
 
-    let file = File::open("/Users/robinlinus/projects/zerosync/src/stark_verifier/parser/src/proof_9.bin")?;
+    let file = File::open(proof_path)?;
     let mut buf_reader = BufReader::new(file);
     
     let mut data = Vec::new();
