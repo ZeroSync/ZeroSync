@@ -1,4 +1,14 @@
+from starkware.cairo.common.alloc import alloc
 
+struct Context {
+    // trace_layout: TraceLayout,
+    trace_length: felt,
+    trace_meta_len: felt,
+    trace_meta: felt*,
+    field_modulus_bytes_len: felt,
+    field_modulus_bytes: felt*,
+    // options: ProofOptions,
+}
 
 
 // https://github.com/novifinancial/winterfell/blob/f14a9ab9ce36589daf74c9c9dde344995390efcd/air/src/air/trace_info.rs#L158
@@ -21,13 +31,7 @@ struct ProofOptions {
 }
 
 
-struct Context {
-    trace_layout: TraceLayout,
-    trace_length: felt,
-    trace_meta: felt*,
-    field_modulus_bytes: felt*,
-    options: ProofOptions,
-}
+
 
 
 // https://github.com/novifinancial/winterfell/blob/ecea359802538692c4e967b083107c6b08f3302e/air/src/proof/commitments.rs#L25
@@ -84,3 +88,52 @@ struct StarkProof {
     /// Proof-of-work nonce for query seed grinding.
     pow_nonce: felt,
 }
+
+
+
+
+
+struct StarkProof2 {
+    /// Basic metadata about the execution of the computation described by this proof.
+    context: Context,
+    // /// Commitments made by the prover during the commit phase of the protocol.
+    // commitments: Commitments,
+    // /// Decommitments of extended execution trace values (for all trace segments) at position
+    // /// queried by the verifier.
+    // trace_queries: Queries*,
+    // /// Decommitments of constraint composition polynomial evaluations at positions queried by
+    // /// the verifier.
+    // constraint_queries: Queries,
+    // /// Trace and constraint polynomial evaluations at an out-of-domain point.
+    // ood_frame: OodFrame,
+    // /// Low-degree proof for a DEEP composition polynomial.
+    // fri_proof: FriProof,
+    // /// Proof-of-work nonce for query seed grinding.
+    pow_nonce: felt,
+}
+
+func read_stark_proof() -> StarkProof2 {
+    alloc_locals;
+    let (data_ptr) = alloc();
+    local offset;
+    %{
+        # https://github.com/starkware-libs/cairo-lang/blob/167b28bcd940fd25ea3816204fa882a0b0a49603/src/starkware/cairo/lang/vm/relocatable.py#L9
+        addr = ids.data_ptr
+        import os
+        import json
+        cmd = f'src/stark_verifier/parser/target/debug/parser'
+        program_output_string = os.popen(cmd).read()
+        print(program_output_string)
+        json_arr = json.loads(program_output_string)
+        my_memory = [( int(x, 16) if x.startswith('0x') else addr + int(x) ) for x in json_arr[:-1] ]
+        segments.write_arg(addr, my_memory)
+        
+        ids.offset = int(json_arr[-1])
+    %}
+
+    let proof_ptr = cast( data_ptr + offset , StarkProof2* ) ;
+    let proof = [proof_ptr];
+    
+    return proof;
+}
+

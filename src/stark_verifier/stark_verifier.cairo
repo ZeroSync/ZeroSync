@@ -178,20 +178,10 @@ func main{
 }() -> () {
     
     // TODO: Deserialize proof
-    let (constraint_queries: Queries*) = alloc();
-    let (trace_meta) = alloc();
-    let (field_modulus_bytes) = alloc();
-    let proof = StarkProof(
-        context=Context(TraceLayout(0,0,0,0), 0, trace_meta, field_modulus_bytes, ProofOptions(0,0,0,0,0,0,0) ),
-        commitments=Commitments(),
-        trace_queries=Queries(),
-        constraint_queries=constraint_queries,
-        ood_frame=OodFrame(),
-        fri_proof=FriProof(),
-        pow_nonce=0,
-    );
+    
+    let proof = read_stark_proof();
     let pub_inputs = PublicInputs();
 
-    verify(proof=proof, pub_inputs=pub_inputs);
+    // verify(proof=proof, pub_inputs=pub_inputs);
     return ();
 }
