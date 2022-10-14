@@ -35,7 +35,7 @@ def fetch_block(block_height):
     return json.loads(r.data)
 
 
-# see here: https://github.com/lucidLuckylee/zerosync/blob/fb70c24e16bbc5617fe91c4c7db23f6748102558/src/utxo_set/utxo_set.cairo#L120
+# see here: https://github.com/zerosync/zerosync/blob/fb70c24e16bbc5617fe91c4c7db23f6748102558/src/utxo_set/utxo_set.cairo#L120
 # txid as a list of uint32
 # script_pub_key is a list of uint32
 def hash_output(txid, vout, amount, script_pub_key):
