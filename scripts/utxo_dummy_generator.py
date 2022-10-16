@@ -68,7 +68,6 @@ def fetch_tx_ins(block_height):
         tx = json.loads(r.data)
         for tx_vin in tx['vin']:
             tx_ins.append(tx_vin)
-            print(tx_vin)
     return tx_ins
 
 
@@ -89,9 +88,9 @@ def hash_tx_ins(tx_ins):
 def generate_utxo_dummys(block_height):
     tx_ins = fetch_tx_ins(block_height)
     output_hashes = hash_tx_ins(tx_ins)
-    code_block = ['dummy_utxo_insert{hash_ptr=pedersen_ptr, utreexo_roots=prev_utreexo_roots}(0x' + hex(x) + ');' for x in output_hashes]
+    code_block = ['dummy_utxo_insert{hash_ptr=pedersen_ptr, utreexo_roots=prev_utreexo_roots}(' + hex(x) + ');\n' for x in output_hashes]
 
     return code_block
 
 
-print(generate_utxo_dummys(100000))
+print("".join(generate_utxo_dummys(328734)))
