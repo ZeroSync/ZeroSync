@@ -92,5 +92,6 @@ def generate_utxo_dummys(block_height):
 
     return code_block
 
-
-print("".join(generate_utxo_dummys(328734)))
+# 328734 49 txs test
+# 170000 27 txs test
+print("".join(generate_utxo_dummys(170000)))

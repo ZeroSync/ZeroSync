@@ -442,7 +442,8 @@ func test_verify_block_with_49_transactions{
     dummy_utxo_insert{hash_ptr=pedersen_ptr, utreexo_roots=roots}(0x512d490cb0c14032b0c587f5b82dc7668ee4d6b9cba8ca55f9947111df923a7);
     dummy_utxo_insert{hash_ptr=pedersen_ptr, utreexo_roots=roots}(0x46a964c33e213f7cd3b61fc1345231b4f7365fa4de29388c31af98f66971ec5);
     dummy_utxo_insert{hash_ptr=pedersen_ptr, utreexo_roots=roots}(0x2d9a9f73f1e7ec6d282c07d4afdbca77c547af3c9301ef702e19619a52d1b6);
-    dummy_utxo_insert{hash_ptr=pedersen_ptr, utreexo_roots=roots}(0x10f3be1ac9b422457fb25798e9f3fc0186d22c2592548a0d653350f2d422cd2);
+    // the utxo below is created as an output in the current block
+    // dummy_utxo_insert{hash_ptr=pedersen_ptr, utreexo_roots=roots}(0x10f3be1ac9b422457fb25798e9f3fc0186d22c2592548a0d653350f2d422cd2);
     dummy_utxo_insert{hash_ptr=pedersen_ptr, utreexo_roots=roots}(0x53fcc1c6151d28edfc5aa0cc9e6c85d9493399a1acdb692671904788257cc6a);
     dummy_utxo_insert{hash_ptr=pedersen_ptr, utreexo_roots=roots}(0x2f590e78b74666bb875395b8a6aa4d6cea4720492742a9468fce2f0c0752524);
     dummy_utxo_insert{hash_ptr=pedersen_ptr, utreexo_roots=roots}(0x342235d44e9f29689fe993bbc68d226fc415b34053d1549bc8c2a2f178bf4f1);
