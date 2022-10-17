@@ -71,6 +71,7 @@ def fetch_tx_ins_and_outs(block_height):
             tx_ins.append(tx_vin)
         for tx_vout in tx['vout']:
             tx_outs.append(tx_vout)
+        
     return tx_ins, tx_outs
 
 
@@ -79,7 +80,9 @@ def hash_tx_ins(tx_ins, tx_outs):
     for tx_vin in tx_ins:
         if tx_vin['is_coinbase'] == True:
             continue
+        # this utxo is generated in the validated block and we should not add it to the utxo set manually
         if tx_vin['prevout'] in tx_outs:
+            tx_outs = [x for x in tx_outs if x != tx_vin['prevout']]
             continue
         txid_list = hex_to_felt(little_endian(tx_vin['txid']))
         vout = tx_vin['vout']

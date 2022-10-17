@@ -439,8 +439,9 @@ func test_verify_block_with_49_transactions{
     dummy_utxo_insert{hash_ptr=pedersen_ptr, utreexo_roots=prev_utreexo_roots}(0x2d9a9f73f1e7ec6d282c07d4afdbca77c547af3c9301ef702e19619a52d1b6);
     dummy_utxo_insert{hash_ptr=pedersen_ptr, utreexo_roots=prev_utreexo_roots}(0x53fcc1c6151d28edfc5aa0cc9e6c85d9493399a1acdb692671904788257cc6a);
     dummy_utxo_insert{hash_ptr=pedersen_ptr, utreexo_roots=prev_utreexo_roots}(0x342235d44e9f29689fe993bbc68d226fc415b34053d1549bc8c2a2f178bf4f1);
+    dummy_utxo_insert{hash_ptr=pedersen_ptr, utreexo_roots=prev_utreexo_roots}(0x2c0467c06504bf986c56f5bb397512bdecece37163b2362187bc691cf521e61);
     dummy_utxo_insert{hash_ptr=pedersen_ptr, utreexo_roots=prev_utreexo_roots}(0x3d03ecce0543864d112fbc855e7a368acaf1c144061f3b057fcceae51bc0c20);
-
+ 
     let prev_state = State(prev_chain_state, prev_utreexo_roots);
 
     // Parse the block validation context using the previous state
