@@ -344,7 +344,7 @@ func test_verify_block_with_49_transactions{
 
     // We need some UTXOs to spend in this block
     reset_bridge_node();
-    let (roots) = utreexo_init();
+    let (prev_utreexo_roots) = utreexo_init();
 
     dummy_utxo_insert{hash_ptr=pedersen_ptr, utreexo_roots=prev_utreexo_roots}(0x4486fc74ae621af7db87af1e297deb6ee53aab72d133024d7c50c23b5d249de);
     dummy_utxo_insert{hash_ptr=pedersen_ptr, utreexo_roots=prev_utreexo_roots}(0x273fab909513005e619ea0ef1d5829f67df6dd8d88ecaeb26459e237007776f);
@@ -441,7 +441,7 @@ func test_verify_block_with_49_transactions{
     dummy_utxo_insert{hash_ptr=pedersen_ptr, utreexo_roots=prev_utreexo_roots}(0x342235d44e9f29689fe993bbc68d226fc415b34053d1549bc8c2a2f178bf4f1);
     dummy_utxo_insert{hash_ptr=pedersen_ptr, utreexo_roots=prev_utreexo_roots}(0x3d03ecce0543864d112fbc855e7a368acaf1c144061f3b057fcceae51bc0c20);
 
-    let prev_state = State(prev_chain_state, roots);
+    let prev_state = State(prev_chain_state, prev_utreexo_roots);
 
     // Parse the block validation context using the previous state
     let (context) = read_block_validation_context(prev_state);
