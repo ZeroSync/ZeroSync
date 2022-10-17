@@ -47,7 +47,7 @@ def hash_output(txid, vout, amount, script_pub_key):
 
 
 # Returns a list of tx inputs (used utxos) of a block at specified height
-def fetch_tx_ins(block_height):
+def fetch_tx_ins_and_outs(block_height):
     http = urllib3.PoolManager()
     
     # fetch the block hash
@@ -61,6 +61,7 @@ def fetch_tx_ins(block_height):
     txids = json.loads(r.data)
     
     tx_ins = []
+    tx_outs = []
     # fetch all tx_in per tx in txids
     for txid in txids:
         url = 'https://blockstream.info/api/tx/' + txid
@@ -68,13 +69,17 @@ def fetch_tx_ins(block_height):
         tx = json.loads(r.data)
         for tx_vin in tx['vin']:
             tx_ins.append(tx_vin)
-    return tx_ins
+        for tx_vout in tx['vout']:
+            tx_outs.append(tx_vout)
+    return tx_ins, tx_outs
 
 
-def hash_tx_ins(tx_ins):
+def hash_tx_ins(tx_ins, tx_outs):
     hashes = []
     for tx_vin in tx_ins:
         if tx_vin['is_coinbase'] == True:
+            continue
+        if tx_vin['prevout'] in tx_outs:
             continue
         txid_list = hex_to_felt(little_endian(tx_vin['txid']))
         vout = tx_vin['vout']
@@ -86,12 +91,13 @@ def hash_tx_ins(tx_ins):
 
 
 def generate_utxo_dummys(block_height):
-    tx_ins = fetch_tx_ins(block_height)
-    output_hashes = hash_tx_ins(tx_ins)
+    tx_ins, tx_outs = fetch_tx_ins_and_outs(block_height)
+    output_hashes = hash_tx_ins(tx_ins, tx_outs)
     code_block = ['dummy_utxo_insert{hash_ptr=pedersen_ptr, utreexo_roots=prev_utreexo_roots}(' + hex(x) + ');\n' for x in output_hashes]
 
     return code_block
 
 # 328734 49 txs test
 # 170000 27 txs test
-print("".join(generate_utxo_dummys(170000)))
+# TODO allow inputs
+print("".join(generate_utxo_dummys(328734)))
