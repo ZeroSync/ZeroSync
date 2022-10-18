@@ -11,7 +11,7 @@ from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.memcpy import memcpy
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin, HashBuiltin
 
-from python_utils import setup_python_defs
+from utils.python_utils import setup_python_defs
 from transaction.transaction import TransactionValidationContext
     from block.block_header import ChainState
 from block.block import (

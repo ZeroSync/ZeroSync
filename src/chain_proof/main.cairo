@@ -9,7 +9,7 @@ from crypto.sha256d.sha256d import HASH_FELT_SIZE
 from block.block_header import ChainState
 from block.block import State, validate_and_apply_block, read_block_validation_context
 from utreexo.utreexo import UTREEXO_ROOTS_LEN
-from python_utils import setup_python_defs
+from utils.python_utils import setup_python_defs
 
 func serialize_chain_state{output_ptr: felt*}(chain_state: ChainState) {
     serialize_word(chain_state.block_height);

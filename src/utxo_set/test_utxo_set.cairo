@@ -6,7 +6,7 @@
 
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import HashBuiltin
-from python_utils import setup_python_defs
+from utils.python_utils import setup_python_defs
 
 from utreexo.utreexo import utreexo_init
 from utxo_set.utxo_set import utxo_set_insert, utxo_set_extract

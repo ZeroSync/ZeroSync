@@ -25,7 +25,7 @@ func _sha1{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(felt_size, input: felt
 // It is intended to be used only for testing purposes!
 //
 // TODO: Delete this function before deploying any release!
-from python_utils import setup_python_defs
+from utils.python_utils import setup_python_defs
 func _compute_sha1_fake{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
     felt_size, input: felt*, byte_size
 ) -> (hash: felt*) {
