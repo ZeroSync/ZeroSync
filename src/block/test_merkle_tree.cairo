@@ -11,7 +11,7 @@ from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from crypto.sha256d.sha256d import assert_hashes_equal
 from block.merkle_tree import compute_merkle_root
-from python_utils import setup_python_defs
+from utils.python_utils import setup_python_defs
 
 // Simple test case (2 TXs)
 // Test case from https://medium.com/coinmonks/how-to-manually-verify-the-merkle-root-of-a-bitcoin-block-command-line-7881397d4db1

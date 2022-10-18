@@ -8,12 +8,12 @@
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.memcpy import memcpy
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
-from python_utils import setup_python_defs
+from utils.python_utils import setup_python_defs
 from serialize.serialize import init_reader, init_writer, flush_writer
 from crypto.sha256d.sha256d import assert_hashes_equal
 from block.block_header import (
     read_block_header,
-    bits_to_target,
+    bits_to_target, target_to_bits,
     BLOCK_HEADER_FELT_SIZE,
     BlockHeaderValidationContext,
     read_block_header_validation_context,
@@ -80,9 +80,6 @@ func dummy_prev_timestamps() -> (timestamps: felt*) {
 
 // Test a block header validation context
 //
-// A previous block header is necessary to do this. So we use two subsequent headers here.
-//
-// Example block headers
 //
 // Block at height 328734:
 // - https://blockstream.info/block/000000000000000009a11b3972c8e532fe964de937c9e0096b43814e67af3728
@@ -107,11 +104,11 @@ func test_read_block_header_validation_context{range_check_ptr, bitwise_ptr: Bit
 
     let (prev_timestamps) = dummy_prev_timestamps();
     let prev_chain_state = ChainState(
-        block_height=328733,
-        total_work=0,
-        best_block_hash=prev_block_hash,
-        difficulty=0,
-        epoch_start_time=0,
+        block_height = 328733,
+        total_work = 0,
+        best_block_hash = prev_block_hash,
+        current_target = 0x181bc330,
+        epoch_start_time = 0,
         prev_timestamps,
     );
 
@@ -161,4 +158,162 @@ func test_bits_to_target{bitwise_ptr: BitwiseBuiltin*, range_check_ptr}() {
     return ();
 }
 
-// TODO: Test that a block which does not match its PoW target throws an error
+@external
+func test_target_to_bits{bitwise_ptr: BitwiseBuiltin*, range_check_ptr}() {
+    alloc_locals;
+    let target = 0x1bc330000000000000000000000000000000000000000000;
+    let (bits) = target_to_bits(target);
+    assert bits = 0x181bc330;
+    return ();
+}
+
+
+
+// Test a current_target adjustment
+// After this block the current_target gets adjusted because it is a last block of an epoch.
+//
+// Block at height 201599 ( because 201599 % 2016 == 2015 )
+// - https://blockstream.info/block/000000000000041fb61665c8a31b8b5c3ae8fe81903ea81530c979d5094e6f9d
+// - https://blockstream.info/api/block/000000000000041fb61665c8a31b8b5c3ae8fe81903ea81530c979d5094e6f9d
+// - https://blockstream.info/api/block/000000000000041fb61665c8a31b8b5c3ae8fe81903ea81530c979d5094e6f9d/header
+//
+// Block at height 201598:
+// - https://blockstream.info/block/00000000000000ccb28f2e462f46ee762e801995862388f11ba9a682670e7590
+//
+@external
+func test_adjust_current_target{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
+    alloc_locals;
+    setup_python_defs();
+
+
+    // Create a dummy for the previous chain state
+    let (prev_block_hash) = alloc();
+    %{
+        hashes_from_hex([
+            "00000000000000ccb28f2e462f46ee762e801995862388f11ba9a682670e7590"
+        ], ids.prev_block_hash)
+    %}
+
+    // The previous epoch started at the timestamp of the block at height = 201600 - 2016 = 199584
+    // https://blockstream.info/block/000000000000002e00a243fe9aa49c78f573091d17372c2ae0ae5e0f24f55b52
+    // https://blockstream.info/api/block/000000000000002e00a243fe9aa49c78f573091d17372c2ae0ae5e0f24f55b52
+    let epoch_start_time = 1348092851;
+
+    // The current_target of the previous epoch 
+    let prev_current_target = 0x1a05db8b;
+
+    let (prev_timestamps) = dummy_prev_timestamps();
+
+    let prev_chain_state = ChainState(
+        block_height = 201598,
+        total_work = 0,
+        best_block_hash = prev_block_hash,
+        current_target = prev_current_target,
+        epoch_start_time = epoch_start_time,
+        prev_timestamps,
+    );
+
+    // Read a block header from the byte stream
+    // This is our next chain tip
+    let (context) = read_block_header_validation_context(prev_chain_state);
+
+    // Sanity check: block version should be 2
+    assert context.block_header.version = 0x02;
+
+    // Check if the target was computed correctly
+    assert context.target = 0x5db8b0000000000000000000000000000000000000000000000;
+
+    // Check if the block hash is correct
+    let (block_hash_expected) = alloc();
+    %{
+        hashes_from_hex([
+            "000000000000041fb61665c8a31b8b5c3ae8fe81903ea81530c979d5094e6f9d"
+            ], ids.block_hash_expected)
+    %}
+    assert_hashes_equal(context.block_hash, block_hash_expected);
+
+    // Try to validate the block header.
+    // This should succeed for valid block headers
+    let (next_state) = validate_and_apply_block_header(context);
+
+    // Verify that the current_target was correctly adjusted
+    assert next_state.current_target = 0x1a057e08;
+    
+    return ();
+}
+
+@external
+func test_insufficient_pow{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
+    alloc_locals;
+    setup_python_defs();
+    
+    // Block hashes for block 0 and 1
+    // https://blockstream.info/block/00000000839a8e6886ab5951d76f411475428afc90947ee320161bbf18eb6048
+    // https://blockstream.info/block/000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f
+    let (prev_block_hash) = alloc();
+    let (block_hash_expected) = alloc();
+    %{
+        hashes_from_hex([
+            "000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f"
+        ], ids.prev_block_hash)
+        hashes_from_hex([
+            "00000000839a8e6886ab5951d76f411475428afc90947ee320161bbf18eb6048"
+            ], ids.block_hash_expected)
+    %}
+
+    // Run a sanity check that header validation does not error with correct pow.
+    let (prev_timestamps) = dummy_prev_timestamps();
+
+    let prev_chain_state = ChainState(
+        block_height = 0,
+        total_work = 0,
+        best_block_hash = prev_block_hash,
+        current_target = 0x1d00ffff,
+        epoch_start_time = 0,
+        prev_timestamps,
+    );
+
+    // Block 1 will be read here.
+    let (context) = read_block_header_validation_context(prev_chain_state);
+    
+    // Check if the block hash is correct.
+    assert_hashes_equal(context.block_hash, block_hash_expected);
+
+    // Try to validate the block header.
+    // This should succeed for the currently correct target.
+    let (next_state) = validate_and_apply_block_header(context);
+
+    // Run a test with manipulated target.
+    let (prev_timestamps) = dummy_prev_timestamps();
+
+    let prev_chain_state = ChainState(
+        block_height = 0,
+        total_work = 0,
+        best_block_hash = prev_block_hash,
+        current_target = 0x1d00ffff,
+        epoch_start_time = 0,
+        prev_timestamps,
+    );
+
+    // Block 1 will be read here.
+    let (context) = read_block_header_validation_context(prev_chain_state);
+
+    // Check if the block hash is correct
+    assert_hashes_equal(context.block_hash, block_hash_expected);
+
+    // Manipulate the target and set it to 1.
+    let low_target_context = BlockHeaderValidationContext(
+        block_header = context.block_header,
+        block_hash = context.block_hash,
+        target = 1,
+        prev_chain_state = context.prev_chain_state,
+        block_height = context.block_height
+    );
+    
+    // Try to validate the block header.
+    // This should fail now because of the low target and pow validation.
+    %{ expect_revert() %}
+    let (next_state) = validate_and_apply_block_header(low_target_context);
+    
+    return ();
+}

@@ -8,16 +8,14 @@ from starkware.cairo.common.alloc import alloc
 from serialize.serialize import byte_size_to_felt_size, UINT32_SIZE
 from crypto.ripemd160.ripemd160_python import setup_python_ripemd160
 
-func ripemd160{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(input: felt*, byte_size) -> (
-    hash: felt*
-) {
+func ripemd160{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
+    input: felt*, byte_size) -> (hash: felt*) {
     let (felt_size) = byte_size_to_felt_size(byte_size);
     return _ripemd160(felt_size, input, byte_size);
 }
 
 func _ripemd160{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
-    felt_size, input: felt*, byte_size
-) -> (hash: felt*) {
+    felt_size, input: felt*, byte_size ) -> (hash: felt*) {
     // return _compute_ripemd160_real(felt_size, input, byte_size)
     return _compute_ripemd160_fake(felt_size, input, byte_size);
 }
@@ -28,10 +26,9 @@ func _ripemd160{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
 // It is intended to be used only for testing purposes!
 //
 // TODO: Delete this function before deploying any release!
-from python_utils import setup_python_defs
+from utils.python_utils import setup_python_defs
 func _compute_ripemd160_fake{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
-    felt_size, input: felt*, byte_size
-) -> (hash: felt*) {
+    felt_size, input: felt*, byte_size ) -> (hash: felt*) {
     alloc_locals;
     setup_python_defs();
     setup_python_ripemd160();
@@ -39,7 +36,6 @@ func _compute_ripemd160_fake{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
     %{
         import struct
         import ctypes
-
 
 
         felt_size = ids.byte_size // 4 

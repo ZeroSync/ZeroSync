@@ -17,8 +17,8 @@ func sha256{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(input: felt*, byte_si
 func _sha256{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(felt_size, input: felt*, byte_size) -> (
     hash: felt*
 ) {
-    // return _compute_sha256_real(felt_size, input, byte_size)
-    return _compute_sha256_fake(felt_size, input, byte_size);
+    return _compute_sha256_real(felt_size, input, byte_size);
+    // return _compute_sha256_fake(felt_size, input, byte_size);
 }
 
 from crypto.sha256.cartridge_gg.sha256 import compute_sha256, finalize_sha256
@@ -39,7 +39,7 @@ func _compute_sha256_real{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
 // It is intended to be used only for testing purposes!
 //
 // TODO: Delete this function before deploying any release!
-from python_utils import setup_python_defs
+from utils.python_utils import setup_python_defs
 func _compute_sha256_fake{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
     felt_size, input: felt*, byte_size
 ) -> (hash: felt*) {

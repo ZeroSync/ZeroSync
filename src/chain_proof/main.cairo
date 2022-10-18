@@ -9,7 +9,7 @@ from crypto.sha256d.sha256d import HASH_FELT_SIZE
 from block.block_header import ChainState
 from block.block import State, validate_and_apply_block, read_block_validation_context
 from utreexo.utreexo import UTREEXO_ROOTS_LEN
-from python_utils import setup_python_defs
+from utils.python_utils import setup_python_defs
 
 func serialize_chain_state{output_ptr: felt*}(chain_state: ChainState) {
     serialize_word(chain_state.block_height);
@@ -69,7 +69,7 @@ func main{
     local block_height: felt;
     local total_work: felt;
     let (best_block_hash) = alloc();
-    local difficulty: felt;
+    local current_target: felt;
     local epoch_start_time: felt;
     let (prev_timestamps) = alloc();
     let (prev_utreexo_roots) = alloc();
@@ -77,14 +77,14 @@ func main{
         ids.block_height = program_input["block_height"] if program_input["block_height"] != -1 else PRIME - 1
         ids.total_work = program_input["total_work"]
         segments.write_arg(ids.best_block_hash, felts_from_hash( program_input["best_block_hash"]) )
-        ids.difficulty = program_input["difficulty"]
+        ids.current_target = program_input["current_target"]
         ids.epoch_start_time = program_input["epoch_start_time"]
         segments.write_arg(ids.prev_timestamps, program_input["prev_timestamps"])
         segments.write_arg(ids.prev_utreexo_roots, felts_from_hex_strings( program_input["utreexo_roots"] ) )
     %}
 
     let prev_chain_state = ChainState(
-        block_height, total_work, best_block_hash, difficulty, epoch_start_time, prev_timestamps
+        block_height, total_work, best_block_hash, current_target, epoch_start_time, prev_timestamps
     );
     let prev_state = State(prev_chain_state, prev_utreexo_roots);
 
@@ -101,5 +101,5 @@ func main{
 }
 
 //
-// CAUTION!! `main` has to be the last function in this file! 
+// CAUTION!! `main` has to be the last function in this file! Otherwise, `giza prove` breaks.
 //

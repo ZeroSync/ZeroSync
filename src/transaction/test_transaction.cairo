@@ -10,7 +10,7 @@ from serialize.serialize import init_reader, init_writer, flush_writer, read_uin
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.memcpy import memcpy
 from crypto.sha256d.sha256d import assert_hashes_equal
-from python_utils import setup_python_defs
+from utils.python_utils import setup_python_defs
 
 from transaction.transaction import read_transaction, read_transaction_validation_context
 
