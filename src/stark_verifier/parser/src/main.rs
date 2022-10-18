@@ -1,15 +1,19 @@
 use std::fs::File;
 use std::io::{ BufReader, Read, Result };
 use serde::{ Deserialize, Serialize };
-use winterfell::StarkProof;
+use winterfell::{StarkProof};
+use winter_utils::{Deserializable, SliceReader};
 
 use std::env;
 
-use winter_air::proof::{Context};
-use winter_air::TraceLayout;
+use winterfell::Air;
+use winter_air::proof::{Context, Queries, Commitments};
+use winter_air::{ TraceLayout };
 use winter_crypto::hashers::Blake3_256;
 use giza_core::Felt;
 use winter_crypto::Digest;
+use air::{ ProcessorAir, PublicInputs };
+
 
 mod memory;
 use memory::{ MemoryEntry, Writeable, DynamicMemory };
@@ -32,9 +36,12 @@ fn main() -> Result<()> {
     
     let data: ProofData = bincode::deserialize( &data ).unwrap();
     let proof = StarkProof::from_bytes(&data.proof_bytes).unwrap();
+    let pub_inputs = PublicInputs::read_from(&mut SliceReader::new(&data.input_bytes[..])).unwrap();
+
+    let air = ProcessorAir::new(proof.get_trace_info(), pub_inputs, proof.options().clone());
 
     let mut memories = Vec::<Vec<MemoryEntry>>::new();
-    let mut dynamic_memory = DynamicMemory::new(&mut memories);
+    let mut dynamic_memory = DynamicMemory::new(&mut memories, &air);
 
     proof.write_into(&mut dynamic_memory);
 
@@ -47,34 +54,10 @@ fn main() -> Result<()> {
 }
 
 
-impl Writeable for u8 {
-    fn write_into(&self, target: &mut DynamicMemory) {
-        target.write_value(*self as u64)
-    }
-}
 
-impl Writeable for u64 {
-    fn write_into(&self, target: &mut DynamicMemory) {
-        target.write_value(*self)
-    }
-}
+impl Writeable<ProcessorAir> for TraceLayout {
 
-impl Writeable for usize {
-    fn write_into(&self, target: &mut DynamicMemory) {
-        target.write_value(*self as u64)
-    }
-}
-
-impl Writeable for u32 {
-    fn write_into(&self, target: &mut DynamicMemory) {
-        target.write_value(*self as u64)
-    }
-}
-
-
-impl Writeable for TraceLayout {
-
-    fn write_into(&self, target: &mut DynamicMemory) {
+    fn write_into(&self, target: &mut DynamicMemory<ProcessorAir>) {
         let mut aux_segement_widths = Vec::new();
         let mut aux_segment_rands = Vec::new();
 
@@ -91,9 +74,9 @@ impl Writeable for TraceLayout {
 
 }
 
-impl Writeable for Context {
+impl Writeable<ProcessorAir> for Context {
 
-    fn write_into(&self, target: &mut DynamicMemory) {
+    fn write_into(&self, target: &mut DynamicMemory<ProcessorAir>) {
         
         self.trace_layout().write_into(target);
 
@@ -110,9 +93,9 @@ impl Writeable for Context {
 
 type HashFn = Blake3_256<Felt>;
 
-impl Writeable for [u8; 32] {
+impl Writeable<ProcessorAir> for [u8; 32] {
     
-    fn write_into(&self, target: &mut DynamicMemory) {
+    fn write_into(&self, target: &mut DynamicMemory<ProcessorAir>) {
         let mut uint32_array = Vec::new();
         for i in 0..8 {
             let mut uint32 = 0;
@@ -130,15 +113,32 @@ impl Writeable for [u8; 32] {
 
 }
 
-impl Writeable for StarkProof {
-    
-    fn write_into(&self, target: &mut DynamicMemory) {
-        self.context.write_into(target);
-        self.pow_nonce.write_into(target);
-        let num_layers = self.fri_proof.num_layers();
-        let num_trace_segments = 1; // self.context.trace_layout().num_segments(); // TODO: why is num_segments wrong here??
-        let commitments = self.commitments.clone();
-        let (trace_commitments, constraint_commitment, fri_commitments) = commitments.parse::<HashFn>(num_trace_segments, num_layers).unwrap();
+impl Writeable<ProcessorAir> for Queries {
+
+    fn write_into(&self, target: &mut DynamicMemory<ProcessorAir>) {
+        let air = target.context;
+
+        let domain_size = air.lde_domain_size();
+        let num_queries = air.options().num_queries();
+        let values_per_query = air.trace_layout().main_trace_width();
+        // let (proofs, table) = self.clone().parse::<HashFn, Felt>(domain_size, num_queries, values_per_query).unwrap();
+    }
+
+}
+
+
+impl Writeable<ProcessorAir> for Commitments {
+
+    fn write_into(&self, target: &mut DynamicMemory<ProcessorAir>) {
+        let air = target.context;
+        
+        let num_trace_segments = air.trace_layout().num_segments();
+        let lde_domain_size = air.lde_domain_size();
+        let fri_options = air.options().to_fri_options();
+        let num_fri_layers = 1; // fri_options.num_fri_layers(lde_domain_size);
+
+        let (trace_commitments, constraint_commitment, fri_commitments) = self.clone().parse::<HashFn>(
+                num_trace_segments,  num_fri_layers ).unwrap();
 
         for trace_commitment in trace_commitments {
             trace_commitment.as_bytes().write_into(target);
@@ -149,6 +149,20 @@ impl Writeable for StarkProof {
         for fri_commitment in fri_commitments {
             fri_commitment.as_bytes().write_into(target);
         }
+    }
+
+}
+
+
+impl Writeable<ProcessorAir> for StarkProof {
+    
+    fn write_into(&self, target: &mut DynamicMemory<ProcessorAir>) {
+        self.context.write_into(target);
+        self.pow_nonce.write_into(target);
+        self.commitments.write_into(target);
+
+        target.write_array(self.trace_queries.clone());
+        self.constraint_queries.write_into(target);
     }
     
 }
