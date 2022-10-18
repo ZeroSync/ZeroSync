@@ -23,11 +23,11 @@ impl MemoryEntry {
         }
     }
 
-    pub fn to_hex(&self) -> String{
+    pub fn to_hex(&self) -> String {
         format!("{:#X}", self.value )
     }
 
-    pub fn make_absolute(&self, pointers: &Vec<usize>) -> String{
+    pub fn make_absolute(&self, pointers: &Vec<usize>) -> String {
         let pointer = pointers[ self.value as usize ];
         format!("{}", pointer)
     }
@@ -83,15 +83,15 @@ impl<'a, T> DynamicMemory<'a, T> {
         self.memories.get_mut(self.segment).unwrap().push(entry);
     }
 
-    pub fn write_pointer(&mut self, pointer: usize){
+    pub fn write_pointer(&mut self, pointer: usize) {
         self.write_entry(MemoryEntry::new_pointer(pointer))
     }
 
-    pub fn write_value(&mut self, value: u64){
+    pub fn write_value(&mut self, value: u64) {
         self.write_entry(MemoryEntry::new_value(value))
     }
 
-    pub fn write_array<T1: Writeable<T>>(&mut self, array: Vec<T1>){
+    pub fn write_array<Q: Writeable<T>>(&mut self, array: Vec<Q>) {
         let mut sub_memory = self.alloc();
         for writable in array {
             writable.write_into(&mut sub_memory);
@@ -116,9 +116,13 @@ pub trait Writeable<T> {
 }
 
 
-
-
 impl<T> Writeable<T> for u8 {
+    fn write_into(&self, target: &mut DynamicMemory<T>) {
+        target.write_value(*self as u64)
+    }
+}
+
+impl<T> Writeable<T> for u32 {
     fn write_into(&self, target: &mut DynamicMemory<T>) {
         target.write_value(*self as u64)
     }
@@ -136,8 +140,3 @@ impl<T> Writeable<T> for usize {
     }
 }
 
-impl<T> Writeable<T> for u32 {
-    fn write_into(&self, target: &mut DynamicMemory<T>) {
-        target.write_value(*self as u64)
-    }
-}

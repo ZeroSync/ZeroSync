@@ -91,11 +91,10 @@ impl Writeable<ProcessorAir> for Context {
 
 }
 
-type HashFn = Blake3_256<Felt>;
-
-impl Writeable<ProcessorAir> for [u8; 32] {
+impl<T> Writeable<T> for [u8; 32] {
     
-    fn write_into(&self, target: &mut DynamicMemory<ProcessorAir>) {
+    // Convert 32 x u8 to 8 x u32
+    fn write_into(&self, target: &mut DynamicMemory<T>) {
         let mut uint32_array = Vec::new();
         for i in 0..8 {
             let mut uint32 = 0;
@@ -112,6 +111,8 @@ impl Writeable<ProcessorAir> for [u8; 32] {
     }
 
 }
+
+type HashFn = Blake3_256<Felt>;
 
 impl Writeable<ProcessorAir> for Queries {
 

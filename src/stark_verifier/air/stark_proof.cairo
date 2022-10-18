@@ -117,12 +117,15 @@ func read_stark_proof() -> StarkProof2 {
     alloc_locals;
     let (proof_ptr: StarkProof2*) = alloc();
     %{
-        # Addresses are stored as `Relocatable` values in the Cairo VM
-        # The "+" operator is overloaded.
-        # https://github.com/starkware-libs/cairo-lang/blob/167b28bcd940fd25ea3816204fa882a0b0a49603/src/starkware/cairo/lang/vm/relocatable.py#L9
-        addr = ids.proof_ptr.address_
         import os
         import json
+
+        # Addresses are stored as `Relocatable` values in the Cairo VM.
+        # The "+" operator is overloaded to perform pointer arithmetics.
+        # https://github.com/starkware-libs/cairo-lang/blob/167b28bcd940fd25ea3816204fa882a0b0a49603/src/starkware/cairo/lang/vm/relocatable.py#L9
+        #
+        addr = ids.proof_ptr.address_
+        
         proof_path = 'src/stark_verifier/parser/src/proof_9.bin'
         cmd = f'src/stark_verifier/parser/target/debug/parser {proof_path}'
         program_output_string = os.popen(cmd).read()
@@ -130,7 +133,7 @@ func read_stark_proof() -> StarkProof2 {
         print(program_output_string)
         json_arr = json.loads(program_output_string)
 
-        # Felts are hex encoded starting with "0x". The virtual addresses are encoded in decimal.
+        # Felts are hex encoded starting with "0x". The virtual addresses are encoded as decimals.
         my_memory = [( int(x, 16) if x.startswith('0x') else addr + int(x) ) for x in json_arr ]
         segments.write_arg(addr, my_memory)
         
