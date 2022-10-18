@@ -43,6 +43,7 @@ pub struct DynamicMemory<'a>{
 impl<'a> DynamicMemory<'a> {
 
     pub fn new( memories: &'a mut Vec<Memory> ) -> DynamicMemory<'a> {
+        memories.push(Vec::<MemoryEntry>::new());
         DynamicMemory { 
             memories: memories,
             segment: 0
@@ -88,7 +89,7 @@ impl<'a> DynamicMemory<'a> {
         self.write_entry(MemoryEntry::new_value(value))
     }
 
-    pub fn write_array<T: Writeable + Sized>(&mut self, array: Vec<T>){
+    pub fn write_array<T: Writeable>(&mut self, array: Vec<T>){
         let mut sub_memory = self.alloc();
         for writable in array {
             writable.write_into(&mut sub_memory);

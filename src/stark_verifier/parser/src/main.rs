@@ -7,6 +7,9 @@ use std::env;
 
 use winter_air::proof::{Context};
 use winter_air::TraceLayout;
+use winter_crypto::hashers::Blake3_256;
+use giza_core::Felt;
+use winter_crypto::Digest;
 
 mod memory;
 use memory::{ MemoryEntry, Writeable, DynamicMemory };
@@ -62,6 +65,12 @@ impl Writeable for usize {
     }
 }
 
+impl Writeable for u32 {
+    fn write_into(&self, target: &mut DynamicMemory) {
+        target.write_value(*self as u64)
+    }
+}
+
 
 impl Writeable for TraceLayout {
 
@@ -99,13 +108,44 @@ impl Writeable for Context {
 
 }
 
+type HashFn = Blake3_256<Felt>;
+
+impl Writeable for [u8; 32] {
+    
+    fn write_into(&self, target: &mut DynamicMemory) {
+        let mut uint32_array = Vec::new();
+        for i in 0..8 {
+            let mut uint32 = 0;
+            for j in 0..4 {
+                // Store as big endian
+                uint32 += (2_usize.pow(8)) * self[ i * 4 + (3 - j)] as usize;
+            }
+            uint32_array.push( uint32 );
+        }
+        target.write_array( uint32_array );
+    }
+
+}
 
 impl Writeable for StarkProof {
     
-    fn write_into(&self, target: &mut DynamicMemory){
+    fn write_into(&self, target: &mut DynamicMemory) {
         self.context.write_into(target);
         self.pow_nonce.write_into(target);
+        let num_layers = self.fri_proof.num_layers();
+        let num_segments = self.context.trace_layout().num_segments();
+        let commitments = self.commitments.clone();
+        // let (trace_commitments, constraint_commitment, fri_commitments) = commitments.parse::<HashFn>(num_segments, num_layers).unwrap();
+
+        // for trace_commitment in trace_commitments {
+        //     trace_commitment.as_bytes().write_into(target);
+        // }
+
+        // constraint_commitment.as_bytes().write_into(target);
         
+        // for fri_commitment in fri_commitments {
+        //     fri_commitment.as_bytes().write_into(target);
+        // }
     }
     
 }
