@@ -116,9 +116,12 @@ impl Writeable for [u8; 32] {
         let mut uint32_array = Vec::new();
         for i in 0..8 {
             let mut uint32 = 0;
+            // Store as big endian
+            let mut base = 1 << 24;
             for j in 0..4 {
-                // Store as big endian
-                uint32 += (2_usize.pow(8)) * self[ i * 4 + (3 - j)] as usize;
+                let index = (i * 4 + j) as usize;
+                uint32 += base * self[ index ] as usize;
+                base >>= 8;
             }
             uint32_array.push( uint32 );
         }
@@ -133,19 +136,19 @@ impl Writeable for StarkProof {
         self.context.write_into(target);
         self.pow_nonce.write_into(target);
         let num_layers = self.fri_proof.num_layers();
-        let num_segments = self.context.trace_layout().num_segments();
+        let num_trace_segments = 1; // self.context.trace_layout().num_segments(); // TODO: why is num_segments wrong here??
         let commitments = self.commitments.clone();
-        // let (trace_commitments, constraint_commitment, fri_commitments) = commitments.parse::<HashFn>(num_segments, num_layers).unwrap();
+        let (trace_commitments, constraint_commitment, fri_commitments) = commitments.parse::<HashFn>(num_trace_segments, num_layers).unwrap();
 
-        // for trace_commitment in trace_commitments {
-        //     trace_commitment.as_bytes().write_into(target);
-        // }
+        for trace_commitment in trace_commitments {
+            trace_commitment.as_bytes().write_into(target);
+        }
 
-        // constraint_commitment.as_bytes().write_into(target);
+        constraint_commitment.as_bytes().write_into(target);
         
-        // for fri_commitment in fri_commitments {
-        //     fri_commitment.as_bytes().write_into(target);
-        // }
+        for fri_commitment in fri_commitments {
+            fri_commitment.as_bytes().write_into(target);
+        }
     }
     
 }
