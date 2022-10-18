@@ -37,9 +37,6 @@ source ~/cairo_venv/bin/activate
 python3 src/chain_proof/main.py
 ```
 
-```sh
-giza prove --trace=tmp/trace.bin --memory=tmp/memory.bin --program=tmp/program.json --output=tmp/proof.bin --num-outputs=50
-```
 
 ## List TODOs in Code
 ```sh

@@ -2,12 +2,8 @@
 // To run only this test suite use:
 // protostar test --cairo-path=./src target src/stark_verifier/test_stark_verifier.cairo
 //
-// Note that you have to run the bridge node to make all this tests pass
-//
-
 
 %lang starknet
-
 
 from stark_verifier.air.stark_proof import read_stark_proof
 
