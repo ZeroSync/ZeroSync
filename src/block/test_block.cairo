@@ -2,7 +2,7 @@
 // To run only this test suite use:
 // protostar test --cairo-path=./src target src/block/*_block.cairo
 //
-// Note that you have to run the bridge node to make all this tests pass
+// Note that you have to run the bridge node to make all these tests pass
 //
 
 %lang starknet
