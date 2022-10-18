@@ -1,22 +1,11 @@
 from starkware.cairo.common.alloc import alloc
 
-struct Context {
-    // trace_layout: TraceLayout,
-    trace_length: felt,
-    trace_meta_len: felt,
-    trace_meta: felt*,
-    field_modulus_bytes_len: felt,
-    field_modulus_bytes: felt*,
-    // options: ProofOptions,
-}
-
-
 // https://github.com/novifinancial/winterfell/blob/f14a9ab9ce36589daf74c9c9dde344995390efcd/air/src/air/trace_info.rs#L158
 struct TraceLayout {
     main_segment_width: felt,
-    aux_segment_widths: felt,
-    aux_segment_rands: felt,
     num_aux_segments: felt,
+    aux_segment_widths: felt*,
+    aux_segment_rands: felt*,
 }
 
 // https://github.com/novifinancial/winterfell/blob/0b7cc3dc28c6b1ad43eb3f2850f644bff1423cf9/air/src/options.rs#L82
@@ -31,37 +20,57 @@ struct ProofOptions {
 }
 
 
+struct Context {
+    trace_layout: TraceLayout,
+    trace_length: felt,
+    trace_meta_len: felt,
+    trace_meta: felt*,
+    field_modulus_bytes_len: felt,
+    field_modulus_bytes: felt*,
+    // options: ProofOptions,
+}
 
 
 
 // https://github.com/novifinancial/winterfell/blob/ecea359802538692c4e967b083107c6b08f3302e/air/src/proof/commitments.rs#L25
 struct Commitments {
+    trace_commitments_len : felt,
     trace_commitments : felt*, 
+    constraint_commitment_len : felt,
     constraint_commitment : felt*, 
+    fri_commitments_len : felt,
     fri_commitments : felt*,
 }
 
 
 struct Queries {
+    paths_len : felt,
     paths: felt*,
+    values_len : felt,
     values: felt*,
 }
 
 struct OodFrame {
+    trace_states_len : felt,
     trace_states: felt*,
+    evaluations_len : felt,
     evaluations: felt*,
 }
 
 // https://github.com/novifinancial/winterfell/blob/446d8a67bcfa819d50d0adbbf191611dc7b3622c/fri/src/proof.rs#L32
 struct FriProof {
+    layers_len : felt,
     layers: FriProofLayer*,
+    remainder_len : felt,
     remainder: felt*,
     num_partitions: felt, // stored as power of 2
 }
 
 // https://github.com/novifinancial/winterfell/blob/446d8a67bcfa819d50d0adbbf191611dc7b3622c/fri/src/proof.rs#L246
 struct FriProofLayer {
+    values_len : felt,
     values: felt*,
+    paths_len : felt,
     paths: felt*, // array of array of hashes. Each hash is represented as 8 x uint32 ? 
 }
 
@@ -77,6 +86,7 @@ struct StarkProof {
     commitments: Commitments,
     /// Decommitments of extended execution trace values (for all trace segments) at position
     /// queried by the verifier.
+    trace_queries_len : felt,
     trace_queries: Queries*,
     /// Decommitments of constraint composition polynomial evaluations at positions queried by
     /// the verifier.
@@ -88,8 +98,6 @@ struct StarkProof {
     /// Proof-of-work nonce for query seed grinding.
     pow_nonce: felt,
 }
-
-
 
 
 

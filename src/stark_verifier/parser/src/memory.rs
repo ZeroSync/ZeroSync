@@ -35,20 +35,18 @@ impl MemoryEntry {
 
 type Memory = Vec<MemoryEntry>;
 
-pub struct DynamicMemory<'a, T> {
+pub struct DynamicMemory<'a> {
     memories: &'a mut Vec<Memory>,
-    segment: usize,
-    pub context: &'a T
+    segment: usize
 }
 
-impl<'a, T> DynamicMemory<'a, T> {
+impl<'a> DynamicMemory<'a> {
 
-    pub fn new( memories: &'a mut Vec<Memory>, context: &'a T ) -> DynamicMemory<'a, T> {
+    pub fn new( memories: &'a mut Vec<Memory> ) -> DynamicMemory<'a> {
         memories.push(Vec::<MemoryEntry>::new());
         DynamicMemory { 
             memories: memories,
-            segment: 0,
-            context
+            segment: 0
         }
     }
 
@@ -91,52 +89,66 @@ impl<'a, T> DynamicMemory<'a, T> {
         self.write_entry(MemoryEntry::new_value(value))
     }
 
-    pub fn write_array<Q: Writeable<T>>(&mut self, array: Vec<Q>) {
+    pub fn write_array<T: Writeable>(&mut self, array: Vec<T>) {
         let mut sub_memory = self.alloc();
         for writable in array {
             writable.write_into(&mut sub_memory);
         }
     }
+    
+    pub fn write_array_with<Q, T: WriteableWith<Q>, F>(&mut self, array: Vec<T>, f: F) 
+        where F: Fn(u32) -> Q {
+        let mut sub_memory = self.alloc();
+        let mut i = 0;
+        for writable in array {
+            writable.write_into(&mut sub_memory, f(i) );
+            i += 1;
+        }   
+    }
 
-    fn alloc(&mut self) -> DynamicMemory<T> {
+    fn alloc(&mut self) -> DynamicMemory {
         let segment = self.memories.len();
         self.write_pointer(segment);
         self.memories.push(Vec::<MemoryEntry>::new());
         DynamicMemory { 
             memories: self.memories,
-            segment: segment,
-            context: self.context
+            segment: segment
         }
     }
 }
 
 
-pub trait Writeable<T> {
-    fn write_into(&self, target: &mut DynamicMemory<T>);
+pub trait Writeable {
+    fn write_into(&self, target: &mut DynamicMemory);
 }
 
 
-impl<T> Writeable<T> for u8 {
-    fn write_into(&self, target: &mut DynamicMemory<T>) {
+impl Writeable for u8 {
+    fn write_into(&self, target: &mut DynamicMemory) {
         target.write_value(*self as u64)
     }
 }
 
-impl<T> Writeable<T> for u32 {
-    fn write_into(&self, target: &mut DynamicMemory<T>) {
+impl Writeable for u32 {
+    fn write_into(&self, target: &mut DynamicMemory) {
         target.write_value(*self as u64)
     }
 }
 
-impl<T> Writeable<T> for u64 {
-    fn write_into(&self, target: &mut DynamicMemory<T>) {
+impl Writeable for u64 {
+    fn write_into(&self, target: &mut DynamicMemory) {
         target.write_value(*self)
     }
 }
 
-impl<T> Writeable<T> for usize {
-    fn write_into(&self, target: &mut DynamicMemory<T>) {
+impl Writeable for usize {
+    fn write_into(&self, target: &mut DynamicMemory) {
         target.write_value(*self as u64)
     }
 }
 
+
+
+pub trait WriteableWith<Parameters> {
+    fn write_into(&self, target: &mut DynamicMemory, params: Parameters);
+}

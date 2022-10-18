@@ -16,7 +16,7 @@ use air::{ ProcessorAir, PublicInputs };
 
 
 mod memory;
-use memory::{ MemoryEntry, Writeable, DynamicMemory };
+use memory::{ MemoryEntry, Writeable, WriteableWith, DynamicMemory };
 
 #[derive(Serialize, Deserialize)]
 struct ProofData {
@@ -41,9 +41,9 @@ fn main() -> Result<()> {
     let air = ProcessorAir::new(proof.get_trace_info(), pub_inputs, proof.options().clone());
 
     let mut memories = Vec::<Vec<MemoryEntry>>::new();
-    let mut dynamic_memory = DynamicMemory::new(&mut memories, &air);
+    let mut dynamic_memory = DynamicMemory::new(&mut memories);
 
-    proof.write_into(&mut dynamic_memory);
+    proof.write_into(&mut dynamic_memory, air);
 
     let memory = dynamic_memory.serialize();
 
@@ -55,9 +55,9 @@ fn main() -> Result<()> {
 
 
 
-impl Writeable<ProcessorAir> for TraceLayout {
+impl Writeable for TraceLayout {
 
-    fn write_into(&self, target: &mut DynamicMemory<ProcessorAir>) {
+    fn write_into(&self, target: &mut DynamicMemory) {
         let mut aux_segement_widths = Vec::new();
         let mut aux_segment_rands = Vec::new();
 
@@ -74,9 +74,9 @@ impl Writeable<ProcessorAir> for TraceLayout {
 
 }
 
-impl Writeable<ProcessorAir> for Context {
+impl Writeable for Context {
 
-    fn write_into(&self, target: &mut DynamicMemory<ProcessorAir>) {
+    fn write_into(&self, target: &mut DynamicMemory) {
         
         self.trace_layout().write_into(target);
 
@@ -91,10 +91,10 @@ impl Writeable<ProcessorAir> for Context {
 
 }
 
-impl<T> Writeable<T> for [u8; 32] {
+impl Writeable for [u8; 32] {
     
     // Convert 32 x u8 to 8 x u32
-    fn write_into(&self, target: &mut DynamicMemory<T>) {
+    fn write_into(&self, target: &mut DynamicMemory) {
         let mut uint32_array = Vec::new();
         for i in 0..8 {
             let mut uint32 = 0;
@@ -114,24 +114,28 @@ impl<T> Writeable<T> for [u8; 32] {
 
 type HashFn = Blake3_256<Felt>;
 
-impl Writeable<ProcessorAir> for Queries {
 
-    fn write_into(&self, target: &mut DynamicMemory<ProcessorAir>) {
-        let air = target.context;
+struct QueriesParams {
+    domain_size : usize, 
+    num_queries : usize, 
+    values_per_query: usize,
+}
 
-        let domain_size = air.lde_domain_size();
-        let num_queries = air.options().num_queries();
-        let values_per_query = air.trace_layout().main_trace_width();
-        // let (proofs, table) = self.clone().parse::<HashFn, Felt>(domain_size, num_queries, values_per_query).unwrap();
+impl WriteableWith<QueriesParams> for Queries {
+
+    fn write_into(&self, target: &mut DynamicMemory, params: QueriesParams) {
+
+        // let (proofs, table) = self.clone().parse::<HashFn, Felt>(params.domain_size, params.num_queries, params.values_per_query).unwrap();
     }
 
 }
 
 
-impl Writeable<ProcessorAir> for Commitments {
+impl WriteableWith<&ProcessorAir> for Commitments {
 
-    fn write_into(&self, target: &mut DynamicMemory<ProcessorAir>) {
-        let air = target.context;
+    fn write_into(&self, target: &mut DynamicMemory, parameter: &ProcessorAir) {
+        
+        let air = parameter;
         
         let num_trace_segments = air.trace_layout().num_segments();
         let lde_domain_size = air.lde_domain_size();
@@ -155,15 +159,28 @@ impl Writeable<ProcessorAir> for Commitments {
 }
 
 
-impl Writeable<ProcessorAir> for StarkProof {
+impl WriteableWith<ProcessorAir> for StarkProof {
     
-    fn write_into(&self, target: &mut DynamicMemory<ProcessorAir>) {
+    fn write_into(&self, target: &mut DynamicMemory, params: ProcessorAir) {
         self.context.write_into(target);
         self.pow_nonce.write_into(target);
-        self.commitments.write_into(target);
 
-        target.write_array(self.trace_queries.clone());
-        self.constraint_queries.write_into(target);
+        self.commitments.write_into(target, &params);
+
+        target.write_array_with(self.trace_queries.clone(), |index| {
+            // TODO: compute the actual params using the index
+            QueriesParams {
+                domain_size : params.lde_domain_size(),
+                num_queries : params.options().num_queries(),
+                values_per_query : params.trace_layout().main_trace_width()
+            }
+        });
+
+        self.constraint_queries.write_into(target, QueriesParams {
+            domain_size : params.lde_domain_size(),
+            num_queries : params.options().num_queries(),
+            values_per_query : params.trace_layout().main_trace_width(),
+        });
     }
     
 }
