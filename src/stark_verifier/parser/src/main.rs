@@ -1,11 +1,21 @@
-use winterfell::StarkProof;
 use std::fs::File;
 use std::io::{ BufReader, Read, Result };
 use serde::{ Deserialize, Serialize };
+use winterfell::StarkProof;
 
-use winter_air::proof::Context;
 use std::env;
 
+use winter_air::proof::{Context};
+use winter_air::TraceLayout;
+
+mod memory;
+use memory::{ MemoryEntry, Writeable, DynamicMemory };
+
+#[derive(Serialize, Deserialize)]
+struct ProofData {
+    input_bytes: Vec<u8>,
+    proof_bytes: Vec<u8>,
+}
 
 fn main() -> Result<()> {
     let args: Vec<String> = env::args().collect();
@@ -20,123 +30,82 @@ fn main() -> Result<()> {
     let data: ProofData = bincode::deserialize( &data ).unwrap();
     let proof = StarkProof::from_bytes(&data.proof_bytes).unwrap();
 
+    let mut memories = Vec::<Vec<MemoryEntry>>::new();
+    let mut dynamic_memory = DynamicMemory::new(&mut memories);
 
-    let mut writer = FeltWriter::new();
+    proof.write_into(&mut dynamic_memory);
 
-    let proof_ptr = proof.write_into(&mut writer);
+    let memory = dynamic_memory.serialize();
 
-    writer.write_pointer(proof_ptr);
-    
-    let json_arr = serde_json::to_string(&writer.memory)?;
+    let json_arr = serde_json::to_string(&memory)?;
     println!( "{}", json_arr );
 
     Ok(())
 }
 
 
-#[derive(Serialize, Deserialize)]
-struct ProofData {
-    input_bytes: Vec<u8>,
-    proof_bytes: Vec<u8>,
-}
-
-
-struct FeltWriter {
-    pub memory: Vec<String>
-}
-
-impl FeltWriter {
-
-    fn new() -> FeltWriter {
-        FeltWriter {
-            memory: Vec::new()
-        }
-    }
-
-    fn write_pointer(&mut self, value: u64) -> u64 {
-        self.memory.push(format!("{}", value ));
-        self.head() - 1
-    }
-
-
-    fn write_u64(&mut self, value: u64) -> u64 {
-        self.memory.push(format!("{:#X}", value ));
-        self.head() - 1
-    }
-
-    fn write_array<T: Writeable + Sized>(&mut self, array: Vec<T>) -> u64 {
-        // for each element
-            // Write its children into the memory but the element into a temporary memory
-        let mut temp_writer = FeltWriter::new();
-        for element in array{
-            element.write_into_temp(self, &mut temp_writer);
-        }
-
-        let array_ptr = self.head();
-
-        // Copy the temporary memory into the memory
-        self.memory.extend( temp_writer.memory );
-        
-        array_ptr
-    }
-
-    fn head(&self) -> u64 {
-        self.memory.len() as u64
-    }
-}
-
-trait Writeable{
-    fn write_into(&self, target: &mut FeltWriter) -> u64;
-
-    fn write_into_temp(&self, target: &mut FeltWriter, temp_target: &mut FeltWriter) -> u64;
-}
-
 impl Writeable for u8 {
-    fn write_into(&self, target: &mut FeltWriter) -> u64{
-        target.write_u64(*self as u64)
-    }
-
-    fn write_into_temp(&self, target: &mut FeltWriter, temp_target: &mut FeltWriter) -> u64{
-        temp_target.write_u64(*self as u64)
+    fn write_into(&self, target: &mut DynamicMemory) {
+        target.write_value(*self as u64)
     }
 }
 
-impl Writeable for StarkProof {
-    fn write_into(&self, target: &mut FeltWriter) -> u64 {
-        // Write children
-        let proof_ptr = self.context.write_into(target);
-        
-        // Write self
-        target.write_u64(self.pow_nonce as u64);
-
-        proof_ptr
-    }
-
-    fn write_into_temp(&self, target: &mut FeltWriter, temp_target: &mut FeltWriter) -> u64 {
-        unimplemented!();
+impl Writeable for u64 {
+    fn write_into(&self, target: &mut DynamicMemory) {
+        target.write_value(*self)
     }
 }
 
+impl Writeable for usize {
+    fn write_into(&self, target: &mut DynamicMemory) {
+        target.write_value(*self as u64)
+    }
+}
+
+
+impl Writeable for TraceLayout {
+
+    fn write_into(&self, target: &mut DynamicMemory) {
+        let mut aux_segement_widths = Vec::new();
+        let mut aux_segment_rands = Vec::new();
+
+        for i in 0..self.num_aux_segments() {
+            aux_segement_widths.push( self.get_aux_segment_width(i) );
+            aux_segment_rands.push( self.get_aux_segment_rand_elements(i) );
+        }
+
+        self.main_trace_width().write_into(target);
+        self.num_aux_segments().write_into(target);
+        target.write_array(aux_segement_widths);
+        target.write_array(aux_segment_rands);
+    }
+
+}
 
 impl Writeable for Context {
 
-    fn write_into(&self, target: &mut FeltWriter) -> u64 { 
-        // Write children
-        let trace_meta_ptr = target.write_array(self.get_trace_info().meta().to_vec());
-        let field_modulus_bytes_ptr = target.write_array(self.field_modulus_bytes().to_vec());
+    fn write_into(&self, target: &mut DynamicMemory) {
+        
+        self.trace_layout().write_into(target);
 
-        // Write self
-        let context_ptr = target.head();
-        target.write_u64( self.trace_length() as u64 ); // Do not serialize as a power of two
-        target.write_u64( self.get_trace_info().meta().len() as u64 );
-        target.write_pointer(trace_meta_ptr);
-        target.write_u64( self.field_modulus_bytes().len() as u64 );
-        target.write_pointer(field_modulus_bytes_ptr);
-
-        context_ptr
+        self.trace_length().write_into(target); // Do not serialize as a power of two
+        
+        self.get_trace_info().meta().len().write_into(target);
+        target.write_array(self.get_trace_info().meta().to_vec());
+        
+        self.field_modulus_bytes().len().write_into(target);
+        target.write_array(self.field_modulus_bytes().to_vec());
     }
 
-    fn write_into_temp(&self, target: &mut FeltWriter, temp_target: &mut FeltWriter) -> u64{
-        unimplemented!();
+}
+
+
+impl Writeable for StarkProof {
+    
+    fn write_into(&self, target: &mut DynamicMemory){
+        self.context.write_into(target);
+        self.pow_nonce.write_into(target);
+        
     }
+    
 }
