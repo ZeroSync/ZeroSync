@@ -10,6 +10,7 @@ from starkware.cairo.common.uint256 import Uint256, uint256_lt
 
 from stark_verifier.air.pub_inputs import PublicInputs
 from stark_verifier.air.stark_proof import Context
+from stark_verifier.air.transitions.frame import EvaluationFrame
 
 // Montgomery constant
 const R_MONTGOMERY = 2 ** 256;
@@ -99,20 +100,21 @@ func reseed_with_int{
     return ();
 }
 
-func draw_pair{
+func reseed_with_ood_frames{
     range_check_ptr,
     blake2s_ptr: felt*,
     bitwise_ptr: BitwiseBuiltin*,
     public_coin: PublicCoin,
-}() -> (res1: felt, res2: felt) {
-    alloc_locals;
-    let (res1) = draw_random();
-    let (res2) = draw_random();
-    return (res1=res1, res2=res2);
+}(
+    ood_main_trace_frame: EvaluationFrame,
+    ood_aux_trace_frame: EvaluationFrame,
+) -> () {
+    // TODO
+    return ();
 }
 
 // Returns the next pseudo-random field element
-func draw_random{
+func draw{
     range_check_ptr,
     blake2s_ptr: felt*,
     bitwise_ptr: BitwiseBuiltin*,
@@ -131,8 +133,52 @@ func draw_random{
         let res = (num.low + num.high * 2 ** 128) / R_MONTGOMERY;
         return (res=res);
     } else {
-        return draw_random();
+        return draw();
     }
+}
+
+func draw_pair{
+    range_check_ptr,
+    blake2s_ptr: felt*,
+    bitwise_ptr: BitwiseBuiltin*,
+    public_coin: PublicCoin,
+}() -> (res1: felt, res2: felt) {
+    alloc_locals;
+    let (res1) = draw();
+    let (res2) = draw();
+    return (res1=res1, res2=res2);
+}
+
+func draw_elements{
+    range_check_ptr,
+    blake2s_ptr: felt*,
+    bitwise_ptr: BitwiseBuiltin*,
+    public_coin: PublicCoin,
+}(
+    n_elements: felt,
+    elements: felt*,
+) -> () {
+    if (n_elements == 0) {
+        return ();
+    }
+    let (res) = draw();
+    assert [elements] = res;
+    draw_elements(n_elements=n_elements - 1, elements=&elements[1]);
+    return ();
+}
+
+func draw_integers{
+    range_check_ptr,
+    blake2s_ptr: felt*,
+    bitwise_ptr: BitwiseBuiltin*,
+    public_coin: PublicCoin,
+}(
+    n_elements: felt,
+    elements: felt*,
+    domain_size: felt,
+) -> () {
+    // TODO
+    return ();
 }
 
 func seed_with_pub_inputs(pub_inputs: PublicInputs, seed: felt) -> (res: Uint256) {
@@ -145,3 +191,7 @@ func seed_with_proof_context(context: Context, seed: felt) -> (res: Uint256) {
     return (res=Uint256(0,0));
 }
 
+func get_leading_zeros{public_coin: PublicCoin}() -> (res: felt) {
+    // TODO
+    return (res=0);
+}

@@ -3,6 +3,7 @@ from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 
 from stark_verifier.crypto.random import (
     PublicCoin,
+    draw_elements,
     draw_pair,
     random_coin_new,
     hash_elements,
@@ -11,15 +12,29 @@ from stark_verifier.crypto.random import (
     seed_with_pub_inputs,
     seed_with_proof_context,
 )
+from stark_verifier.air.stark_proof import (
+    Context,
+    ProofOptions,
+    StarkProof,
+)
+//from stark_verifier.air.trace_info import TraceInfo
 
 struct AirInstance {
     // Layout
-    num_segments: felt,
-    main_trace_width: felt,
+    main_segment_width: felt,
     aux_trace_width: felt,
+    aux_segment_widths: felt*,
+    aux_segment_rands: felt*,
+    num_aux_segments: felt,
     // Context
+    options: ProofOptions,
+    context: Context,
+    //trace_info: TraceInfo,
     num_transition_constraints: felt,
     num_assertions: felt,
+    ce_blowup_factor: felt,
+    eval_frame_size: felt,
+    lde_domain_size: felt,
 }
 
 // Coefficients used in construction of constraint composition polynomial
@@ -32,15 +47,41 @@ struct ConstraintCompositionCoefficients {
     boundary_b: felt*,
 }
 
-func air_instance_new() -> (res: AirInstance) {
+struct TraceCoefficients {
+    n_values: felt,
+    values: felt,
+}
+
+// Coefficients used in construction of DEEP composition polynomial
+struct DeepCompositionCoefficients {
+    // Trace polynomial composition coefficients $\alpha_i$, $\beta_i$, and $\gamma_i$
+    trace: TraceCoefficients*,
+    // Constraint column polynomial composition coefficients $\delta_j$
+    constraints: felt*,
+    // Degree adjustment composition coefficients $\lambda$ and $\mu$
+    degree: (felt, felt),
+}
+
+func air_instance_new(proof: StarkProof, options: ProofOptions) -> (res: AirInstance) {
+    alloc_locals;
+    let (aux_segment_widths: felt*) = alloc();
+    let (aux_segment_rands: felt*) = alloc();
+
     // TODO: Use correct values for Cairo AIR. Make configurable for other
     // VMs and custom AIRs
     return (res=AirInstance(
-        num_segments=5,
-        main_trace_width=30,
-        aux_trace_width=10,
-        num_transition_constraints=21,
+        main_segment_width=30,
+        aux_trace_width=2,
+        aux_segment_widths=aux_segment_widths,
+        aux_segment_rands=aux_segment_rands,
+        num_aux_segments=3,
+        options=options,
+        context=proof.context,
+        num_transition_constraints=20,
         num_assertions=4,
+        ce_blowup_factor=4,
+        eval_frame_size=2,
+        lde_domain_size=options.blowup_factor * proof.context.trace_length,
     ));
 }
 
@@ -74,13 +115,66 @@ func get_constraint_composition_coefficients{
     );
 
     let res = ConstraintCompositionCoefficients(
-        transition_a = t_coefficients_a,
-        transition_b = t_coefficients_b,
-        boundary_a = b_coefficients_a,
-        boundary_b = b_coefficients_b,
+        transition_a=t_coefficients_a,
+        transition_b=t_coefficients_b,
+        boundary_a=b_coefficients_a,
+        boundary_b=b_coefficients_b,
     );
 
     return (res=res);
+}
+
+// Returns coefficients needed to construct the DEEP composition polynomial
+func get_deep_composition_coefficients{
+    range_check_ptr,
+    blake2s_ptr: felt*,
+    bitwise_ptr: BitwiseBuiltin*,
+    public_coin: PublicCoin,
+}(
+    air: AirInstance,
+) -> (res: DeepCompositionCoefficients) {
+    alloc_locals;
+
+    let (t_coefficients: TraceCoefficients*) = alloc();
+    set_trace_coefficients(
+        n_vec=air.eval_frame_size,
+        n_coefficients=air.main_segment_width,
+        coefficients=t_coefficients,
+    );
+
+    let (c_coefficients: felt*) = alloc();
+    draw_elements(n_elements=air.ce_blowup_factor, elements=c_coefficients);
+
+    let (lambda, mu) = draw_pair();
+
+    let res = DeepCompositionCoefficients(
+        trace=t_coefficients,
+        constraints=c_coefficients,
+        degree=(lambda, mu),
+    );
+    return (res=res);
+}
+
+func set_trace_coefficients{
+    range_check_ptr,
+    blake2s_ptr: felt*,
+    bitwise_ptr: BitwiseBuiltin*,
+    public_coin: PublicCoin,
+}(
+    n_vec: felt,
+    n_coefficients: felt, 
+    coefficients: TraceCoefficients*,
+) -> () {
+    if (n_vec == 0) {
+        return ();
+    }
+    draw_elements(n_elements=n_coefficients, elements=coefficients);
+    set_trace_coefficients(
+        n_vec=n_vec - 1,
+        n_coefficients=n_coefficients,
+        coefficients=coefficients,
+    );
+    return ();
 }
 
 // Returns the next pair of pseudo-random field elements, and adds them to the
@@ -93,8 +187,8 @@ func draw_pairs{
 }(
     n_pairs: felt,
     coefficients_a: felt*,
-    coefficients_b: felt*) 
--> () {
+    coefficients_b: felt*,
+) -> () {
     let (num1, num2) = draw_pair();
     coefficients_a[0] = num1;
     coefficients_b[0] = num2;

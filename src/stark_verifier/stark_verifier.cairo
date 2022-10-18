@@ -3,45 +3,71 @@
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_blake2s.blake2s import finalize_blake2s
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
+from starkware.cairo.common.math import assert_lt
 from starkware.cairo.common.uint256 import Uint256
 
-from stark_verifier.channel import (
-    Channel,
-    channel_new,
-    read_constraint_commitment,
-    read_ood_trace_frame,
-    read_ood_constraint_evaluations,
-    read_trace_commitments,
-)
-from stark_verifier.crypto.random import (
-    PublicCoin,
-    draw_random,
-    hash_elements,
-    random_coin_new,
-    reseed,
-    reseed_with_int,
-    seed_with_pub_inputs,
-    seed_with_proof_context,
-)
 from stark_verifier.air.air_instance import (
     AirInstance,
     air_instance_new,
     get_constraint_composition_coefficients,
+    get_deep_composition_coefficients,
 )
 from stark_verifier.air.pub_inputs import PublicInputs
 from stark_verifier.air.stark_proof import (
     Queries,
     Context,
     TraceLayout,
-    ProofOptions,
     Commitments,
     FriProof,
     OodFrame,
+    ProofOptions,
     StarkProof,
     read_stark_proof,
 )
+from stark_verifier.air.trace_info import TraceInfo
+from stark_verifier.channel import (
+    Channel,
+    channel_new,
+    read_constraint_commitment,
+    read_constraint_evaluations,
+    read_ood_trace_frame,
+    read_ood_constraint_evaluations,
+    read_pow_nonce,
+    read_trace_commitments,
+    read_queried_trace_states,
+)
+from stark_verifier.composer import (
+    compose_constraint_evaluations,
+    combine_compositions,
+    compose_trace_columns,
+    deep_composer_new,
+)
+from stark_verifier.crypto.random import (
+    PublicCoin,
+    draw,
+    draw_elements,
+    draw_integers,
+    get_leading_zeros,
+    hash_elements,
+    random_coin_new,
+    reseed,
+    reseed_with_int,
+    reseed_with_ood_frames,
+    seed_with_pub_inputs,
+    seed_with_proof_context,
+)
+from stark_verifier.evaluator import evaluate_constraints
+from stark_verifier.fri.fri_verifier import (
+    fri_verifier_new,
+    fri_verify,
+)
+from stark_verifier.utils import Vec
 
 // Verifies that the specified computation was executed correctly against the specified inputs.
+//
+// These subroutines are intended to be as close to a line-by-line transcription of the
+// Winterfell verifier code (see https://github.com/novifinancial/winterfell and the associated 
+// LICENSE.winterfell.md)
 func verify{
     range_check_ptr,
     bitwise_ptr: BitwiseBuiltin*,
@@ -61,7 +87,7 @@ func verify{
     //let (public_coin_seed_3) = seed_with_proof_context(proof.context, seed=public_coin_seed_2);
 
     // Create an AIR instance for the computation specified in the proof.
-    let (air) = air_instance_new();
+    let (air) = air_instance_new(proof, proof.context.options);
 
     // Create a public coin and channel struct
     let (public_coin) = random_coin_new(Uint256(0,0)); //public_coin_seed_3);
@@ -106,7 +132,7 @@ func perform_verification{
     let (aux_trace_rand_elements: felt*) = alloc();
     process_aux_segments(
         trace_commitments=trace_commitments + 1,
-        aux_trace_rand_elements=aux_trace_rand_elements,
+        aux_segment_rands=air.aux_segment_rands,
     );
 
     // Build random coefficients for the composition polynomial
@@ -122,44 +148,111 @@ func perform_verification{
     reseed(value=constraint_commitment);
     
     // Draw an out-of-domain point z from the coin.
-    let (z) = draw_random();
+    let (z) = draw();
 
     // 3 ----- OOD consistency check --------------------------------------------------------------
 
     // Read the out-of-domain trace frames (the main trace frame and auxiliary trace frame, if
     // provided) sent by the prover.
-    // let (ood_main_trace_frame, ood_aux_trace_frame) = read_ood_trace_frame();
+    let (ood_main_trace_frame, ood_aux_trace_frame) = read_ood_trace_frame();
 
     // Evaluate constraints over the OOD frames.
-    // let (ood_constraint_evaluation_1) = evaluate_constraints(
-    //     air=air,
-    //     constraint_coeffs=constraint_coeffs,
-    //     ood_main_trace_frame=ood_main_trace_frame,
-    //     ood_aux_trace_frame=ood_aux_trace_frame,
-    //     aux_trace_rand_elements=aux_trace_rand_elements,
-    //     z=z,
-    // );
+    let (ood_constraint_evaluation_1) = evaluate_constraints(
+        air=air,
+        constraint_coeffs=constraint_coeffs,
+        ood_main_trace_frame=ood_main_trace_frame,
+        ood_aux_trace_frame=ood_aux_trace_frame,
+        aux_trace_rand_elements=aux_trace_rand_elements,
+        z=z,
+    );
 
     // Reseed the public coin with the OOD frames.
-    // reseed_with_ood_frames(
-    //     ood_main_trace_frame=ood_main_trace_frame,
-    //     ood_aux_trace_frame=ood_aux_trace_frame,
-    // );
+    reseed_with_ood_frames(
+        ood_main_trace_frame=ood_main_trace_frame,
+        ood_aux_trace_frame=ood_aux_trace_frame,
+    );
 
-    // read evaluations of composition polynomial columns sent by the prover, and reduce them into
+    // Read evaluations of composition polynomial columns sent by the prover, and reduce them into
     // a single value by computing sum(z^i * value_i), where value_i is the evaluation of the ith
-    // column polynomial at z^m, where m is the total number of column polynomials; also, reseed
+    // column polynomial at z^m, where m is the total number of column polynomials. Also, reseed
     // the public coin with the OOD constraint evaluations received from the prover.
-    // let (ood_constraint_evaluations) = read_ood_constraint_evaluations();
+    let (ood_constraint_evaluations) = read_ood_constraint_evaluations();
+    let (ood_constraint_evaluation_2) = reduce_evaluations(evaluations=ood_constraint_evaluations);
+    let (value) = hash_elements(
+        n_elements=ood_constraint_evaluations.n_elements,
+        elements=ood_constraint_evaluations.elements,
+    );
+    reseed(value=value);
 
-    // let (ood_constraint_evaluation_2) = reduce_evaluations(evaluations=ood_constraint_evaluations);
-    // reseed(value=hash_elements(
-    //     n_elements=ood_constraint_evaluations.n_elements,
-    //     elements=ood_constraint_evaluations.elements,
-    // ));
+    // Finally, make sure the values are the same.
+    assert ood_constraint_evaluation_1 = ood_constraint_evaluation_2;
 
-    // finally, make sure the values are the same
-    // assert ood_constraint_evaluation_1 == ood_constraint_evaluation_2;
+    // 4 ----- FRI commitments --------------------------------------------------------------------
+
+    // Draw coefficients for computing DEEP composition polynomial from the public coin.
+    let (deep_coefficients) = get_deep_composition_coefficients(air=air);
+
+    // Instantiates a FRI verifier with the FRI layer commitments read from the channel. From the
+    // verifier's perspective, this is equivalent to executing the commit phase of the FRI protocol.
+    // The verifier uses these commitments to update the public coin and draw random points alpha
+    // from them.
+    let (fri_verifier) = fri_verifier_new(air=air);
+
+    // 5 ----- Trace and constraint queries -------------------------------------------------------
+
+    // Read proof-of-work nonce sent by the prover and update the public coin with it.
+    let (pow_nonce) = read_pow_nonce();
+    reseed_with_int(pow_nonce);
+
+    // Make sure the proof-of-work specified by the grinding factor is satisfied.
+    let (leading_zeros) = get_leading_zeros();
+    //assert_lt(leading_zeros, air.options.grinding_factor);
+
+    // Draw pseudorandom query positions for the LDE domain from the public coin.
+    let (query_positions: felt*) = alloc();
+    draw_integers(
+        n_elements=air.options.num_queries,
+        elements=query_positions,
+        domain_size=air.lde_domain_size
+    );
+
+    // Read evaluations of trace and constraint composition polynomials at the queried positions.
+    // This also checks that the read values are valid against trace and constraint commitments.
+    let (queried_main_trace_states, queried_aux_trace_states) = read_queried_trace_states(query_positions);
+    let (queried_constraint_evaluations) = read_constraint_evaluations(query_positions);
+
+    // 6 ----- DEEP composition -------------------------------------------------------------------
+
+    // Compute evaluations of the DEEP composition polynomial at the queried positions.
+    let (composer) = deep_composer_new(
+        air=air,
+        query_positions=query_positions,
+        z=z,
+        cc=deep_coefficients,
+    );
+    let (t_composition) = compose_trace_columns(
+        composer,
+        queried_main_trace_states,
+        queried_aux_trace_states,
+        ood_main_trace_frame,
+        ood_aux_trace_frame,
+    );
+    let (c_composition) = compose_constraint_evaluations(
+        composer,
+        queried_constraint_evaluations,
+        ood_constraint_evaluations,
+    );
+    let (deep_evaluations) = combine_compositions(
+        composer,
+        t_composition,
+        c_composition,
+    );
+
+    // 7 ----- Verify low-degree proof -------------------------------------------------------------
+
+    // Make sure that evaluations of the DEEP composition polynomial we computed in the previous
+    // step are in fact evaluations of a polynomial of degree equal to trace polynomial degree.
+    fri_verify(fri_verifier, deep_evaluations, query_positions);
 
     return ();
 }
@@ -167,9 +260,25 @@ func perform_verification{
 func process_aux_segments{
     channel: Channel,
     public_coin: PublicCoin,
-}(trace_commitments: Uint256*, aux_trace_rand_elements: felt*) -> () {
+}(
+    trace_commitments: Uint256*,
+    aux_segment_rands: felt*
+) -> () {
+    // TODO
+    let n = 0;
+    //draw_elements();
+    //process_aux_segments_inner();
+    return ();
+}
+
+func process_aux_segments_inner{}() -> () {
     // TODO
     return ();
+}
+
+func reduce_evaluations(evaluations: Vec) -> (res: felt) {
+    // TODO
+    return (res=0);
 }
 
 func main{
@@ -177,11 +286,10 @@ func main{
     bitwise_ptr: BitwiseBuiltin*,
 }() -> () {
     
-    // TODO: Deserialize proof
-    
+    // Deserialize proof
     let proof = read_stark_proof();
     let pub_inputs = PublicInputs();
 
-    // verify(proof=proof, pub_inputs=pub_inputs);
+    verify(proof=proof, pub_inputs=pub_inputs);
     return ();
 }
