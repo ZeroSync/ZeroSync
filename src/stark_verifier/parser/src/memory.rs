@@ -1,34 +1,36 @@
 #[derive(Copy, Clone)]
-enum MemoryEntryType{ Pointer, Value }
+enum MemoryEntryType {
+    Pointer,
+    Value,
+}
 
 #[derive(Copy, Clone)]
 pub struct MemoryEntry {
     entry_type: MemoryEntryType,
-    value: u64
+    value: u64,
 }
 
 impl MemoryEntry {
-
     pub fn new_pointer(value: usize) -> MemoryEntry {
-        MemoryEntry { 
-            entry_type: MemoryEntryType::Pointer, 
-            value: value as u64
+        MemoryEntry {
+            entry_type: MemoryEntryType::Pointer,
+            value: value as u64,
         }
     }
 
     pub fn new_value(value: u64) -> MemoryEntry {
-        MemoryEntry { 
-            entry_type: MemoryEntryType::Value, 
-            value
+        MemoryEntry {
+            entry_type: MemoryEntryType::Value,
+            value,
         }
     }
 
     pub fn to_hex(&self) -> String {
-        format!("{:#X}", self.value )
+        format!("{:#X}", self.value)
     }
 
     pub fn make_absolute(&self, pointers: &Vec<usize>) -> String {
-        let pointer = pointers[ self.value as usize ];
+        let pointer = pointers[self.value as usize];
         format!("{}", pointer)
     }
 }
@@ -38,22 +40,20 @@ type Memory = Vec<MemoryEntry>;
 pub struct DynamicMemory<'a, T> {
     memories: &'a mut Vec<Memory>,
     segment: usize,
-    pub context: &'a T
+    pub context: &'a T,
 }
 
 impl<'a, T> DynamicMemory<'a, T> {
-
-    pub fn new( memories: &'a mut Vec<Memory>, context: &'a T ) -> DynamicMemory<'a, T> {
+    pub fn new(memories: &'a mut Vec<Memory>, context: &'a T) -> DynamicMemory<'a, T> {
         memories.push(Vec::<MemoryEntry>::new());
-        DynamicMemory { 
+        DynamicMemory {
             memories: memories,
             segment: 0,
-            context
+            context,
         }
     }
 
     pub fn serialize(&self) -> Vec<String> {
-
         // Concatenate all temporary memories and compute absolute pointers
         let mut concatenated = Vec::<MemoryEntry>::new();
         let mut pointers = Vec::new();
@@ -68,11 +68,11 @@ impl<'a, T> DynamicMemory<'a, T> {
         for entry in concatenated {
             match entry.entry_type {
                 MemoryEntryType::Pointer => {
-                    memory.push( entry.make_absolute( &pointers ) );
-                },
+                    memory.push(entry.make_absolute(&pointers));
+                }
                 MemoryEntryType::Value => {
-                    memory.push( entry.to_hex() );
-                },
+                    memory.push(entry.to_hex());
+                }
             }
         }
 
@@ -102,19 +102,17 @@ impl<'a, T> DynamicMemory<'a, T> {
         let segment = self.memories.len();
         self.write_pointer(segment);
         self.memories.push(Vec::<MemoryEntry>::new());
-        DynamicMemory { 
+        DynamicMemory {
             memories: self.memories,
             segment: segment,
-            context: self.context
+            context: self.context,
         }
     }
 }
 
-
 pub trait Writeable<T> {
     fn write_into(&self, target: &mut DynamicMemory<T>);
 }
-
 
 impl<T> Writeable<T> for u8 {
     fn write_into(&self, target: &mut DynamicMemory<T>) {
@@ -139,4 +137,3 @@ impl<T> Writeable<T> for usize {
         target.write_value(*self as u64)
     }
 }
-
