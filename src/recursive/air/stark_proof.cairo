@@ -1,4 +1,14 @@
+from recursive.air.trace_info import TraceInfo
+
+struct ProofOptions {
+    grinding_factor: felt,
+    num_queries: felt,
+    blowup_factor: felt,
+}
+
 struct Context {
+    options: ProofOptions,
+    trace_info: TraceInfo,
 }
 
 struct Commitments {
