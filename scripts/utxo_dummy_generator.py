@@ -2,6 +2,7 @@ import urllib3
 import json
 import re
 import math
+import sys
 
 from starkware.cairo.lang.vm.crypto import pedersen_hash
 from starkware.cairo.common.hash_chain import compute_hash_chain
@@ -10,12 +11,13 @@ HASH_FELT_SIZE = 8
 
 
 def hex_to_felt(hex_string):
-     # Seperate hex_string into chunks of 8 chars.
-     felts = re.findall(".?.?.?.?.?.?.?.", hex_string)
-     # Fill remaining space in last chunk with 0.
-     while len(felts[-1]) < 8:
-         felts[-1] += "0"
-     return [int(x, 16) for x in felts]
+    # Seperate hex_string into chunks of 8 chars.
+    felts = re.findall(".?.?.?.?.?.?.?.", hex_string)
+    # Fill remaining space in last chunk with 0.
+    while len(felts[-1]) < 8:
+        felts[-1] += "0"
+    return [int(x, 16) for x in felts]
+
 
 def little_endian(string):
     splited = [str(string)[i: i + 2] for i in range(0, len(str(string)), 2)]
@@ -49,17 +51,17 @@ def hash_output(txid, vout, amount, script_pub_key):
 # Returns a list of tx inputs (used utxos) of a block at specified height
 def fetch_tx_ins_and_outs(block_height):
     http = urllib3.PoolManager()
-    
+
     # fetch the block hash
     url = 'https://blockstream.info/api/block-height/' + str(block_height)
     r = http.request('GET', url)
     block_hash = r.data.decode('utf8')
-    
+
     # fetch a list of txids
     url = 'https://blockstream.info/api/block/' + block_hash + '/txids'
     r = http.request('GET', url)
     txids = json.loads(r.data)
-    
+
     tx_ins = []
     tx_outs = []
     # fetch all tx_in per tx in txids
@@ -71,16 +73,17 @@ def fetch_tx_ins_and_outs(block_height):
             tx_ins.append(tx_vin)
         for tx_vout in tx['vout']:
             tx_outs.append(tx_vout)
-        
+
     return tx_ins, tx_outs
 
 
 def hash_tx_ins(tx_ins, tx_outs):
     hashes = []
     for tx_vin in tx_ins:
-        if tx_vin['is_coinbase'] == True:
+        if tx_vin['is_coinbase']:
             continue
-        # this utxo is generated in the validated block and we should not add it to the utxo set manually
+        # this utxo is generated in the validated block and we should not add
+        # it to the utxo set manually
         if tx_vin['prevout'] in tx_outs:
             tx_outs = [x for x in tx_outs if x != tx_vin['prevout']]
             continue
@@ -96,11 +99,24 @@ def hash_tx_ins(tx_ins, tx_outs):
 def generate_utxo_dummys(block_height):
     tx_ins, tx_outs = fetch_tx_ins_and_outs(block_height)
     output_hashes = hash_tx_ins(tx_ins, tx_outs)
-    code_block = ['dummy_utxo_insert{hash_ptr=pedersen_ptr, utreexo_roots=prev_utreexo_roots}(' + hex(x) + ');\n' for x in output_hashes]
+    code_block = [
+        'dummy_utxo_insert{hash_ptr=pedersen_ptr, utreexo_roots=prev_utreexo_roots}(' +
+        hex(x) +
+        ');\n' for x in output_hashes]
 
     return code_block
+
 
 # 328734 49 txs test
 # 170000 27 txs test
 # TODO allow inputs
-print("".join(generate_utxo_dummys(328734)))
+if __name__ == "__main__":
+    if len(sys.argv) == 1:
+        print(
+            f"ERROR: No block height specified.\nUSAGE: python {sys.argv[0]} <block-height>\n")
+        exit(1)
+    block_height = int(sys.argv[1])
+    if block_height < 0:
+        print("ERROR: Specify a block height above zero.")
+        exit(2)
+    print("".join(generate_utxo_dummys(block_height)))
