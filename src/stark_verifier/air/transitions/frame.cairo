@@ -1,4 +1,4 @@
 struct EvaluationFrame {
-    current: felt*,
-    next: felt*,
+    //current: felt*,
+    //next: felt*,
 }

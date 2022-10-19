@@ -26,7 +26,7 @@ func _ripemd160{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
 // It is intended to be used only for testing purposes!
 //
 // TODO: Delete this function before deploying any release!
-from python_utils import setup_python_defs
+from utils.python_utils import setup_python_defs
 func _compute_ripemd160_fake{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
     felt_size, input: felt*, byte_size ) -> (hash: felt*) {
     alloc_locals;
