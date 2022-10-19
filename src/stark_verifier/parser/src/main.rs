@@ -1,4 +1,4 @@
-use serde::{Deserialize, Serialize};
+use serde::{Serialize, Deserialize};
 use std::fs::File;
 use std::io::{BufReader, Read, Result};
 use winter_utils::{Deserializable, SliceReader};
@@ -6,13 +6,14 @@ use winterfell::StarkProof;
 
 use std::env;
 
-use air::{ProcessorAir, PublicInputs};
+use air::{ ProcessorAir, PublicInputs };
 use giza_core::Felt;
 use winter_air::proof::{Commitments, Context, Queries};
-use winter_air::TraceLayout;
-use winter_crypto::hashers::Blake3_256;
-use winter_crypto::Digest;
+use winter_air::{ TraceLayout, Table };
+use winter_crypto::hashers::Blake3_192;
+use winter_crypto::{ BatchMerkleProof, Digest };
 use winterfell::Air;
+
 
 mod memory;
 use memory::{DynamicMemory, MemoryEntry, Writeable, WriteableWith};
@@ -56,17 +57,17 @@ fn main() -> Result<()> {
 
 impl Writeable for TraceLayout {
     fn write_into(&self, target: &mut DynamicMemory) {
-        let mut aux_segement_widths = Vec::new();
+        let mut aux_segment_widths = Vec::new();
         let mut aux_segment_rands = Vec::new();
 
         for i in 0..self.num_aux_segments() {
-            aux_segement_widths.push(self.get_aux_segment_width(i));
+            aux_segment_widths.push(self.get_aux_segment_width(i));
             aux_segment_rands.push(self.get_aux_segment_rand_elements(i));
         }
 
         self.main_trace_width().write_into(target);
         self.num_aux_segments().write_into(target);
-        target.write_array(aux_segement_widths);
+        target.write_array(aux_segment_widths);
         target.write_array(aux_segment_rands);
     }
 }
@@ -104,7 +105,7 @@ impl Writeable for [u8; 32] {
     }
 }
 
-type HashFn = Blake3_256<Felt>;
+type HashFn = Blake3_192<Felt>;
 
 struct QueriesParams {
     domain_size: usize,
@@ -112,11 +113,35 @@ struct QueriesParams {
     values_per_query: usize,
 }
 
+
+
+impl Writeable for BatchMerkleProof<HashFn> {
+
+      fn write_into(&self, target: &mut DynamicMemory) {
+            // TODO: implement me
+            // self.leaves.as_bytes().write_into(target);
+      }
+
+}
+
+
+impl Writeable for Table<Felt> {
+
+      fn write_into(&self, target: &mut DynamicMemory) {
+            // TODO: implement me
+      }
+
+}
+
 impl WriteableWith<QueriesParams> for Queries {
     fn write_into(&self, target: &mut DynamicMemory, params: QueriesParams) {
-        // let (proofs, table) = self.clone().parse::<HashFn, Felt>(params.domain_size, params.num_queries, params.values_per_query).unwrap();
+        let (proofs, table) = self.clone().parse::<HashFn, Felt>(params.domain_size, params.num_queries, params.values_per_query).unwrap();
+        proofs.write_into(target);
+        table.write_into(target);
     }
 }
+
+
 
 impl WriteableWith<&ProcessorAir> for Commitments {
     fn write_into(&self, target: &mut DynamicMemory, params: &ProcessorAir) {
@@ -125,7 +150,7 @@ impl WriteableWith<&ProcessorAir> for Commitments {
         let num_trace_segments = air.trace_layout().num_segments();
         let lde_domain_size = air.lde_domain_size();
         let fri_options = air.options().to_fri_options();
-        let num_fri_layers = 1; // fri_options.num_fri_layers(lde_domain_size);
+        let num_fri_layers = fri_options.num_fri_layers( lde_domain_size );
 
         let (trace_commitments, constraint_commitment, fri_commitments) = self
             .clone()
@@ -144,29 +169,38 @@ impl WriteableWith<&ProcessorAir> for Commitments {
     }
 }
 
+
+
+
 impl WriteableWith<ProcessorAir> for StarkProof {
-    fn write_into(&self, target: &mut DynamicMemory, params: ProcessorAir) {
+    fn write_into(&self, target: &mut DynamicMemory, air: ProcessorAir) {
         self.context.write_into(target);
         self.pow_nonce.write_into(target);
 
-        self.commitments.write_into(target, &params);
+        self.commitments.write_into(target, &air);
 
         target.write_array_with(self.trace_queries.clone(), |index| {
-            // TODO: compute the actual params using the index
+            if index == 0 {
+                return QueriesParams {
+                    domain_size: air.lde_domain_size(),
+                    num_queries: air.options().num_queries(),
+                    values_per_query: air.trace_layout().main_trace_width(),
+                }
+            }
+
             QueriesParams {
-                domain_size: params.lde_domain_size(),
-                num_queries: params.options().num_queries(),
-                values_per_query: params.trace_layout().main_trace_width(),
+                domain_size: air.lde_domain_size(),
+                num_queries: air.options().num_queries(),
+                values_per_query: air.trace_layout().get_aux_segment_width( (index - 1).try_into().unwrap() ),
             }
         });
 
         self.constraint_queries.write_into(
             target,
             QueriesParams {
-                domain_size: params.lde_domain_size(),
-                num_queries: params.options().num_queries(),
-                values_per_query: params.trace_layout().main_trace_width(),
-            },
-        );
+                domain_size: air.lde_domain_size(), 
+                num_queries: air.options().num_queries(), 
+                values_per_query: air.ce_blowup_factor(),
+        });
     }
 }
