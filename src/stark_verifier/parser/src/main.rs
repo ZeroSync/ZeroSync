@@ -46,7 +46,7 @@ fn main() -> Result<()> {
 
     proof.write_into(&mut dynamic_memory, air);
 
-    let memory = dynamic_memory.serialize();
+    let memory = dynamic_memory.assemble();
 
     let json_arr = serde_json::to_string(&memory)?;
     println!("{}", json_arr);
@@ -119,8 +119,8 @@ impl WriteableWith<QueriesParams> for Queries {
 }
 
 impl WriteableWith<&ProcessorAir> for Commitments {
-    fn write_into(&self, target: &mut DynamicMemory, parameter: &ProcessorAir) {
-        let air = parameter;
+    fn write_into(&self, target: &mut DynamicMemory, params: &ProcessorAir) {
+        let air = params;
 
         let num_trace_segments = air.trace_layout().num_segments();
         let lde_domain_size = air.lde_domain_size();

@@ -29,8 +29,8 @@ impl MemoryEntry {
         format!("{:#X}", self.value)
     }
 
-    pub fn make_absolute(&self, pointers: &Vec<usize>) -> String {
-        let pointer = pointers[self.value as usize];
+    pub fn make_absolute(&self, pointers_map: &Vec<usize>) -> String {
+        let pointer = pointers_map[self.value as usize];
         format!("{}", pointer)
     }
 }
@@ -43,6 +43,7 @@ pub struct DynamicMemory<'a> {
 }
 
 impl<'a> DynamicMemory<'a> {
+
     pub fn new(memories: &'a mut Vec<Memory>) -> DynamicMemory<'a> {
         memories.push(Vec::<MemoryEntry>::new());
         DynamicMemory {
@@ -51,22 +52,23 @@ impl<'a> DynamicMemory<'a> {
         }
     }
 
-    pub fn serialize(&self) -> Vec<String> {
-        // Concatenate all temporary memories and compute absolute pointers
+
+    pub fn assemble(&self) -> Vec<String> {
+        // Concatenate all memories and compute a mapping for pointers
         let mut concatenated = Vec::<MemoryEntry>::new();
-        let mut pointers = Vec::new();
+        let mut pointers_map = Vec::new();
 
         for vector in &mut self.memories.iter() {
-            pointers.push(concatenated.len());
+            pointers_map.push(concatenated.len());
             concatenated.extend(vector);
         }
 
-        // Make the relative pointers absolute
+        // Iterate through all memory entries and map the pointers
         let mut memory = Vec::new();
         for entry in concatenated {
             match entry.entry_type {
                 MemoryEntryType::Pointer => {
-                    memory.push(entry.make_absolute(&pointers));
+                    memory.push(entry.make_absolute(&pointers_map));
                 }
                 MemoryEntryType::Value => {
                     memory.push(entry.to_hex());
@@ -96,9 +98,9 @@ impl<'a> DynamicMemory<'a> {
         }
     }
 
-    pub fn write_array_with<Q, T: WriteableWith<Q>, F>(&mut self, array: Vec<T>, f: F)
+    pub fn write_array_with<Params, T: WriteableWith<Params>, F>(&mut self, array: Vec<T>, f: F)
     where
-        F: Fn(u32) -> Q,
+        F: Fn(u32) -> Params,
     {
         let mut sub_memory = self.alloc();
         let mut i = 0;
