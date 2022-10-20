@@ -119,16 +119,32 @@ impl Writeable for BatchMerkleProof<HashFn> {
 
       fn write_into(&self, target: &mut DynamicMemory) {
             // TODO: implement me
-            // self.leaves.as_bytes().write_into(target);
+            // self.into_paths().unwrap();
       }
 
 }
 
 
+impl Writeable for Felt {
+
+    fn write_into(&self, target: &mut DynamicMemory) {
+        let mut hex_string = "0x".to_owned();
+        for byte in self.to_raw().to_le_bytes() {
+            hex_string += format!("{:02x?}", byte).as_str();
+        }
+        target.write_hex_value(hex_string);   
+    }
+
+}
+
 impl Writeable for Table<Felt> {
 
       fn write_into(&self, target: &mut DynamicMemory) {
-            // TODO: implement me
+            for i in 0..self.num_rows(){
+                // a trace segment column or a constraint evaluation column.
+                let column = self.get_row(i);
+                target.write_array(column.to_vec());
+            }
       }
 
 }
@@ -136,8 +152,8 @@ impl Writeable for Table<Felt> {
 impl WriteableWith<QueriesParams> for Queries {
     fn write_into(&self, target: &mut DynamicMemory, params: QueriesParams) {
         let (proofs, table) = self.clone().parse::<HashFn, Felt>(params.domain_size, params.num_queries, params.values_per_query).unwrap();
-        proofs.write_into(target);
         table.write_into(target);
+        // proofs.write_into(target);
     }
 }
 
@@ -180,18 +196,16 @@ impl WriteableWith<ProcessorAir> for StarkProof {
         self.commitments.write_into(target, &air);
 
         target.write_array_with(self.trace_queries.clone(), |index| {
+            let values_per_query;
             if index == 0 {
-                return QueriesParams {
-                    domain_size: air.lde_domain_size(),
-                    num_queries: air.options().num_queries(),
-                    values_per_query: air.trace_layout().main_trace_width(),
-                }
+                values_per_query = air.trace_layout().main_trace_width();
+            } else {
+                values_per_query = air.trace_layout().get_aux_segment_width( (index - 1).try_into().unwrap() );
             }
-
             QueriesParams {
                 domain_size: air.lde_domain_size(),
                 num_queries: air.options().num_queries(),
-                values_per_query: air.trace_layout().get_aux_segment_width( (index - 1).try_into().unwrap() ),
+                values_per_query: values_per_query,
             }
         });
 
