@@ -6,54 +6,65 @@ use winterfell::StarkProof;
 
 use std::env;
 
-use air::{ ProcessorAir, PublicInputs };
-use giza_core::Felt;
-use winter_air::proof::{Commitments, Context, Queries};
+use winter_air::proof::{ Commitments, Context, Queries };
 use winter_air::{ TraceLayout, Table };
 use winter_crypto::hashers::Blake3_192;
 use winter_crypto::{ BatchMerkleProof, Digest };
 use winterfell::Air;
 
+use giza_air::{ ProcessorAir, PublicInputs };
+use giza_core::Felt;
+
 
 mod memory;
-use memory::{DynamicMemory, MemoryEntry, Writeable, WriteableWith};
+use memory::{ DynamicMemory, MemoryEntry, Writeable, WriteableWith };
+
 
 #[derive(Serialize, Deserialize)]
-struct ProofData {
+struct BinaryProofData {
     input_bytes: Vec<u8>,
     proof_bytes: Vec<u8>,
 }
 
-fn main() -> Result<()> {
+impl BinaryProofData {
+    fn from_file(file_path: &String) -> BinaryProofData {
+        let file = File::open(file_path).unwrap();
+        let mut buf_reader = BufReader::new(file);
+
+        let mut data = Vec::new();
+        buf_reader
+            .read_to_end(&mut data)
+            .expect("Unable to read data");
+
+        bincode::deserialize(&data).unwrap()
+    }
+}
+
+fn main() {
+
+    // Load the proof and its public inputs from a file into byte strings
     let args: Vec<String> = env::args().collect();
     let proof_path = &args[1];
-
-    let file = File::open(proof_path)?;
-    let mut buf_reader = BufReader::new(file);
-
-    let mut data = Vec::new();
-    buf_reader
-        .read_to_end(&mut data)
-        .expect("Unable to read data");
-
-    let data: ProofData = bincode::deserialize(&data).unwrap();
+    let data = BinaryProofData::from_file(proof_path);    
+    
+    // Parse a proof_data object
     let proof = StarkProof::from_bytes(&data.proof_bytes).unwrap();
     let pub_inputs = PublicInputs::read_from(&mut SliceReader::new(&data.input_bytes[..])).unwrap();
+    let air = ProcessorAir::new( proof.get_trace_info(), pub_inputs, proof.options().clone() );
+    let proof_data = ProofData { stark_proof : proof, air : air };
 
-    let air = ProcessorAir::new(proof.get_trace_info(), pub_inputs, proof.options().clone());
-
+    // Serialize proof_data into a Cairo memory
     let mut memories = Vec::<Vec<MemoryEntry>>::new();
     let mut dynamic_memory = DynamicMemory::new(&mut memories);
-
-    proof.write_into(&mut dynamic_memory, air);
-
+    proof_data.write_into(&mut dynamic_memory);
     let memory = dynamic_memory.assemble();
 
-    let json_arr = serde_json::to_string(&memory)?;
-    println!("{}", json_arr);
+    // Serialize the memory to JSON and print it
+    let json_arr = serde_json::to_string(&memory).unwrap();
+    println!( "{}", json_arr);
 
-    Ok(())
 }
+
 
 impl Writeable for TraceLayout {
     fn write_into(&self, target: &mut DynamicMemory) {
@@ -72,6 +83,7 @@ impl Writeable for TraceLayout {
     }
 }
 
+
 impl Writeable for Context {
     fn write_into(&self, target: &mut DynamicMemory) {
         self.trace_layout().write_into(target);
@@ -85,6 +97,7 @@ impl Writeable for Context {
         target.write_array(self.field_modulus_bytes().to_vec());
     }
 }
+
 
 impl Writeable for [u8; 32] {
     // Convert 32 x u8 to 8 x u32
@@ -114,19 +127,17 @@ struct QueriesParams {
 }
 
 
-
 impl Writeable for BatchMerkleProof<HashFn> {
-
-      fn write_into(&self, target: &mut DynamicMemory) {
-            // TODO: implement me
-            // self.into_paths().unwrap();
-      }
-
+    fn write_into(&self, target: &mut DynamicMemory) {
+        // TODO: implement me
+        // https://github.com/novifinancial/winterfell/blob/main/crypto/src/merkle/proofs.rs#L265
+        // let indexes = ???
+        // self.into_paths(indexes).unwrap();
+    }
 }
 
 
 impl Writeable for Felt {
-
     fn write_into(&self, target: &mut DynamicMemory) {
         let mut hex_string = "0x".to_owned();
         for byte in self.to_raw().to_le_bytes() {
@@ -134,29 +145,27 @@ impl Writeable for Felt {
         }
         target.write_hex_value(hex_string);   
     }
-
 }
+
 
 impl Writeable for Table<Felt> {
-
-      fn write_into(&self, target: &mut DynamicMemory) {
-            for i in 0..self.num_rows(){
-                // a trace segment column or a constraint evaluation column.
-                let column = self.get_row(i);
-                target.write_array(column.to_vec());
-            }
-      }
-
+    fn write_into(&self, target: &mut DynamicMemory) {
+        for i in 0..self.num_rows(){
+            // a trace segment column or a constraint evaluation column
+            let column = self.get_row(i);
+            target.write_array(column.to_vec());
+        }
+    }
 }
+
 
 impl WriteableWith<QueriesParams> for Queries {
     fn write_into(&self, target: &mut DynamicMemory, params: QueriesParams) {
         let (proofs, table) = self.clone().parse::<HashFn, Felt>(params.domain_size, params.num_queries, params.values_per_query).unwrap();
         table.write_into(target);
-        // proofs.write_into(target);
+        proofs.write_into(target);
     }
 }
-
 
 
 impl WriteableWith<&ProcessorAir> for Commitments {
@@ -186,14 +195,12 @@ impl WriteableWith<&ProcessorAir> for Commitments {
 }
 
 
-
-
-impl WriteableWith<ProcessorAir> for StarkProof {
-    fn write_into(&self, target: &mut DynamicMemory, air: ProcessorAir) {
+impl WriteableWith<&ProcessorAir> for StarkProof {
+    fn write_into(&self, target: &mut DynamicMemory, air: &ProcessorAir) {
         self.context.write_into(target);
         self.pow_nonce.write_into(target);
 
-        self.commitments.write_into(target, &air);
+        self.commitments.write_into(target, air);
 
         target.write_array_with(self.trace_queries.clone(), |index| {
             let values_per_query;
@@ -217,4 +224,24 @@ impl WriteableWith<ProcessorAir> for StarkProof {
                 values_per_query: air.ce_blowup_factor(),
         });
     }
+}
+
+struct ProofData {
+    stark_proof: StarkProof, 
+    air: ProcessorAir
+}
+
+impl Writeable for ProcessorAir {
+    fn write_into(&self, target: &mut DynamicMemory) {
+        // TODO: implement me
+        // Make `pub_inputs` public?
+        // https://github.com/ZeroSync/giza/blob/master/air/src/lib.rs#L32
+    } 
+}
+
+impl Writeable for ProofData {
+    fn write_into(&self, target: &mut DynamicMemory) {
+        self.stark_proof.write_into(target, &self.air);
+        self.air.write_into(target);
+    } 
 }

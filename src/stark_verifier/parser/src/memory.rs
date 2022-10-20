@@ -1,17 +1,14 @@
-// #[derive(Copy, Clone)]
 pub enum MemoryEntry {
-    Value{ value: String }, 
-    Pointer{ segment : usize }
+    Value { value: String }, 
+    Pointer { pointer : usize }
 }
 
 impl MemoryEntry {
-    fn to_string(&self, pointers_map: &Vec<usize>) -> String{
+    fn to_string(&self, pointers_map: &Vec<usize>) -> String {
         match self {
             MemoryEntry::Value { value } => value.to_string(), 
-            MemoryEntry::Pointer { segment } => {
-                let pointer = pointers_map[ *segment ];
-                format!("{}", pointer)
-            }
+            MemoryEntry::Pointer { pointer } => 
+                format!("{}", pointers_map[ *pointer ] )
         }
     }
 
@@ -23,14 +20,14 @@ impl MemoryEntry {
         MemoryEntry::Value { value }
     }
 
-    fn from_pointer(segment: usize) -> MemoryEntry {
-        MemoryEntry::Pointer { segment }
+    fn from_pointer(pointer: usize) -> MemoryEntry {
+        MemoryEntry::Pointer { pointer }
     }
 }
 
 
-type Memory = Vec<MemoryEntry>;
 
+type Memory = Vec<MemoryEntry>;
 
 pub struct DynamicMemory<'a> {
     memories: &'a mut Vec<Memory>,
