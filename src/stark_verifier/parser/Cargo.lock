@@ -244,6 +244,7 @@ dependencies = [
  "serde_json",
  "winter-air",
  "winter-crypto",
+ "winter-fri",
  "winter-math",
  "winter-utils",
  "winter-verifier",

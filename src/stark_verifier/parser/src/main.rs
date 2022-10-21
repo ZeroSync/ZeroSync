@@ -6,10 +6,11 @@ use winterfell::StarkProof;
 
 use std::env;
 
-use winter_air::proof::{ Commitments, Context, Queries };
-use winter_air::{ TraceLayout, Table };
+use winter_air::proof::{ Commitments, Context, Queries, OodFrame };
+use winter_air::{ TraceLayout, Table, ProofOptions };
 use winter_crypto::hashers::Blake3_192;
 use winter_crypto::{ BatchMerkleProof, Digest };
+use winter_fri::{ FriProof };
 use winterfell::Air;
 
 use giza_air::{ ProcessorAir, PublicInputs };
@@ -195,6 +196,7 @@ impl WriteableWith<&ProcessorAir> for Commitments {
 }
 
 
+
 impl WriteableWith<&ProcessorAir> for StarkProof {
     fn write_into(&self, target: &mut DynamicMemory, air: &ProcessorAir) {
         self.context.write_into(target);
@@ -236,7 +238,7 @@ impl Writeable for ProcessorAir {
         // TODO: implement me
         // Make `pub_inputs` public?
         // https://github.com/ZeroSync/giza/blob/master/air/src/lib.rs#L32
-    } 
+    }
 }
 
 impl Writeable for ProofData {
@@ -245,3 +247,34 @@ impl Writeable for ProofData {
         self.air.write_into(target);
     } 
 }
+
+
+impl Writeable for ProofOptions {
+    fn write_into(&self, target: &mut DynamicMemory) {
+        // TODO: implement me
+    }
+}
+
+
+impl Writeable for OodFrame {
+    fn write_into(&self, target: &mut DynamicMemory) {
+        // TODO: implement me
+    }
+}
+
+
+impl Writeable for FriProof {
+    fn write_into(&self, target: &mut DynamicMemory) {
+        // TODO: implement me
+        // make fields public
+    }
+}
+
+
+// impl Writeable for FriProofLayer {
+//     fn write_into(&self, target: &mut DynamicMemory) {
+//         // TODO: implement me
+//         // Make struct FriProofLayer public
+//     }
+// }
+
