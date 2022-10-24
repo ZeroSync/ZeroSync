@@ -15,7 +15,7 @@ func serialize_chain_state{output_ptr: felt*}(chain_state: ChainState) {
     serialize_word(chain_state.block_height);
     serialize_array(chain_state.best_block_hash, HASH_FELT_SIZE);
     serialize_word(chain_state.total_work);
-    serialize_word(chain_state.difficulty);
+    serialize_word(chain_state.current_target);
     serialize_array(chain_state.prev_timestamps, 11);
     serialize_word(chain_state.epoch_start_time);
     return ();
@@ -49,10 +49,9 @@ func fetch_block(block_height) -> (block_data: felt*) {
 
         from_hex(block_hex, ids.block_data)
     %}
-    
+
     return (block_data,);
 }
-
 
 func main{
     output_ptr: felt*,
