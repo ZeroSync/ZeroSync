@@ -1,19 +1,20 @@
 pub enum MemoryEntry {
-    Value { value: String }, 
-    Pointer { pointer : usize }
+    Value { value: String },
+    Pointer { pointer: usize },
 }
 
 impl MemoryEntry {
     fn to_string(&self, pointers_map: &Vec<usize>) -> String {
         match self {
-            MemoryEntry::Value { value } => value.to_string(), 
-            MemoryEntry::Pointer { pointer } => 
-                format!("{}", pointers_map[ *pointer ] )
+            MemoryEntry::Value { value } => value.to_string(),
+            MemoryEntry::Pointer { pointer } => format!("{}", pointers_map[*pointer]),
         }
     }
 
     fn from_u64(value: u64) -> MemoryEntry {
-        MemoryEntry::Value { value: format!("{:#X}", value) }
+        MemoryEntry::Value {
+            value: format!("{:#X}", value),
+        }
     }
 
     fn from_hex(value: String) -> MemoryEntry {
@@ -25,8 +26,6 @@ impl MemoryEntry {
     }
 }
 
-
-
 type Memory = Vec<MemoryEntry>;
 
 pub struct DynamicMemory<'a> {
@@ -35,15 +34,13 @@ pub struct DynamicMemory<'a> {
 }
 
 impl<'a> DynamicMemory<'a> {
-
     pub fn new(memories: &'a mut Vec<Memory>) -> DynamicMemory<'a> {
         memories.push(Vec::<MemoryEntry>::new());
         DynamicMemory {
-            memories: memories,
+            memories,
             segment: 0,
         }
     }
-
 
     pub fn assemble(&self) -> Vec<String> {
         // Concatenate all memories and compute a mapping for pointers
@@ -58,7 +55,7 @@ impl<'a> DynamicMemory<'a> {
         // Iterate through all memory entries and map the pointers
         let mut memory = Vec::new();
         for entry in concatenated {
-            memory.push( entry.to_string(&pointers_map) );
+            memory.push(entry.to_string(&pointers_map));
         }
 
         memory
@@ -105,12 +102,12 @@ impl<'a> DynamicMemory<'a> {
         self.memories.push(Vec::<MemoryEntry>::new());
         DynamicMemory {
             memories: self.memories,
-            segment: segment,
+            segment,
         }
     }
 }
 
-pub trait Writeable {
+pub trait Writeable: Sized {
     fn write_into(&self, target: &mut DynamicMemory);
 }
 
