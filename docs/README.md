@@ -38,7 +38,7 @@ python3 src/chain_proof/main.py
 ```
 
 
-## List TODOs in Code
+## List TODOs
 ```sh
  ./docs/todos
 ```

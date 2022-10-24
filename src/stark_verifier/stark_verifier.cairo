@@ -17,9 +17,7 @@ from stark_verifier.air.stark_proof import (
     Queries,
     Context,
     TraceLayout,
-    Commitments,
     FriProof,
-    OodFrame,
     ProofOptions,
     StarkProof,
     read_stark_proof,
@@ -127,12 +125,14 @@ func perform_verification{
     // Reseed the coin with the commitment to the main trace segment
     reseed(value=trace_commitments[0]);
 
-    // Process auxiliary trace segments (if any), to build a set of random elements for each segment,
+    // Process auxiliary trace segments to build a set of random elements for each segment,
     // and to reseed the coin.
     let (aux_trace_rand_elements: felt*) = alloc();
     process_aux_segments(
         trace_commitments=trace_commitments + 1,
-        aux_segment_rands=air.aux_segment_rands,
+        trace_commitments_len=air.context.trace_layout.num_aux_segments,
+        aux_segment_rands=air.context.trace_layout.aux_segment_rands,
+        aux_trace_rand_elements=aux_trace_rand_elements,
     );
 
     // Build random coefficients for the composition polynomial
@@ -258,21 +258,31 @@ func perform_verification{
 }
 
 func process_aux_segments{
+    range_check_ptr,
+    blake2s_ptr: felt*,
+    bitwise_ptr: BitwiseBuiltin*,
     channel: Channel,
     public_coin: PublicCoin,
 }(
     trace_commitments: Uint256*,
-    aux_segment_rands: felt*
+    trace_commitments_len: felt,
+    aux_segment_rands: felt*,
+    aux_trace_rand_elements: felt*,
 ) -> () {
-    // TODO
-    let n = 0;
-    //draw_elements();
-    //process_aux_segments_inner();
-    return ();
-}
-
-func process_aux_segments_inner{}() -> () {
-    // TODO
+    draw_elements(
+        n_elements=[aux_segment_rands],
+        elements=aux_trace_rand_elements,
+    );
+    reseed(value=trace_commitments[0]);
+    if (trace_commitments_len == 0) {
+        return ();
+    }
+    process_aux_segments(
+        trace_commitments=trace_commitments + 1,
+        trace_commitments_len=trace_commitments_len - 1,
+        aux_segment_rands=aux_segment_rands + 1,
+        aux_trace_rand_elements=aux_trace_rand_elements,
+    );
     return ();
 }
 
@@ -287,8 +297,7 @@ func main{
 }() -> () {
     
     // Deserialize proof
-    let proof = read_stark_proof();
-    let pub_inputs = PublicInputs();
+    let (proof, pub_inputs) = read_stark_proof();
 
     verify(proof=proof, pub_inputs=pub_inputs);
     return ();
