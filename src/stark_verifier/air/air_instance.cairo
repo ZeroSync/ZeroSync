@@ -17,7 +17,6 @@ from stark_verifier.air.stark_proof import (
     ProofOptions,
     StarkProof,
 )
-//from stark_verifier.air.trace_info import TraceInfo
 
 struct AirInstance {
     // Layout
@@ -29,7 +28,6 @@ struct AirInstance {
     // Context
     options: ProofOptions,
     context: Context,
-    //trace_info: TraceInfo,
     num_transition_constraints: felt,
     num_assertions: felt,
     ce_blowup_factor: felt,
@@ -201,8 +199,4 @@ func draw_pairs{
         coefficients_a=coefficients_a + 1,
         coefficients_b=coefficients_b + 1,
     );
-}
-
-func get_aux_trace_segment_random_elements(air: AirInstance) -> () {
-    // TODO
 }
