@@ -2,7 +2,7 @@ from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.math_cmp import is_le
 
 const TIMESTAMP_COUNT = 11;
-const TIMESTAMP_MEDIAN_INDEX = 6;
+const TIMESTAMP_MEDIAN_INDEX = 5;
 
 func compute_timestamps_median{range_check_ptr}(timestamp_array : felt*) -> (
         median_value : felt
