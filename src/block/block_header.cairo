@@ -16,7 +16,7 @@ from starkware.cairo.common.uint256 import (
 from serialize.serialize import (
     Reader, read_uint32, read_hash, UINT32_SIZE, BYTE, init_reader, read_bytes )
 from crypto.sha256d.sha256d import sha256d_felt_sized, assert_hashes_equal
-
+from utils.compute_median import compute_timestamps_median
 // The size of a block header is 80 bytes
 const BLOCK_HEADER_SIZE = 80;
 // The size of a block header encoded as an array of Uint32 is 20 felts
@@ -287,22 +287,8 @@ func validate_target(context: BlockHeaderValidationContext) {
 func validate_timestamp{range_check_ptr}(context: BlockHeaderValidationContext) {
     alloc_locals;
 
-    // TODO: implement validation of median
-    // Step 1: Let Python sort the array and compute a permutation (array of indexes)
-    // Step 2: Use that permutation to create a sorted array of pointers in Cairo
-    // Step 3: Prove sortedness of the sorted array in linear time
-    // Step 4: Read the median from the sorted array
-    
     let prev_timestamps = context.prev_chain_state.prev_timestamps;
-    local median_time;
-    %{
-        timestamps = []
-        for i in range(11):
-            timestamp = memory[ids.prev_timestamps + i]
-            timestamps.append(timestamp)
-        timestamps.sort()
-        ids.median_time = timestamps[5]
-    %}
+    let (median_time) = compute_timestamps_median(prev_timestamps);
 
     // Compare this block's timestamp to the median time
     assert_le(median_time, context.block_header.time);
