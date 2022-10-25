@@ -1,14 +1,20 @@
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_blake2s.blake2s import (
+    blake2s_add_felt,
     blake2s_bigend,
     blake2s_felts,
     blake2s_add_uint256_bigend,
 )
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
+from starkware.cairo.common.hash import HashBuiltin
+from starkware.cairo.common.hash_state import hash_finalize, hash_init, hash_update
 from starkware.cairo.common.math import assert_nn_le
 from starkware.cairo.common.uint256 import Uint256, uint256_lt
 
-from stark_verifier.air.pub_inputs import PublicInputs
+from stark_verifier.air.pub_inputs import (
+    MemEntry,
+    PublicInputs,
+)
 from stark_verifier.air.stark_proof import Context
 from stark_verifier.air.transitions.frame import EvaluationFrame
 
@@ -181,14 +187,47 @@ func draw_integers{
     return ();
 }
 
-func seed_with_pub_inputs(pub_inputs: PublicInputs, seed: felt) -> (res: Uint256) {
-    // TODO
-    return (res=Uint256(0,0));
-}
+func seed_with_pub_inputs{
+    range_check_ptr,
+    blake2s_ptr: felt*,
+    pedersen_ptr: HashBuiltin*,
+    bitwise_ptr: BitwiseBuiltin*,
+}(
+    pub_inputs: PublicInputs,
+) -> (res: Uint256) {
+    alloc_locals;
 
-func seed_with_proof_context(context: Context, seed: felt) -> (res: Uint256) {
-    // TODO
-    return (res=Uint256(0,0));
+    let (hash_state_ptr) = hash_init();
+    let (hash_state_ptr) = hash_update{hash_ptr=pedersen_ptr}(
+        hash_state_ptr=hash_state_ptr,
+        data_ptr=pub_inputs.mem.elements,
+        data_length=pub_inputs.mem.n_elements * MemEntry.SIZE,
+    );
+    let (pub_mem_hash) = hash_finalize{hash_ptr=pedersen_ptr}(hash_state_ptr=hash_state_ptr);
+
+    let (data: felt*) = alloc();
+    let data_start = data;
+    with data {
+        blake2s_add_felt(num=pub_inputs.init._pc, bigend=1);
+        blake2s_add_felt(num=pub_inputs.init._ap, bigend=1);
+        blake2s_add_felt(num=pub_inputs.init._fp, bigend=1);
+
+        blake2s_add_felt(num=pub_inputs.fin._pc, bigend=1);
+        blake2s_add_felt(num=pub_inputs.fin._ap, bigend=1);
+        blake2s_add_felt(num=pub_inputs.fin._fp, bigend=1);
+
+        blake2s_add_felt(num=pub_inputs.rc_min, bigend=1);
+        blake2s_add_felt(num=pub_inputs.rc_max, bigend=1);
+
+        blake2s_add_felt(num=pub_inputs.mem.n_elements, bigend=1);
+        blake2s_add_felt(num=pub_mem_hash, bigend=1);
+
+        blake2s_add_felt(num=pub_inputs.num_steps, bigend=1);
+    }
+
+    let n_bytes = (data - data_start) * 4;
+    let (res) = blake2s_bigend(data=data_start, n_bytes=n_bytes);
+    return (res=res);
 }
 
 func get_leading_zeros{public_coin: PublicCoin}() -> (res: felt) {

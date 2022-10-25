@@ -10,7 +10,6 @@ from stark_verifier.crypto.random import (
     reseed,
     reseed_with_int,
     seed_with_pub_inputs,
-    seed_with_proof_context,
 )
 from stark_verifier.air.stark_proof import (
     Context,

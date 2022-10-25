@@ -1,8 +1,9 @@
-%builtins range_check bitwise
+%builtins pedersen range_check bitwise
 
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_blake2s.blake2s import finalize_blake2s
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
+from starkware.cairo.common.hash import HashBuiltin
 from starkware.cairo.common.math import assert_lt
 from starkware.cairo.common.uint256 import Uint256
 
@@ -52,7 +53,6 @@ from stark_verifier.crypto.random import (
     reseed_with_int,
     reseed_with_ood_frames,
     seed_with_pub_inputs,
-    seed_with_proof_context,
 )
 from stark_verifier.evaluator import evaluate_constraints
 from stark_verifier.fri.fri_verifier import (
@@ -68,32 +68,24 @@ from stark_verifier.utils import Vec
 // LICENSE.winterfell.md)
 func verify{
     range_check_ptr,
+    pedersen_ptr: HashBuiltin*,
     bitwise_ptr: BitwiseBuiltin*,
 }(proof: StarkProof, pub_inputs: PublicInputs) -> () {
     alloc_locals;
 
-    // Build a seed for the public coin; the initial seed is the hash of public inputs and proof
-    // context, but as the protocol progresses, the coin will be reseeded with the info received
-    // from the prover.
-    //
-    // TODO: Winterfell serializes public input and context structs into a vector of bytes, which 
-    // is expensive to do in Cairo (but doable). We may want to modify the prover so that these 
-    // are serialized using field elements.
-    //
-    //let (public_coin_seed: felt*) = alloc();
-    //let (public_coin_seed_2) = seed_with_pub_inputs(pub_inputs, seed=public_coin_seed);
-    //let (public_coin_seed_3) = seed_with_proof_context(proof.context, seed=public_coin_seed_2);
+    // Initialize hasher
+    let (blake2s_ptr: felt*) = alloc();
+    local blake2s_ptr_start: felt* = blake2s_ptr;
+
+    // Build a seed for the public coin; the initial seed is the hash of public inputs
+    let (public_coin_seed: Uint256) = seed_with_pub_inputs{blake2s_ptr=blake2s_ptr}(pub_inputs);
 
     // Create an AIR instance for the computation specified in the proof.
     let (air) = air_instance_new(proof, proof.context.options);
 
     // Create a public coin and channel struct
-    let (public_coin) = random_coin_new(Uint256(0,0)); //public_coin_seed_3);
+    let (public_coin) = random_coin_new(public_coin_seed);
     let (channel) = channel_new(air, proof);
-
-    // Initialize hasher
-    let (blake2s_ptr: felt*) = alloc();
-    local blake2s_ptr_start: felt* = blake2s_ptr;
 
     with blake2s_ptr, channel, public_coin { 
         perform_verification(air=air);
@@ -292,6 +284,7 @@ func reduce_evaluations(evaluations: Vec) -> (res: felt) {
 }
 
 func main{
+    pedersen_ptr: HashBuiltin*,
     range_check_ptr,
     bitwise_ptr: BitwiseBuiltin*,
 }() -> () {
