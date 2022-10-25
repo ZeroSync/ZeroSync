@@ -1,5 +1,10 @@
 from stark_verifier.utils import Vec
 
+struct MemEntry {
+    address: felt,
+    value: felt,
+}
+
 struct RegisterState {
     _pc: felt,
     _ap: felt,
