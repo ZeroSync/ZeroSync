@@ -183,18 +183,35 @@ func read_block_header_validation_context{range_check_ptr, bitwise_ptr: BitwiseB
 // See also:
 // - https://developer.bitcoin.org/reference/block_chain.html#target-nbits
 //
-func bits_to_target{range_check_ptr}(bits) -> (target: felt) {
+func bits_to_target{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(bits) -> (target: felt) {
     alloc_locals;
     // Ensure that the max target is not exceeded (0x1d00FFFF)
     assert_le(bits, MAX_BITS);
 
     // Decode the 4 bytes of `bits` into exponent and significand.
     // There's 1 byte for the exponent followed by 3 bytes for the significand
-    let (exponent, significand) = unsigned_div_rem(bits, BYTE ** 3);
+
+    // extract first byte from `bits` to get the exponent
+    const FIRST_BYTE = 0x1000000;
+    let (exponent, _rem) = unsigned_div_rem(bits, FIRST_BYTE);
+
+    // extract last 3 bytes from `bits` to get the significand
+    let (significand) = bitwise_and(bits, 0x00ffffff);
 
     // The target is the `significand` shifted `exponent` times to the left
-    let (shift_left) = pow(BYTE, exponent - 3);
-    return (significand * shift_left,);
+    // when the exponent is greater than 3.
+    // And it is `significand` shifted `exponent` times to the right when
+    // it is less or equal to 3.
+    let is_less_than_3 = is_le_felt(exponent, 3);
+    if (is_less_than_3 == 1) {
+        let (shift) = pow(BYTE, 3 - exponent);
+        let (target, _rem) = unsigned_div_rem(significand, shift);
+        return (target=target);
+    } else {
+        let (shift) = pow(BYTE, exponent - 3);
+        let target = significand * shift;
+        return (target=target);
+    }
 }
 
 
