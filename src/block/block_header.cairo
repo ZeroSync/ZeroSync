@@ -445,7 +445,7 @@ func adjust_difficulty{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
 
 // Calculate bits from target
 //
-func target_to_bits{range_check_ptr}(target) -> (bits: felt) {
+func target_to_bits{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(target) -> (bits: felt) {
     alloc_locals;
     local bits;
     
@@ -471,11 +471,15 @@ func target_to_bits{range_check_ptr}(target) -> (bits: felt) {
             return compact | size << 24
 
         ids.bits = target_to_bits(ids.target)
-        print(f'bits: {ids.bits}')
-        print(f'target: {ids.target}')
     %}
+ 
+    // Checks that calculating the target from the bits we got in the hint
+    // give us the same result as the target passed as parameter to this
+    // function.
+    let (expected_target) = bits_to_target(bits);
+    assert expected_target = target;
 
-    return (bits,);
+    return (bits=bits);
 }
 
 
