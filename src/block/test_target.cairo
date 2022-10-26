@@ -62,16 +62,6 @@ func test_bits_to_target_works3{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}()
     return ();
 }
 
-// TODO: fix bits_to_target to handle negative targets.
-// @external
-// func test_bits_to_target_works_with_negative{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
-//     let bits = 0x04923456;
-//     let expected_target = -0x12345600;
-//     let (result) = bits_to_target(bits);
-//     assert result = expected_target;
-//     return ();
-// }
-
 @external
 func test_target_to_bits_works1{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     let expected_bits = 0x181bc330;
@@ -98,13 +88,3 @@ func test_target_to_bits_works3{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}()
     assert result = expected_bits;
     return ();
 }
-
-// TODO: fix target_to_bits to handle negative targets.
-// @external
-// func test_target_to_bits_works_with_negative{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
-//     let expected_bits = 0x04923456;
-//     let target = -0x12345600;
-//     let (result) = target_to_bits(target);
-//     assert result = expected_bits;
-//     return ();
-// }

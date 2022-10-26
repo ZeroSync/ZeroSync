@@ -477,7 +477,7 @@ func target_to_bits{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(target) -> (b
     // give us the same result as the target passed as parameter to this
     // function.
     let (expected_target) = bits_to_target(bits);
-    assert expected_target = target;
+    assert_le(target - expected_target, 0x1000000000000000);
 
     return (bits=bits);
 }
