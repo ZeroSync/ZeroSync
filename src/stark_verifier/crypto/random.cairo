@@ -173,7 +173,66 @@ func draw_elements{
     return ();
 }
 
-func draw_integers{
+
+func contains(element:felt, array: felt*, array_len:felt) -> felt {
+    if( array_len == 0 ){
+        return 0;
+    }
+    if( [array] == element ){
+        return 1;
+    }
+
+    return contains(element, array + 1, array_len - 1);
+}
+
+func _draw_integers_loop {
+    range_check_ptr,
+    blake2s_ptr: felt*,
+    bitwise_ptr: BitwiseBuiltin*,
+    public_coin: PublicCoin,
+}(
+    n_elements: felt,
+    elements: felt*,
+    domain_size: felt,
+    index: felt,
+) -> () {
+    alloc_locals;
+    if (n_elements == index) {
+        return ();
+    }
+
+    // determine how many bits are needed to represent valid values in the domain
+    let v_mask = domain_size - 1;
+
+    // draw values from PRNG until we get as many unique values as specified by n_elements
+    let (element) = draw();
+
+    // convert to integer and limit the integer to the number of bits which can fit
+    // into the specified domain
+    assert [bitwise_ptr].x = element;
+    assert [bitwise_ptr].y = v_mask;
+    let value = [bitwise_ptr].x_and_y;
+    let bitwise_ptr = bitwise_ptr + BitwiseBuiltin.SIZE;
+
+    // TODO: Limit number of recursion calls to 1000
+    let is_contained = contains(value, elements, index);
+    if ( is_contained == 1) {
+        return _draw_integers_loop(n_elements, elements, domain_size, index);
+    }
+
+    assert elements[index] = element;
+
+    return _draw_integers_loop(n_elements, elements, domain_size, index + 1);
+}
+
+/// Returns a vector of unique integers selected from the range [0, domain_size).
+///
+/// Errors if:
+/// - the specified number of unique integers could not be generated
+///   after 1000 calls to the PRNG.
+/// - `domain_size` is not a power of two.
+/// - `n_elements` is greater than or equal to `domain_size`.
+func draw_integers {
     range_check_ptr,
     blake2s_ptr: felt*,
     bitwise_ptr: BitwiseBuiltin*,
@@ -183,9 +242,9 @@ func draw_integers{
     elements: felt*,
     domain_size: felt,
 ) -> () {
-    // TODO
-    return ();
+    return _draw_integers_loop(n_elements, elements, domain_size, 0);
 }
+
 
 func seed_with_pub_inputs{
     range_check_ptr,
