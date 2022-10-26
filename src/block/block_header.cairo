@@ -450,12 +450,10 @@ func target_to_bits{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(target) -> (b
     local bits;
     
     %{
-        MAX_TARGET = 0x00000000FFFF0000000000000000000000000000000000000000000000000000
-
         def target_to_bits(target):
             if target == 0:
                 return 0
-            target = min(target, MAX_TARGET)
+            target = min(target, ids.MAX_TARGET)
             size = (target.bit_length() + 7) // 8
             mask64 = 0xffffffffffffffff
             if size <= 3:
@@ -473,11 +471,19 @@ func target_to_bits{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(target) -> (b
         ids.bits = target_to_bits(ids.target)
     %}
  
-    // Checks that calculating the target from the bits we got in the hint
-    // give us the same result as the target passed as parameter to this
-    // function.
     let (expected_target) = bits_to_target(bits);
-    assert_le(target - expected_target, 0x1000000000000000);
+    // extract the first byte of bits to get the exponent
+    let (exponent, _rem) = unsigned_div_rem(bits, 0x1000000);
+    let is_less_than_3 = is_le_felt(exponent, 3);
+    if (is_less_than_3 == 0) {
+        tempvar range_check_ptr = range_check_ptr;
+        // if exponent >= 3 we check that
+        // (target - expected_target) <= 256 ** (exponent - 3)
+        let (threshold) = pow(BYTE, exponent - 3);
+        assert_le_felt(target - expected_target, threshold);
+    } else {
+        tempvar range_check_ptr = range_check_ptr;
+    }
 
     return (bits=bits);
 }
