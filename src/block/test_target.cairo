@@ -1,3 +1,8 @@
+//
+// To run only this test suite use:
+// protostar test --cairo-path=./src target src/block/test_target.cairo
+//
+
 %lang starknet
 
 from block_header import bits_to_target, target_to_bits

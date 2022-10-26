@@ -433,56 +433,30 @@ func target_to_bits{range_check_ptr}(target) -> (bits: felt) {
     local bits;
     
     %{
-        # Same as ceil( log2(target) )
-        def bits(target):
-            count = 0
-            while target != 0:
-                target //= 2 
-                count += 1
-            return count + 1
+        MAX_TARGET = 0x00000000FFFF0000000000000000000000000000000000000000000000000000
 
-        def get_low64(target):
-            return (2**64 - 1) & target
+        def target_to_bits(target):
+            if target == 0:
+                return 0
+            target = min(target, MAX_TARGET)
+            size = (target.bit_length() + 7) // 8
+            mask64 = 0xffffffffffffffff
+            if size <= 3:
+                compact = (target & mask64) << (8 * (3 - size))
+            else:
+                compact = (target >> (8 * (size - 3))) & mask64
 
-        target = ids.target
-        fNegative = False 
+            if compact & 0x00800000:
+                compact >>= 8
+                size += 1
+            assert compact == (compact & 0x007fffff)
+            assert size < 256
+            return compact | size << 24
 
-        #
-        # This code is ported from Bitcoin Core
-        # https://github.com/bitcoin/bitcoin/blob/8e3c266a4f02093d57d563f32ba73d3ab4b5f208/src/arith_uint256.cpp#L218
-        #
-        
-        nSize = (bits(target) + 7) // 8
-        nCompact = 0
-        if nSize <= 3:
-            nCompact = get_low64(target) << 8 * (3 - nSize)
-        else:
-            bn = target >> 8 * (nSize - 3)
-            nCompact = get_low64(bn)
-        
-        # The 0x00800000 bit denotes the sign.
-        # Thus, if it is already set, divide the mantissa by 256 and increase the exponent.
-        if nCompact & 0x00800000:
-            nCompact >>= 8
-            nSize += 1
-        
-        assert((nCompact & ~0x007fffff) == 0)
-        assert(nSize < 256)
-        nCompact |= nSize << 24
-        nCompact |= 0x00800000 if fNegative and (nCompact & 0x007fffff) else 0
-        
-        
-        ids.bits = nCompact
+        ids.bits = target_to_bits(ids.target)
+        print(f'bits: {ids.bits}')
+        print(f'target: {ids.target}')
     %}
-
-    // TODO: verify the python output using `bits_to_target`
-
-    // cast bits to uint32 
-    // exponent <- highest_bit_of_target
-
-    // const TARGET_BITMASK = 0xffffff * pow(2**32, exponent); // ???
-    // let target = bitwise_and(target, TARGET_BITMASK);
-    // assert bits_to_target(bits) = target;
 
     return (bits,);
 }
