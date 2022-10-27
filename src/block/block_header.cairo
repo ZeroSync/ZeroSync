@@ -205,8 +205,8 @@ func bits_to_target{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(bits) -> (tar
     // when the exponent is greater than 3.
     // And it is `significand` shifted `exponent` times to the right when
     // it is less than 3.
-    let is_greater_than_3 = (2 - exponent) * (1 - exponent) * exponent;
-    if (is_greater_than_3 == 0) {
+    let is_greater_than_2 = (2 - exponent) * (1 - exponent) * exponent;
+    if (is_greater_than_2 == 0) {
         let (shift) = pow(BYTE, 3 - exponent);
         local target;
         %{ ids.target = ids.significand // ids.shift %}
@@ -487,8 +487,8 @@ func target_to_bits{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(target) -> (b
 
     let (expected_target) = bits_to_target(bits);
 
-    let is_greater_than_3 = (2 - quotient) * (1 - quotient) * quotient;
-    if (is_greater_than_3 == 0) {
+    let is_greater_than_2 = (2 - quotient) * (1 - quotient) * quotient;
+    if (is_greater_than_2 == 0) {
         // if exponent >= 3 we check that
         // ((target & (threshold * 0xffffff)) - expected_target) == 0
         let (threshold) = pow(BYTE, quotient - 3);
