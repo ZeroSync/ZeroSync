@@ -10,6 +10,7 @@ from starkware.cairo.common.hash import HashBuiltin
 from starkware.cairo.common.hash_state import hash_finalize, hash_init, hash_update
 from starkware.cairo.common.math import assert_nn_le, assert_le
 from starkware.cairo.common.math_cmp import is_le
+from starkware.cairo.common.bool import TRUE
 from starkware.cairo.common.pow import pow
 from starkware.cairo.common.uint256 import Uint256, uint256_lt
 
@@ -294,36 +295,26 @@ func seed_with_pub_inputs{
     return (res=res);
 }
 
-func get_leading_zeros{
-    range_check_ptr,
-    public_coin: PublicCoin
-    }() -> (res: felt) {
+func get_leading_zeros{range_check_ptr, public_coin: PublicCoin}() -> (res: felt) {
     alloc_locals;
-    local log2; 
+    local lzcnt; 
     %{
-        def log2_ceil(x):
-            count = 0
-            while x != 0:
-                x //= 2 
-                count += 1
-            return count
-        ids.log2 = log2_ceil(ids.public_coin.seed.high)
+        n_bits = len( bin(ids.public_coin.seed.high).replace('0b', '') )
+        assert 0 <= n_bits <= 128, "expected 128-bit"
+        ids.lzcnt = 128 - n_bits
     %}
 
-    // Verify result 
+    // Verify lzcnt 
+    let (ceil_pow2) = pow(2, 128 - lzcnt);
     // 2**(log2-1) < public_coin.seed.high <= 2**log2
-    let (pow2) =  pow(2, log2);
-    assert_le( public_coin.seed.high, pow2 );
-    assert_le( pow2 / 2, public_coin.seed.high ); // TODO: shoudln't this be pow2 / 2 + 1 ?
-
-    let result = 128 - log2;
+    assert_le(public_coin.seed.high, ceil_pow2 - 1);
+    assert_le(ceil_pow2 / 2, public_coin.seed.high);
     
-    //  Ensure that result <= 64
-    let is_le_64 = is_le(result, 64);
-    if(is_le_64 == 1){
-        return (result,);
+    // Ensure that lzcnt <= 64
+    let is_lzcnt_le_64 = is_le(lzcnt, 64);
+    if(is_lzcnt_le_64 == TRUE){
+        return (lzcnt,);
     } else {
         return (64,);
     }
-
 }
