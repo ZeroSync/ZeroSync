@@ -127,6 +127,7 @@ func draw{
     public_coin: PublicCoin,
 }() -> (res: felt) {
     alloc_locals;
+    tempvar public_coin = PublicCoin(public_coin.seed, public_coin.counter + 1);
     let (local num: Uint256) = merge_with_int(seed=public_coin.seed, value=public_coin.counter);
     let (is_valid) = uint256_lt(
         num,
@@ -216,11 +217,11 @@ func _draw_integers_loop {
 
     // TODO: Limit number of recursion calls to 1000
     let is_contained = contains(value, elements, index);
-    if ( is_contained == 1) {
+    if (is_contained == 1) {
         return _draw_integers_loop(n_elements, elements, domain_size, index);
     }
 
-    assert elements[index] = element;
+    assert elements[index] = value;
 
     return _draw_integers_loop(n_elements, elements, domain_size, index + 1);
 }

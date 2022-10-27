@@ -28,9 +28,15 @@ func test_draw_integers{
 
     with blake2s_ptr, public_coin { 
         draw_integers(n_elements, elements,  domain_size);
+        %{
+            for i in range(ids.n_elements):
+                assert memory[ids.elements + i] < ids.domain_size
+        %}
+        // A hint may not be the last command in a code block.
+        // Here comes a random command to make the Cairo compiler happy:
+        tempvar foo = 42 + elements[0];
     }
-
+    
     finalize_blake2s(blake2s_ptr_start, blake2s_ptr);
-
     return ();
 }
