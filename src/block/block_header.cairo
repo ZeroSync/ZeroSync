@@ -191,9 +191,9 @@ func bits_to_target{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(bits) -> (tar
     // Decode the 4 bytes of `bits` into exponent and significand.
     // There's 1 byte for the exponent followed by 3 bytes for the significand
 
-    // To do so, first we need a mask with the first 8 bites:
+    // To do so, first we need a mask with the first 8 bits:
     const MASK_BITS_TO_SHIFT = 0xFF000000;
-    // Then, using a bitwise and to get only the first 8 bites.
+    // Then, using a bitwise and to get only the first 8 bits.
     let (bits_to_shift) = bitwise_and(bits, MASK_BITS_TO_SHIFT);
     // And finally, do the shifts
     let exponent = bits_to_shift / 0x1000000;
@@ -476,11 +476,11 @@ func target_to_bits{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(target) -> (b
     %}
 
     // We need to perform 24 right-shifts
-    // So we need only the 8 most significative bites.
+    // So we need only the 8 most significative bits.
 
-    // To do so, first we need a mask with the first 8 bites:
+    // To do so, first we need a mask with the first 8 bits:
     const MASK_BITS_TO_SHIFT = 0xFF000000;
-    // Then, using a bitwise and to get only the first 8 bites.
+    // Then, using a bitwise and to get only the first 8 bits.
     let (bits_to_shift) = bitwise_and(bits, MASK_BITS_TO_SHIFT);
     // And finally, do the shifts
     let quotient = bits_to_shift / 0x1000000;
