@@ -191,9 +191,12 @@ func bits_to_target{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(bits) -> (tar
     // Decode the 4 bytes of `bits` into exponent and significand.
     // There's 1 byte for the exponent followed by 3 bytes for the significand
 
-    // extract first byte from `bits` to get the exponent
-    const FIRST_BYTE = 0x1000000;
-    let (exponent, _rem) = unsigned_div_rem(bits, FIRST_BYTE);
+    // To do so, first we need a mask with the first 8 bites:
+    const MASK_BITS_TO_SHIFT = 0xFF000000;
+    // Then, using a bitwise and to get only the first 8 bites.
+    let (bits_to_shift) = bitwise_and(bits, MASK_BITS_TO_SHIFT);
+    // And finally, do the shifts
+    let exponent = bits_to_shift / 0x1000000;
 
     // extract last 3 bytes from `bits` to get the significand
     let (significand) = bitwise_and(bits, 0x00ffffff);
@@ -470,16 +473,25 @@ func target_to_bits{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(target) -> (b
 
         ids.bits = target_to_bits(ids.target)
     %}
- 
+
+    // We need to perform 24 right-shifts
+    // So we need only the 8 most significative bites.
+
+    // To do so, first we need a mask with the first 8 bites:
+    const MASK_BITS_TO_SHIFT = 0xFF000000;
+    // Then, using a bitwise and to get only the first 8 bites.
+    let (bits_to_shift) = bitwise_and(bits, MASK_BITS_TO_SHIFT);
+    // And finally, do the shifts
+    let quotient = bits_to_shift / 0x1000000;
+
     let (expected_target) = bits_to_target(bits);
-    // extract the first byte of bits to get the exponent
-    let (exponent, _rem) = unsigned_div_rem(bits, 0x1000000);
-    let is_less_than_3 = is_le_felt(exponent, 3);
+
+    let is_less_than_3 = is_le_felt(quotient, 3);
     if (is_less_than_3 == 0) {
         tempvar range_check_ptr = range_check_ptr;
         // if exponent >= 3 we check that
         // (target - expected_target) <= 256 ** (exponent - 3)
-        let (threshold) = pow(BYTE, exponent - 3);
+        let (threshold) = pow(BYTE, quotient - 3);
         assert_le_felt(target - expected_target, threshold);
     } else {
         tempvar range_check_ptr = range_check_ptr;
@@ -487,7 +499,6 @@ func target_to_bits{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(target) -> (b
 
     return (bits=bits);
 }
-
 
 // Convert a felt to a Uint256
 //
