@@ -5,11 +5,11 @@
 
 %lang starknet
 
-from stark_verifier.crypto.random import draw_integers, random_coin_new
 from starkware.cairo.common.uint256 import Uint256
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_blake2s.blake2s import finalize_blake2s
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
+from stark_verifier.crypto.random import draw_integers, random_coin_new, get_leading_zeros, draw
 
 @external
 func test_draw_integers{
@@ -39,4 +39,27 @@ func test_draw_integers{
     
     finalize_blake2s(blake2s_ptr_start, blake2s_ptr);
     return ();
+}
+
+
+
+@external
+func test_leading_zeros{
+    range_check_ptr, 
+    bitwise_ptr: BitwiseBuiltin*}() {
+    alloc_locals;
+    let (blake2s_ptr: felt*) = alloc();
+    local blake2s_ptr_start: felt* = blake2s_ptr;
+
+    let seed = Uint256(1, 2**128 / 2**32);
+    let (public_coin) = random_coin_new(seed);
+    
+    with blake2s_ptr, public_coin { 
+        let (leading_zeros) = get_leading_zeros();
+        %{
+            assert ids.leading_zeros == 31
+        %}
+        finalize_blake2s(blake2s_ptr_start, blake2s_ptr);
+        return ();
+    }
 }

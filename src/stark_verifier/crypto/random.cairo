@@ -8,7 +8,9 @@ from starkware.cairo.common.cairo_blake2s.blake2s import (
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.hash import HashBuiltin
 from starkware.cairo.common.hash_state import hash_finalize, hash_init, hash_update
-from starkware.cairo.common.math import assert_nn_le
+from starkware.cairo.common.math import assert_nn_le, assert_le
+from starkware.cairo.common.math_cmp import is_le
+from starkware.cairo.common.pow import pow
 from starkware.cairo.common.uint256 import Uint256, uint256_lt
 
 from stark_verifier.air.pub_inputs import (
@@ -233,6 +235,8 @@ func _draw_integers_loop {
 ///   after 1000 calls to the PRNG.
 /// - `domain_size` is not a power of two.
 /// - `n_elements` is greater than or equal to `domain_size`.
+///
+///See also: https://github.com/ZeroSync/winterfell/blob/main/crypto/src/random/mod.rs#L252
 func draw_integers {
     range_check_ptr,
     blake2s_ptr: felt*,
@@ -290,7 +294,36 @@ func seed_with_pub_inputs{
     return (res=res);
 }
 
-func get_leading_zeros{public_coin: PublicCoin}() -> (res: felt) {
-    // TODO
-    return (res=0);
+func get_leading_zeros{
+    range_check_ptr,
+    public_coin: PublicCoin
+    }() -> (res: felt) {
+    alloc_locals;
+    local log2; 
+    %{
+        def log2_ceil(x):
+            count = 0
+            while x != 0:
+                x //= 2 
+                count += 1
+            return count
+        ids.log2 = log2_ceil(ids.public_coin.seed.high)
+    %}
+
+    // Verify result 
+    // 2**(log2-1) < public_coin.seed.high <= 2**log2
+    let (pow2) =  pow(2, log2);
+    assert_le( public_coin.seed.high, pow2 );
+    assert_le( pow2 / 2, public_coin.seed.high ); // TODO: shoudln't this be pow2 / 2 + 1 ?
+
+    let result = 128 - log2;
+    
+    //  Ensure that result <= 64
+    let is_le_64 = is_le(result, 64);
+    if(is_le_64 == 1){
+        return (result,);
+    } else {
+        return (64,);
+    }
+
 }
