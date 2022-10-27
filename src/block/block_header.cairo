@@ -489,16 +489,18 @@ func target_to_bits{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(target) -> (b
 
     let is_less_than_3 = is_le_felt(quotient, 3);
     if (is_less_than_3 == 0) {
-        tempvar range_check_ptr = range_check_ptr;
         // if exponent >= 3 we check that
-        // (target - expected_target) <= 256 ** (exponent - 3)
+        // ((target & (threshold * 0xffffff)) - expected_target) == 0
         let (threshold) = pow(BYTE, quotient - 3);
-        assert_le_felt(target - expected_target, threshold);
-    } else {
-        tempvar range_check_ptr = range_check_ptr;
-    }
+        let mask = threshold * 0xffffff;
+        let (masked_target) = bitwise_and(target, mask);
 
-    return (bits=bits);
+        let diff = masked_target - expected_target;
+        assert diff = 0;
+        return (bits=bits);
+    } else {
+        return (bits=bits);
+    }
 }
 
 // Convert a felt to a Uint256
