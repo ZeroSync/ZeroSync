@@ -208,7 +208,8 @@ func bits_to_target{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(bits) -> (tar
     let is_less_than_3 = is_le_felt(exponent, 3);
     if (is_less_than_3 == 1) {
         let (shift) = pow(BYTE, 3 - exponent);
-        let (target, _rem) = unsigned_div_rem(significand, shift);
+        local target;
+        %{ ids.target = ids.significand // ids.shift %}
         return (target=target);
     } else {
         let (shift) = pow(BYTE, exponent - 3);
