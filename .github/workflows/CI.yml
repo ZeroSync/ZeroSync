@@ -38,6 +38,6 @@ jobs:
     - name: Cat bash rc
       run: cat /home/runner/.bashrc
     - name: Echo Path
-      run: echo $PATH
+      run: export PATH="$PATH:/home/runner/.protostar/dist/protostar"
     - name: Run tests
       run: protostar test --cairo-path=./src target src
