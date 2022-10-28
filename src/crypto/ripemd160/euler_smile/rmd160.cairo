@@ -62,7 +62,9 @@ func dict_to_array{dict_ptr: DictAccess*}(arr: felt*, len) {
 
 // init buf to magic constants.
 func init(buf: felt*, size: felt) {
-    assert size = 5;
+    with_attr error_message {
+        assert size = 5;
+    }
     assert [buf + 0] = 0x67452301;
     assert [buf + 1] = 0xefcdab89;
     assert [buf + 2] = 0x98badcfe;
@@ -77,9 +79,12 @@ func compress{bitwise_ptr: BitwiseBuiltin*, range_check_ptr}(
     buf: felt*, bufsize: felt, x: felt*, xlen: felt
 ) -> (res: felt*, rsize: felt) {
     alloc_locals;
-
-    assert bufsize = 5;
-    assert xlen = 16;
+    with_attr error_message("bufsize does not match the expected value") {
+        assert bufsize = 5;
+    }
+    with_attr error_message("xlen does not match the expected value") {
+        assert xlen = 16;
+    }
 
     // all element is in [0, 2^32).
     let (_, aa) = unsigned_div_rem([buf + 0], MAX_32_BIT);
