@@ -487,22 +487,21 @@ func target_to_bits{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(target) -> (b
     // Then, using a bitwise and to get only the first 8 bits.
     let (bits_to_shift) = bitwise_and(bits, MASK_BITS_TO_SHIFT);
     // And finally, do the shifts
-    let quotient = bits_to_shift / 0x1000000;
+    let exponent = bits_to_shift / 0x1000000;
 
     let (expected_target) = bits_to_target(bits);
 
-    let is_greater_than_2 = (2 - quotient) * (1 - quotient) * quotient;
+    let is_greater_than_2 = (2 - exponent) * (1 - exponent) * exponent;
     if (is_greater_than_2 == 0) {
         return (bits=bits);
     } else {
         // if exponent >= 3 we check that
         // ((target & (threshold * 0xffffff)) - expected_target) == 0
-        let (threshold) = pow(BYTE, quotient - 3);
+        let (threshold) = pow(BYTE, exponent - 3);
         let mask = threshold * 0xffffff;
         let (masked_target) = bitwise_and(target, mask);
+        assert (masked_target - expected_target) = 0;
 
-        let diff = masked_target - expected_target;
-        assert diff = 0;
         return (bits=bits);
     }
 }
