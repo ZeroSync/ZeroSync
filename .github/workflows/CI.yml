@@ -31,6 +31,8 @@ jobs:
       run: pip install ecdsa fastecdsa sympy cairo-lang==0.9.1
     - name: Install Cairo
       run: pip3 install cairo-lang
+    - name: Run utreexo bridge node
+      run: python src/utreexo/bridge_node.py
     - name: Install Protostar
       run: curl -L https://raw.githubusercontent.com/software-mansion/protostar/master/install.sh | bash
     - name: protostar
