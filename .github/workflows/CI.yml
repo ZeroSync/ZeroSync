@@ -38,7 +38,15 @@ jobs:
     - name: Cat bash rc
       run: cat /home/runner/.bashrc
     - name: protostar
-      run: ./home/runner/.protostar/dist/protostar -v
+      run: ls -a
+    - name: ls
+      run: cd ..
+    - name: protostar
+      run: ls -a
+    - name: ls
+      run: cd ..
+    - name: protostar
+      run: ls -a
     - name: Echo Path
       run: export PATH="$PATH:/home/runner/.protostar/dist/protostar"
     - name: Run tests
