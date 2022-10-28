@@ -25,7 +25,7 @@ func test_sha1{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
 
     // a9993e364706816aba3e25717850c26c9cd0d89d
     let (hash) = _sha1(felt_size, input, byte_size);
-    with_attr error_message("the sha1 hash does not match the expected result") {
+    with_attr error_message("The sha1 hash does not match the expected result.") {
         assert hash[0] = 0xa9993e36;
         assert hash[1] = 0x4706816a;
         assert hash[2] = 0xba3e2571;

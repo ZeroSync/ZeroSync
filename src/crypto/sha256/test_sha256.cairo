@@ -28,7 +28,7 @@ func test_sha256{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
 
     // ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad
     let (hash) = _sha256(felt_size, input, byte_size);
-    with_attr error_message("the sha256 hash does not match the expected result") {
+    with_attr error_message("The sha256 hash does not match the expected result.") {
         assert hash[0] = 0xba7816bf;
         assert hash[1] = 0x8f01cfea;
         assert hash[2] = 0x414140de;
@@ -67,7 +67,7 @@ func test_sha256_16M_bits{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     %}
 
     let (output) = sha256(input, input_byte_size);
-    with_attr error_message("the hash does not match the expected output") {
+    with_attr error_message("The hash does not match the expected output.") {
         assert_hashes_equal(output, expected_output);
     }
     return ();
@@ -96,7 +96,7 @@ func test_sha256_160K_bits{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     %}
 
     let (output) = sha256(input, input_byte_size);
-    with_attr error_message("the hash does not match the expected output") {
+    with_attr error_message("The hash does not match the expected output.") {
         assert_hashes_equal(output, expected_output);
     }
     return ();
@@ -125,7 +125,7 @@ func test_sha256_896_bits{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     %}
 
     let (output) = sha256(input, input_byte_size);
-    with_attr error_message("the hash does not match the expected output") {
+    with_attr error_message("The hash does not match the expected output.") {
         assert_hashes_equal(output, expected_output);
     }
     return ();
@@ -151,7 +151,7 @@ func test_sha256_64_bytes{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     %}
 
     let (output) = sha256(input, input_byte_size);
-    with_attr error_message("the hash does not match the expected output") {
+    with_attr error_message("The hash does not match the expected output.") {
         assert_hashes_equal(output, expected_output);
     }
     return ();

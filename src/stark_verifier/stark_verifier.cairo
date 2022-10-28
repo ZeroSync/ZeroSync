@@ -177,7 +177,7 @@ func perform_verification{
     reseed(value=value);
 
     // Finally, make sure the values are the same.
-    with_attr error_message("Ood constraint evaluations differ") {
+    with_attr error_message("Ood constraint evaluations differ.") {
         assert ood_constraint_evaluation_1 = ood_constraint_evaluation_2;
     }
 

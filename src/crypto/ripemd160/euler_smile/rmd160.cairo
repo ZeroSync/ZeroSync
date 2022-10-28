@@ -79,10 +79,10 @@ func compress{bitwise_ptr: BitwiseBuiltin*, range_check_ptr}(
     buf: felt*, bufsize: felt, x: felt*, xlen: felt
 ) -> (res: felt*, rsize: felt) {
     alloc_locals;
-    with_attr error_message("bufsize does not match the expected value") {
+    with_attr error_message("bufsize does not match the expected value.") {
         assert bufsize = 5;
     }
-    with_attr error_message("xlen does not match the expected value") {
+    with_attr error_message("xlen does not match the expected value.") {
         assert xlen = 16;
     }
 

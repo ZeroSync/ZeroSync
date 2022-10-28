@@ -103,7 +103,7 @@ func reseed_with_int{
     bitwise_ptr: BitwiseBuiltin*,
     public_coin: PublicCoin,
 }(value: felt) -> () {
-    with_attr error_message("Value is negative or greater than (2 ** 64 - 1)") {
+    with_attr error_message("Value is negative or greater than (2 ** 64 - 1).") {
         assert_nn_le(value, 2 ** 64 - 1);
     }
     let (digest) = merge_with_int(seed=public_coin.seed, value=value);
