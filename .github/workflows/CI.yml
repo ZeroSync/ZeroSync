@@ -32,7 +32,7 @@ jobs:
     - name: Install Cairo
       run: pip3 install cairo-lang
     - name: Install Protostar
-      run: curl -L https://raw.githubusercontent.com/software-mansion/protostar/master/install.sh | bash
+      run: curl -L https://raw.githubusercontent.com/software-mansion/protostar/master/install.sh | bash | reset | protostar -v
     - name: Source bash rc
       run: source /home/runner/.bashrc
     - name: Run tests
