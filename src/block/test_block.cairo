@@ -173,7 +173,9 @@ func test_verify_block_with_4_transactions{
     // Sanity Check
     // The second output of the second transaction should be 44.44 BTC
     let transaction = context.transaction_contexts[1].transaction;
-    assert transaction.outputs[1].amount = 4444 * 10 ** 6;
+    with_attr error_message("The second output of the second transaction does not match the expected result.") {
+        assert transaction.outputs[1].amount = 4444 * 10 ** 6;
+    }
 
     // Validate the block
     let (next_state) = validate_and_apply_block{hash_ptr=pedersen_ptr}(context);
@@ -295,12 +297,16 @@ func test_verify_block_with_27_transactions{
 
     // Sanity Check
     // Transaction count should be 27
-    assert context.transaction_count = 27;
+    with_attr error_message("Transaction count does not match the expected count.") {
+        assert context.transaction_count = 27;
+    }
 
     // Sanity Check
     // The second output of the second transaction should be 54.46 BTC
     let transaction = context.transaction_contexts[1].transaction;
-    assert transaction.outputs[1].amount = 5446 * 10 ** 6;
+    with_attr error_message("The second output of the second transaction does not match the expected result.") {
+        assert transaction.outputs[1].amount = 5446 * 10 ** 6;
+    }
 
     // Validate the block
     validate_and_apply_block{hash_ptr = pedersen_ptr}(context);
@@ -449,15 +455,18 @@ func test_verify_block_with_49_transactions{
 
     // Sanity Check
     // Transaction count should be 49
-    assert context.transaction_count = 49;
+    with_attr error_message("transaction count does not match the expected count") {
+        assert context.transaction_count = 49;
+    }
 
     // Sanity Check
     // The second output of the second transaction should be 0.11883137 BTC
 
     let transaction = context.transaction_contexts[1].transaction;
-    assert transaction.outputs[1].amount = 11883137;
-
-
+    with_attr error_message("The second output of the second transaction does not match the expected result.") {
+        assert transaction.outputs[1].amount = 11883137;
+    }
+    
     // Validate the block
     validate_and_apply_block{hash_ptr = pedersen_ptr}(context);
     return ();
@@ -6624,14 +6633,17 @@ func test_verify_block_with_2496_transactions{
 
     // Sanity Check
     // Transaction count should be 49
-    assert context.transaction_count = 2496;
-
+    with_attr error_message("Transaction count does not match the expected count.") {
+        assert context.transaction_count = 2496;
+    }
+    
     // Sanity Check
     // The second output of the third transaction should be 0.01071525 BTC
 
     let transaction = context.transaction_contexts[2].transaction;
-    assert transaction.outputs[1].amount = 1071525;
-
+    with_attr error_message("The second output of the second transaction does not match the expected result.") {
+        assert transaction.outputs[1].amount = 1071525;
+    }
 
     // Validate the block
     // validate_and_apply_block{hash_ptr = pedersen_ptr}(context);

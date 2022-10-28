@@ -143,7 +143,9 @@ func validate_merkle_root{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
 
     // Validate that the computed Merkle root
     // matches the Merkle root in this block's header
-    assert_hashes_equal(context.header_context.block_header.merkle_root_hash, merkle_root);
+    with_attr error_message("Computed Merkle root don't match the Merkle root in the block's header.") {
+        assert_hashes_equal(context.header_context.block_header.merkle_root_hash, merkle_root);
+    }
     return ();
 }
 
@@ -222,7 +224,9 @@ func validate_and_apply_coinbase{range_check_ptr, hash_ptr: HashBuiltin*, utreex
     validate_output(tx_context, output, output_index);
 
     let (block_reward) = compute_block_reward(context.header_context.block_height);
-    assert_le(output.amount, block_reward + total_fees);
+    with_attr error_message("block_reward + total_fees is greater than the outputs amount.") {
+        assert_le(output.amount, block_reward + total_fees);
+    }
 
     return ();
 }

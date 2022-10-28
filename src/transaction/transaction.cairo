@@ -60,7 +60,9 @@ func read_transaction{reader: Reader, range_check_ptr}() -> (
         // Read the 2 bytes of "marker" and "flag"
         let (flag) = read_uint16();
         // Validate that they are set correctly
-        assert flag = 0x0100;
+        with_attr error_message("Flag is not setted correctly.") {
+            assert flag = 0x0100;
+        }
     }
 
     let input_count = read_varint();
@@ -107,7 +109,9 @@ func _read_inputs_loop{reader: Reader, range_check_ptr}(inputs: TxInput*, loop_c
         return (0,);
     }
     let input = read_input();
-    assert [inputs] = input.input;
+    with_attr error_message("Inputs do not match.") {
+        assert [inputs] = input.input;
+    }
     let (byte_size_accu) = _read_inputs_loop(inputs + TxInput.SIZE, loop_counter - 1);
     return (byte_size_accu + input.byte_size,);
 }
@@ -156,7 +160,9 @@ func _read_outputs_loop{reader: Reader, range_check_ptr}(outputs: TxOutput*, loo
         return (0,);
     }
     let (output, byte_size) = read_output();
-    assert [outputs] = output;
+    with_attr error_message("Outputs do not match.") {
+        assert [outputs] = output;
+    }
     let (byte_size_accu) = _read_outputs_loop(outputs + TxOutput.SIZE, loop_counter - 1);
     return (byte_size_accu + byte_size,);
 }
@@ -243,8 +249,10 @@ func validate_and_apply_transaction{range_check_ptr, utreexo_roots: felt*, hash_
     let (total_output_amount) = validate_outputs_loop(
         context, context.transaction.outputs, 0, 0, context.transaction.output_count
     );
-
-    assert_le(total_output_amount, total_input_amount);
+    
+    with_attr error_message("The total output amount is greater than the input one.") {
+        assert_le(total_output_amount, total_input_amount);
+    }
     let tx_fee = total_input_amount - total_output_amount;
 
     return (tx_fee,);

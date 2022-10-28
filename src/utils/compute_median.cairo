@@ -30,7 +30,9 @@ func sort_unsigned_loop{range_check_ptr}(arr_len : felt, arr : felt*, sorted_arr
     let (lowest_element_index, lowest_element) = find_lowest_element(arr_len, arr);
 
     // push the lowest element to the sorted array
-    assert sorted_array[0] = lowest_element;
+    with_attr error_message("The lowest element is in the index 0.") {
+        assert sorted_array[0] = lowest_element;
+    }
 
     // remove the lowest element from the remaining elements
     let (arr : felt*) = copy_array_without_index(arr_len, arr, lowest_element_index);
@@ -89,7 +91,9 @@ func copy_array_without_index_loop{range_check_ptr}(
         return ();
     }
 
-    assert new_arr[new_index] = arr[index];
+    with_attr error_message("New array has invalid value in the new index") {
+        assert new_arr[new_index] = arr[index];
+    }
 
     copy_array_without_index_loop(
         index + 1, arr_len, arr, removed_index, new_index + 1, new_arr

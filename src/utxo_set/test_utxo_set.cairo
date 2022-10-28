@@ -42,7 +42,9 @@ func test_utxo_set{range_check_ptr, pedersen_ptr: HashBuiltin*}() {
         hash_ptr=pedersen_ptr, utreexo_roots=utreexo_roots
     }(txid, vout);
 
-    assert amount = out_amount;
+    with_attr error_message("The BTC amount after the transaction is not the expected.") {
+        assert amount = out_amount;
+    }
     // assert script_pub_key_size = out_script_pub_key_len
 
     return ();
