@@ -183,18 +183,39 @@ func read_block_header_validation_context{range_check_ptr, bitwise_ptr: BitwiseB
 // See also:
 // - https://developer.bitcoin.org/reference/block_chain.html#target-nbits
 //
-func bits_to_target{range_check_ptr}(bits) -> (target: felt) {
+func bits_to_target{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(bits) -> (target: felt) {
     alloc_locals;
     // Ensure that the max target is not exceeded (0x1d00FFFF)
     assert_le(bits, MAX_BITS);
 
     // Decode the 4 bytes of `bits` into exponent and significand.
     // There's 1 byte for the exponent followed by 3 bytes for the significand
-    let (exponent, significand) = unsigned_div_rem(bits, BYTE ** 3);
+
+    // To do so, first we need a mask with the first 8 bits:
+    const MASK_BITS_TO_SHIFT = 0xFF000000;
+    // Then, using a bitwise and to get only the first 8 bits.
+    let (bits_to_shift) = bitwise_and(bits, MASK_BITS_TO_SHIFT);
+    // And finally, do the shifts
+    let exponent = bits_to_shift / 0x1000000;
+
+    // extract last 3 bytes from `bits` to get the significand
+    let (significand) = bitwise_and(bits, 0x00ffffff);
 
     // The target is the `significand` shifted `exponent` times to the left
-    let (shift_left) = pow(BYTE, exponent - 3);
-    return (significand * shift_left,);
+    // when the exponent is greater than 3.
+    // And it is `significand` shifted `exponent` times to the right when
+    // it is less than 3.
+    let is_greater_than_2 = (2 - exponent) * (1 - exponent) * exponent;
+    if (is_greater_than_2 == 0) {
+        let (shift) = pow(BYTE, 3 - exponent);
+        local target;
+        %{ ids.target = ids.significand // ids.shift %}
+        return (target=target);
+    } else {
+        let (shift) = pow(BYTE, exponent - 3);
+        let target = significand * shift;
+        return (target=target);
+    }
 }
 
 
@@ -428,65 +449,59 @@ func adjust_difficulty{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
 
 // Calculate bits from target
 //
-func target_to_bits{range_check_ptr}(target) -> (bits: felt) {
+func target_to_bits{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(target) -> (bits: felt) {
     alloc_locals;
     local bits;
     
     %{
-        # Same as ceil( log2(target) )
-        def bits(target):
-            count = 0
-            while target != 0:
-                target //= 2 
-                count += 1
-            return count + 1
+        def target_to_bits(target):
+            if target == 0:
+                return 0
+            target = min(target, ids.MAX_TARGET)
+            size = (target.bit_length() + 7) // 8
+            mask64 = 0xffffffffffffffff
+            if size <= 3:
+                compact = (target & mask64) << (8 * (3 - size))
+            else:
+                compact = (target >> (8 * (size - 3))) & mask64
 
-        def get_low64(target):
-            return (2**64 - 1) & target
+            if compact & 0x00800000:
+                compact >>= 8
+                size += 1
+            assert compact == (compact & 0x007fffff)
+            assert size < 256
+            return compact | size << 24
 
-        target = ids.target
-        fNegative = False 
-
-        #
-        # This code is ported from Bitcoin Core
-        # https://github.com/bitcoin/bitcoin/blob/8e3c266a4f02093d57d563f32ba73d3ab4b5f208/src/arith_uint256.cpp#L218
-        #
-        
-        nSize = (bits(target) + 7) // 8
-        nCompact = 0
-        if nSize <= 3:
-            nCompact = get_low64(target) << 8 * (3 - nSize)
-        else:
-            bn = target >> 8 * (nSize - 3)
-            nCompact = get_low64(bn)
-        
-        # The 0x00800000 bit denotes the sign.
-        # Thus, if it is already set, divide the mantissa by 256 and increase the exponent.
-        if nCompact & 0x00800000:
-            nCompact >>= 8
-            nSize += 1
-        
-        assert((nCompact & ~0x007fffff) == 0)
-        assert(nSize < 256)
-        nCompact |= nSize << 24
-        nCompact |= 0x00800000 if fNegative and (nCompact & 0x007fffff) else 0
-        
-        
-        ids.bits = nCompact
+        ids.bits = target_to_bits(ids.target)
     %}
 
-    // TODO: verify the python output using `bits_to_target`
+    // We need to perform 24 right-shifts
+    // So we need only the 8 most significative bits.
 
-    // cast bits to uint32 
-    // exponent <- highest_bit_of_target
+    // To do so, first we need a mask with the first 8 bits:
+    const MASK_BITS_TO_SHIFT = 0xFF000000;
+    // Then, using a bitwise and to get only the first 8 bits.
+    let (bits_to_shift) = bitwise_and(bits, MASK_BITS_TO_SHIFT);
+    // And finally, do the shifts
+    let quotient = bits_to_shift / 0x1000000;
 
-    // const TARGET_BITMASK = 0xffffff * pow(2**32, exponent); // ???
-    // let target = bitwise_and(target, TARGET_BITMASK);
-    // assert bits_to_target(bits) = target;
+    let (expected_target) = bits_to_target(bits);
 
-    return (bits,);
+    let is_greater_than_2 = (2 - quotient) * (1 - quotient) * quotient;
+    if (is_greater_than_2 == 0) {
+        return (bits=bits);
+    } else {
+        // if exponent >= 3 we check that
+        // ((target & (threshold * 0xffffff)) - expected_target) == 0
+        let (threshold) = pow(BYTE, quotient - 3);
+        let mask = threshold * 0xffffff;
+        let (masked_target) = bitwise_and(target, mask);
+
+        let diff = masked_target - expected_target;
+        assert diff = 0;
+        return (bits=bits);
+    }
 }
-
 
 // Convert a felt to a Uint256
 //
