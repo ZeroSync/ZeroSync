@@ -99,17 +99,14 @@ def hash_tx_ins(tx_ins, tx_outs):
 def generate_utxo_dummys(block_height):
     tx_ins, tx_outs = fetch_tx_ins_and_outs(block_height)
     output_hashes = hash_tx_ins(tx_ins, tx_outs)
-    code_block = [
-        'dummy_utxo_insert{hash_ptr=pedersen_ptr, utreexo_roots=prev_utreexo_roots}(' +
-        hex(x) +
-        ');\n' for x in output_hashes]
+   # code_block = [
+   #     'dummy_utxo_insert{hash_ptr=pedersen_ptr, utreexo_roots=prev_utreexo_roots}(' +
+   #     hex(x) +
+   #     ');\n' for x in output_hashes]
 
-    return code_block
+    return output_hashes
 
 
-# 328734 49 txs test
-# 170000 27 txs test
-# TODO allow inputs
 if __name__ == "__main__":
     if len(sys.argv) == 1:
         print(
@@ -119,4 +116,4 @@ if __name__ == "__main__":
     if block_height < 0:
         print("ERROR: Specify a block height above zero.")
         exit(2)
-    print("".join(generate_utxo_dummys(block_height)))
+    print(generate_utxo_dummys(block_height))
