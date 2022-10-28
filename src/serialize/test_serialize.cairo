@@ -420,7 +420,9 @@ func test_write_hash{range_check_ptr}() {
     assert hash[7] = 0x0d0e0f00;
 
     write_hash{writer=writer}(hash);
-    assert_hashes_equal(hash, array);
+    with_attr error_message("Hashes are not equal.") {
+        assert_hashes_equal(hash, array);
+    }
 
     return ();
 }
@@ -428,22 +430,22 @@ func test_write_hash{range_check_ptr}() {
 @external
 func test_byte_size_to_felt_size{range_check_ptr}() {
     alloc_locals;
+    with_attr error_message("byte_size_to_felt_size failed.") {
+        let (felt_size_1_byte) = byte_size_to_felt_size(byte_size=1);
+        assert felt_size_1_byte = 1;
 
-    let (felt_size_1_byte) = byte_size_to_felt_size(byte_size=1);
-    assert felt_size_1_byte = 1;
+        let (felt_size_4_byte) = byte_size_to_felt_size(byte_size=4);
+        assert felt_size_4_byte = 1;
 
-    let (felt_size_4_byte) = byte_size_to_felt_size(byte_size=4);
-    assert felt_size_4_byte = 1;
+        let (felt_size_5_byte) = byte_size_to_felt_size(byte_size=5);
+        assert felt_size_5_byte = 2;
 
-    let (felt_size_5_byte) = byte_size_to_felt_size(byte_size=5);
-    assert felt_size_5_byte = 2;
+        let (felt_size_999_byte) = byte_size_to_felt_size(byte_size=999);
+        assert felt_size_999_byte = 250;
 
-    let (felt_size_999_byte) = byte_size_to_felt_size(byte_size=999);
-    assert felt_size_999_byte = 250;
-
-    let (felt_size_1000_byte) = byte_size_to_felt_size(byte_size=1000);
-    assert felt_size_1000_byte = 250;
-
+        let (felt_size_1000_byte) = byte_size_to_felt_size(byte_size=1000);
+        assert felt_size_1000_byte = 250;
+    }
     return ();
 }
 

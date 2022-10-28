@@ -148,8 +148,6 @@ func read_bytes_endian{reader: Reader, range_check_ptr}(length: felt) -> (result
     let (len_div_4, len_mod_4) = unsigned_div_rem(length, UINT32_SIZE);
     _read_into_uint32_array_endian(result, len_div_4);
 
-    // TODO: Test this offset. Might have bugs for some byte lengths 1-3
-    // TODO: Get rid of pow( )
     _read_n_bytes_into_felt_endian(result + len_div_4, 0, BYTE ** 3, len_mod_4);
     return (result,);
 }
@@ -218,7 +216,9 @@ func write_uint8{writer: Writer}(source) {
 
     let offset = writer.offset + 1;
     if (offset == UINT32_SIZE) {
-        assert [writer.head] = value;
+        with_attr error_message("Writer head value differs from value.") {
+            assert [writer.head] = value;
+        }
         tempvar writer = Writer(writer.head + 1, 0, 0);
     } else {
         tempvar writer = Writer(writer.head, offset, value);

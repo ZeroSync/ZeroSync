@@ -186,7 +186,9 @@ func read_block_header_validation_context{range_check_ptr, bitwise_ptr: BitwiseB
 func bits_to_target{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(bits) -> (target: felt) {
     alloc_locals;
     // Ensure that the max target is not exceeded (0x1d00FFFF)
-    assert_le(bits, MAX_BITS);
+    with_attr error_message("Bits exceeded the max target.") {
+        assert_le(bits, MAX_BITS);
+    }
 
     // Decode the 4 bytes of `bits` into exponent and significand.
     // There's 1 byte for the exponent followed by 3 bytes for the significand
@@ -292,8 +294,10 @@ func validate_proof_of_work{range_check_ptr}(context: BlockHeaderValidationConte
 // - https://github.com/bitcoin/bitcoin/blob/7fcf53f7b4524572d1d0c9a5fdc388e87eb02416/src/pow.cpp#L13
 // - https://github.com/bitcoin/bitcoin/blob/3a7e0a210c86e3c1750c7e04e3d1d689cf92ddaa/src/rpc/blockchain.cpp#L76
 //
-func validate_target(context: BlockHeaderValidationContext) {    
-    assert context.prev_chain_state.current_target = context.block_header.bits;
+func validate_target(context: BlockHeaderValidationContext) {  
+    with_attr error_message("Invalid target.") {
+        assert context.prev_chain_state.current_target = context.block_header.bits;
+    }
     return ();
 }
 
@@ -312,7 +316,9 @@ func validate_timestamp{range_check_ptr}(context: BlockHeaderValidationContext) 
     let (median_time) = compute_timestamps_median(prev_timestamps);
 
     // Compare this block's timestamp to the median time
-    assert_le(median_time, context.block_header.time);
+    with_attr error_message("Median time is greater than block's timestamp.") {
+        assert_le(median_time, context.block_header.time);
+    }
     return ();
 }
 

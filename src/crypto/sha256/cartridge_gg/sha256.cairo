@@ -178,7 +178,9 @@ func _sha256_input{range_check_ptr, sha256_ptr: felt*}(
         return ();
     }
 
-    assert_nn_le(n_bytes, 3);
+    with_attr error_message("n_bytes is negative or greater than 3.") {
+        assert_nn_le(n_bytes, 3);
+    }
     let (padding) = pow(256, 3 - n_bytes);
     local range_check_ptr = range_check_ptr;
 

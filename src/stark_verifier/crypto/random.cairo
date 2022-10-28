@@ -103,7 +103,9 @@ func reseed_with_int{
     bitwise_ptr: BitwiseBuiltin*,
     public_coin: PublicCoin,
 }(value: felt) -> () {
-    assert_nn_le(value, 2 ** 64 - 1);
+    with_attr error_message("Value is negative or greater than (2 ** 64 - 1).") {
+        assert_nn_le(value, 2 ** 64 - 1);
+    }
     let (digest) = merge_with_int(seed=public_coin.seed, value=value);
     let public_coin = PublicCoin(seed=digest, counter=0);
     return ();
@@ -311,9 +313,10 @@ func get_leading_zeros{range_check_ptr, public_coin: PublicCoin}() -> (res: felt
     let (ceil_pow2) = pow(2, 128 - lzcnt);
 
     // 2**(log2-1) < public_coin.seed.high <= 2**log2
-    assert_le(public_coin.seed.high, ceil_pow2 - 1);
-    assert_le(ceil_pow2 / 2, public_coin.seed.high);
-    
+    with_attr error_message("Error in 2**(log2-1) < public_coin.seed.high <= 2**log2 verification.") {
+        assert_le(public_coin.seed.high, ceil_pow2 - 1);
+        assert_le(ceil_pow2 / 2, public_coin.seed.high);
+    }
     // Ensure that less or equal 64 leading zeros
     let is_lzcnt_le_64 = is_le(lzcnt, 64);
     if(is_lzcnt_le_64 == TRUE){
