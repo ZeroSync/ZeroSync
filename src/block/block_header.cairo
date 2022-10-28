@@ -341,8 +341,6 @@ func compute_total_work{range_check_ptr}(
 // - https://github.com/bitcoin/bitcoin/blob/v0.16.2/src/validation.cpp#L3713
 //
 func compute_work_from_target{range_check_ptr}(target) -> (work: felt) {
-    // TODO: Check all boundaries. This is just a dummy implementation
-    // TODO: Write tests for compute_work_from_target
     let (hi, lo) = split_felt(target);
     let target256 = Uint256(lo, hi);
     let (neg_target256) = uint256_neg(target256);

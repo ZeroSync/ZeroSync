@@ -19,6 +19,7 @@ from block.block_header import (
     read_block_header_validation_context,
     validate_and_apply_block_header,
     ChainState,
+    compute_work_from_target,
 )
 
 // Test block header serialization
@@ -349,5 +350,55 @@ func test_insufficient_pow{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     %{ expect_revert() %}
     let (next_state) = validate_and_apply_block_header(low_target_context);
     
+    return ();
+}
+
+@external
+func test_compute_work_from_target1{range_check_ptr}() {
+    let expected_work = 0x0100010001;
+    let target = 0x00000000ffff0000000000000000000000000000000000000000000000000000;
+    let (work) = compute_work_from_target(target);
+    assert expected_work = work;
+
+    return ();
+}
+
+@external
+func test_compute_work_from_target2{range_check_ptr}() {
+    let expected_work = 0x26d946e509ac00026d;
+    let target = 0x00000000000000000696f4000000000000000000000000000000000000000000;
+    let (work) = compute_work_from_target(target);
+    assert expected_work = work;
+
+    return ();
+}
+
+@external
+func test_compute_work_from_target3{range_check_ptr}() {
+    let expected_work = 0xe10005d2a0269364ff907d1d1d3ce0e1b351d743fe3222740c2440d07;
+    let target = 0x12345600;
+    let (work) = compute_work_from_target(target);
+    assert expected_work = work;
+
+    return ();
+}
+
+@external
+func test_compute_work_from_target4{range_check_ptr}() {
+    let expected_work = 0x1c040c95d1a74d2e27abbbd2255f66c9db2cad7511eb970cd4dac39e4;
+    let target = 0x92340000;
+    let (work) = compute_work_from_target(target);
+    assert expected_work = work;
+
+    return ();
+}
+
+@external
+func test_compute_work_from_target5{range_check_ptr}() {
+    let expected_work = 0x21809b468faa88dbe34f;
+    let target = 0x00000000000000000007a4290000000000000000000000000000000000000000;
+    let (work) = compute_work_from_target(target);
+    assert expected_work = work;
+
     return ();
 }
