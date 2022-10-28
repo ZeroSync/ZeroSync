@@ -46,7 +46,7 @@ jobs:
     - name: ls
       run: ls -a ../../..
     - name: ls
-      run: ../../../.protostar/dist/protostar -v
+      run: ls -a ../../../.protostar/dist/protostar
     - name: Echo Path
       run: export PATH="$PATH:/home/runner/.protostar/dist/protostar"
     - name: Run tests
