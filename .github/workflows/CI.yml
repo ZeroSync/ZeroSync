@@ -33,5 +33,7 @@ jobs:
       run: pip3 install cairo-lang
     - name: Install Protostar
       run: curl -L https://raw.githubusercontent.com/software-mansion/protostar/master/install.sh | bash
+    - name: Reset terminal
+      run: reset
     - name: Run tests
       run: protostar test --cairo-path=./src target src
