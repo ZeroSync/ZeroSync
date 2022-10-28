@@ -382,3 +382,23 @@ func test_compute_work_from_target3{range_check_ptr}() {
 
     return ();
 }
+
+@external
+func test_compute_work_from_target4{range_check_ptr}() {
+    let expected_work = 0x1c040c95d1a74d2e27abbbd2255f66c9db2cad7511eb970cd4dac39e4;
+    let target = 0x92340000;
+    let (work) = compute_work_from_target(target);
+    assert expected_work = work;
+
+    return ();
+}
+
+@external
+func test_compute_work_from_target5{range_check_ptr}() {
+    let expected_work = 0x21809b468faa88dbe34f;
+    let target = 0x00000000000000000007a4290000000000000000000000000000000000000000;
+    let (work) = compute_work_from_target(target);
+    assert expected_work = work;
+
+    return ();
+}
