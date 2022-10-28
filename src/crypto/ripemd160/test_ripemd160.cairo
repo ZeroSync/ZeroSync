@@ -24,11 +24,13 @@ func test_ripemd160{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     // result: 0x8eb208f7e05d987a9b044a8e98c6b087f15a0bfc
     let (hash) = ripemd160(input, byte_size);
 
-    assert hash[0] = 0x8eb208f7;
-    assert hash[1] = 0xe05d987a;
-    assert hash[2] = 0x9b044a8e;
-    assert hash[3] = 0x98c6b087;
-    assert hash[4] = 0xf15a0bfc;
+    with_attr error_message("ripemd160 hash does not match the expected result") {
+        assert hash[0] = 0x8eb208f7;
+        assert hash[1] = 0xe05d987a;
+        assert hash[2] = 0x9b044a8e;
+        assert hash[3] = 0x98c6b087;
+        assert hash[4] = 0xf15a0bfc;
+    }
 
     return ();
 }
