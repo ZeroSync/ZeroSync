@@ -33,21 +33,5 @@ jobs:
       run: pip3 install cairo-lang
     - name: Install Protostar
       run: curl -L https://raw.githubusercontent.com/software-mansion/protostar/master/install.sh | bash
-    - name: Source bash rc
-      run: source /home/runner/.bashrc
-    - name: Cat bash rc
-      run: cat /home/runner/.bashrc
     - name: protostar
-      run: ls -a
-    - name: ls
-      run: ls -a ..
-    - name: ls
-      run: ls -a ../..
-    - name: ls
-      run: ls -a ../../..
-    - name: ls
-      run: ../../../.protostar/dist/protostar/protostar -v
-    - name: Echo Path
-      run: export PATH="$PATH:/home/runner/.protostar/dist/protostar"
-    - name: Run tests
-      run: protostar test --cairo-path=./src target src
+      run: ../../../.protostar/dist/protostar/protostar test --cairo-path=./src target src
