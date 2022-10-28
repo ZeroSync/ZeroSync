@@ -299,18 +299,22 @@ func get_leading_zeros{range_check_ptr, public_coin: PublicCoin}() -> (res: felt
     alloc_locals;
     local lzcnt; 
     %{
+        # Count high bits in use
         n_bits = len( bin(ids.public_coin.seed.high).replace('0b', '') )
         assert 0 <= n_bits <= 128, "expected 128-bit"
+
+        # Store leading zeros count
         ids.lzcnt = 128 - n_bits
     %}
 
-    // Verify lzcnt 
+    // Verify leading zeros count
     let (ceil_pow2) = pow(2, 128 - lzcnt);
+
     // 2**(log2-1) < public_coin.seed.high <= 2**log2
     assert_le(public_coin.seed.high, ceil_pow2 - 1);
     assert_le(ceil_pow2 / 2, public_coin.seed.high);
     
-    // Ensure that lzcnt <= 64
+    // Ensure that less or equal 64 leading zeros
     let is_lzcnt_le_64 = is_le(lzcnt, 64);
     if(is_lzcnt_le_64 == TRUE){
         return (lzcnt,);
