@@ -354,9 +354,29 @@ func test_insufficient_pow{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
 }
 
 @external
-func test_compute_work_from_target{range_check_ptr}() {
+func test_compute_work_from_target1{range_check_ptr}() {
     let expected_work = 0x0100010001;
     let target = 0x00000000ffff0000000000000000000000000000000000000000000000000000;
+    let (work) = compute_work_from_target(target);
+    assert expected_work = work;
+
+    return ();
+}
+
+@external
+func test_compute_work_from_target2{range_check_ptr}() {
+    let expected_work = 0x26d946e509ac00026d;
+    let target = 0x00000000000000000696f4000000000000000000000000000000000000000000;
+    let (work) = compute_work_from_target(target);
+    assert expected_work = work;
+
+    return ();
+}
+
+@external
+func test_compute_work_from_target3{range_check_ptr}() {
+    let expected_work = 0xe10005d2a0269364ff907d1d1d3ce0e1b351d743fe3222740c2440d07;
+    let target = 0x12345600;
     let (work) = compute_work_from_target(target);
     assert expected_work = work;
 
