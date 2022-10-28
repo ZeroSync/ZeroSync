@@ -40,13 +40,11 @@ jobs:
     - name: protostar
       run: ls -a
     - name: ls
-      run: cd ..
-    - name: protostar
-      run: ls -a
+      run: ls -a ..
     - name: ls
-      run: cd ..
-    - name: protostar
-      run: ls -a
+      run: ls -a ../..
+    - name: ls
+      run: ls -a ../../..
     - name: Echo Path
       run: export PATH="$PATH:/home/runner/.protostar/dist/protostar"
     - name: Run tests
