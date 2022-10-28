@@ -35,7 +35,9 @@ jobs:
       run: curl -L https://raw.githubusercontent.com/software-mansion/protostar/master/install.sh | bash
     - name: Source bash rc
       run: source /home/runner/.bashrc
-    - name: Source bash rc
+    - name: Cat bash rc
       run: cat /home/runner/.bashrc
+    - name: Echo Path
+      run: echo $PATH
     - name: Run tests
       run: protostar test --cairo-path=./src target src
