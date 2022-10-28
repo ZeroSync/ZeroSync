@@ -19,6 +19,7 @@ from block.block_header import (
     read_block_header_validation_context,
     validate_and_apply_block_header,
     ChainState,
+    compute_work_from_target,
 )
 
 // Test block header serialization
@@ -349,5 +350,15 @@ func test_insufficient_pow{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     %{ expect_revert() %}
     let (next_state) = validate_and_apply_block_header(low_target_context);
     
+    return ();
+}
+
+@external
+func test_compute_work_from_target{range_check_ptr}() {
+    let expected_work = 0x0100010001;
+    let target = 0x00000000ffff0000000000000000000000000000000000000000000000000000;
+    let (work) = compute_work_from_target(target);
+    assert expected_work = work;
+
     return ();
 }
