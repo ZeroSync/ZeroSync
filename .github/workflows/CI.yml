@@ -10,12 +10,10 @@ permissions:
   contents: read
 
 jobs:
-
   build:
     name: Build and test
     runs-on: ubuntu-latest
-
-        steps:
+    steps:
     - name: Install Rust 1.62.1 
       uses: actions-rs/toolchain@v1
       with:
