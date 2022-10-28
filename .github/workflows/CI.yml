@@ -37,6 +37,8 @@ jobs:
       run: source /home/runner/.bashrc
     - name: Cat bash rc
       run: cat /home/runner/.bashrc
+    - name: ls
+      run: ls
     - name: Echo Path
       run: export PATH="$PATH:/home/runner/.protostar/dist/protostar"
     - name: Run tests
