@@ -15,10 +15,8 @@ from stark_verifier.air.air_instance import (
 )
 from stark_verifier.air.pub_inputs import PublicInputs
 from stark_verifier.air.stark_proof import (
-    Queries,
     Context,
     TraceLayout,
-    FriProof,
     ProofOptions,
     StarkProof,
     read_stark_proof,
@@ -292,8 +290,9 @@ func main{
 }() -> () {
     
     // Deserialize proof
-    let (proof, pub_inputs) = read_stark_proof();
+    //let (proof, pub_inputs) = read_stark_proof();
 
-    verify(proof=proof, pub_inputs=pub_inputs);
+    //verify(proof=proof, pub_inputs=pub_inputs);
+
     return ();
 }

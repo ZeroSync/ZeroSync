@@ -4,7 +4,6 @@ from starkware.cairo.common.uint256 import Uint256
 
 from stark_verifier.air.stark_proof import (
     ParsedOodFrame,
-    Queries,
     StarkProof,
 )
 from stark_verifier.air.air_instance import AirInstance
