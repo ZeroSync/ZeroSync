@@ -5,18 +5,16 @@ from stark_verifier.air.pub_inputs import PublicInputs
 from stark_verifier.air.transitions.frame import EvaluationFrame
 from stark_verifier.utils import Vec
 
-// https://github.com/novifinancial/winterfell/blob/0b7cc3dc28c6b1ad43eb3f2850f644bff1423cf9/air/src/options.rs#L82
 struct ProofOptions {
     num_queries: felt,
     blowup_factor: felt,
     grinding_factor: felt,
-    hash_fn: felt, // https://github.com/novifinancial/winterfell/blob/0b7cc3dc28c6b1ad43eb3f2850f644bff1423cf9/air/src/options.rs#L20
-    field_extension: felt, // https://github.com/novifinancial/winterfell/blob/0b7cc3dc28c6b1ad43eb3f2850f644bff1423cf9/air/src/options.rs#L52
+    hash_fn: felt,
+    field_extension: felt,
     fri_folding_factor: felt,
     fri_max_remainder_size: felt, // stored as power of 2
 }
 
-// https://github.com/novifinancial/winterfell/blob/f14a9ab9ce36589daf74c9c9dde344995390efcd/air/src/air/trace_info.rs#L158
 struct TraceLayout {
     main_segment_width: felt,
     aux_segment_widths: felt*,
@@ -40,34 +38,10 @@ struct ParsedCommitments {
     fri_roots: Uint256*,
 }
 
-struct Queries {
-    paths_len : felt,
-    paths: felt*,
-    values_len : felt,
-    values: felt*,
-}
-
 struct ParsedOodFrame {
     main_frame: EvaluationFrame,
     aux_frame: EvaluationFrame,
     evaluations: Vec,
-}
-
-// https://github.com/novifinancial/winterfell/blob/446d8a67bcfa819d50d0adbbf191611dc7b3622c/fri/src/proof.rs#L32
-struct FriProof {
-    layers_len : felt,
-    layers: FriProofLayer*,
-    remainder_len : felt,
-    remainder: felt*,
-    num_partitions: felt, // stored as power of 2
-}
-
-// https://github.com/novifinancial/winterfell/blob/446d8a67bcfa819d50d0adbbf191611dc7b3622c/fri/src/proof.rs#L246
-struct FriProofLayer {
-    values_len : felt,
-    values: felt*,
-    paths_len : felt,
-    paths: felt*, // array of array of hashes. Each hash is represented as 8 x uint32 ? 
 }
 
 // Definition of a STARK proof
@@ -82,8 +56,6 @@ struct StarkProof {
     commitments: ParsedCommitments,
     // Trace evaluation frames and out-of-domain constraint evaluations
     ood_frame: ParsedOodFrame,
-    // Low-degree proof for a DEEP composition polynomial.
-    fri_proof: FriProof,
     // Proof-of-work nonce for query seed grinding.
     pow_nonce: felt,
 }

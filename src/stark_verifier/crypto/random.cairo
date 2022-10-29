@@ -220,7 +220,6 @@ func _draw_integers_loop {
     let value = [bitwise_ptr].x_and_y;
     let bitwise_ptr = bitwise_ptr + BitwiseBuiltin.SIZE;
 
-    // TODO: Limit number of recursion calls to 1000
     let is_contained = contains(value, elements, index);
     if (is_contained == 1) {
         return _draw_integers_loop(n_elements, elements, domain_size, index);
@@ -234,8 +233,6 @@ func _draw_integers_loop {
 /// Returns a vector of unique integers selected from the range [0, domain_size).
 ///
 /// Errors if:
-/// - the specified number of unique integers could not be generated
-///   after 1000 calls to the PRNG.
 /// - `domain_size` is not a power of two.
 /// - `n_elements` is greater than or equal to `domain_size`.
 ///
