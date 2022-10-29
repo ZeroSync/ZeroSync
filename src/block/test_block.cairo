@@ -39,7 +39,7 @@ func dummy_prev_timestamps() -> (timestamps: felt*) {
     assert prev_timestamps[8] = 8;
     assert prev_timestamps[9] = 9;
     assert prev_timestamps[10] = 10;
-    return (prev_timestamps);
+    return (prev_timestamps,);
 }
 
 
@@ -128,10 +128,10 @@ func test_verify_block_with_4_transactions{
             );
 
     // We need some UTXOs to spend in this block
-    let (roots) = utreexo_init();
-    dummy_utxo_insert_block_number{hash_ptr=pedersen_ptr,utreexo_roots=roots}(100000);
+    let (utreexo_roots) = utreexo_init();
+    dummy_utxo_insert_block_number{hash_ptr=pedersen_ptr,utreexo_roots=utreexo_roots}(100000);
 
-    let prev_state = State(prev_chain_state, roots);
+    let prev_state = State(prev_chain_state, utreexo_roots);
 
     // Parse the block validation context using the previous state
     let (context) = read_block_validation_context(prev_state);
@@ -187,10 +187,10 @@ func test_verify_block_with_27_transactions{
 
     // We need some UTXOs to spend in this block
     reset_bridge_node();
-    let (roots) = utreexo_init();
-    dummy_utxo_insert_block_number{hash_ptr=pedersen_ptr,utreexo_roots=roots}(170000);
+    let (utreexo_roots) = utreexo_init();
+    dummy_utxo_insert_block_number{hash_ptr=pedersen_ptr,utreexo_roots=utreexo_roots}(170000);
 
-    let prev_state = State(prev_chain_state, roots);
+    let prev_state = State(prev_chain_state, utreexo_roots);
 
     // Parse the block validation context using the previous state
     let (context) = read_block_validation_context(prev_state);
@@ -221,7 +221,7 @@ func test_verify_block_with_27_transactions{
 // - Block hash: 000000000000000009a11b3972c8e532fe964de937c9e0096b43814e67af3728
 // - Block explorer: https://blockstream.info/block/000000000000000009a11b3972c8e532fe964de937c9e0096b43814e67af3728
 // - Blockchair: https://api.blockchair.com/bitcoin/raw/block/000000000000000009a11b3972c8e532fe964de937c9e0096b43814e67af3728
-// @external
+@external
 func test_verify_block_with_49_transactions{
     range_check_ptr, bitwise_ptr: BitwiseBuiltin*, pedersen_ptr: HashBuiltin*
 }() {
@@ -250,10 +250,10 @@ func test_verify_block_with_49_transactions{
 
     // We need some UTXOs to spend in this block
     reset_bridge_node();
-    let (prev_utreexo_roots) = utreexo_init();
-    dummy_utxo_insert_block_number{hash_ptr=pedersen_ptr,utreexo_roots=roots}(328734);
+    let (utreexo_roots) = utreexo_init();
+    dummy_utxo_insert_block_number{hash_ptr=pedersen_ptr,utreexo_roots=utreexo_roots}(328734);
 
-    let prev_state = State(prev_chain_state, prev_utreexo_roots);
+    let prev_state = State(prev_chain_state, utreexo_roots);
     
     // Parse the block validation context using the previous state
     let (context) = read_block_validation_context(prev_state);
@@ -316,10 +316,10 @@ func test_verify_block_with_2496_transactions{
             );
     // We need some UTXOs to spend in this block
     reset_bridge_node();
-    let (prev_utreexo_roots) = utreexo_init();
-    dummy_utxo_insert_block_number{hash_ptr=pedersen_ptr,utreexo_roots=roots}(750000);
+    let (utreexo_roots) = utreexo_init();
+    dummy_utxo_insert_block_number{hash_ptr=pedersen_ptr,utreexo_roots=utreexo_roots}(750000);
 
-    let prev_state = State(prev_chain_state, prev_utreexo_roots);
+    let prev_state = State(prev_chain_state, utreexo_roots);
 
     // Parse the block validation context using the previous state
     let (context) = read_block_validation_context(prev_state);
