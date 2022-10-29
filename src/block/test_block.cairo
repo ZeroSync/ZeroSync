@@ -221,7 +221,7 @@ func test_verify_block_with_27_transactions{
 // - Block hash: 000000000000000009a11b3972c8e532fe964de937c9e0096b43814e67af3728
 // - Block explorer: https://blockstream.info/block/000000000000000009a11b3972c8e532fe964de937c9e0096b43814e67af3728
 // - Blockchair: https://api.blockchair.com/bitcoin/raw/block/000000000000000009a11b3972c8e532fe964de937c9e0096b43814e67af3728
-@external
+// @external
 func test_verify_block_with_49_transactions{
     range_check_ptr, bitwise_ptr: BitwiseBuiltin*, pedersen_ptr: HashBuiltin*
 }() {
