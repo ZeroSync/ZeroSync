@@ -32,18 +32,16 @@ func _utreexo_add_loop{hash_ptr: HashBuiltin*}(roots_in: felt*, roots_out: felt*
     let r = roots_in[h];
 
     if (r == 0) {
-        with_attr error_message("Invalid root.") {
-            assert roots_out[h] = n;
-        }
+        assert roots_out[h] = n;
         let h = h + 1;
         memcpy(roots_out + h, roots_in + h, UTREEXO_ROOTS_LEN - h);
         return ();
     }
 
     let (n) = hash2(r, n);
-    with_attr error_message("Invalid root.") {
-        assert roots_out[h] = 0;
-    }
+    
+    assert roots_out[h] = 0;
+    
     return _utreexo_add_loop(roots_in, roots_out, n, h + 1);
 }
 
@@ -64,9 +62,7 @@ func _utreexo_delete_loop{hash_ptr: HashBuiltin*}(
     roots_in: felt*, roots_out: felt*, proof: felt*, proof_len, n, h
 ) {
     if (h == proof_len) {
-        with_attr error_message("Invalid root.") {
-            assert roots_out[h] = n;
-        }
+        assert roots_out[h] = n;
         let h = h + 1;
         memcpy(roots_out + h, roots_in + h, UTREEXO_ROOTS_LEN - h);
         return ();
@@ -76,23 +72,18 @@ func _utreexo_delete_loop{hash_ptr: HashBuiltin*}(
 
     if (n != 0) {
         let (n) = hash2(p, n);
-        with_attr error_message("Invalid root.") {
-            assert roots_out[h] = roots_in[h];
-        }
+
+        assert roots_out[h] = roots_in[h];
         return _utreexo_delete_loop(roots_in, roots_out, proof, proof_len, n, h + 1);
     }
 
     if (roots_in[h] == 0) {
-        with_attr error_message("Invalid root.") {
             assert roots_out[h] = p;
-        }
         return _utreexo_delete_loop(roots_in, roots_out, proof, proof_len, n, h + 1);
     }
 
     let (n) = hash2(p, roots_in[h]);
-    with_attr error_message("Invalid root.") {
-        assert roots_out[h] = 0;
-    }
+    assert roots_out[h] = 0;
     return _utreexo_delete_loop(roots_in, roots_out, proof, proof_len, n, h + 1);
 }
 
@@ -100,7 +91,7 @@ func utreexo_prove_inclusion{hash_ptr: HashBuiltin*}(
     utreexo_roots: felt*, leaf, leaf_index, proof: felt*, proof_len
 ) {
     let (proof_root) = _utreexo_prove_inclusion_loop(proof, proof_len, leaf_index, leaf);
-    with_attr error_message("The prove is not included in the UTreeXO.") {
+    with_attr error_message("The leaf ${leaf} is not included in the Utreexo set.") {
         assert utreexo_roots[proof_len] = proof_root;
     }
     return ();
