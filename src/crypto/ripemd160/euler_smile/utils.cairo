@@ -2,10 +2,27 @@ from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.bitwise import bitwise_and, bitwise_or, bitwise_xor
 from starkware.cairo.common.math import assert_nn_le, unsigned_div_rem
 from starkware.cairo.common.math_cmp import is_le
-from pow2 import pow2
+from crypto.ripemd160.euler_smile.pow2 import pow2
 
 const MAX_32_BIT = 2 ** 32;
 const MAX_BYTE = 2 ** 8;
+
+func change_uint32_byte_order{range_check_ptr}(source) -> felt {
+    let (uint24, uint8_3) = unsigned_div_rem(source, MAX_BYTE);
+    let (uint16, uint8_2) = unsigned_div_rem(uint24, MAX_BYTE);
+    let (uint8_0, uint8_1) = unsigned_div_rem(uint16, MAX_BYTE);
+
+    return uint8_3 * MAX_BYTE ** 3 + uint8_2 * MAX_BYTE ** 2 + uint8_1 * MAX_BYTE ** 1 + uint8_0;
+}
+
+func change_uint32_byte_order_array{range_check_ptr}(source: felt*, source_end: felt*, output: felt* ) {
+    if (source == source_end) {
+        return ();
+    }
+    assert output[0] = change_uint32_byte_order(source[0]);
+    change_uint32_byte_order_array(source + 1, source_end, output + 1);
+    return ();
+}
 
 func uint8_div{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(x, y) -> (z: felt) {
     let (z, _) = unsigned_div_rem(x, y);
@@ -45,20 +62,6 @@ func uint32_xor{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(x, y) -> (z: felt
     let (z) = bitwise_xor(x, y);
     let (_, z) = unsigned_div_rem(z, MAX_32_BIT);
     return (z=z);
-}
-
-// collect four bytes into one word.
-func BYTES_TO_WORD{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(x: felt*) -> (res: felt) {
-    let (factor_3) = pow2(24);
-    let (factor_2) = pow2(16);
-    let (factor_1) = pow2(8);
-    let (l1) = uint32_mul([x + 3], factor_3);
-    let (l2) = uint32_mul([x + 2], factor_2);
-    let (l3) = uint32_mul([x + 1], factor_1);
-    let (l1_or_l2) = uint32_or(l1, l2);
-    let (l1_or_l2_or_l3) = uint32_or(l1_or_l2, l3);
-    let (res) = uint32_or(l1_or_l2_or_l3, [x]);
-    return (res=res);
 }
 
 // ROL(x, n) cyclically rotates x over n bits to the left
