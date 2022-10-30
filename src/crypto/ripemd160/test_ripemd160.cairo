@@ -9,10 +9,12 @@ from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 
 from utils.python_utils import setup_python_defs
 from crypto.ripemd160.ripemd160 import ripemd160, _compute_ripemd160_fake
-from crypto.ripemd160.euler_smile.rmd160 import padding
+from crypto.ripemd160.euler_smile.rmd160 import pad_input
 
+// Test RIPEMD160 with "abc" test vector.
+// See: https://homes.esat.kuleuven.be/~bosselae/ripemd160.html
 @external
-func test_ripemd160{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
+func test_ripemd160_abc{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     alloc_locals;
 
     let felt_size = 1;
@@ -25,7 +27,6 @@ func test_ripemd160{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     // result: 0x8eb208f7e05d987a9b044a8e98c6b087f15a0bfc
     let (hash) = ripemd160(input, byte_size);
 
-    let (result_hash) = _compute_ripemd160_fake(felt_size, input, byte_size);
     with_attr error_message("Ripemd160 hash does not match the expected result.") {
         assert hash[0] = 0x8eb208f7;
         assert hash[1] = 0xe05d987a;
@@ -37,8 +38,141 @@ func test_ripemd160{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     return ();
 }
 
+// Test RIPEMD160 with empty test vector.
+// See: https://homes.esat.kuleuven.be/~bosselae/ripemd160.html
+@external
+func test_ripemd160_empty_string{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
+    alloc_locals;
+    setup_python_defs();
 
+    let felt_size = 0;
+    let byte_size = 0;
+
+    // Set input to ""
+    let (input) = alloc();
+
+    let (expected_result) = alloc();
+    %{ from_hex("9c1185a5c5e9fc54612808977ee8f548b2258d31",ids.expected_result) %}
+    let (hash) = ripemd160(input, byte_size);
+
+    // %{
+    //    print("hash: ", [hex(memory[ids.hash + i]) for i in range(0,5)])
+    //    print("expected hash: ", [hex(memory[ids.expected_result + i]) for i in range(0,5)])
+    // %}
+    with_attr error_message("Ripemd160 hash does not match the expected result.") {
+        assert hash[0] = expected_result[0];
+        assert hash[1] = expected_result[1];
+        assert hash[2] = expected_result[2];
+        assert hash[3] = expected_result[3];
+        assert hash[4] = expected_result[4];
+    }
+
+    return ();
+}
+
+// Test RIPEMD160 with a..z vector.
+// See: https://homes.esat.kuleuven.be/~bosselae/ripemd160.html
+@external
+func test_ripemd160_a_z{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
+    alloc_locals;
+    setup_python_defs();
+
+    local felt_size;
+    local byte_size;
+
+    let (input) = alloc();
+    let (expected_result) = alloc();
+
+    %{
+        from_hex("f71c27109c692c1b56bbdceb5b9d2865b3708dbc",ids.expected_result)
+        ids.byte_size, ids.felt_size = from_string("abcdefghijklmnopqrstuvwxyz", ids.input)
+    %}
+    let (hash) = ripemd160(input, byte_size);
+
+    // %{
+    //    print("hash: ", [hex(memory[ids.hash + i]) for i in range(0,5)])
+    //    print("expected hash: ", [hex(memory[ids.expected_result + i]) for i in range(0,5)])
+    // %}
+    with_attr error_message("Ripemd160 hash does not match the expected result.") {
+        assert hash[0] = expected_result[0];
+        assert hash[1] = expected_result[1];
+        assert hash[2] = expected_result[2];
+        assert hash[3] = expected_result[3];
+        assert hash[4] = expected_result[4];
+    }
+
+    return ();
+}
+
+// Test RIPEMD160 with 496 bit vector.
+// See: https://homes.esat.kuleuven.be/~bosselae/ripemd160.html
+@external
+func test_ripemd160_496_bits{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
+    alloc_locals;
+    setup_python_defs();
+
+    local felt_size;
+    local byte_size;
+
+    let (input) = alloc();
+    let (expected_result) = alloc();
+
+    %{
+        from_hex("b0e20b6e3116640286ed3a87a5713079b21f5189",ids.expected_result)
+        ids.byte_size, ids.felt_size = from_string("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789", ids.input)
+    %}
+    let (hash) = ripemd160(input, byte_size);
+
+    // %{
+    //    print("hash: ", [hex(memory[ids.hash + i]) for i in range(0,5)])
+    //    print("expected hash: ", [hex(memory[ids.expected_result + i]) for i in range(0,5)])
+    // %}
+    with_attr error_message("Ripemd160 hash does not match the expected result.") {
+        assert hash[0] = expected_result[0];
+        assert hash[1] = expected_result[1];
+        assert hash[2] = expected_result[2];
+        assert hash[3] = expected_result[3];
+        assert hash[4] = expected_result[4];
+    }
+
+    return ();
+}
+
+// Test RIPEMD160 with X bit vector.
+// TODO: Find or create larger test vectors (to make to sure rmd160 implementation also works for more than 2 chunks)
 // @external
+func test_ripemd160_X_bits{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
+    alloc_locals;
+    setup_python_defs();
+
+    local felt_size;
+    local byte_size;
+
+    let (input) = alloc();
+    let (expected_result) = alloc();
+
+    %{
+        from_hex("b0e20b6e3116640286ed3a87a5713079b21f5189",ids.expected_result)
+        ids.byte_size, ids.felt_size = from_string("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789", ids.input)
+    %}
+    let (hash) = ripemd160(input, byte_size);
+
+    // %{
+    //    print("hash: ", [hex(memory[ids.hash + i]) for i in range(0,5)])
+    //    print("expected hash: ", [hex(memory[ids.expected_result + i]) for i in range(0,5)])
+    // %}
+    with_attr error_message("Ripemd160 hash does not match the expected result.") {
+        assert hash[0] = expected_result[0];
+        assert hash[1] = expected_result[1];
+        assert hash[2] = expected_result[2];
+        assert hash[3] = expected_result[3];
+        assert hash[4] = expected_result[4];
+    }
+
+    return ();
+}
+
+@external
 func test_padding_abc{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     alloc_locals;
 
@@ -48,9 +182,43 @@ func test_padding_abc{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     let (input) = alloc();
     assert input[0] = 0x61626300;
 
-    let (word_arr) = padding(input, n_bytes, n_felts);
+    let (word_arr: felt*, n_chunks) = pad_input(input, n_bytes, n_felts);
 
-    assert word_arr[0] = 0x61626380;
+    assert word_arr[0] = 0x80636261;
+    assert word_arr[1] = 0;
+    assert word_arr[2] = 0;
+    assert word_arr[3] = 0;
+    assert word_arr[4] = 0;
+    assert word_arr[5] = 0;
+    assert word_arr[6] = 0;
+    assert word_arr[7] = 0;
+
+    assert word_arr[8] = 0;
+    assert word_arr[9] = 0;
+    assert word_arr[10] = 0;
+    assert word_arr[11] = 0;
+    assert word_arr[12] = 0;
+    assert word_arr[13] = 0;
+    assert word_arr[14] = 0x18;
+    assert word_arr[15] = 0;
+
+    assert n_chunks = 1;
+
+    return ();
+}
+
+@external
+func test_padding_empty_string{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
+    alloc_locals;
+
+    let n_felts = 0;
+    let n_bytes = 0;
+
+    let (input) = alloc();
+
+    let (word_arr: felt*, n_chunks) = pad_input(input, n_bytes, n_felts);
+
+    assert word_arr[0] = 0x00000080;
     assert word_arr[1] = 0;
     assert word_arr[2] = 0;
     assert word_arr[3] = 0;
@@ -66,49 +234,9 @@ func test_padding_abc{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     assert word_arr[12] = 0;
     assert word_arr[13] = 0;
     assert word_arr[14] = 0;
-    assert word_arr[15] = n_bytes;
+    assert word_arr[15] = 0;
 
-    return ();
-}
-
-// @external
-// TODO: add more cases for each n_bytes remaining
-func test_padding{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
-    alloc_locals;
-
-    let n_felts = 7;
-    let n_bytes = 26;
-
-    let (input) = alloc();
-    assert input[0] = 0x01020304;
-    assert input[1] = 0x05060708;
-    assert input[2] = 0x090a0b0c;
-    assert input[3] = 0x0d0e0f00;
-    assert input[4] = 0x01020304;
-    assert input[5] = 0x05060708;
-    assert input[6] = 0x090a0000;
-
-    let (word_arr) = padding(input, n_bytes, n_felts);
-
-    // %{ print([memory[ids.word_arr + i] for i in range(0,16)]) %}
-
-    assert word_arr[0] = 0x01020304;
-    assert word_arr[1] = 0x05060708;
-    assert word_arr[2] = 0x090a0b0c;
-    assert word_arr[3] = 0x0d0e0f00;
-    assert word_arr[4] = 0x01020304;
-    assert word_arr[5] = 0x05060708;
-    assert word_arr[6] = 0x090a8000;  // The end has to be padded with "1"
-    assert word_arr[7] = 0;
-
-    assert word_arr[8] = 0;
-    assert word_arr[9] = 0;
-    assert word_arr[10] = 0;
-    assert word_arr[11] = 0;
-    assert word_arr[12] = 0;
-    assert word_arr[13] = 0;
-    assert word_arr[14] = 0;
-    assert word_arr[15] = n_bytes;
+    assert n_chunks = 1;
 
     return ();
 }
