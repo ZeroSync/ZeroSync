@@ -1,9 +1,14 @@
+//
+// RIPEMD160 implementation as specified at https://homes.esat.kuleuven.be/~bosselae/ripemd160.html
+//
+
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.math import unsigned_div_rem
-from starkware.cairo.common.math_cmp import is_nn_le, is_le
-from starkware.cairo.common.bitwise import bitwise_and, bitwise_xor, bitwise_or
+from starkware.cairo.common.math_cmp import is_le
 from starkware.cairo.common.memcpy import memcpy
+
+from crypto.ripemd160.euler_smile.pow2 import pow2
 from crypto.ripemd160.euler_smile.utils import (
     MAX_32_BIT,
     FF,
@@ -17,43 +22,37 @@ from crypto.ripemd160.euler_smile.utils import (
     III,
     JJJ,
     uint32_add,
-    uint32_and,
-    uint32_or,
-    uint32_mul,
-    uint32_xor,
-    change_uint32_byte_order,
-    change_uint32_byte_order_array
+    change_uint32_byte_order_array,
 )
-from crypto.ripemd160.euler_smile.pow2 import pow2
 
 const RMD160_INPUT_CHUNK_SIZE_FELTS = 16;
 const RMD160_INPUT_CHUNK_SIZE_BYTES = 64;
 const RMD160_STATE_SIZE_FELTS = 5;
 
-
-// NOTE: It might be worth rewriting this using the "calculate one->verify seven"-approach of the sha256 implementation
 //
-// Computes RMD160 of 'input'. Inputs of arbitrary length are supported.
-// To use this function, split the input into (up to) 14 words of 32 bits (big endian).
+// Computes RMD160 of 'data'. Inputs of arbitrary length are supported.
+// To use this function, split the input into words of 32 bits (big endian).
 // For example, to compute RMD160('Hello world'), use:
 //   input = [1214606444, 1864398703, 1919706112]
 // where:
 //   1214606444 == int.from_bytes(b'Hell', 'big')
 //   1864398703 == int.from_bytes(b'o wo', 'big')
-//   1919706112 == int.from_bytes(b'rld\x00', 'big')  # Note the '\x00' padding.
+//   1919706112 == int.from_bytes(b'rld\x00', 'big')  # Note the '\x00' pad_input.
 //
 // chunk layout:
 // 0 - 15: Message
 // 16 - 20: Input State
 // 21 - 25: Output
-// This layout is kept in case we want to rewrite to use the sha256 approach
+// Note: This layout is kept in case we want to rewrite to use the sha256 approach.
 //
-// output is an array of 5 32-bit words (big endian).
-func compute_rmd160{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, rmd160_ptr: felt*}(data: felt*, n_bytes: felt, n_felts: felt) -> (output: felt*) {
+// Output is an array of 5 32-bit words (big endian).
+func compute_rmd160{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, rmd160_ptr: felt*}(
+    data: felt*, n_bytes: felt, n_felts: felt
+) -> (output: felt*) {
     alloc_locals;
 
-    //Pad the input data
-    let (padded_data: felt*) = padding(data, n_bytes, n_felts);
+    // Pad the input data
+    let (padded_data: felt*, chunks) = pad_input(data, n_bytes, n_felts);
 
     // Prepare the first chunk.
     // Copy first chunk's input data.
@@ -65,9 +64,10 @@ func compute_rmd160{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, rmd160_ptr: f
     assert [rmd160_ptr + 19] = 0x10325476;
     assert [rmd160_ptr + 20] = 0xc3d2e1f0;
 
-    rmd160_inner(data=padded_data, n_felts=n_felts, total_n_felts=n_felts);
+    rmd160_inner(padded_data, 0, chunks);
 
-    // Change byte order. TODO: Depending on the use case we might not need to change byte order here.
+    // Change byte order.
+    // TODO: Depending on the use case we might not need to change byte order here.
     let (output: felt*) = alloc();
     change_uint32_byte_order_array(rmd160_ptr, rmd160_ptr + RMD160_STATE_SIZE_FELTS, output);
     // Set `rmd160_ptr` to the next chunk.
@@ -75,12 +75,12 @@ func compute_rmd160{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, rmd160_ptr: f
     return (output,);
 }
 
-
 // Inner loop for rmd160. `rmd160_ptr` points to the start of the block.
 func rmd160_inner{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, rmd160_ptr: felt*}(
-    data: felt*, n_felts, total_n_felts
+    data: felt*, n_chunks, total_chunks
 ) {
     alloc_locals;
+
     let message = rmd160_ptr;
     let state = rmd160_ptr + RMD160_INPUT_CHUNK_SIZE_FELTS;
     let output = state + RMD160_STATE_SIZE_FELTS;
@@ -88,40 +88,50 @@ func rmd160_inner{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, rmd160_ptr: fel
     // Fills the output part of the chunk layout.
     rmd160_compress(message, state, output);
 
-    
-    if (n_felts == total_n_felts) {
+    if (n_chunks + 1 == total_chunks) {
         // Let rmd160_ptr point to the beginning of the output.
         let rmd160_ptr = output;
         return ();
     }
-    
+
     // Prepare the next chunk.
     let rmd160_ptr = output + RMD160_STATE_SIZE_FELTS;
     // Copy respective felts of data to next chunk's Message.
-    memcpy(rmd160_ptr, data + n_felts + RMD160_INPUT_CHUNK_SIZE_FELTS, RMD160_INPUT_CHUNK_SIZE_FELTS);
+    memcpy(
+        rmd160_ptr,
+        data + (n_chunks + 1) * RMD160_INPUT_CHUNK_SIZE_FELTS,
+        RMD160_INPUT_CHUNK_SIZE_FELTS,
+    );
     // Copy current output state to next chunk's input state.
     memcpy(rmd160_ptr + RMD160_INPUT_CHUNK_SIZE_FELTS, output, RMD160_STATE_SIZE_FELTS);
-    
+
     // Call rmd160_inner on the next chunk.
-    rmd160_inner{rmd160_ptr=rmd160_ptr}(data, n_felts + RMD160_INPUT_CHUNK_SIZE_FELTS, total_n_felts);
+    rmd160_inner{rmd160_ptr=rmd160_ptr}(data, n_chunks + 1, total_chunks);
     return ();
 }
 
-// n_bytes is in [0,3]
-func append_one_bit{input_ptr: felt*}(last_word, n_bytes) -> (added_felts: felt) {
+// Appends the pad_input '1' bit to the last word of the input and
+// adds the resulting word to 'input_ptr'.
+// 'n_bytes' is the number of bytes stored in last_word (so it is in the interval [1,4]).
+// Returns the number of felts that were appended to 'input_ptr.' - 1.
+func append_one_bit{input_ptr: felt*}(last_word, n_bytes) -> felt {
     if (n_bytes == 4) {
+        // The current last_word is already full.
         assert input_ptr[0] = last_word;
         assert input_ptr[1] = 0x80000000;
         let input_ptr = input_ptr + 2;
-        return (1,);
+        return 1;
     }
+
+    // Calculate the felt representation of the '1' bit depending on 'n_bytes' stored in 'last_word'.
     let (one_bit) = pow2(8 * (4 - n_bytes) - 1);
+    // Add the pad_input '1' bit to the last word.
     assert [input_ptr] = last_word + one_bit;
     let input_ptr = input_ptr + 1;
-    return (0,);
+    return 0;
 }
 
-// Appends n zeroes to input_ptr
+// Appends 'n' zeroes to 'input_ptr'.
 func append_zeroes{input_ptr: felt*}(n) {
     if (n == 0) {
         return ();
@@ -133,13 +143,16 @@ func append_zeroes{input_ptr: felt*}(n) {
     return ();
 }
 
-// MD4 Padding of the input array
-// input is a word array including n_bytes bytes with length n_felts
-func padding{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(input: felt*, n_bytes, n_felts) -> (word_array: felt*) {
+// Padding of the input array.
+//
+// 'input' is a word array consisting of n_felts words that contain a total of n_bytes bytes.
+func pad_input{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(input: felt*, n_bytes, n_felts) -> (
+    word_array: felt*, n_chunks: felt
+) {
     alloc_locals;
     let (local input_ptr: felt*) = alloc();
     let input_ptr_start = input_ptr;
-    _padding{input_ptr=input_ptr}(input, n_bytes, n_felts);
+    let n_chunks = _pad_input{input_ptr=input_ptr}(input, n_bytes, n_felts);
 
     // Switch byte order of each word.
     let (padded_input: felt*) = alloc();
@@ -149,59 +162,70 @@ func padding{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(input: felt*, n_byte
     // This should be the same as (https://homes.esat.kuleuven.be/~bosselae/ripemd160/ps/AB-9601/rmd160.c)
     // X[14] = lswlen << 3;
     // X[15] = (lswlen >> 29) | (mswlen << 3);
-    let (mswlen, lswlen) = unsigned_div_rem(n_bytes, 2 ** 32);
-    let (_, lswlen_sll_3) = unsigned_div_rem(lswlen * 2 ** 3, 2 ** 32);
-    let (_, mswlen_sll_3) = unsigned_div_rem(mswlen * 2 ** 3, 2 ** 32);
+    let (mswlen, lswlen) = unsigned_div_rem(n_bytes, MAX_32_BIT);
+    let (_, lswlen_sll_3) = unsigned_div_rem(lswlen * 2 ** 3, MAX_32_BIT);
+    let (_, mswlen_sll_3) = unsigned_div_rem(mswlen * 2 ** 3, MAX_32_BIT);
     let (lswlen_srl_29, _) = unsigned_div_rem(n_bytes, 2 ** 29);
-    assert padded_input[14] = lswlen_sll_3;
-    assert padded_input[15] = mswlen_sll_3 + lswlen_srl_29;
-
-    return (padded_input,);
+    assert padded_input[n_chunks * RMD160_INPUT_CHUNK_SIZE_FELTS - 2] = lswlen_sll_3;
+    assert padded_input[n_chunks * RMD160_INPUT_CHUNK_SIZE_FELTS - 1] = mswlen_sll_3 + lswlen_srl_29;
+    return (padded_input, n_chunks);
 }
 
-func _padding{range_check_ptr, input_ptr: felt*}(input: felt*, n_bytes, n_felts) {
+func _pad_input{range_check_ptr, input_ptr: felt*}(input: felt*, n_bytes, n_felts) -> felt {
     alloc_locals;
-    let last_message_block = is_le(n_bytes, 447);
-    if (last_message_block == 1) {
-        // Rest of input data is less than a message block (remaining input is < 448)
-        memcpy(input_ptr, input, n_felts - 1);
-        // '1'-bit fits into the current block (current mesage block is < 448)
-        let input_ptr = input_ptr + n_felts - 1;
-        let (appended_felts) = append_one_bit{input_ptr=input_ptr}(
-            input[n_felts - 1], n_bytes - ((n_felts - 1) * 4)
-        );
-        // Find out how many zeroes have to be appended
-        append_zeroes{input_ptr=input_ptr}(14 - (n_felts + appended_felts));
-        return ();
+
+    // Check if input is empty.
+    if (n_felts == 0) {
+        // This block is entirely empty and only contains the padding '1' bit.
+        assert input_ptr[0] = 0x80000000;
+        let input_ptr = input_ptr + 1;
+        append_zeroes{input_ptr=input_ptr}(13);
+        return 1;
     }
 
-    let last_data_message_block = is_le(n_bytes, 511);
-    if (last_data_message_block == 1) {
-        // Rest of input data is 448 or more but less than 512
+    let last_message_block = is_le(n_bytes, 55);
+    if (last_message_block == 1) {
+        // The rest of the input data is less than a message block (remaining input is < 448 bits)
+
         memcpy(input_ptr, input, n_felts - 1);
-        let input_ptr = input_ptr + n_felts;
-        let (appended_felts) = append_one_bit{input_ptr=input_ptr}(
+        // Padding '1'-bit fits into the current block (current mesage block is < 448)
+        let input_ptr = input_ptr + n_felts - 1;
+        let appended_felts = append_one_bit{input_ptr=input_ptr}(
             input[n_felts - 1], n_bytes - ((n_felts - 1) * 4)
         );
-        append_zeroes{input_ptr=input_ptr}(16 - (n_felts + appended_felts));
+        // Find out how many zeroes have to be appended and append them.
+        append_zeroes{input_ptr=input_ptr}(14 - (n_felts + appended_felts));
+        return 1;
+    }
 
-        // '1'-bit has to be in this message block and the current and next message block are padded with 0
+    let last_data_message_block = is_le(n_bytes, 63);
+    if (last_data_message_block == 1) {
+        // The rest of the input data is 448 or more but less than 512 bits.
+        memcpy(input_ptr, input, n_felts - 1);
+        let input_ptr = input_ptr + n_felts - 1;
+        let appended_felts = append_one_bit{input_ptr=input_ptr}(
+            input[n_felts - 1], n_bytes - ((n_felts - 1) * 4)
+        );
+
+        // '1' bit had to be in this message block and the current and next message block are padded with 0
+        append_zeroes{input_ptr=input_ptr}(16 - (n_felts + appended_felts));
         append_zeroes{input_ptr=input_ptr}(14);
-        return ();
+        return 2;
     }
 
     // Rest of input is bigger than a message block (remaining input is > 512)
     // completely fill the current message block
     memcpy(input_ptr, input, 16);
     let input_ptr = input_ptr + 16;
-    _padding{input_ptr=input_ptr}(input + 16, n_bytes - (4 * 16), n_felts - 16);
-    return ();
+    let n_chunks = _pad_input{input_ptr=input_ptr}(input + 16, n_bytes - (4 * 16), n_felts - 16);
+    return n_chunks + 1;
 }
 
-
 // The compression function.
-// Writes the result into output.
-func rmd160_compress{bitwise_ptr: BitwiseBuiltin*, range_check_ptr}(data: felt*, state: felt*, output: felt*) {
+// Writes the result into 'output'.
+func rmd160_compress{bitwise_ptr: BitwiseBuiltin*, range_check_ptr}(
+    data: felt*, state: felt*, output: felt*
+) {
     alloc_locals;
 
     // all element is in [0, 2^32).
@@ -422,4 +446,3 @@ func rmd160_compress{bitwise_ptr: BitwiseBuiltin*, range_check_ptr}(data: felt*,
 
     return ();
 }
-
