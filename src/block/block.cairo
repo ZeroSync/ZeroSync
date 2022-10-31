@@ -143,7 +143,7 @@ func validate_merkle_root{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
 
     // Validate that the computed Merkle root
     // matches the Merkle root in this block's header
-    with_attr error_message("Computed Merkle root don't match the Merkle root in the block's header.") {
+    with_attr error_message("Computed Merkle root doesn't match the Merkle root in the block's header.") {
         assert_hashes_equal(context.header_context.block_header.merkle_root_hash, merkle_root);
     }
     return ();
