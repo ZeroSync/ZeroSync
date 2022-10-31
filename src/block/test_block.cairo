@@ -22,6 +22,7 @@ from block.block import (
     State,
     read_block_validation_context,
     validate_and_apply_block,
+    compute_block_reward, log_base2
 )
 
 
@@ -340,6 +341,50 @@ func test_verify_block_with_2496_transactions{
 
     // Validate the block
     // validate_and_apply_block{hash_ptr = pedersen_ptr}(context);
+    return ();
+}
+
+
+//Test logarithm function used for computing the block reward
+@external
+func test_logarithm{range_check_ptr} (){
+
+   alloc_locals;
+
+   let result1 = log_base2(20,2);
+   assert result1 = 5; 
+   let result2 = log_base2(2,1);
+   assert result2 = 1;
+   let result3 = log_base2(400,4);
+   assert result3 = 25;
+   let result4 = log_base2(4,0);
+   assert result4 = 4;
+
+   return();
+}
+
+//Test the computation of the block reward
+@external
+func test_block_reward{range_check_ptr}() {
+   
+    alloc_locals;
+
+    let result1 = compute_block_reward(0);
+    assert result1 = 50*10**8;
+
+    let result2 = compute_block_reward(42);
+    assert result2 = 50*10**8;
+
+    let result3 = compute_block_reward(210000);
+    assert result3 = 25*10**8;
+
+    let result4 = compute_block_reward(420000);
+    assert result4 = 125*10**7;
+    
+    //current reward
+    let current = compute_block_reward(682500);
+    assert current = 625*10**6;
+
     return ();
 }
 
