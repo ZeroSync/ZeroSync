@@ -28,11 +28,11 @@ func test_ripemd160_abc{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     let (hash) = ripemd160(input, byte_size);
 
     with_attr error_message("Ripemd160 hash does not match the expected result.") {
-        assert hash[0] = 0x8eb208f7;
-        assert hash[1] = 0xe05d987a;
-        assert hash[2] = 0x9b044a8e;
-        assert hash[3] = 0x98c6b087;
-        assert hash[4] = 0xf15a0bfc;
+      assert 0x8eb208f7 = hash[0];
+      assert 0xe05d987a = hash[1];
+      assert 0x9b044a8e = hash[2];
+      assert 0x98c6b087 = hash[3];
+      assert 0xf15a0bfc = hash[4];
     }
 
     return ();
@@ -184,25 +184,25 @@ func test_padding_abc{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
 
     let (word_arr: felt*, n_chunks) = pad_input(input, n_bytes, n_felts);
 
-    assert word_arr[0] = 0x80636261;
-    assert word_arr[1] = 0;
-    assert word_arr[2] = 0;
-    assert word_arr[3] = 0;
-    assert word_arr[4] = 0;
-    assert word_arr[5] = 0;
-    assert word_arr[6] = 0;
-    assert word_arr[7] = 0;
+    assert 0x80636261 = word_arr[0];
+    assert 0 = word_arr[1];
+    assert 0 = word_arr[2];
+    assert 0 = word_arr[3];
+    assert 0 = word_arr[4];
+    assert 0 = word_arr[5];
+    assert 0 = word_arr[6];
+    assert 0 = word_arr[7];
 
-    assert word_arr[8] = 0;
-    assert word_arr[9] = 0;
-    assert word_arr[10] = 0;
-    assert word_arr[11] = 0;
-    assert word_arr[12] = 0;
-    assert word_arr[13] = 0;
-    assert word_arr[14] = 0x18;
-    assert word_arr[15] = 0;
+    assert 0 = word_arr[8];
+    assert 0 = word_arr[9];
+    assert 0 = word_arr[10];
+    assert 0 = word_arr[11];
+    assert 0 = word_arr[12];
+    assert 0 = word_arr[13];
+    assert 0x18 = word_arr[14];
+    assert 0 = word_arr[15];
 
-    assert n_chunks = 1;
+    assert 1 = n_chunks;
 
     return ();
 }
@@ -218,25 +218,25 @@ func test_padding_empty_string{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() 
 
     let (word_arr: felt*, n_chunks) = pad_input(input, n_bytes, n_felts);
 
-    assert word_arr[0] = 0x00000080;
-    assert word_arr[1] = 0;
-    assert word_arr[2] = 0;
-    assert word_arr[3] = 0;
-    assert word_arr[4] = 0;
-    assert word_arr[5] = 0;
-    assert word_arr[6] = 0;
-    assert word_arr[7] = 0;
+    assert 0x00000080 = word_arr[0];
+    assert 0 = word_arr[1];
+    assert 0 = word_arr[2];
+    assert 0 = word_arr[3];
+    assert 0 = word_arr[4];
+    assert 0 = word_arr[5];
+    assert 0 = word_arr[6];
+    assert 0 = word_arr[7];
 
-    assert word_arr[8] = 0;
-    assert word_arr[9] = 0;
-    assert word_arr[10] = 0;
-    assert word_arr[11] = 0;
-    assert word_arr[12] = 0;
-    assert word_arr[13] = 0;
-    assert word_arr[14] = 0;
-    assert word_arr[15] = 0;
+    assert 0 = word_arr[8];
+    assert 0 = word_arr[9];
+    assert 0 = word_arr[10];
+    assert 0 = word_arr[11];
+    assert 0 = word_arr[12];
+    assert 0 = word_arr[13];
+    assert 0 = word_arr[14];
+    assert 0 = word_arr[15];
 
-    assert n_chunks = 1;
+    assert 1 = n_chunks;
 
     return ();
 }
