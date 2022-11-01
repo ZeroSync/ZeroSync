@@ -138,10 +138,12 @@ func test_ripemd160_496_bits{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     return ();
 }
 
-// Test RIPEMD160 with X bit vector.
 // TODO: Find or create larger test vectors (to make to sure rmd160 implementation also works for more than 2 chunks)
-// @external
-func test_ripemd160_X_bits{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
+// Currently this is done by comparing the results to the python implementation.
+
+// Compare the Cairo implementation of RIPEMD160 to out python implementation.
+@external
+func test_ripemd160_compare_to_python{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     alloc_locals;
     setup_python_defs();
 
@@ -149,14 +151,12 @@ func test_ripemd160_X_bits{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     local byte_size;
 
     let (input) = alloc();
-    let (expected_result) = alloc();
-
     %{
-        from_hex("b0e20b6e3116640286ed3a87a5713079b21f5189",ids.expected_result)
-        ids.byte_size, ids.felt_size = from_string("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789", ids.input)
+        ids.byte_size, ids.felt_size = from_string("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789" * 3, ids.input)
     %}
     let (hash) = ripemd160(input, byte_size);
-
+    // This calls the python implementation (which also includes its own padding implmentation)
+    let (expected_result) = _compute_ripemd160_fake(felt_size, input, byte_size);
     // %{
     //    print("hash: ", [hex(memory[ids.hash + i]) for i in range(0,5)])
     //    print("expected hash: ", [hex(memory[ids.expected_result + i]) for i in range(0,5)])
@@ -173,7 +173,7 @@ func test_ripemd160_X_bits{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
 }
 
 @external
-func test_padding_abc{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
+func test_ripemd160_padding_abc{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     alloc_locals;
 
     let n_felts = 1;
@@ -208,7 +208,7 @@ func test_padding_abc{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
 }
 
 @external
-func test_padding_empty_string{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
+func test_ripemd160_padding_empty_string{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     alloc_locals;
 
     let n_felts = 0;
