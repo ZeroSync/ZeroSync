@@ -155,7 +155,7 @@ func test_ripemd160_compare_to_python{range_check_ptr, bitwise_ptr: BitwiseBuilt
         ids.byte_size, ids.felt_size = from_string("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789" * 3, ids.input)
     %}
     let (hash) = ripemd160(input, byte_size);
-    // This calls the python implementation (which also includes its own padding implmentation)
+    // This calls the python implementation (which also includes its own padding implementation)
     let (expected_result) = _compute_ripemd160_fake(felt_size, input, byte_size);
     // %{
     //    print("hash: ", [hex(memory[ids.hash + i]) for i in range(0,5)])
