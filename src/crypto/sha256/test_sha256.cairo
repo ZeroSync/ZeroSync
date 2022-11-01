@@ -29,14 +29,14 @@ func test_sha256{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     // ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad
     let (hash) = _sha256(felt_size, input, byte_size);
     with_attr error_message("The sha256 hash does not match the expected result.") {
-        assert hash[0] = 0xba7816bf;
-        assert hash[1] = 0x8f01cfea;
-        assert hash[2] = 0x414140de;
-        assert hash[3] = 0x5dae2223;
-        assert hash[4] = 0xb00361a3;
-        assert hash[5] = 0x96177a9c;
-        assert hash[6] = 0xb410ff61;
-        assert hash[7] = 0xf20015ad;
+        assert 0xba7816bf = hash[0];
+        assert 0x8f01cfea = hash[1];
+        assert 0x414140de = hash[2];
+        assert 0x5dae2223 = hash[3];
+        assert 0xb00361a3 = hash[4];
+        assert 0x96177a9c = hash[5];
+        assert 0xb410ff61 = hash[6];
+        assert 0xf20015ad = hash[7];
     }
 
     return ();

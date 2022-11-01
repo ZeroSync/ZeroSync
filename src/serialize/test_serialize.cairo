@@ -420,7 +420,7 @@ func test_write_hash{range_check_ptr}() {
     assert hash[7] = 0x0d0e0f00;
 
     write_hash{writer=writer}(hash);
-    with_attr error_message("Hashes are not equal.") {
+    with_attr error_message("Hashes are not equal. ${hash} != ${array}") {
         assert_hashes_equal(hash, array);
     }
 

@@ -10,7 +10,7 @@ func test_compute_timestamps_median{range_check_ptr}() {
     let (median) = compute_timestamps_median(timestamps);
 
     with_attr error_message("The median is not the expected one (7).") {
-        assert median = 7;
+        assert 7 = median;
     }
 
     return ();
@@ -21,8 +21,8 @@ func test_find_lowest_element{range_check_ptr}() {
     let (lowest_element_index, lowest_element) = find_lowest_element(4, new (10, 4, 3, 7));
 
     with_attr error_message("The lowest element is not in the right index.") {
-        assert lowest_element_index = 2;
-        assert lowest_element = 3;
+        assert 2 = lowest_element_index;
+        assert 3 = lowest_element;
     }
 
     return ();

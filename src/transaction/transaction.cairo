@@ -60,8 +60,8 @@ func read_transaction{reader: Reader, range_check_ptr}() -> (
         // Read the 2 bytes of "marker" and "flag"
         let (flag) = read_uint16();
         // Validate that they are set correctly
-        with_attr error_message("Flag is not setted correctly.") {
-            assert flag = 0x0100;
+        with_attr error_message("Flag should be 0x0100 but it is ${flag}.") {
+            assert 0x0100 = flag;
         }
     }
 
