@@ -1,10 +1,11 @@
+#![feature(array_chunks)]
+
 use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::io::{BufReader, Read};
+use std::iter::zip;
 use winter_utils::{Deserializable, SliceReader};
 use winterfell::StarkProof;
-
-use std::env;
 
 use winter_air::proof::{Commitments, Context, OodFrame};
 use winter_air::DefaultEvaluationFrame;
@@ -13,10 +14,55 @@ use winter_crypto::{hashers::Blake2s_256, Digest};
 use winterfell::Air;
 
 use giza_air::{ProcessorAir, PublicInputs};
-use giza_core::Felt;
+use giza_core::{Felt, RegisterState, Word};
+
+use clap::{Parser, Subcommand};
 
 mod memory;
 use memory::{DynamicMemory, MemoryEntry, Writeable, WriteableWith};
+
+#[derive(Parser)]
+#[command(name = "parser")]
+#[command(about = "A parser for reencoding STARK proofs", long_about = None)]
+struct Cli {
+    path: String,
+    #[command(subcommand)]
+    command: Commands,
+}
+
+#[derive(Subcommand)]
+enum Commands {
+    Proof,
+    PublicInputs,
+}
+
+fn main() {
+    let cli = Cli::parse();
+
+    // Load the proof and its public inputs from file
+    let data = BinaryProofData::from_file(&cli.path);
+    let proof = StarkProof::from_bytes(&data.proof_bytes).unwrap();
+    let pub_inputs = PublicInputs::read_from(&mut SliceReader::new(&data.input_bytes[..])).unwrap();
+
+    // Serialize to Cairo-compatible memory
+    let mut memories = Vec::<Vec<MemoryEntry>>::new();
+    let mut dynamic_memory = DynamicMemory::new(&mut memories);
+    match &cli.command {
+        Commands::Proof => {
+            let air =
+                ProcessorAir::new(proof.get_trace_info(), pub_inputs, proof.options().clone());
+            proof.write_into(&mut dynamic_memory, &air);
+        }
+        Commands::PublicInputs => {
+            pub_inputs.write_into(&mut dynamic_memory);
+        }
+    }
+
+    // Serialize to JSON and print to stdout
+    let memory = dynamic_memory.assemble();
+    let json_arr = serde_json::to_string(&memory).unwrap();
+    println!("{}", json_arr);
+}
 
 #[derive(Serialize, Deserialize)]
 struct BinaryProofData {
@@ -35,26 +81,32 @@ impl BinaryProofData {
     }
 }
 
-fn main() {
-    // Load the proof and its public inputs from a file into byte strings
-    let args: Vec<String> = env::args().collect();
-    let proof_path = &args[1];
-    let data = BinaryProofData::from_file(proof_path);
+impl Writeable for PublicInputs {
+    fn write_into(&self, target: &mut DynamicMemory) {
+        self.init.write_into(target);
+        self.fin.write_into(target);
+        self.rc_min.write_into(target);
+        self.rc_max.write_into(target);
+        self.mem.write_into(target);
+        self.num_steps.write_into(target);
+    }
+}
 
-    // Parse a proof_data object
-    let proof = StarkProof::from_bytes(&data.proof_bytes).unwrap();
-    let pub_inputs = PublicInputs::read_from(&mut SliceReader::new(&data.input_bytes[..])).unwrap();
-    let air = ProcessorAir::new(proof.get_trace_info(), pub_inputs, proof.options().clone());
+impl Writeable for (Vec<u64>, Vec<Option<Word>>) {
+    fn write_into(&self, target: &mut DynamicMemory) {
+        for (idx, word) in zip(&self.0, &self.1) {
+            idx.write_into(target);
+            word.unwrap().word().write_into(target);
+        }
+    }
+}
 
-    // Serialize proof to Cairo memory
-    let mut memories = Vec::<Vec<MemoryEntry>>::new();
-    let mut dynamic_memory = DynamicMemory::new(&mut memories);
-    proof.write_into(&mut dynamic_memory, &air);
-    let memory = dynamic_memory.assemble();
-
-    // Serialize memory to JSON and print it
-    let json_arr = serde_json::to_string(&memory).unwrap();
-    println!("{}", json_arr);
+impl Writeable for RegisterState {
+    fn write_into(&self, target: &mut DynamicMemory) {
+        self.pc.write_into(target);
+        self.ap.write_into(target);
+        self.fp.write_into(target);
+    }
 }
 
 impl WriteableWith<&ProcessorAir> for StarkProof {
@@ -76,6 +128,8 @@ impl Writeable for Context {
 
         self.field_modulus_bytes().len().write_into(target);
         target.write_array(self.field_modulus_bytes().to_vec());
+
+        self.options().write_into(target);
     }
 }
 
@@ -92,13 +146,24 @@ impl WriteableWith<&ProcessorAir> for Commitments {
             .unwrap();
 
         for trace_commitment in trace_commitments {
-            trace_commitment.as_bytes().write_into(target);
+            ByteDigest(trace_commitment.as_bytes()).write_into(target);
         }
 
-        constraint_commitment.as_bytes().write_into(target);
+        ByteDigest(constraint_commitment.as_bytes()).write_into(target);
 
         for fri_commitment in fri_commitments {
-            fri_commitment.as_bytes().write_into(target);
+            ByteDigest(fri_commitment.as_bytes()).write_into(target);
+        }
+    }
+}
+
+struct ByteDigest<const N: usize>([u8; N]);
+
+impl Writeable for ByteDigest<32> {
+    fn write_into(&self, target: &mut DynamicMemory) {
+        for chunk in self.0.array_chunks::<4>() {
+            let int = u32::from_be_bytes(*chunk);
+            int.write_into(target);
         }
     }
 }
@@ -148,8 +213,6 @@ impl Writeable for ProofOptions {
         self.grinding_factor().write_into(target);
 
         // TODO: Implement Writeable for HashFunction and FieldExtension
-        //self.hash_fn().write_into(target);
-        //self.field_extension().write_into(target);
         4u8.write_into(target); // HashFunction::Blake2s_256
         1u8.write_into(target); // FieldExtension::None
 
