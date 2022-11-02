@@ -1,3 +1,8 @@
+//
+// To run only this test suite use:
+// protostar test  --cairo-path=./src target src/block/*_bits_and_target*
+//
+
 %lang starknet
 
 from block_header import bits_to_target, target_to_bits
@@ -9,16 +14,9 @@ func test_general{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     local bits_to_target_tests_count;
     local target_to_bits_tests_count;
     %{
-        # Python program to read
-        # json file
-
+        # Read JSON file
         import json
-
-        # Opening JSON file
-        io = open('src/block/tests_bits_to_target_io.json')
-
-        # returns JSON object as 
-        # a dictionary
+        io = open('src/block/tests_bits_to_target.json')
         io_json = json.load(io)
 
         ids.bits_to_target_tests_count = len(io_json["bits_to_target"])
@@ -44,17 +42,11 @@ func _bits_to_target_tests{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(test_i
     local expected_output;
     
     %{
-        # Python program to read
-        # json file
-
+        # Read JSON file
         import json
-
-        # Opening JSON file
-        io = open('src/block/tests_bits_to_target_io.json')
-
-        # returns JSON object as 
-        # a dictionary
+        io = open('src/block/tests_bits_to_target.json')
         io_json = json.load(io)
+
         current_io = io_json["bits_to_target"][ids.test_index - 1]
         ids.input = int(current_io["input"], 16)
         ids.expected_output = int(current_io["expected_output"], 16)
@@ -80,17 +72,11 @@ func _target_to_bits_tests{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(test_i
     local expected_output;
     
     %{
-        # Python program to read
-        # json file
-
+        # Read JSON file
         import json
-
-        # Opening JSON file
-        io = open('src/block/tests_bits_to_target_io.json')
-
-        # returns JSON object as 
-        # a dictionary
+        io = open('src/block/tests_bits_to_target.json')
         io_json = json.load(io)
+
         current_io = io_json["target_to_bits"][ids.test_index - 1]
         ids.input = int(current_io["input"], 16)
         ids.expected_output = int(current_io["expected_output"], 16)

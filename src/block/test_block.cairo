@@ -22,8 +22,8 @@ from block.block import (
     State,
     read_block_validation_context,
     validate_and_apply_block,
-    compute_block_reward
-)
+    compute_block_reward )
+
 
 
 // Create a dummy for the previous timestamps

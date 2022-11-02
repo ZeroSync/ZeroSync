@@ -234,7 +234,7 @@ func validate_and_apply_coinbase{range_check_ptr, hash_ptr: HashBuiltin*, utreex
 
 
 // Compute the miner's block reward with respect to the block height
-// 
+
 func compute_block_reward{range_check_ptr} (block_height) -> felt {
     let (number_halvings,_) = unsigned_div_rem(block_height , 210000);
     let denominator = pow2(number_halvings);
