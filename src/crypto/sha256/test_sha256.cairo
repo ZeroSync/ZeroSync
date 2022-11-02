@@ -13,11 +13,15 @@ from starkware.cairo.common.uint256 import Uint256
 from utils.python_utils import setup_python_defs
 from crypto.sha256.sha256 import sha256, _sha256
 from crypto.sha256d.sha256d import assert_hashes_equal
+from crypto.sha256.cartridge_gg.sha256 import finalize_sha256
 
 @external
 func test_sha256{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     alloc_locals;
     
+    // initialize sha256_ptr
+    let sha256_ptr: felt* = alloc();
+    let sha256_ptr_start = sha256_ptr;
 
     let felt_size = 1;
 
@@ -27,7 +31,10 @@ func test_sha256{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     let byte_size = 3;
 
     // ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad
-    let (hash) = _sha256(felt_size, input, byte_size);
+    with sha256_ptr {
+        let (hash) = _sha256(felt_size, input, byte_size);
+    }
+
     with_attr error_message("The sha256 hash does not match the expected result.") {
         assert 0xba7816bf = hash[0];
         assert 0x8f01cfea = hash[1];
@@ -38,6 +45,9 @@ func test_sha256{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
         assert 0xb410ff61 = hash[6];
         assert 0xf20015ad = hash[7];
     }
+
+    // finalize sha256_ptr
+    finalize_sha256(sha256_ptr_start, sha256_ptr);
 
     return ();
 }
@@ -66,10 +76,17 @@ func test_sha256_16M_bits{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
         from_hex(expected_hash, ids.expected_output)
     %}
 
-    let (output) = sha256(input, input_byte_size);
+    // initialize sha256_ptr
+    let sha256_ptr: felt* = alloc();
+    let sha256_ptr_start = sha256_ptr;
+    with sha256_ptr {
+        let (output) = sha256(input, input_byte_size);
+    }
     with_attr error_message("The hash does not match the expected output.") {
         assert_hashes_equal(output, expected_output);
     }
+    // finalize sha256_ptr
+    finalize_sha256(sha256_ptr_start, sha256_ptr);
     return ();
 }
 
@@ -95,10 +112,17 @@ func test_sha256_160K_bits{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
         from_hex(expected_hash, ids.expected_output)
     %}
 
-    let (output) = sha256(input, input_byte_size);
+    // initialize sha256_ptr
+    let sha256_ptr: felt* = alloc();
+    let sha256_ptr_start = sha256_ptr;
+    with sha256_ptr {
+        let (output) = sha256(input, input_byte_size);
+    }
     with_attr error_message("The hash does not match the expected output.") {
         assert_hashes_equal(output, expected_output);
     }
+    // finalize sha256_ptr
+    finalize_sha256(sha256_ptr_start, sha256_ptr);
     return ();
 }
 
@@ -124,10 +148,17 @@ func test_sha256_896_bits{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
         from_hex(expected_hash, ids.expected_output)
     %}
 
-    let (output) = sha256(input, input_byte_size);
+    // initialize sha256_ptr
+    let sha256_ptr: felt* = alloc();
+    let sha256_ptr_start = sha256_ptr;
+    with sha256_ptr {
+        let (output) = sha256(input, input_byte_size);
+    }
     with_attr error_message("The hash does not match the expected output.") {
         assert_hashes_equal(output, expected_output);
     }
+    // finalize sha256_ptr
+    finalize_sha256(sha256_ptr_start, sha256_ptr);
     return ();
 }
 
@@ -150,10 +181,17 @@ func test_sha256_64_bytes{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
         from_hex(expected_hash, ids.expected_output)
     %}
 
-    let (output) = sha256(input, input_byte_size);
+    // initialize sha256_ptr
+    let sha256_ptr: felt* = alloc();
+    let sha256_ptr_start = sha256_ptr;
+    with sha256_ptr {
+        let (output) = sha256(input, input_byte_size);
+    }
     with_attr error_message("The hash does not match the expected output.") {
         assert_hashes_equal(output, expected_output);
     }
+    // finalize sha256_ptr
+    finalize_sha256(sha256_ptr_start, sha256_ptr);
     return ();
 }
 

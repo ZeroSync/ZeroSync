@@ -222,7 +222,7 @@ func fetch_transaction(block_height, tx_index) -> (raw_transaction: felt*) {
 
 // Read a transaction from a buffer and set its validation context
 func read_transaction_validation_context{
-    range_check_ptr, bitwise_ptr: BitwiseBuiltin*
+    range_check_ptr, bitwise_ptr: BitwiseBuiltin*, sha256_ptr: felt*
     }( block_height, transaction_index ) -> (result: TransactionValidationContext) {
     alloc_locals;
 

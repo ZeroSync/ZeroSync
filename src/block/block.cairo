@@ -66,7 +66,7 @@ func fetch_transaction_count(block_height) -> (transaction_count: felt) {
     return (transaction_count,);
 }
 
-func read_block_validation_context{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
+func read_block_validation_context{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, sha256_ptr: felt*}(
     prev_state: State
 ) -> (context: BlockValidationContext) {
     alloc_locals;
@@ -89,7 +89,7 @@ func read_block_validation_context{range_check_ptr, bitwise_ptr: BitwiseBuiltin*
 }
 
 func read_transaction_validation_contexts{
-    range_check_ptr, bitwise_ptr: BitwiseBuiltin*
+    range_check_ptr, bitwise_ptr: BitwiseBuiltin*, sha256_ptr: felt*
 }(block_height, transaction_count) -> (contexts: TransactionValidationContext*) {
     alloc_locals;
 
@@ -99,7 +99,7 @@ func read_transaction_validation_contexts{
 }
 
 func _read_transaction_validation_contexts_loop{
-    range_check_ptr, bitwise_ptr: BitwiseBuiltin*
+    range_check_ptr, bitwise_ptr: BitwiseBuiltin*, sha256_ptr: felt*
 }(contexts: TransactionValidationContext*, block_height, loop_counter, transaction_count) {
     if (loop_counter == 0) {
         return ();
@@ -117,7 +117,7 @@ func _read_transaction_validation_contexts_loop{
 // and return the next state
 //
 func validate_and_apply_block{
-    range_check_ptr, bitwise_ptr: BitwiseBuiltin*, hash_ptr: HashBuiltin*
+    range_check_ptr, bitwise_ptr: BitwiseBuiltin*, hash_ptr: HashBuiltin*, sha256_ptr: felt*
 }(context: BlockValidationContext) -> (next_state: State) {
     alloc_locals;
 
@@ -130,7 +130,7 @@ func validate_and_apply_block{
 
 // Compute the Merkle root of all transactions in this block
 // and validate that it matches the Merkle root in the block header.
-func validate_merkle_root{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
+func validate_merkle_root{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, sha256_ptr: felt*}(
     context: BlockValidationContext
 ) {
     alloc_locals;

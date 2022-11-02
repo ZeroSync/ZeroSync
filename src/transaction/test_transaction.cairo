@@ -120,8 +120,11 @@ func test_read_transaction_validation_context{range_check_ptr, bitwise_ptr: Bitw
         	], ids.txid_expected)
     %}
 
-    let (context) = read_transaction_validation_context(328734, 1);
-
+    // initialize sha256_ptr
+    let sha256_ptr: felt* = alloc();
+    with sha256_ptr {
+        let (context) = read_transaction_validation_context(328734, 1);
+    }
     with_attr error_message("Context fields are not setted correctly.") {
         assert 0x01 = context.transaction.version;
 

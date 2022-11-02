@@ -10,6 +10,7 @@ from block.block_header import ChainState
 from block.block import State, validate_and_apply_block, read_block_validation_context
 from utreexo.utreexo import UTREEXO_ROOTS_LEN
 from utils.python_utils import setup_python_defs
+from crypto.sha256.cartridge_gg.sha256 import finalize_sha256
 
 func serialize_chain_state{output_ptr: felt*}(chain_state: ChainState) {
     serialize_word(chain_state.block_height);
@@ -64,6 +65,10 @@ func main{
     alloc_locals;
     setup_python_defs();
 
+    // initialize sha256_ptr
+    let sha256_ptr: felt* = alloc();
+    let sha256_ptr_start = sha256_ptr;
+
     // Read the previous state from the program input
     local block_height: felt;
     local total_work: felt;
@@ -96,6 +101,10 @@ func main{
     serialize_array(next_state.utreexo_roots, UTREEXO_ROOTS_LEN);
 
     // TODO: validate the previous chain proof
+
+    // finalize sha256_ptr
+    finalize_sha256(sha256_ptr_start, sha256_ptr);
+
     return ();
 }
 

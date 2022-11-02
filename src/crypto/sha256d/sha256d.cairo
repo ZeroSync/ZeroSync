@@ -11,17 +11,18 @@ const HASH_SIZE = 32;
 // A 256-bit hash is represented as an array of 8 x Uint32
 const HASH_FELT_SIZE = 8;
 
-func sha256d{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(input: felt*, byte_size: felt) -> (
+func sha256d{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, sha256_ptr: felt*}(
+    input: felt*, byte_size: felt
+) -> (
     result: felt*
 ) {
     alloc_locals;
     let (felt_size) = byte_size_to_felt_size(byte_size);
-    let (hash) = _compute_double_sha256(felt_size, input, byte_size);
-    return (hash,);
+    return _compute_double_sha256(felt_size, input, byte_size);
 }
 
 // Hashing
-func sha256d_felt_sized{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
+func sha256d_felt_sized{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, sha256_ptr: felt*}(
     input: felt*, felt_size: felt
 ) -> (result: felt*) {
     alloc_locals;
@@ -30,7 +31,7 @@ func sha256d_felt_sized{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
     return (hash,);
 }
 
-func _compute_double_sha256{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
+func _compute_double_sha256{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, sha256_ptr: felt*}(
     felt_size: felt, input: felt*, byte_size: felt
 ) -> (result: felt*) {
     alloc_locals;

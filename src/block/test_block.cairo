@@ -84,10 +84,14 @@ func test_verify_block_with_1_transaction{
 
     let prev_state = State(prev_chain_state, utreexo_roots);
 
-    // Parse the block validation context
-    let (context) = read_block_validation_context(prev_state);
+    // initialize sha256_ptr
+    let sha256_ptr: felt* = alloc();
 
-    validate_and_apply_block{hash_ptr=pedersen_ptr}(context);
+    // Parse the block validation context
+    with sha256_ptr {
+        let (context) = read_block_validation_context(prev_state);
+        validate_and_apply_block{hash_ptr=pedersen_ptr}(context);
+    }
     return ();
 }
 
@@ -134,8 +138,13 @@ func test_verify_block_with_4_transactions{
 
     let prev_state = State(prev_chain_state, utreexo_roots);
 
+    // initialize sha256_ptr
+    let sha256_ptr: felt* = alloc();
+
     // Parse the block validation context using the previous state
-    let (context) = read_block_validation_context(prev_state);
+    with sha256_ptr {
+        let (context) = read_block_validation_context(prev_state);
+    }
 
     // Sanity Check
     // The second output of the second transaction should be 44.44 BTC
@@ -145,7 +154,9 @@ func test_verify_block_with_4_transactions{
     }
 
     // Validate the block
-    let (next_state) = validate_and_apply_block{hash_ptr=pedersen_ptr}(context);
+    with sha256_ptr {
+        let (next_state) = validate_and_apply_block{hash_ptr=pedersen_ptr}(context);
+    }
 
     return ();
 }
@@ -193,8 +204,13 @@ func test_verify_block_with_27_transactions{
 
     let prev_state = State(prev_chain_state, utreexo_roots);
 
+    // initialize sha256_ptr
+    let sha256_ptr: felt* = alloc();
+
     // Parse the block validation context using the previous state
-    let (context) = read_block_validation_context(prev_state);
+    with sha256_ptr {
+        let (context) = read_block_validation_context(prev_state);
+    }
 
     // Sanity Check
     // Transaction count should be 27
@@ -210,7 +226,9 @@ func test_verify_block_with_27_transactions{
     }
 
     // Validate the block
-    validate_and_apply_block{hash_ptr = pedersen_ptr}(context);
+    with sha256_ptr {
+        validate_and_apply_block{hash_ptr = pedersen_ptr}(context);
+    }
     return ();
 }
 
@@ -256,8 +274,13 @@ func test_verify_block_with_49_transactions{
 
     let prev_state = State(prev_chain_state, utreexo_roots);
     
+    // initialize sha256_ptr
+    let sha256_ptr: felt* = alloc();
+
     // Parse the block validation context using the previous state
-    let (context) = read_block_validation_context(prev_state);
+    with sha256_ptr {
+        let (context) = read_block_validation_context(prev_state);
+    }
 
     // Sanity Check
     // Transaction count should be 49
@@ -274,7 +297,9 @@ func test_verify_block_with_49_transactions{
     }
     
     // Validate the block
-    validate_and_apply_block{hash_ptr = pedersen_ptr}(context);
+    with sha256_ptr {
+        validate_and_apply_block{hash_ptr = pedersen_ptr}(context);
+    }
     return ();
 }
 
@@ -322,8 +347,13 @@ func test_verify_block_with_2496_transactions{
 
     let prev_state = State(prev_chain_state, utreexo_roots);
 
+    // initialize sha256_ptr
+    let sha256_ptr: felt* = alloc();
+
     // Parse the block validation context using the previous state
-    let (context) = read_block_validation_context(prev_state);
+    with sha256_ptr {
+        let (context) = read_block_validation_context(prev_state);
+    }
 
     // Sanity Check
     // Transaction count should be 49
@@ -340,7 +370,9 @@ func test_verify_block_with_2496_transactions{
     }
 
     // Validate the block
-    // validate_and_apply_block{hash_ptr = pedersen_ptr}(context);
+    // with sha256_ptr {
+    //     validate_and_apply_block{hash_ptr = pedersen_ptr}(context);
+    // }
     return ();
 }
 

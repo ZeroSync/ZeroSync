@@ -7,6 +7,7 @@
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.uint256 import Uint256
+from crypto.sha256.cartridge_gg.sha256 import finalize_sha256
 
 from utils.python_utils import setup_python_defs
 from crypto.sha256d.sha256d import (
@@ -25,7 +26,12 @@ func test_compute_double_sha256{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}()
     assert input[0] = 0x61626300;
     let byte_size = 3;
 
-    let (hash) = sha256d(input, byte_size);
+    // initialize sha256_ptr
+    let sha256_ptr: felt* = alloc();
+    let sha256_ptr_start = sha256_ptr;
+    with sha256_ptr {
+        let (hash) = sha256d(input, byte_size);
+    }
     // 8cb9012517c817fead650287d61bdd9c68803b6bf9c64133dcab3e65b5a50cb9
     assert hash[0] = 0x4f8b42c2;
     assert hash[1] = 0x2dd3729b;
@@ -35,6 +41,9 @@ func test_compute_double_sha256{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}()
     assert hash[5] = 0x05daed5a;
     assert hash[6] = 0xd5128cc0;
     assert hash[7] = 0x3e6c6358;
+
+    // finalize sha256_ptr
+    finalize_sha256(sha256_ptr_start, sha256_ptr);
 
     return ();
 }
@@ -71,11 +80,18 @@ func test_sha256d_long_input{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
             ], ids.hash_expected)
     %}
 
-    let (hash) = sha256d(input, byte_size);
+    // initialize sha256_ptr
+    let sha256_ptr: felt* = alloc();
+    let sha256_ptr_start = sha256_ptr;
+    with sha256_ptr {
+        let (hash) = sha256d(input, byte_size);
+    }
 
     with_attr error_message("Hashes are not equal. ${hash_expected} != ${hash}") {
         assert_hashes_equal(hash_expected, hash);
     }
+    // finalize sha256_ptr
+    finalize_sha256(sha256_ptr_start, sha256_ptr);
     return ();
 }
 
@@ -107,10 +123,17 @@ func test_sha256d_long_input_2{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() 
             ], ids.hash_expected)
     %}
 
-    let (hash) = sha256d(input, 135);
+    // initialize sha256_ptr
+    let sha256_ptr: felt* = alloc();
+    let sha256_ptr_start = sha256_ptr;
+    with sha256_ptr {
+        let (hash) = sha256d(input, 135);
+    }
 
     with_attr error_message("Hashes are not equal.") {
         assert_hashes_equal(hash_expected, hash);
     }
+    // finalize sha256_ptr
+    finalize_sha256(sha256_ptr_start, sha256_ptr);
     return ();
 }

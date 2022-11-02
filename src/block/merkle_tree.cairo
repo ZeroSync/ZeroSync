@@ -12,7 +12,7 @@ from crypto.sha256d.sha256d import sha256d_felt_sized, copy_hash, HASH_SIZE, HAS
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 
 // Compute the Merkle root hash of a set of hashes
-func compute_merkle_root{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
+func compute_merkle_root{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, sha256_ptr: felt*}(
     leaves: felt*, leaves_len: felt
 ) -> (hash: felt*) {
     alloc_locals;
@@ -39,7 +39,7 @@ func compute_merkle_root{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
 
 // Compute the next generation of leaves by pairwise hashing
 // the previous generation of leaves
-func _compute_merkle_root_loop{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
+func _compute_merkle_root_loop{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, sha256_ptr: felt*}(
     prev_leaves: felt*, next_leaves: felt*, loop_counter
 ) {
     alloc_locals;

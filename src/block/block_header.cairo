@@ -151,7 +151,7 @@ func fetch_block_header(block_height) -> (raw_block_header: felt*) {
 
 // Read a block header and its validation context from a reader and a previous validation context
 //
-func read_block_header_validation_context{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
+func read_block_header_validation_context{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, sha256_ptr: felt*}(
     prev_chain_state: ChainState) -> (context: BlockHeaderValidationContext) {
     alloc_locals;
 

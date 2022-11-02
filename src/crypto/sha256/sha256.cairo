@@ -7,29 +7,26 @@ from starkware.cairo.common.alloc import alloc
 
 from serialize.serialize import byte_size_to_felt_size, UINT32_SIZE
 
-func sha256{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(input: felt*, byte_size) -> (
+func sha256{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, sha256_ptr: felt*}(input: felt*, byte_size) -> (
     hash: felt*
 ) {
     let (felt_size) = byte_size_to_felt_size(byte_size);
     return _sha256(felt_size, input, byte_size);
 }
 
-func _sha256{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(felt_size, input: felt*, byte_size) -> (
-    hash: felt*
-) {
+func _sha256{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, sha256_ptr: felt*}(
+    felt_size, input: felt*, byte_size
+) -> (hash: felt*) {
     return _compute_sha256_real(felt_size, input, byte_size);
     // return _compute_sha256_fake(felt_size, input, byte_size);
 }
 
 from crypto.sha256.cartridge_gg.sha256 import compute_sha256, finalize_sha256
-func _compute_sha256_real{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
+func _compute_sha256_real{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, sha256_ptr: felt*}(
     felt_size, input: felt*, byte_size
 ) -> (hash: felt*) {
     alloc_locals;
-    let sha256_ptr: felt* = alloc();
-    let sha256_ptr_start = sha256_ptr;
     let hash: felt* = compute_sha256{sha256_ptr=sha256_ptr}(input, byte_size);
-    finalize_sha256(sha256_ptr_start, sha256_ptr);
     return (hash,);
 }
 
