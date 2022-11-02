@@ -3,8 +3,7 @@
 // See also:
 // - Bitcoin Core https://github.com/bitcoin/bitcoin/blob/master/src/consensus/merkle.cpp
 //
-// TODOs:
-// - Fix CVE-2012-2459
+
 
 from starkware.cairo.common.math import unsigned_div_rem
 from starkware.cairo.common.alloc import alloc
@@ -55,10 +54,10 @@ func _compute_merkle_root_loop{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
 
     // Continue this loop with the next two prev_leaves
     return _compute_merkle_root_loop(
-        prev_leaves + HASH_FELT_SIZE * 2, next_leaves + HASH_FELT_SIZE, loop_counter - 1
+        prev_leaves + HASH_FELT_SIZE * 2, 
+        next_leaves + HASH_FELT_SIZE, 
+        loop_counter - 1
     );
 }
 
-// Increase pointer on prev_leaves by two hashes
-// Increase pointer on next_leaves by one hash
-// Decrease the loop count by one
+// TODO: Fix CVE-2012-2459

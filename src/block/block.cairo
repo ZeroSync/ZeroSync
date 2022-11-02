@@ -10,6 +10,7 @@
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin, HashBuiltin
 from starkware.cairo.common.math import assert_le, unsigned_div_rem
+from utils.pow2 import pow2
 
 from serialize.serialize import Reader, Writer, read_varint
 from block.block_header import (
@@ -143,7 +144,7 @@ func validate_merkle_root{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
 
     // Validate that the computed Merkle root
     // matches the Merkle root in this block's header
-    with_attr error_message("Computed Merkle root don't match the Merkle root in the block's header.") {
+    with_attr error_message("Computed Merkle root doesn't match the Merkle root in the block's header.") {
         assert_hashes_equal(context.header_context.block_header.merkle_root_hash, merkle_root);
     }
     return ();
@@ -235,17 +236,8 @@ func validate_and_apply_coinbase{range_check_ptr, hash_ptr: HashBuiltin*, utreex
 // Compute the miner's block reward with respect to the block height
 
 func compute_block_reward{range_check_ptr} (block_height) -> felt {
-
-    let (number_reductions , _) = unsigned_div_rem(block_height , 210000);
-    let block_reward = log_base2(50*10**8 , number_reductions);
-
-    return block_reward; 
-}
-
-func log_base2{range_check_ptr}(accumulator: felt, iteration) -> felt {
-    if (iteration == 0) {
-       return accumulator;
-    } else {
-       return log_base2(accumulator/2 , iteration - 1);
-    }
-}
+    let (number_halvings,_) = unsigned_div_rem(block_height , 210000);
+    let denominator = pow2(number_halvings);
+    let (block_reward,_) = unsigned_div_rem(50*10**8 , denominator); 
+    return block_reward;
+}        

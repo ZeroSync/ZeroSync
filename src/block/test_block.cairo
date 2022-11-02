@@ -22,8 +22,8 @@ from block.block import (
     State,
     read_block_validation_context,
     validate_and_apply_block,
-    compute_block_reward, log_base2
-)
+    compute_block_reward )
+
 
 
 // Create a dummy for the previous timestamps
@@ -141,7 +141,7 @@ func test_verify_block_with_4_transactions{
     // The second output of the second transaction should be 44.44 BTC
     let transaction = context.transaction_contexts[1].transaction;
     with_attr error_message("The second output of the second transaction does not match the expected result.") {
-        assert transaction.outputs[1].amount = 4444 * 10 ** 6;
+        assert 4444 * 10 ** 6 = transaction.outputs[1].amount;
     }
 
     // Validate the block
@@ -198,15 +198,15 @@ func test_verify_block_with_27_transactions{
 
     // Sanity Check
     // Transaction count should be 27
-    with_attr error_message("Transaction count does not match the expected count.") {
-        assert context.transaction_count = 27;
+    with_attr error_message("Transaction count (${context.transaction_count}) does not match the expected count (27).") {
+        assert 27 = context.transaction_count;
     }
 
     // Sanity Check
     // The second output of the second transaction should be 54.46 BTC
     let transaction = context.transaction_contexts[1].transaction;
-    with_attr error_message("The second output of the second transaction does not match the expected result.") {
-        assert transaction.outputs[1].amount = 5446 * 10 ** 6;
+    with_attr error_message("The second output of the second transaction (${transaction.outputs[1].amount}) does not match the expected result.") {
+        assert 5446 * 10 ** 6 = transaction.outputs[1].amount;
     }
 
     // Validate the block
@@ -261,8 +261,8 @@ func test_verify_block_with_49_transactions{
 
     // Sanity Check
     // Transaction count should be 49
-    with_attr error_message("transaction count does not match the expected count") {
-        assert context.transaction_count = 49;
+    with_attr error_message("transaction count (${context.transaction_count}) does not match the expected count (49)") {
+        assert 49 = context.transaction_count;
     }
 
     // Sanity Check
@@ -328,7 +328,7 @@ func test_verify_block_with_2496_transactions{
     // Sanity Check
     // Transaction count should be 49
     with_attr error_message("Transaction count does not match the expected count.") {
-        assert context.transaction_count = 2496;
+        assert 2496 = context.transaction_count;
     }
     
     // Sanity Check
@@ -336,7 +336,7 @@ func test_verify_block_with_2496_transactions{
 
     let transaction = context.transaction_contexts[2].transaction;
     with_attr error_message("The second output of the second transaction does not match the expected result.") {
-        assert transaction.outputs[1].amount = 1071525;
+        assert 1071525 = transaction.outputs[1].amount;
     }
 
     // Validate the block
@@ -344,47 +344,36 @@ func test_verify_block_with_2496_transactions{
     return ();
 }
 
-
-//Test logarithm function used for computing the block reward
 @external
-func test_logarithm{range_check_ptr} (){
+func test_block_reward {range_check_ptr}() {
 
-   alloc_locals;
+  alloc_locals;
 
-   let result1 = log_base2(20,2);
-   assert result1 = 5; 
-   let result2 = log_base2(2,1);
-   assert result2 = 1;
-   let result3 = log_base2(400,4);
-   assert result3 = 25;
-   let result4 = log_base2(4,0);
-   assert result4 = 4;
+  let result1 = compute_block_reward(0);
+  assert result1 = 50*10**8;
 
-   return();
+  let result2 = compute_block_reward(42);
+  assert result2 = 50*10**8;
+
+  let result3 = compute_block_reward(210000);
+  assert result3 = 25*10**8;
+
+  //current reward
+  let result4 = compute_block_reward(787520);
+  assert result4 = 625*10**6;
+
+  //when we start rounding
+  let result5 = compute_block_reward(2100000);
+  assert result5 = 4882812;
+
+
+  //last halving
+  let result6 = compute_block_reward(6720000);
+  assert result6 = 1;
+
+  //reward gets 0
+  let result7 = compute_block_reward(6930000);
+  assert result7 = 0;
+ 
+  return();
 }
-
-//Test the computation of the block reward
-@external
-func test_block_reward{range_check_ptr}() {
-   
-    alloc_locals;
-
-    let result1 = compute_block_reward(0);
-    assert result1 = 50*10**8;
-
-    let result2 = compute_block_reward(42);
-    assert result2 = 50*10**8;
-
-    let result3 = compute_block_reward(210000);
-    assert result3 = 25*10**8;
-
-    let result4 = compute_block_reward(420000);
-    assert result4 = 125*10**7;
-    
-    //current reward
-    let current = compute_block_reward(682500);
-    assert current = 625*10**6;
-
-    return ();
-}
-
