@@ -22,6 +22,7 @@ from block.block import (
     State,
     read_block_validation_context,
     validate_and_apply_block,
+    compute_block_reward
 )
 
 
@@ -343,3 +344,36 @@ func test_verify_block_with_2496_transactions{
     return ();
 }
 
+@external
+func test_block_reward {range_check_ptr}() {
+
+  alloc_locals;
+
+  let result1 = compute_block_reward(0);
+  assert result1 = 50*10**8;
+
+  let result2 = compute_block_reward(42);
+  assert result2 = 50*10**8;
+
+  let result3 = compute_block_reward(210000);
+  assert result3 = 25*10**8;
+
+  //current reward
+  let result4 = compute_block_reward(787520);
+  assert result4 = 625*10**6;
+
+  //when we start rounding
+  let result5 = compute_block_reward(2100000);
+  assert result5 = 4882812;
+
+
+  //last halving
+  let result6 = compute_block_reward(6720000);
+  assert result6 = 1;
+
+  //reward gets 0
+  let result7 = compute_block_reward(6930000);
+  assert result7 = 0;
+ 
+  return();
+}

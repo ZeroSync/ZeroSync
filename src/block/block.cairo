@@ -9,7 +9,8 @@
 
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin, HashBuiltin
-from starkware.cairo.common.math import assert_le
+from starkware.cairo.common.math import assert_le, unsigned_div_rem
+from utils.pow2 import pow2
 
 from serialize.serialize import Reader, Writer, read_varint
 from block.block_header import (
@@ -223,7 +224,7 @@ func validate_and_apply_coinbase{range_check_ptr, hash_ptr: HashBuiltin*, utreex
     let output = tx_context.transaction.outputs[output_index];
     validate_output(tx_context, output, output_index);
 
-    let (block_reward) = compute_block_reward(context.header_context.block_height);
+    let block_reward = compute_block_reward(context.header_context.block_height);
     with_attr error_message("block_reward + total_fees is greater than the outputs amount.") {
         assert_le(output.amount, block_reward + total_fees);
     }
@@ -234,8 +235,9 @@ func validate_and_apply_coinbase{range_check_ptr, hash_ptr: HashBuiltin*, utreex
 
 // Compute the miner's block reward with respect to the block height
 // 
-func compute_block_reward(block_height) -> (block_reward: felt){
-    // TODO: implement compute_block_reward 
-    let block_reward = 50 * 10**8;
-    return (block_reward,);
-}
+func compute_block_reward{range_check_ptr} (block_height) -> felt {
+    let (number_halvings,_) = unsigned_div_rem(block_height , 210000);
+    let denominator = pow2(number_halvings);
+    let (block_reward,_) = unsigned_div_rem(50*10**8 , denominator); 
+    return block_reward;
+}        
