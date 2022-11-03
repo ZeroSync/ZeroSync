@@ -149,7 +149,7 @@ func test_verify_block_with_4_transactions{
     // Sanity Check
     // The second output of the second transaction should be 44.44 BTC
     let transaction = context.transaction_contexts[1].transaction;
-    with_attr error_message("The second output of the second transaction does not match the expected result.") {
+    with_attr error_message("The value of the second output of the second transaction is {transaction.outputs[1].amount}. Expected {4444 * 10 ** 6}.") {
         assert 4444 * 10 ** 6 = transaction.outputs[1].amount;
     }
 
@@ -214,14 +214,14 @@ func test_verify_block_with_27_transactions{
 
     // Sanity Check
     // Transaction count should be 27
-    with_attr error_message("Transaction count (${context.transaction_count}) does not match the expected count (27).") {
+    with_attr error_message("Transaction count is ${context.transaction_count}. Expected 27.") {
         assert 27 = context.transaction_count;
     }
 
     // Sanity Check
     // The second output of the second transaction should be 54.46 BTC
     let transaction = context.transaction_contexts[1].transaction;
-    with_attr error_message("The second output of the second transaction (${transaction.outputs[1].amount}) does not match the expected result.") {
+    with_attr error_message("The value of the second output of the second transaction is ${transaction.outputs[1].amount}. Expected {5446 * 10 ** 6}.") {
         assert 5446 * 10 ** 6 = transaction.outputs[1].amount;
     }
 
@@ -254,7 +254,7 @@ func test_verify_block_with_49_transactions{
         hashes_from_hex([
                 "00000000000000000cca48eb4b330d91e8d946d344ca302a86a280161b0bffb6"
         ], ids.prev_block_hash)
-            %}
+    %}
 
     let (prev_timestamps) = dummy_prev_timestamps();
 
@@ -284,7 +284,7 @@ func test_verify_block_with_49_transactions{
 
     // Sanity Check
     // Transaction count should be 49
-    with_attr error_message("transaction count (${context.transaction_count}) does not match the expected count (49)") {
+    with_attr error_message("Transaction count is ${context.transaction_count}. Expected 49.") {
         assert 49 = context.transaction_count;
     }
 
@@ -292,8 +292,8 @@ func test_verify_block_with_49_transactions{
     // The second output of the second transaction should be 0.11883137 BTC
 
     let transaction = context.transaction_contexts[1].transaction;
-    with_attr error_message("The second output of the second transaction does not match the expected result.") {
-        assert transaction.outputs[1].amount = 11883137;
+    with_attr error_message("The second output of the second transaction is {transaction.outputs[1].amount} sats. Expected 11883137 sats.") {
+        assert 11883137 = transaction.outputs[1].amount;
     }
     
     // Validate the block
@@ -328,7 +328,7 @@ func test_verify_block_with_2496_transactions{
         hashes_from_hex([
                 "00000000000000000001e3aee44a04a5c3461181d25c8803ff6d617173e34533"
         ], ids.prev_block_hash)
-            %}
+    %}
 
     let (prev_timestamps) = dummy_prev_timestamps();
 
@@ -356,8 +356,8 @@ func test_verify_block_with_2496_transactions{
     }
 
     // Sanity Check
-    // Transaction count should be 49
-    with_attr error_message("Transaction count does not match the expected count.") {
+    // Transaction count should be 2496
+    with_attr error_message("Transaction count is {context.transaction_count}. Expected 2496") {
         assert 2496 = context.transaction_count;
     }
     
@@ -365,7 +365,7 @@ func test_verify_block_with_2496_transactions{
     // The second output of the third transaction should be 0.01071525 BTC
 
     let transaction = context.transaction_contexts[2].transaction;
-    with_attr error_message("The second output of the second transaction does not match the expected result.") {
+    with_attr error_message("The second output of the third transaction is {transaction.outputs[1].amount} sats. Expected 1071525 sats.") {
         assert 1071525 = transaction.outputs[1].amount;
     }
 
