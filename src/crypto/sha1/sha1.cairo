@@ -75,16 +75,16 @@ func sha1_prepare_chunk{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
     let le_14_words = is_nn(WORDS_PER_INPUT-SIZEOF_UINT64/SIZEOF_UINT32 - n_words);
     if (le_14_words == TRUE) {
         // copy max 56 bytes
-        // concat zero-bytes
+        // concat zero bytes
         __prepare_chunk(chunk_ptr, data_ptr, n_bytes, WORDS_PER_INPUT-SIZEOF_UINT64/SIZEOF_UINT32);
-        // concat bit-length
-        // TODO: extend bit-length to 64-bit
+        // concat bit length
+        // NOTE: We limit the bit length to 32 bits here
         assert [chunk_ptr + WORDS_PER_INPUT-SIZEOF_UINT64/SIZEOF_UINT32 + 0] = 0;
         assert [chunk_ptr + WORDS_PER_INPUT-SIZEOF_UINT64/SIZEOF_UINT32 + 1] = n_bits;
         return chunk_ptr;
     }
     // copy max 56 bytes
-    // append zero-bytes
+    // append zero bytes
     __prepare_chunk(chunk_ptr, data_ptr, n_bytes, WORDS_PER_INPUT);
     return chunk_ptr;
 }
