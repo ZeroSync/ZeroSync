@@ -250,9 +250,12 @@ func validate_and_apply_block_header{range_check_ptr, bitwise_ptr : BitwiseBuilt
 // Validate that a block header correctly extends the current chain
 //
 func validate_prev_block_hash(context: BlockHeaderValidationContext) {
-    assert_hashes_equal(
-        context.prev_chain_state.best_block_hash, context.block_header.prev_block_hash
-    );
+    with_attr error_message("This block does not extend the current chain. Invalid `prev_block_hash`.") {
+        assert_hashes_equal(
+            context.prev_chain_state.best_block_hash, 
+            context.block_header.prev_block_hash
+        );
+    }
     return ();
 }
 
