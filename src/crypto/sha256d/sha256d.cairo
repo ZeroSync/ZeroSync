@@ -48,9 +48,11 @@ func copy_hash(source: felt*, destination: felt*) {
 }
 
 // Assert equality of two hashes represented as an array of 8 x Uint32
+// CAUTION: the caller has to ensure that `hash1` is not empty.
+// Otherwise, we perform a copy here and pass where we should fail!
+// This is because in Cairo there's no way to check if a variable is uninitialized.
+// 
 func assert_hashes_equal(hash1: felt*, hash2: felt*) {
-    // TODO: ensure hash1 is not empty
-    // Otherwise, we perform a copy here and pass where we should fail!
     memcpy(hash2, hash1, HASH_FELT_SIZE);
     return ();
 }
