@@ -24,7 +24,7 @@ from transaction.transaction import (
     TransactionValidationContext,
     read_transaction_validation_context,
     validate_and_apply_transaction,
-    validate_output,
+    validate_outputs_loop,
 )
 from block.merkle_tree import compute_merkle_root
 from crypto.sha256d.sha256d import assert_hashes_equal, copy_hash, HASH_FELT_SIZE
@@ -212,6 +212,7 @@ func _validate_and_apply_transactions_loop{
 //
 // See also:
 // - https://developer.bitcoin.org/reference/transactions.html#coinbase-input-the-input-of-the-first-transaction-in-a-block
+// - https://bitcoin.stackexchange.com/questions/20721/what-is-the-format-of-the-coinbase-transaction
 func validate_and_apply_coinbase{range_check_ptr, hash_ptr: HashBuiltin*, utreexo_roots: felt*}(
     context: BlockValidationContext, total_fees
 ) {
@@ -219,20 +220,25 @@ func validate_and_apply_coinbase{range_check_ptr, hash_ptr: HashBuiltin*, utreex
 
     let tx_context = context.transaction_contexts[0];
 
-    // TODO: we can have multiple coinbase outputs
-    // See also: https://bitcoin.stackexchange.com/questions/20721/what-is-the-format-of-the-coinbase-transaction
+    // Ensure there is exactly one input
+    with_attr error_message("coinbase input count is not equals 1") {
+        assert 1 = tx_context.transaction.input_count;
+    }
     
-    // TODO: check there is exactly one input
+    // we can have multiple coinbase outputs ...
+    let (total_output_amount) = validate_outputs_loop(
+        tx_context,
+        tx_context.transaction.outputs,
+        0,
+        0,
+        tx_context.transaction.output_count
+    );
 
     // TODO: implement BIP34
-    
-    let output_index = 0;
-    let output = tx_context.transaction.outputs[output_index];
-    validate_output(tx_context, output, output_index);
 
     let block_reward = compute_block_reward(context.header_context.block_height);
     with_attr error_message("block_reward + total_fees is greater than the outputs amount.") {
-        assert_le(output.amount, block_reward + total_fees);
+        assert_le(total_output_amount, block_reward + total_fees);
     }
 
     return ();
