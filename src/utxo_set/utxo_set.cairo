@@ -82,7 +82,9 @@ func hash_output{hash_ptr: HashBuiltin*}(
 }
 
 
-// TODO: can we get rid of our custom `hash_chain` implementation here?
+// This is a modified version of:
+// https://github.com/starkware-libs/cairo-lang/blob/54d7e92a703b3b5a1e07e9389608178129946efc/src/starkware/cairo/common/hash_chain.cairo#L8
+// The difference here is that we pass the `data_length` as a second argument instead of in the first element of the `data_ptr` array.
 
 // Computes a hash chain of a sequence whose length is given at [data_ptr] and the data starts at
 // data_ptr. The hash is calculated backwards (from the highest memory address to the lowest).

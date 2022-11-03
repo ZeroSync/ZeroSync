@@ -68,7 +68,7 @@ func test_verify_block_with_1_transaction{
         hashes_from_hex([
                 "00000000ddc2c05eeaa044dcd039cd68c74f2747f8fe38b2f08a511634ead4a0"
         ], ids.prev_block_hash)
-            %}
+    %}
 
     let (prev_timestamps) = dummy_prev_timestamps();
 
@@ -119,7 +119,7 @@ func test_verify_block_with_4_transactions{
         hashes_from_hex([
                 "000000000002d01c1fccc21636b607dfd930d31d01c3a62104612a1719011250"
         ], ids.prev_block_hash)
-            %}
+    %}
 
     let (prev_timestamps) = dummy_prev_timestamps();
 
@@ -184,7 +184,7 @@ func test_verify_block_with_27_transactions{
         hashes_from_hex([
                 "000000000000096b85408520f97770876fc88944b8cc72083a6e6dca9f167b33"
         ], ids.prev_block_hash)
-            %}
+    %}
 
     let (prev_timestamps) = dummy_prev_timestamps();
 
