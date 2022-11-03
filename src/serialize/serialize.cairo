@@ -216,9 +216,7 @@ func write_uint8{writer: Writer}(source) {
 
     let offset = writer.offset + 1;
     if (offset == UINT32_SIZE) {
-        with_attr error_message("Writer head value (${writer.head}) differs from value (${value}).") {
-            assert [writer.head] = value;
-        }
+        assert [writer.head] = value;
         tempvar writer = Writer(writer.head + 1, 0, 0);
     } else {
         tempvar writer = Writer(writer.head, offset, value);

@@ -91,7 +91,7 @@ func utreexo_prove_inclusion{hash_ptr: HashBuiltin*}(
     utreexo_roots: felt*, leaf, leaf_index, proof: felt*, proof_len
 ) {
     let (proof_root) = _utreexo_prove_inclusion_loop(proof, proof_len, leaf_index, leaf);
-    with_attr error_message("The leaf ${leaf} is not included in the Utreexo set.") {
+    with_attr error_message("The leaf {leaf} is not included in the Utreexo set.") {
         assert utreexo_roots[proof_len] = proof_root;
     }
     return ();
