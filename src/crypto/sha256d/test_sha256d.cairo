@@ -87,9 +87,7 @@ func test_sha256d_long_input{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
         let (hash) = sha256d(input, byte_size);
     }
 
-    with_attr error_message("Hashes are not equal. ${hash_expected} != ${hash}") {
-        assert_hashes_equal(hash_expected, hash);
-    }
+    assert_hashes_equal(hash_expected, hash);
     // finalize sha256_ptr
     finalize_sha256(sha256_ptr_start, sha256_ptr);
     return ();
@@ -130,9 +128,7 @@ func test_sha256d_long_input_2{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() 
         let (hash) = sha256d(input, 135);
     }
 
-    with_attr error_message("Hashes are not equal.") {
-        assert_hashes_equal(hash_expected, hash);
-    }
+    assert_hashes_equal(hash_expected, hash);
     // finalize sha256_ptr
     finalize_sha256(sha256_ptr_start, sha256_ptr);
     return ();

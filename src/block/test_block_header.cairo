@@ -48,9 +48,7 @@ func test_serialize_block_header{range_check_ptr}() {
     let (block_header) = read_block_header{reader=reader}();
 
     // Test block version
-    with_attr error_message("Invalid block version.") {
-        assert block_header.version = 0x02;
-    }
+    assert block_header.version = 0x02;
 
     // Test hash of the previous block
     let (prev_block_hash_expected) = alloc();
@@ -58,9 +56,7 @@ func test_serialize_block_header{range_check_ptr}() {
         hashes_from_hex(["00000000000000000cca48eb4b330d91e8d946d344ca302a86a280161b0bffb6"], 
             ids.prev_block_hash_expected)
     %}
-    with_attr error_message("Invalid hash of the previous block.") {
-        assert_hashes_equal(block_header.prev_block_hash, prev_block_hash_expected);
-    }
+    assert_hashes_equal(block_header.prev_block_hash, prev_block_hash_expected);
 
     return ();
 }
@@ -126,9 +122,7 @@ func test_read_block_header_validation_context{range_check_ptr, bitwise_ptr: Bit
     }
 
     // Sanity check: block version should be 2
-    with_attr error_message("Invalid block version. It should be 2.") {
-        assert 0x02 = context.block_header.version;
-    }
+    assert 0x02 = context.block_header.version;
 
     // Check if the target was computed correctly
     with_attr error_message("Target computed incorrectly.") {

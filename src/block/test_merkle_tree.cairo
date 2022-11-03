@@ -39,9 +39,7 @@ func test_compute_merkle_root{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     with sha256_ptr {
         let (root) = compute_merkle_root(leaves, leaves_len);
     }
-    with_attr error_message("The root hash does not match the expected value.") {
-        assert_hashes_equal(root, root_expected);
-    }
+    assert_hashes_equal(root, root_expected);
     return ();
 }
 
@@ -77,9 +75,7 @@ func test_compute_merkle_root_power_of_2{range_check_ptr, bitwise_ptr: BitwiseBu
     with sha256_ptr {
         let (root) = compute_merkle_root(leaves, leaves_len);
     }
-    with_attr error_message("The root hash does not match the expected value.") {
-        assert_hashes_equal(root, root_expected);
-    }
+    assert_hashes_equal(root, root_expected);
     return ();
 }
 
@@ -120,8 +116,6 @@ func test_compute_merkle_root_uneven{range_check_ptr, bitwise_ptr: BitwiseBuilti
     with sha256_ptr {
         let (root) = compute_merkle_root(leaves, leaves_len);
     }
-    with_attr error_message("The root hash does not match the expected value.") {
-        assert_hashes_equal(root, root_expected);
-    }
+    assert_hashes_equal(root, root_expected);
     return ();
 }

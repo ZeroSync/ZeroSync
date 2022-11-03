@@ -43,14 +43,14 @@ func test_read_transaction{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     let (reader) = init_reader(transaction_raw);
 
     let (transaction, byte_size) = read_transaction{reader=reader}();
-    with_attr error_message("Transaction values are incorrect.") {
-        assert 0x01 = transaction.version;
 
-        assert 300000 = transaction.outputs[0].amount;
-        assert 11883137 = transaction.outputs[1].amount;
+    assert 0x01 = transaction.version;
 
-        assert 259 = byte_size;
-    }
+    assert 300000 = transaction.outputs[0].amount;
+    assert 11883137 = transaction.outputs[1].amount;
+
+    assert 259 = byte_size;
+
     let (expected_script_pub_key) = alloc();
     local expected_script_pub_key_len;
     local expected_script_pub_key_size;
@@ -59,9 +59,9 @@ func test_read_transaction{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
         ids.expected_script_pub_key_len = felt_size
         ids.expected_script_pub_key_size = byte_size
     %}
-    with_attr error_message("Script pub key size is not correct.") {
-        assert 0x19 = transaction.outputs[0].script_pub_key_size;
-    }
+    
+    assert 0x19 = transaction.outputs[0].script_pub_key_size;
+
     memcpy(
         expected_script_pub_key, transaction.outputs[0].script_pub_key, expected_script_pub_key_len
     );
@@ -96,12 +96,12 @@ func test_read_segwit_transaction{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}
     let (reader) = init_reader(transaction_raw);
 
     let (transaction, byte_size) = read_transaction{reader=reader}();
-    with_attr error_message("Transaction fields are not setted correctly.") {
-        assert 0x02 = transaction.version;
 
-        assert 295 = transaction.outputs[0].amount;
-        assert 45422 = transaction.outputs[1].amount;
-    }
+    assert 0x02 = transaction.version;
+
+    assert 295 = transaction.outputs[0].amount;
+    assert 45422 = transaction.outputs[1].amount;
+
     // assert byte_size = 259
     return ();
 }
@@ -125,15 +125,14 @@ func test_read_transaction_validation_context{range_check_ptr, bitwise_ptr: Bitw
     with sha256_ptr {
         let (context) = read_transaction_validation_context(328734, 1);
     }
-    with_attr error_message("Context fields are not setted correctly.") {
-        assert 0x01 = context.transaction.version;
+    assert 0x01 = context.transaction.version;
 
-        assert 300000 = context.transaction.outputs[0].amount;
-        assert 11883137 = context.transaction.outputs[1].amount;
+    assert 300000 = context.transaction.outputs[0].amount;
+    assert 11883137 = context.transaction.outputs[1].amount;
 
-        assert 259 = context.transaction_size;
+    assert 259 = context.transaction_size;
 
-        assert_hashes_equal(context.txid, txid_expected);
-    }
+    assert_hashes_equal(context.txid, txid_expected);
+    
     return ();
 }

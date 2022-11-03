@@ -33,16 +33,13 @@ func test_sha256{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
         let (hash) = compute_sha256(input, byte_size);
     }
 
-    with_attr error_message("The sha256 hash does not match the expected result.") {
-        assert 0xba7816bf = hash[0];
-        assert 0x8f01cfea = hash[1];
-        assert 0x414140de = hash[2];
-        assert 0x5dae2223 = hash[3];
-        assert 0xb00361a3 = hash[4];
-        assert 0x96177a9c = hash[5];
-        assert 0xb410ff61 = hash[6];
-        assert 0xf20015ad = hash[7];
-    }
+    assert 0xba7816bf = hash[0];
+    assert 0x414140de = hash[2];
+    assert 0x5dae2223 = hash[3];
+    assert 0xb00361a3 = hash[4];
+    assert 0x96177a9c = hash[5];
+    assert 0xb410ff61 = hash[6];
+    assert 0xf20015ad = hash[7];
 
     // finalize sha256_ptr
     finalize_sha256(sha256_ptr_start, sha256_ptr);
@@ -78,9 +75,7 @@ func test_sha256_16M_bits{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     with sha256_ptr {
         let (output) = compute_sha256(input, input_byte_size);
     }
-    with_attr error_message("The hash does not match the expected output.") {
-        assert_hashes_equal(output, expected_output);
-    }
+    assert_hashes_equal(output, expected_output);
     // finalize sha256_ptr
     finalize_sha256(sha256_ptr_start, sha256_ptr);
     return ();
@@ -112,9 +107,7 @@ func test_sha256_160K_bits{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     with sha256_ptr {
         let (output) = compute_sha256(input, input_byte_size);
     }
-    with_attr error_message("The hash does not match the expected output.") {
-        assert_hashes_equal(output, expected_output);
-    }
+    assert_hashes_equal(output, expected_output);
     // finalize sha256_ptr
     finalize_sha256(sha256_ptr_start, sha256_ptr);
     return ();
@@ -146,9 +139,7 @@ func test_sha256_896_bits{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     with sha256_ptr {
         let (output) = compute_sha256(input, input_byte_size);
     }
-    with_attr error_message("The hash does not match the expected output.") {
-        assert_hashes_equal(output, expected_output);
-    }
+    assert_hashes_equal(output, expected_output);
     // finalize sha256_ptr
     finalize_sha256(sha256_ptr_start, sha256_ptr);
     return ();
@@ -177,9 +168,7 @@ func test_sha256_64_bytes{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     with sha256_ptr {
         let (output) = compute_sha256(input, input_byte_size);
     }
-    with_attr error_message("The hash does not match the expected output.") {
-        assert_hashes_equal(output, expected_output);
-    }
+    assert_hashes_equal(output, expected_output);
     // finalize sha256_ptr
     finalize_sha256(sha256_ptr_start, sha256_ptr);
     return ();

@@ -149,9 +149,7 @@ func test_verify_block_with_4_transactions{
     // Sanity Check
     // The second output of the second transaction should be 44.44 BTC
     let transaction = context.transaction_contexts[1].transaction;
-    with_attr error_message("The value of the second output of the second transaction is {transaction.outputs[1].amount}. Expected {4444 * 10 ** 6}.") {
-        assert 4444 * 10 ** 6 = transaction.outputs[1].amount;
-    }
+    assert 4444 * 10 ** 6 = transaction.outputs[1].amount;
 
     // Validate the block
     with sha256_ptr {
@@ -214,16 +212,12 @@ func test_verify_block_with_27_transactions{
 
     // Sanity Check
     // Transaction count should be 27
-    with_attr error_message("Transaction count is ${context.transaction_count}. Expected 27.") {
-        assert 27 = context.transaction_count;
-    }
+    assert 27 = context.transaction_count;
 
     // Sanity Check
     // The second output of the second transaction should be 54.46 BTC
     let transaction = context.transaction_contexts[1].transaction;
-    with_attr error_message("The value of the second output of the second transaction is ${transaction.outputs[1].amount}. Expected {5446 * 10 ** 6}.") {
-        assert 5446 * 10 ** 6 = transaction.outputs[1].amount;
-    }
+    assert 5446 * 10 ** 6 = transaction.outputs[1].amount;
 
     // Validate the block
     with sha256_ptr {
@@ -284,17 +278,13 @@ func test_verify_block_with_49_transactions{
 
     // Sanity Check
     // Transaction count should be 49
-    with_attr error_message("Transaction count is ${context.transaction_count}. Expected 49.") {
-        assert 49 = context.transaction_count;
-    }
+    assert 49 = context.transaction_count;
 
     // Sanity Check
     // The second output of the second transaction should be 0.11883137 BTC
 
     let transaction = context.transaction_contexts[1].transaction;
-    with_attr error_message("The second output of the second transaction is {transaction.outputs[1].amount} sats. Expected 11883137 sats.") {
-        assert 11883137 = transaction.outputs[1].amount;
-    }
+    assert transaction.outputs[1].amount = 11883137;
     
     // Validate the block
     with sha256_ptr {
@@ -356,18 +346,14 @@ func test_verify_block_with_2496_transactions{
     }
 
     // Sanity Check
-    // Transaction count should be 2496
-    with_attr error_message("Transaction count is {context.transaction_count}. Expected 2496") {
-        assert 2496 = context.transaction_count;
-    }
+    // Transaction count should be 49
+    assert 2496 = context.transaction_count;
     
     // Sanity Check
     // The second output of the third transaction should be 0.01071525 BTC
 
     let transaction = context.transaction_contexts[2].transaction;
-    with_attr error_message("The second output of the third transaction is {transaction.outputs[1].amount} sats. Expected 1071525 sats.") {
-        assert 1071525 = transaction.outputs[1].amount;
-    }
+    assert 1071525 = transaction.outputs[1].amount;
 
     // Validate the block
     // with sha256_ptr {
