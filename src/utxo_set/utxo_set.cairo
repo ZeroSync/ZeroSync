@@ -4,6 +4,7 @@ from starkware.cairo.common.math import unsigned_div_rem
 from starkware.cairo.common.hash import hash2
 
 from crypto.sha256d.sha256d import HASH_FELT_SIZE
+from utils.python_utils import setup_python_defs
 from utreexo.utreexo import utreexo_add, utreexo_delete, fetch_inclusion_proof
 
 // TODO: Clean up all the copy pasta. This entire file looks like code smell.
@@ -38,68 +39,20 @@ func utxo_set_extract{hash_ptr: HashBuiltin*, utreexo_roots: felt*}(txid: felt*,
     local script_pub_key_len;
     let (script_pub_key) = alloc();
 
+    setup_python_defs();
     %{
-        import struct
-
-        def swap32(i):
-            return struct.unpack("<I", struct.pack(">I", i))[0]
-
-        BASE = 2**32
-        def _read_i(address, i):
-            return swap32( memory[address + i] ) * BASE ** i 
-
-        def hash_from_memory(address):
-            hash = _read_i(address, 0)  \
-                 + _read_i(address, 1)  \
-                 + _read_i(address, 2)  \
-                 + _read_i(address, 3)  \
-                 + _read_i(address, 4)  \
-                 + _read_i(address, 5)  \
-                 + _read_i(address, 6)  \
-                 + _read_i(address, 7)
-            return hex(hash).replace('0x','').zfill(64)
-
         txid = hash_from_memory(ids.txid) 
-
 
         import urllib3
         http = urllib3.PoolManager()
         url = 'https://blockstream.info/api/tx/' + txid
         r = http.request('GET', url)
 
-
         import json
         tx = json.loads(r.data)
         tx_output = tx["vout"][ids.vout]
 
-        ids.amount = tx_output["value"]       
-
-        import re
-        def hex_to_felt(hex_string):
-            # Seperate hex_string into chunks of 8 chars.
-            felts = re.findall(".?.?.?.?.?.?.?.", hex_string)
-            # Fill remaining space in last chunk with 0.
-            while len(felts[-1]) < 8:
-                felts[-1] += "0"
-            return [int(x, 16) for x in felts]
-
-        # Writes a hex string string into an uint32 array
-        #
-        # Using multi-line strings in python:
-        # - https://stackoverflow.com/questions/10660435/how-do-i-split-the-definition-of-a-long-string-over-multiple-lines
-        def from_hex(hex_string, destination):
-            # To see if there are only 0..f in hex_string we can try to turn it into an int
-            try:
-                check_if_hex = int(hex_string, 16)
-            except ValueError:
-                print("ERROR: Input to from_hex contains non-hex characters.")
-            felts = hex_to_felt(hex_string)
-            segments.write_arg(destination, felts)
-
-            # Return the byte size of the uint32 array and the array length.
-            return (1 + len(hex_string)) // 2, len(felts)
-
-
+        ids.amount = tx_output["value"]
 
         byte_size, felt_size = from_hex( tx_output["scriptpubkey"], ids.script_pub_key)
         ids.script_pub_key_len = felt_size
