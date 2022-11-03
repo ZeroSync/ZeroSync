@@ -93,8 +93,10 @@ func main{
     let prev_state = State(prev_chain_state, prev_utreexo_roots);
 
     // Perform a state transition
-    let (context) = read_block_validation_context(prev_state);
-    let (next_state) = validate_and_apply_block{hash_ptr=pedersen_ptr}(context);
+    with sha256_ptr {
+        let (context) = read_block_validation_context(prev_state);
+        let (next_state) = validate_and_apply_block{hash_ptr=pedersen_ptr}(context);
+    }
 
     // Print the next state
     serialize_chain_state(next_state.chain_state);
