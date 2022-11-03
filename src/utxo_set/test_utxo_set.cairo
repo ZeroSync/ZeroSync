@@ -10,12 +10,14 @@ from utils.python_utils import setup_python_defs
 
 from utreexo.utreexo import utreexo_init
 from utxo_set.utxo_set import utxo_set_insert, utxo_set_extract
+from block.utxo_dummies.utils import reset_bridge_node
 
 // https://blockstream.info/tx/a4bc0a85369d04454ec7e006ece017f21549fdfe7df128d61f9f107479bfdf7e
 @external
 func test_utxo_set{range_check_ptr, pedersen_ptr: HashBuiltin*}() {
     alloc_locals;
     setup_python_defs();
+    reset_bridge_node();
     let (utreexo_roots) = utreexo_init();
 
     let (txid) = alloc();
