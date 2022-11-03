@@ -4,7 +4,7 @@ from starkware.cairo.common.memcpy import memcpy
 
 from serialize.serialize import byte_size_to_felt_size, UINT32_SIZE
 
-from crypto.sha256.sha256 import _sha256
+from crypto.sha256.sha256 import compute_sha256
 
 // A hash has 32 bytes
 const HASH_SIZE = 32;
@@ -35,8 +35,8 @@ func _compute_double_sha256{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, sha25
     felt_size: felt, input: felt*, byte_size: felt
 ) -> (result: felt*) {
     alloc_locals;
-    let (hash_first_round) = _sha256(felt_size, input, byte_size);
-    let (hash_second_round) = _sha256(HASH_FELT_SIZE, hash_first_round, HASH_SIZE);
+    let (hash_first_round) = compute_sha256(input, byte_size);
+    let (hash_second_round) = compute_sha256(hash_first_round, HASH_SIZE);
     return (hash_second_round,);
 }
 

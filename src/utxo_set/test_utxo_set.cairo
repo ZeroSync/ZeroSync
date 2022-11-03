@@ -29,7 +29,7 @@ func test_utxo_set{range_check_ptr, pedersen_ptr: HashBuiltin*}() {
     let (script_pub_key) = alloc();
     local script_pub_key_size;
     %{
-        byte_size, felt_size = from_hex(
+        byte_size, _ = from_hex(
             "41048a5294505f44683bbc2be81e0f6a91ac1a197d6050accac393aad3b86b2398387e34fedf0de5d9f185eb3f2c17f3564b9170b9c262aa3ac91f371279beca0cafac"
         , ids.script_pub_key)
         ids.script_pub_key_size = byte_size

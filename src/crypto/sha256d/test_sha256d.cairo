@@ -7,7 +7,7 @@
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.uint256 import Uint256
-from crypto.sha256.cartridge_gg.sha256 import finalize_sha256
+from crypto.sha256.sha256 import finalize_sha256
 
 from utils.python_utils import setup_python_defs
 from crypto.sha256d.sha256d import (
