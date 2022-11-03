@@ -219,7 +219,13 @@ func validate_and_apply_coinbase{range_check_ptr, hash_ptr: HashBuiltin*, utreex
 
     let tx_context = context.transaction_contexts[0];
 
-    // TODO: Check if we can we have multiple genesis outputs
+    // TODO: we can have multiple coinbase outputs
+    // See also: https://bitcoin.stackexchange.com/questions/20721/what-is-the-format-of-the-coinbase-transaction
+    
+    // TODO: check there is exactly one input
+
+    // TODO: implement BIP34
+    
     let output_index = 0;
     let output = tx_context.transaction.outputs[output_index];
     validate_output(tx_context, output, output_index);
