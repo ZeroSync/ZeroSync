@@ -222,13 +222,13 @@ func validate_and_apply_coinbase{range_check_ptr, hash_ptr: HashBuiltin*, utreex
     let tx_context = context.transaction_contexts[0];
 
     // Ensure there is exactly one input
-    with_attr error_message("coinbase input count is not equals 1") {
+    with_attr error_message("`input_count` of coinbase should be 1") {
         assert 1 = tx_context.transaction.input_count;
     }
-    with_attr error_message("vout from coinbase input is not equals -1") {
-        assert tx_context.transaction.inputs[0].vout = 0xFFFFFFFF;
+    with_attr error_message("`vout` of coinbase input should be 0xFFFFFFFF") {
+        assert 0xFFFFFFFF = tx_context.transaction.inputs[0].vout;
     }
-    with_attr error_message("txid from coinbase is not equals 0") {
+    with_attr error_message("`txid` of coinbase input should be 0") {
         // Using `memset` as hack for `assert`
         memset(tx_context.transaction.inputs[0].txid, 0x00000000, 8);
     }
