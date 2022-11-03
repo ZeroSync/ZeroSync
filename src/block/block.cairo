@@ -10,6 +10,7 @@
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin, HashBuiltin
 from starkware.cairo.common.math import assert_le, unsigned_div_rem
+from starkware.cairo.common.memset import memset
 from utils.pow2 import pow2
 
 from serialize.serialize import Reader, Writer, read_varint
@@ -224,8 +225,15 @@ func validate_and_apply_coinbase{range_check_ptr, hash_ptr: HashBuiltin*, utreex
     with_attr error_message("coinbase input count is not equals 1") {
         assert 1 = tx_context.transaction.input_count;
     }
+    with_attr error_message("vout from coinbase input is not equals -1") {
+        assert tx_context.transaction.inputs[0].vout = 0xFFFFFFFF;
+    }
+    with_attr error_message("txid from coinbase is not equals 0") {
+        // Using `memset` as hack for `assert`
+        memset(tx_context.transaction.inputs[0].txid, 0x00000000, 8);
+    }
     
-    // we can have multiple coinbase outputs ...
+    // Compute total output amount
     let (total_output_amount) = validate_outputs_loop(
         tx_context,
         tx_context.transaction.outputs,
