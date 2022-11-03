@@ -7,7 +7,6 @@ from crypto.sha256d.sha256d import HASH_FELT_SIZE
 from utils.python_utils import setup_python_defs
 from utreexo.utreexo import utreexo_add, utreexo_delete, fetch_inclusion_proof
 
-// TODO: Clean up all the copy pasta. This entire file looks like code smell.
 
 func utxo_set_insert{range_check_ptr, hash_ptr: HashBuiltin*, utreexo_roots: felt*}(
     txid: felt*, vout, amount, script_pub_key: felt*, script_pub_key_size
@@ -81,6 +80,9 @@ func hash_output{hash_ptr: HashBuiltin*}(
     let (hash) = hash2(txid_hash, tmp2);
     return (hash,);
 }
+
+
+// TODO: can we get rid of our custom `hash_chain` implementation here?
 
 // Computes a hash chain of a sequence whose length is given at [data_ptr] and the data starts at
 // data_ptr. The hash is calculated backwards (from the highest memory address to the lowest).
