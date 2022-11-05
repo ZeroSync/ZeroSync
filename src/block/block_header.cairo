@@ -210,8 +210,7 @@ func bits_to_target{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(bits) -> (tar
     let is_greater_than_2 = (2 - exponent) * (1 - exponent) * exponent;
     if (is_greater_than_2 == 0) {
         let (shift) = pow(BYTE, 3 - exponent);
-        local target;
-        %{ ids.target = ids.significand // ids.shift %}
+        let (target, _rem) = unsigned_div_rem(significand, shift);
         return (target=target);
     } else {
         let (shift) = pow(BYTE, exponent - 3);
