@@ -34,7 +34,6 @@ func test_ripemd160_abc{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
       assert 0x98c6b087 = hash[3];
       assert 0xf15a0bfc = hash[4];
     }
-
     return ();
 }
 

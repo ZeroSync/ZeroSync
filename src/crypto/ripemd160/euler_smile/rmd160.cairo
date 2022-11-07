@@ -173,7 +173,6 @@ func pad_input{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(input: felt*, n_by
 
 func _pad_input{range_check_ptr, input_ptr: felt*}(input: felt*, n_bytes, n_felts) -> felt {
     alloc_locals;
-
     // Check if input is empty.
     if (n_felts == 0) {
         // This block is entirely empty and only contains the padding '1' bit.

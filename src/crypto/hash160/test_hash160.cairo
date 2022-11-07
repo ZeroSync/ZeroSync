@@ -9,6 +9,10 @@ from crypto.hash160.hash160 import hash160
 @external
 func test_hash160{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     alloc_locals;
+    
+    // initialize sha256_ptr
+    let sha256_ptr: felt* = alloc();
+    let sha256_ptr_start = sha256_ptr;
 
     let felt_size = 1;
 
@@ -18,7 +22,9 @@ func test_hash160{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     let byte_size = 3;
 
     // result: 0xbb1be98c142444d7a56aa3981c3942a978e4dc33
-    let (hash) = hash160(input, byte_size);
+    with sha256_ptr {
+        let (hash) = hash160(input, byte_size);
+    }
 
     assert hash[0] = 0xbb1be98c;
     assert hash[1] = 0x142444d7;

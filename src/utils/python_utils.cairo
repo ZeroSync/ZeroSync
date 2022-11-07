@@ -2,7 +2,6 @@
 func setup_python_defs() {
     %{
         import re
-
         def hex_to_felt(hex_string):
             # Seperate hex_string into chunks of 8 chars.
             felts = re.findall(".?.?.?.?.?.?.?.", hex_string)
@@ -58,6 +57,27 @@ func setup_python_defs() {
 
         def felts_from_hex_strings(hex_strings):
             return list( map(lambda x: int(x, 16), hex_strings ))
+
+        # additional helper functions invoked from `utxo_set_extract`
+        import struct
+
+        def swap32(i):
+            return struct.unpack("<I", struct.pack(">I", i))[0]
+
+        BASE = 2**32
+        def _read_i(address, i):
+            return swap32( memory[address + i] ) * BASE ** i 
+
+        def hash_from_memory(address):
+            hash = _read_i(address, 0)  \
+                 + _read_i(address, 1)  \
+                 + _read_i(address, 2)  \
+                 + _read_i(address, 3)  \
+                 + _read_i(address, 4)  \
+                 + _read_i(address, 5)  \
+                 + _read_i(address, 6)  \
+                 + _read_i(address, 7)
+            return hex(hash).replace('0x','').zfill(64)
     %}
     return ();
 }

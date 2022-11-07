@@ -151,7 +151,7 @@ func fetch_block_header(block_height) -> (raw_block_header: felt*) {
 
 // Read a block header and its validation context from a reader and a previous validation context
 //
-func read_block_header_validation_context{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
+func read_block_header_validation_context{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, sha256_ptr: felt*}(
     prev_chain_state: ChainState) -> (context: BlockHeaderValidationContext) {
     alloc_locals;
 
@@ -186,7 +186,7 @@ func read_block_header_validation_context{range_check_ptr, bitwise_ptr: BitwiseB
 func bits_to_target{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(bits) -> (target: felt) {
     alloc_locals;
     // Ensure that the max target is not exceeded (0x1d00FFFF)
-    with_attr error_message("Bits exceeded the max target.") {
+    with_attr error_message("Bits ({bits}) exceeded the max target ({MAX_BITS}).") {
         assert_le(bits, MAX_BITS);
     }
 
@@ -210,8 +210,7 @@ func bits_to_target{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(bits) -> (tar
     let is_greater_than_2 = (2 - exponent) * (1 - exponent) * exponent;
     if (is_greater_than_2 == 0) {
         let (shift) = pow(BYTE, 3 - exponent);
-        local target;
-        %{ ids.target = ids.significand // ids.shift %}
+        let (target, _rem) = unsigned_div_rem(significand, shift);
         return (target=target);
     } else {
         let (shift) = pow(BYTE, exponent - 3);
@@ -250,9 +249,12 @@ func validate_and_apply_block_header{range_check_ptr, bitwise_ptr : BitwiseBuilt
 // Validate that a block header correctly extends the current chain
 //
 func validate_prev_block_hash(context: BlockHeaderValidationContext) {
-    assert_hashes_equal(
-        context.prev_chain_state.best_block_hash, context.block_header.prev_block_hash
-    );
+    with_attr error_message("Invalid `prev_block_hash`. This block does not extend the current chain.") {
+        assert_hashes_equal(
+            context.prev_chain_state.best_block_hash, 
+            context.block_header.prev_block_hash
+        );
+    }
     return ();
 }
 
@@ -267,7 +269,7 @@ func validate_proof_of_work{range_check_ptr}(context: BlockHeaderValidationConte
 
     // Validate that the hash's most significant uint32 chunk is zero
     // This guarantees that the hash fits into a felt.
-    with_attr error_message("Hash's most significant uint32 chunk is not zero.") {
+    with_attr error_message("Hash's most significant uint32 chunk ({hash[7]}) is not zero.") {
         assert 0 = hash[7];
     }
     // Sum up the other 7 uint32 chunks of the hash into 1 felt
@@ -281,7 +283,7 @@ func validate_proof_of_work{range_check_ptr}(context: BlockHeaderValidationConte
                     hash[6] * BASE ** 6;
 
     // Validate that the hash is smaller than the target
-    with_attr error_message("Insufficient proof of work. Expected block hash to be less than or equal to target.") {
+    with_attr error_message("Insufficient proof of work. Expected block hash ({hash_felt}) to be less than or equal to target ({context.target}).") {
         assert_le_felt(hash_felt, context.target);
     }
     return ();
@@ -295,7 +297,7 @@ func validate_proof_of_work{range_check_ptr}(context: BlockHeaderValidationConte
 // - https://github.com/bitcoin/bitcoin/blob/3a7e0a210c86e3c1750c7e04e3d1d689cf92ddaa/src/rpc/blockchain.cpp#L76
 //
 func validate_target(context: BlockHeaderValidationContext) {  
-    with_attr error_message("Invalid target.") {
+    with_attr error_message("Target is {context.block_header.bits}. Expected {context.prev_chain_state.current_target}") {
         assert context.prev_chain_state.current_target = context.block_header.bits;
     }
     return ();
@@ -316,7 +318,7 @@ func validate_timestamp{range_check_ptr}(context: BlockHeaderValidationContext) 
     let (median_time) = compute_timestamps_median(prev_timestamps);
 
     // Compare this block's timestamp to the median time
-    with_attr error_message("Median time is greater than block's timestamp.") {
+    with_attr error_message("Median time ({median_time}) is greater than block's timestamp ({context.block_header.time}).") {
         assert_le(median_time, context.block_header.time);
     }
     return ();
