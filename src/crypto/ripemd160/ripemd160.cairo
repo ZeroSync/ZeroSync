@@ -7,6 +7,7 @@ from starkware.cairo.common.alloc import alloc
 
 from serialize.serialize import byte_size_to_felt_size, UINT32_SIZE
 from crypto.ripemd160.ripemd160_python import setup_python_ripemd160
+from crypto.ripemd160.euler_smile.rmd160 import compute_rmd160
 
 func ripemd160{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
     input: felt*, byte_size) -> (hash: felt*) {
@@ -15,9 +16,17 @@ func ripemd160{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
 }
 
 func _ripemd160{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
-    felt_size, input: felt*, byte_size ) -> (hash: felt*) {
-    // return _compute_ripemd160_real(felt_size, input, byte_size)
-    return _compute_ripemd160_fake(felt_size, input, byte_size);
+    felt_size, input: felt*, byte_size) -> (hash: felt*) {
+    return _compute_ripemd160_real(felt_size, input, byte_size);
+    // return _compute_ripemd160_fake(felt_size, input, byte_size);
+}
+
+func _compute_ripemd160_real{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
+    felt_size, input: felt*, byte_size) -> (hash: felt*) {
+    let rmd160_ptr: felt* = alloc();
+    let rmd160_ptr_start = rmd160_ptr;
+    let (hash) = compute_rmd160{rmd160_ptr=rmd160_ptr}(data=input, n_bytes=byte_size, n_felts=felt_size);
+    return (hash,);
 }
 
 // Compute a ripemd160 hash using a Python implementation
