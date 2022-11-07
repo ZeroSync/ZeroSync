@@ -89,8 +89,9 @@ func read_uint64{reader: Reader, range_check_ptr}() -> (result: felt) {
 //
 // See also:
 // - https://developer.bitcoin.org/reference/transactions.html#compactsize-unsigned-integers
+// - https://github.com/bitcoin/bitcoin/blob/9ba73758c908ce0c49f1bd9727ea496958e24d54/src/serialize.h
 //
-// TODO: Research if there's a strict encoding required
+// TODO: implement strict encoding. See "non-canonical ReadCompactSize()"
 // E.g. encoding "1" as "0xff01000000" instead of in its most compact form "0x01"
 func read_varint{reader: Reader, range_check_ptr}() -> (value: felt, byte_size: felt) {
     // Read the first byte
@@ -270,7 +271,7 @@ func write_varint{writer: Writer, range_check_ptr}(source: felt) {
 
     // Ensure source is a maximum of 8 bytes.
     with_attr error_message("ERROR: write_varint source exceeded the maximum of 8 bytes.") {
-        // TODO it seems like the error_message is not printed at all
+        // TODO: it seems like this error_message is never printed at all. Can we remove it?
         assert_le(source, BYTE ** 8 - 1);
     }
 
