@@ -111,8 +111,11 @@ impl<'a> DynamicMemory<'a> {
         self.write_array(array);
     }
 
-    pub fn write_sized_array_with<Params, T: WriteableWith<Params>, F>(&mut self, array: Vec<T>, f: F)
-    where
+    pub fn write_sized_array_with<Params, T: WriteableWith<Params>, F>(
+        &mut self,
+        array: Vec<T>,
+        f: F,
+    ) where
         F: Fn(u32) -> Params,
     {
         self.write_value(array.len() as u64);
@@ -125,6 +128,12 @@ pub trait Writeable: Sized {
 }
 
 impl Writeable for u8 {
+    fn write_into(&self, target: &mut DynamicMemory) {
+        target.write_value(*self as u64)
+    }
+}
+
+impl Writeable for u16 {
     fn write_into(&self, target: &mut DynamicMemory) {
         target.write_value(*self as u64)
     }
