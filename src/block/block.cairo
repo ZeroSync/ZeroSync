@@ -245,7 +245,7 @@ func validate_and_apply_coinbase{range_check_ptr, hash_ptr: HashBuiltin*, utreex
     // TODO: implement BIP34
 
     let block_reward = compute_block_reward(context.header_context.block_height);
-    with_attr error_message("block_reward + total_fees is greater than the outputs amount.") {
+    with_attr error_message("`total_output_amount <= block_reward + total_fees` should be true") {
         assert_le(total_output_amount, block_reward + total_fees);
     }
 

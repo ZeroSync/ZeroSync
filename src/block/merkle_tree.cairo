@@ -7,10 +7,11 @@
 
 from starkware.cairo.common.math import unsigned_div_rem
 from starkware.cairo.common.alloc import alloc
-from crypto.sha256d.sha256d import sha256d_felt_sized, copy_hash, HASH_SIZE, HASH_FELT_SIZE
+from crypto.sha256d.sha256d import sha256d_felt_sized, copy_hash, HASH_SIZE, HASH_FELT_SIZE, assert_hashes_not_equal
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 
 // Compute the Merkle root hash of a set of hashes
+// - https://github.com/bitcoin/bitcoin/issues/19598#issuecomment-693212439
 func compute_merkle_root{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, sha256_ptr: felt*}(
     leaves: felt*, leaves_len: felt
 ) -> (hash: felt*) {
@@ -25,6 +26,10 @@ func compute_merkle_root{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, sha256_p
     let (_, is_odd) = unsigned_div_rem(leaves_len, 2);
     if (is_odd == 1) {
         copy_hash(leaves + HASH_FELT_SIZE * (leaves_len - 1), leaves + HASH_FELT_SIZE * leaves_len);
+    } else {
+        // CVE-2012-2459 bug fix
+        assert_hashes_not_equal( leaves + (leaves_len - 1) * HASH_FELT_SIZE,
+                                 leaves + (leaves_len - 2) * HASH_FELT_SIZE );
     }
 
     // Compute the next generation of leaves one level higher up in the tree
@@ -59,5 +64,3 @@ func _compute_merkle_root_loop{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, sh
         loop_counter - 1
     );
 }
-
-// TODO: Fix CVE-2012-2459

@@ -56,3 +56,18 @@ func assert_hashes_equal(hash1: felt*, hash2: felt*) {
     memcpy(hash2, hash1, HASH_FELT_SIZE);
     return ();
 }
+
+func assert_hashes_not_equal(hash1: felt*, hash2: felt*) {
+    return _assert_hashes_not_equal_loop(hash1, hash2, HASH_FELT_SIZE);
+}
+
+func _assert_hashes_not_equal_loop(hash1_ptr: felt*, hash2_ptr: felt*, length) {
+    if(length == 0) {
+        assert 1 = 0;
+        return ();
+    }
+    if([hash1_ptr] != [hash2_ptr]) {
+        return ();
+    }
+    return _assert_hashes_not_equal_loop(hash1_ptr + 1, hash2_ptr + 1, length - 1);
+}
