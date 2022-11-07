@@ -28,8 +28,10 @@ func compute_merkle_root{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, sha256_p
         copy_hash(leaves + HASH_FELT_SIZE * (leaves_len - 1), leaves + HASH_FELT_SIZE * leaves_len);
     } else {
         // CVE-2012-2459 bug fix
-        assert_hashes_not_equal( leaves + (leaves_len - 1) * HASH_FELT_SIZE,
-                                 leaves + (leaves_len - 2) * HASH_FELT_SIZE );
+        with_attr error_message("unexpected node duplication in merkle tree") {
+            assert_hashes_not_equal( leaves + (leaves_len - 1) * HASH_FELT_SIZE,
+                                     leaves + (leaves_len - 2) * HASH_FELT_SIZE );
+        }
     }
 
     // Compute the next generation of leaves one level higher up in the tree
