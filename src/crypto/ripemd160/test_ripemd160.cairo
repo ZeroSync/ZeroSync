@@ -137,36 +137,30 @@ func test_ripemd160_496_bits{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     return ();
 }
 
-// TODO: Find or create larger test vectors (to make to sure rmd160 implementation also works for more than 2 chunks)
-// Currently this is done by comparing the results to the Python implementation.
+
 
 // Compare the Cairo implementation of RIPEMD160 to our Python implementation.
 @external
-func test_ripemd160_compare_to_python{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
+func test_ripemd160_multiple_chunks{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     alloc_locals;
     setup_python_defs();
 
     local felt_size;
     local byte_size;
-
     let (input) = alloc();
+
+    let (expected_result) = alloc();
     %{
         ids.byte_size, ids.felt_size = from_string("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789" * 3, ids.input)
+        from_hex("4e73243b1e0ae4d8e19387a7b7fac010294f98dc",ids.expected_result)
     %}
     let (hash) = ripemd160(input, byte_size);
-    // This calls the Python implementation (which also includes its own padding implementation)
-    let (expected_result) = _compute_ripemd160_fake(felt_size, input, byte_size);
-    // %{
-    //    print("hash: ", [hex(memory[ids.hash + i]) for i in range(0,5)])
-    //    print("expected hash: ", [hex(memory[ids.expected_result + i]) for i in range(0,5)])
-    // %}
     
     assert hash[0] = expected_result[0];
     assert hash[1] = expected_result[1];
     assert hash[2] = expected_result[2];
     assert hash[3] = expected_result[3];
     assert hash[4] = expected_result[4];
-
 
     return ();
 }
