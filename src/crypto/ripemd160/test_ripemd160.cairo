@@ -27,13 +27,13 @@ func test_ripemd160_abc{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     // result: 0x8eb208f7e05d987a9b044a8e98c6b087f15a0bfc
     let (hash) = ripemd160(input, byte_size);
 
-    with_attr error_message("Ripemd160 hash does not match the expected result.") {
-      assert 0x8eb208f7 = hash[0];
-      assert 0xe05d987a = hash[1];
-      assert 0x9b044a8e = hash[2];
-      assert 0x98c6b087 = hash[3];
-      assert 0xf15a0bfc = hash[4];
-    }
+    
+    assert 0x8eb208f7 = hash[0];
+    assert 0xe05d987a = hash[1];
+    assert 0x9b044a8e = hash[2];
+    assert 0x98c6b087 = hash[3];
+    assert 0xf15a0bfc = hash[4];
+
     return ();
 }
 
@@ -58,13 +58,13 @@ func test_ripemd160_empty_string{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
     //    print("hash: ", [hex(memory[ids.hash + i]) for i in range(0,5)])
     //    print("expected hash: ", [hex(memory[ids.expected_result + i]) for i in range(0,5)])
     // %}
-    with_attr error_message("Ripemd160 hash does not match the expected result.") {
-        assert hash[0] = expected_result[0];
-        assert hash[1] = expected_result[1];
-        assert hash[2] = expected_result[2];
-        assert hash[3] = expected_result[3];
-        assert hash[4] = expected_result[4];
-    }
+    
+    assert hash[0] = expected_result[0];
+    assert hash[1] = expected_result[1];
+    assert hash[2] = expected_result[2];
+    assert hash[3] = expected_result[3];
+    assert hash[4] = expected_result[4];
+
 
     return ();
 }
@@ -92,13 +92,13 @@ func test_ripemd160_a_z{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     //    print("hash: ", [hex(memory[ids.hash + i]) for i in range(0,5)])
     //    print("expected hash: ", [hex(memory[ids.expected_result + i]) for i in range(0,5)])
     // %}
-    with_attr error_message("Ripemd160 hash does not match the expected result.") {
-        assert hash[0] = expected_result[0];
-        assert hash[1] = expected_result[1];
-        assert hash[2] = expected_result[2];
-        assert hash[3] = expected_result[3];
-        assert hash[4] = expected_result[4];
-    }
+    
+    assert hash[0] = expected_result[0];
+    assert hash[1] = expected_result[1];
+    assert hash[2] = expected_result[2];
+    assert hash[3] = expected_result[3];
+    assert hash[4] = expected_result[4];
+
 
     return ();
 }
@@ -126,21 +126,21 @@ func test_ripemd160_496_bits{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     //    print("hash: ", [hex(memory[ids.hash + i]) for i in range(0,5)])
     //    print("expected hash: ", [hex(memory[ids.expected_result + i]) for i in range(0,5)])
     // %}
-    with_attr error_message("Ripemd160 hash does not match the expected result.") {
-        assert hash[0] = expected_result[0];
-        assert hash[1] = expected_result[1];
-        assert hash[2] = expected_result[2];
-        assert hash[3] = expected_result[3];
-        assert hash[4] = expected_result[4];
-    }
+    
+    assert hash[0] = expected_result[0];
+    assert hash[1] = expected_result[1];
+    assert hash[2] = expected_result[2];
+    assert hash[3] = expected_result[3];
+    assert hash[4] = expected_result[4];
+
 
     return ();
 }
 
 // TODO: Find or create larger test vectors (to make to sure rmd160 implementation also works for more than 2 chunks)
-// Currently this is done by comparing the results to the python implementation.
+// Currently this is done by comparing the results to the Python implementation.
 
-// Compare the Cairo implementation of RIPEMD160 to out python implementation.
+// Compare the Cairo implementation of RIPEMD160 to our Python implementation.
 @external
 func test_ripemd160_compare_to_python{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     alloc_locals;
@@ -154,19 +154,19 @@ func test_ripemd160_compare_to_python{range_check_ptr, bitwise_ptr: BitwiseBuilt
         ids.byte_size, ids.felt_size = from_string("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789" * 3, ids.input)
     %}
     let (hash) = ripemd160(input, byte_size);
-    // This calls the python implementation (which also includes its own padding implementation)
+    // This calls the Python implementation (which also includes its own padding implementation)
     let (expected_result) = _compute_ripemd160_fake(felt_size, input, byte_size);
     // %{
     //    print("hash: ", [hex(memory[ids.hash + i]) for i in range(0,5)])
     //    print("expected hash: ", [hex(memory[ids.expected_result + i]) for i in range(0,5)])
     // %}
-    with_attr error_message("Ripemd160 hash does not match the expected result.") {
-        assert hash[0] = expected_result[0];
-        assert hash[1] = expected_result[1];
-        assert hash[2] = expected_result[2];
-        assert hash[3] = expected_result[3];
-        assert hash[4] = expected_result[4];
-    }
+    
+    assert hash[0] = expected_result[0];
+    assert hash[1] = expected_result[1];
+    assert hash[2] = expected_result[2];
+    assert hash[3] = expected_result[3];
+    assert hash[4] = expected_result[4];
+
 
     return ();
 }
