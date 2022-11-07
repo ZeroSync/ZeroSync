@@ -89,10 +89,8 @@ func read_uint64{reader: Reader, range_check_ptr}() -> (result: felt) {
 //
 // See also:
 // - https://developer.bitcoin.org/reference/transactions.html#compactsize-unsigned-integers
-// - https://github.com/bitcoin/bitcoin/blob/9ba73758c908ce0c49f1bd9727ea496958e24d54/src/serialize.h
+// - https://github.com/bitcoin/bitcoin/blob/9ba73758c908ce0c49f1bd9727ea496958e24d54/src/serialize.h#L275
 //
-// TODO: implement strict encoding. See "non-canonical ReadCompactSize()"
-// E.g. encoding "1" as "0xff01000000" instead of in its most compact form "0x01"
 func read_varint{reader: Reader, range_check_ptr}() -> (value: felt, byte_size: felt) {
     // Read the first byte
     let (first_byte) = read_uint8();
@@ -102,18 +100,27 @@ func read_varint{reader: Reader, range_check_ptr}() -> (value: felt, byte_size: 
     if (first_byte == 0xff) {
         // This varint has 8 more bytes
         let (uint64) = read_uint64();
+        with_attr error_message("Non-canonical read_varint"){
+            assert_le(0x100000000, uint64);
+        }
         return (uint64, UINT8_SIZE + UINT64_SIZE);
     }
 
     if (first_byte == 0xfe) {
         // This varint has 4 more bytes
         let (uint32) = read_uint32();
+        with_attr error_message("Non-canonical read_varint"){
+            assert_le(0x10000, uint32);
+        }
         return (uint32, UINT8_SIZE + UINT32_SIZE);
     }
 
     if (first_byte == 0xfd) {
         // This varint has 2 more bytes
         let (uint16) = read_uint16();
+        with_attr error_message("Non-canonical read_varint"){
+            assert_le(253, uint16);
+        }
         return (uint16, UINT8_SIZE + UINT16_SIZE);
     }
 
