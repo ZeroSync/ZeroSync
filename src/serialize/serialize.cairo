@@ -278,7 +278,6 @@ func write_varint{writer: Writer, range_check_ptr}(source: felt) {
 
     // Ensure source is a maximum of 8 bytes.
     with_attr error_message("ERROR: write_varint source exceeded the maximum of 8 bytes.") {
-        // TODO: it seems like this error_message is never printed at all. Can we remove it?
         assert_le(source, BYTE ** 8 - 1);
     }
 
