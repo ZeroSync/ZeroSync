@@ -67,7 +67,7 @@ func compute_rmd160{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, rmd160_ptr: f
     rmd160_inner(padded_data, 0, chunks);
 
     // Change byte order.
-    // TODO: Depending on the use case we might not need to change byte order here.
+    // NOTE: Depending on the use case we might not need to change byte order here.
     let (output: felt*) = alloc();
     change_uint32_byte_order_array(rmd160_ptr, rmd160_ptr + RMD160_STATE_SIZE_FELTS, output);
     // Set `rmd160_ptr` to the next chunk.
