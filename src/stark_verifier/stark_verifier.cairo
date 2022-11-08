@@ -139,6 +139,7 @@ func perform_verification{
     
     // Draw an out-of-domain point z from the coin.
     let (z) = draw();
+    %{ print('z', hex(ids.z)) %}
 
     // 3 ----- OOD consistency check --------------------------------------------------------------
 
