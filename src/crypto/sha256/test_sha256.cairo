@@ -1,6 +1,6 @@
 //
 // To run only this test suite use:
-// protostar test --cairo-path=./src target src/**/*_sha256*
+// protostar test --cairo-path=./src target src/**/*_sha256.cairo
 //
 // Test vectors: https://www.di-mgt.com.au/sha_testvectors.html
 //               https://github.com/bitcoin/bitcoin/blob/master/src/test/crypto_tests.cpp
@@ -174,5 +174,67 @@ func test_sha256_64_bytes{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     return ();
 }
 
-// TODO: Test that sha256 validates that every element of the input array is an uint32
+// Test that sha256 validates that every element of the input array is an uint32
 // and throws and error otherwise
+//
+@external
+func test_sha256_uint32_overflow{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
+    alloc_locals;
+
+    let n_bytes = 16;
+    let (input) = alloc();
+    assert [input + 0] = 0x0FFFFFFFF;
+    assert [input + 1] = 0x100000000;
+    assert [input + 2] = 0x00000FFFF;
+    assert [input + 3] = 0x000010000;
+
+    %{ expect_revert() %}
+    
+    // initialize sha256_ptr
+    let sha256_ptr: felt* = alloc();
+    let sha256_ptr_start = sha256_ptr;
+    with sha256_ptr {
+        let (output) = compute_sha256(input, n_bytes);
+    }
+    
+    // finalize sha256_ptr
+    finalize_sha256(sha256_ptr_start, sha256_ptr);
+    return ();
+}
+
+// @external
+// NOTE: padding bytes should be zero or ignored from sha256
+//
+func test_sha256_uint32_padding{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
+    alloc_locals;
+    
+    // initialize sha256_ptr
+    let sha256_ptr: felt* = alloc();
+    let sha256_ptr_start = sha256_ptr;
+    
+    let n_bytes = 14;
+    let (input) = alloc();
+    assert [input + 0] = 0xFFFFFFFF;
+    assert [input + 1] = 0xFFFFFFFF;
+    assert [input + 2] = 0xFFFFFFFF;
+    assert [input + 3] = 0xFFFFFFFF;
+    with sha256_ptr {
+        let (output_0) = compute_sha256(input, n_bytes);
+    }
+
+    let n_bytes = 14;
+    let (input) = alloc();
+    assert [input + 0] = 0xFFFFFFFF;
+    assert [input + 1] = 0xFFFFFFFF;
+    assert [input + 2] = 0xFFFFFFFF;
+    assert [input + 3] = 0xFFFF0000;
+    with sha256_ptr {
+        let (output_1) = compute_sha256(input, n_bytes);
+    }
+
+    assert_hashes_equal(output_0, output_1);
+    
+    // finalize sha256_ptr
+    finalize_sha256(sha256_ptr_start, sha256_ptr);
+    return ();
+}
