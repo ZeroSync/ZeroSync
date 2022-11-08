@@ -445,5 +445,3 @@ func test_byte_size_to_felt_size{range_check_ptr}() {
     
     return ();
 }
-
-// TODO: test remaining methods of the writer
