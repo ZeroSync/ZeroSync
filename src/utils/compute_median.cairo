@@ -4,6 +4,10 @@ from starkware.cairo.common.math_cmp import is_le
 const TIMESTAMP_COUNT = 11;
 const TIMESTAMP_MEDIAN_INDEX = 5;
 
+// TODO: implement the efficient algorithm to compute the median using a hint.
+// To verify the hint iterate through the array and ensure that 
+// median_occurences > abs( num_elements_lt_median - num_elements_gt_median )
+
 func compute_timestamps_median{range_check_ptr}(timestamp_array : felt*) -> (
         median_value : felt
     ) {

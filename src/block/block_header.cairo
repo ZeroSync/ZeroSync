@@ -185,7 +185,7 @@ func read_block_header_validation_context{range_check_ptr, bitwise_ptr: BitwiseB
 //
 func bits_to_target{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(bits) -> (target: felt) {
     alloc_locals;
-    // Ensure that the max target is not exceeded (0x1d00FFFF)
+    // Ensure that the max target does not exceeded (0x1d00FFFF)
     with_attr error_message("Bits ({bits}) exceeded the max target ({MAX_BITS}).") {
         assert_le(bits, MAX_BITS);
     }
@@ -193,14 +193,14 @@ func bits_to_target{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(bits) -> (tar
     // Decode the 4 bytes of `bits` into exponent and significand.
     // There's 1 byte for the exponent followed by 3 bytes for the significand
 
-    // To do so, first we need a mask with the first 8 bits:
+    // To do so, first we need a mask for the first 8 bits:
     const MASK_BITS_TO_SHIFT = 0xFF000000;
-    // Then, using a bitwise and to get only the first 8 bits.
+    // Then, using a bitwise AND to get only the first 8 bits.
     let (bits_to_shift) = bitwise_and(bits, MASK_BITS_TO_SHIFT);
     // And finally, do the shifts
     let exponent = bits_to_shift / 0x1000000;
 
-    // extract last 3 bytes from `bits` to get the significand
+    // Extract the last 3 bytes from `bits` to get the significand
     let (significand) = bitwise_and(bits, 0x00ffffff);
 
     // The target is the `significand` shifted `exponent` times to the left
@@ -259,7 +259,7 @@ func validate_prev_block_hash(context: BlockHeaderValidationContext) {
 }
 
 
-// Validate a block header's proof-of-work matches its target.
+// Validate that a block header's proof-of-work matches its target.
 // Expects that the 4 most significant bytes of `block_hash` are zero.
 //
 func validate_proof_of_work{range_check_ptr}(context: BlockHeaderValidationContext) {
@@ -325,7 +325,7 @@ func validate_timestamp{range_check_ptr}(context: BlockHeaderValidationContext) 
 }
 
 
-// Compute the total work invested into the longest chain
+// Compute the total work invested into the chain
 //
 func compute_total_work{range_check_ptr}(
     context: BlockHeaderValidationContext) -> (work: felt) {
@@ -481,8 +481,7 @@ func target_to_bits{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(target) -> (b
         ids.bits = target_to_bits(ids.target)
     %}
 
-    // We need to perform 24 right-shifts
-    // So we need only the 8 most significative bits.
+    /// Compute the `exponent` which is the most significant byte of `bits`.
 
     // To do so, first we need a mask with the first 8 bits:
     const MASK_BITS_TO_SHIFT = 0xFF000000;
@@ -495,6 +494,7 @@ func target_to_bits{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(target) -> (b
 
     let is_greater_than_2 = (2 - exponent) * (1 - exponent) * exponent;
     if (is_greater_than_2 == 0) {
+        // TODO: assert that masked_target == expected_target here too
         return (bits=bits);
     } else {
         // if exponent >= 3 we check that

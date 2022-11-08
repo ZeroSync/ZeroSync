@@ -42,7 +42,7 @@ Implement witness verification and complete the full chain proof.
 	- Client to download and prove a chainstate directory for a Bitcoin Core full node
 	
 
-After this milestone we can sync a pruned full node by downloading only the current UTXO set. Running a zerosync'd full node requires no modification of the code of Bitcoin Core. We just copy the UTXO set into Core's chainstate directory after verifying it.
+After this milestone we can sync a pruned full node by downloading only the current UTXO set. Running a zerosync'd full node requires no modification of the code of Bitcoin Core. We just copy the UTXO set into Core's chainstate directory after verifying it. Ideally, we combine this with [AssumeUTXO](https://bitcoinops.org/en/topics/assumeutxo/) to gradually roll out ZeroSync while still having a backup check to verify the verification 🤓
 
 
 ## Milestone 4: *Hardening*

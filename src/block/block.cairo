@@ -76,7 +76,6 @@ func read_block_validation_context{range_check_ptr, bitwise_ptr: BitwiseBuiltin*
     
     let block_height = prev_state.chain_state.block_height + 1;
     let (transaction_count) = fetch_transaction_count(block_height);
-
     let (transaction_contexts) = read_transaction_validation_contexts(block_height, transaction_count);
 
     return (
@@ -221,19 +220,25 @@ func validate_and_apply_coinbase{range_check_ptr, hash_ptr: HashBuiltin*, utreex
 
     let tx_context = context.transaction_contexts[0];
 
-    // Ensure there is exactly one input
+    /// Validate the coinbase input
+    // Ensure there is exactly one coinbase input
     with_attr error_message("`input_count` of coinbase should be 1") {
         assert 1 = tx_context.transaction.input_count;
     }
+    // Ensure the input's vout is 0xFFFFFFFF
     with_attr error_message("`vout` of coinbase input should be 0xFFFFFFFF") {
         assert 0xFFFFFFFF = tx_context.transaction.inputs[0].vout;
     }
+    // Ensure the input's TXID is zero
     with_attr error_message("`txid` of coinbase input should be 0") {
         // Using `memset` as hack for `assert`
         memset(tx_context.transaction.inputs[0].txid, 0x00000000, 8);
     }
     
-    // Compute total output amount
+
+    /// Validate the outputs' amounts
+    // Sum up the total amount of all outputs 
+    // and also add the outputs to the UTXO set.
     let (total_output_amount) = validate_outputs_loop(
         tx_context,
         tx_context.transaction.outputs,
@@ -241,23 +246,22 @@ func validate_and_apply_coinbase{range_check_ptr, hash_ptr: HashBuiltin*, utreex
         0,
         tx_context.transaction.output_count
     );
-
-    // TODO: implement BIP34
-
+    // Ensure the total amount is at most the block reward + TX fees
     let block_reward = compute_block_reward(context.header_context.block_height);
     with_attr error_message("`total_output_amount <= block_reward + total_fees` should be true") {
         assert_le(total_output_amount, block_reward + total_fees);
     }
 
+    // TODO: implement BIP34
     return ();
 }
 
 
 // Compute the miner's block reward with respect to the block height
-
+//
 func compute_block_reward{range_check_ptr} (block_height) -> felt {
     let (number_halvings,_) = unsigned_div_rem(block_height , 210000);
     let denominator = pow2(number_halvings);
     let (block_reward,_) = unsigned_div_rem(50*10**8 , denominator); 
     return block_reward;
-}        
+}

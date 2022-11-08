@@ -360,6 +360,6 @@ struct TypedWriter {
 
 // - https://developer.bitcoin.org/devguide/transactions.html#signature-hash-types
 // func hash_with_sighash_flag(transaction: Transaction, sighash: felt) -> (hash: felt*):
-
+// TODO: implement hash_with_sighash_flag
 // return ()
 // end

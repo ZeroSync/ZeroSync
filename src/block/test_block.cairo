@@ -293,7 +293,7 @@ func test_verify_block_with_49_transactions{
     return ();
 }
 
-// TODO: Add tests between 49 and  2496 transactions
+// TODO: Add tests between 49 and 2496 transactions
 
 // Test a Bitcoin block with 2496 transactions.
 //
