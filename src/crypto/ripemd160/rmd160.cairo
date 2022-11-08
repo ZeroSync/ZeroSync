@@ -8,8 +8,8 @@ from starkware.cairo.common.math import unsigned_div_rem
 from starkware.cairo.common.math_cmp import is_le
 from starkware.cairo.common.memcpy import memcpy
 
-from crypto.ripemd160.euler_smile.pow2 import pow2
-from crypto.ripemd160.euler_smile.utils import (
+from utils.pow2 import pow2
+from crypto.ripemd160.utils import (
     MAX_32_BIT,
     FF,
     GG,
@@ -124,7 +124,7 @@ func append_one_bit{input_ptr: felt*}(last_word, n_bytes) -> felt {
     }
 
     // Calculate the felt representation of the '1' bit depending on 'n_bytes' stored in 'last_word'.
-    let (one_bit) = pow2(8 * (4 - n_bytes) - 1);
+    let one_bit = pow2(8 * (4 - n_bytes) - 1);
     // Add the pad_input '1' bit to the last word.
     assert [input_ptr] = last_word + one_bit;
     let input_ptr = input_ptr + 1;

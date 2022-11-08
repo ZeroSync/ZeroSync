@@ -2,7 +2,7 @@ from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.bitwise import bitwise_and, bitwise_or, bitwise_xor
 from starkware.cairo.common.math import assert_nn_le, unsigned_div_rem
 from starkware.cairo.common.math_cmp import is_le
-from crypto.ripemd160.euler_smile.pow2 import pow2
+from utils.pow2 import pow2
 
 const MAX_32_BIT = 2 ** 32;
 const MAX_BYTE = 2 ** 8;
@@ -70,8 +70,8 @@ func ROL{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(x, n) -> (res: felt) {
     assert_nn_le(x, 2 ** 32 - 1);
     assert_nn_le(n, 31);
 
-    let (factor_n) = pow2(n);
-    let (factor_diff) = pow2(32 - n);
+    let factor_n = pow2(n);
+    let factor_diff = pow2(32 - n);
     let (x_left_shift) = uint32_mul(x, factor_n);
     let (x_right_shift, _) = unsigned_div_rem(x, factor_diff);
     let (res) = uint32_or(x_left_shift, x_right_shift);
