@@ -5,7 +5,7 @@ use std::fs::File;
 use std::io::{BufReader, Read};
 use std::iter::zip;
 use winter_utils::{Deserializable, SliceReader};
-use winterfell::StarkProof;
+use winterfell::{StarkProof, HashFunction, FieldExtension};
 
 use winter_air::proof::{Commitments, Context, OodFrame};
 use winter_air::DefaultEvaluationFrame;
@@ -122,7 +122,7 @@ impl Writeable for Context {
     fn write_into(&self, target: &mut DynamicMemory) {
         self.trace_layout().write_into(target);
         self.trace_length().write_into(target); // Do not serialize as a power of two
-                                                //
+                                                
         self.get_trace_info().meta().len().write_into(target);
         target.write_array(self.get_trace_info().meta().to_vec());
 
@@ -212,13 +212,24 @@ impl Writeable for ProofOptions {
         self.blowup_factor().write_into(target);
         self.grinding_factor().write_into(target);
 
-        // TODO: Implement Writeable for HashFunction and FieldExtension
-        4u8.write_into(target); // HashFunction::Blake2s_256
-        1u8.write_into(target); // FieldExtension::None
+        self.hash_fn().write_into(target);
+        self.field_extension().write_into(target);
 
         let fri_options = self.to_fri_options();
         fri_options.folding_factor().write_into(target);
         fri_options.max_remainder_size().write_into(target);
+    }
+}
+
+impl Writeable for HashFunction {
+    fn write_into(&self, target: &mut DynamicMemory) {
+        (*self as u8).write_into(target);
+    }
+}
+
+impl Writeable for FieldExtension {
+    fn write_into(&self, target: &mut DynamicMemory) {
+        (*self as u8).write_into(target);
     }
 }
 
