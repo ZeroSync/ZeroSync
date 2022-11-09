@@ -47,7 +47,7 @@ struct TxOutput {
 }
 
 // Read a Transaction from a buffer
-func read_transaction{reader: Reader, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() -> (
+func read_transaction{reader: Reader, bitwise_ptr: BitwiseBuiltin*}() -> (
     transaction: Transaction, byte_size: felt
 ) {
     alloc_locals;
@@ -91,7 +91,7 @@ func read_transaction{reader: Reader, range_check_ptr, bitwise_ptr: BitwiseBuilt
 }
 
 // Read transaction inputs from a buffer
-func read_inputs{reader: Reader, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(input_count) -> (
+func read_inputs{reader: Reader, bitwise_ptr: BitwiseBuiltin*}(input_count) -> (
     inputs: TxInput*, byte_size: felt
 ) {
     alloc_locals;
@@ -101,7 +101,7 @@ func read_inputs{reader: Reader, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
 }
 
 // LOOP: Read transaction inputs from a buffer
-func _read_inputs_loop{reader: Reader, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(inputs: TxInput*, loop_counter) -> (
+func _read_inputs_loop{reader: Reader, bitwise_ptr: BitwiseBuiltin*}(inputs: TxInput*, loop_counter) -> (
     byte_size: felt
 ) {
     alloc_locals;
@@ -117,7 +117,7 @@ func _read_inputs_loop{reader: Reader, range_check_ptr, bitwise_ptr: BitwiseBuil
 }
 
 // Read a transaction input from a buffer
-func read_input{reader: Reader, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() -> (input: TxInput, byte_size: felt) {
+func read_input{reader: Reader, bitwise_ptr: BitwiseBuiltin*}() -> (input: TxInput, byte_size: felt) {
     alloc_locals;
     let (txid) = read_hash();
     let (vout) = read_uint32();
@@ -142,7 +142,7 @@ func read_input{reader: Reader, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}()
 }
 
 // Read outputs from a buffer
-func read_outputs{reader: Reader, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(output_count) -> (
+func read_outputs{reader: Reader, bitwise_ptr: BitwiseBuiltin*}(output_count) -> (
     outputs: TxOutput*, byte_size: felt
 ) {
     alloc_locals;
@@ -152,7 +152,7 @@ func read_outputs{reader: Reader, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}
 }
 
 // LOOP: Read transaction outputs
-func _read_outputs_loop{reader: Reader, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(outputs: TxOutput*, loop_counter) -> (
+func _read_outputs_loop{reader: Reader, bitwise_ptr: BitwiseBuiltin*}(outputs: TxOutput*, loop_counter) -> (
     byte_size: felt
 ) {
     alloc_locals;
@@ -169,7 +169,7 @@ func _read_outputs_loop{reader: Reader, range_check_ptr, bitwise_ptr: BitwiseBui
 
 // Read an output from a buffer
 // Compute the output's byte size
-func read_output{reader: Reader, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() -> (output: TxOutput, byte_size: felt) {
+func read_output{reader: Reader, bitwise_ptr: BitwiseBuiltin*}() -> (output: TxOutput, byte_size: felt) {
     alloc_locals;
     let (amount) = read_uint64();
     let script_pub_key_size = read_varint();
@@ -221,9 +221,9 @@ func fetch_transaction(block_height, tx_index) -> (raw_transaction: felt*) {
 }
 
 // Read a transaction from a buffer and set its validation context
-func read_transaction_validation_context{
-    range_check_ptr, bitwise_ptr: BitwiseBuiltin*, sha256_ptr: felt*
-    }( block_height, transaction_index ) -> (result: TransactionValidationContext) {
+func read_transaction_validation_context{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, sha256_ptr: felt*}(
+    block_height, transaction_index
+) -> (result: TransactionValidationContext) {
     alloc_locals;
 
     let (transaction_raw) = fetch_transaction(block_height, transaction_index);
