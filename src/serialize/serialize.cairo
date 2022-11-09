@@ -39,7 +39,6 @@ func read_uint8{reader: Reader, bitwise_ptr: BitwiseBuiltin*}() -> (byte: felt) 
     if (reader.offset == 0) {
         // The Reader is empty, so we read from the head, return the first byte,
         // and copy the remaining three bytes into the Reader's payload.
-
         assert bitwise_ptr[0].x = [reader.head];
         assert bitwise_ptr[0].y = 0xFF000000;
         assert bitwise_ptr[1].x = [reader.head];
@@ -47,10 +46,7 @@ func read_uint8{reader: Reader, bitwise_ptr: BitwiseBuiltin*}() -> (byte: felt) 
         let byte = bitwise_ptr[0].x_and_y / BYTE ** 3;
         let payload = bitwise_ptr[1].x_and_y;
         let bitwise_ptr = bitwise_ptr + BitwiseBuiltin.SIZE * 2;
-        // let (byte, payload) = unsigned_div_rem([reader.head], BYTE ** 3);
         let reader = Reader(reader.head + 1, UINT32_SIZE - 1, payload * BYTE);
-        // TODO: Check for overflows. What if `byte` > 255 here?
-        // assert_le(byte, BYTE - 1)
         return (byte,);
     } else {
         // The Reader is not empty. So we read the first byte from its payload
@@ -62,7 +58,6 @@ func read_uint8{reader: Reader, bitwise_ptr: BitwiseBuiltin*}() -> (byte: felt) 
         let byte = bitwise_ptr[0].x_and_y / BYTE ** 3;
         let payload = bitwise_ptr[1].x_and_y;
         let bitwise_ptr = bitwise_ptr + BitwiseBuiltin.SIZE * 2;
-        // let (byte, payload) = unsigned_div_rem(reader.payload, BYTE ** 3);
         let reader = Reader(reader.head, reader.offset - 1, payload * BYTE);
         return (byte,);
     }
@@ -156,9 +151,7 @@ func _read_into_uint32_array{reader: Reader, bitwise_ptr: BitwiseBuiltin*}(outpu
 
 func read_bytes{reader: Reader, bitwise_ptr: BitwiseBuiltin*}(length: felt) -> (result: felt*) {
     alloc_locals;
-
     let (result) = alloc();
-    
     assert bitwise_ptr[0].x = length;
     assert bitwise_ptr[0].y = 0xFFFFFFFC;
     assert bitwise_ptr[1].x = length;
@@ -166,7 +159,6 @@ func read_bytes{reader: Reader, bitwise_ptr: BitwiseBuiltin*}(length: felt) -> (
     let len_div_4 = bitwise_ptr[0].x_and_y / 4;
     let len_mod_4 = bitwise_ptr[1].x_and_y;
     let bitwise_ptr = bitwise_ptr + BitwiseBuiltin.SIZE * 2;
-    // let (len_div_4, len_mod_4) = unsigned_div_rem(length, UINT32_SIZE);
     // Read as many 4-byte chunks as possible into the array
     _read_into_uint32_array(result, len_div_4);
     // Read up to three more bytes
@@ -176,7 +168,6 @@ func read_bytes{reader: Reader, bitwise_ptr: BitwiseBuiltin*}(length: felt) -> (
 
 func read_bytes_endian{reader: Reader, bitwise_ptr: BitwiseBuiltin*}(length: felt) -> (result: felt*) {
     alloc_locals;
-
     let (result) = alloc();
     assert bitwise_ptr[0].x = length;
     assert bitwise_ptr[0].y = 0xFFFFFFFC;
@@ -185,9 +176,7 @@ func read_bytes_endian{reader: Reader, bitwise_ptr: BitwiseBuiltin*}(length: fel
     let len_div_4 = bitwise_ptr[0].x_and_y / 4;
     let len_mod_4 = bitwise_ptr[1].x_and_y;
     let bitwise_ptr = bitwise_ptr + BitwiseBuiltin.SIZE * 2;
-    // let (len_div_4, len_mod_4) = unsigned_div_rem(length, UINT32_SIZE);
     _read_into_uint32_array_endian(result, len_div_4);
-
     _read_n_bytes_into_felt_endian(result + len_div_4, 0, BYTE ** 3, len_mod_4);
     return (result,);
 }
@@ -225,7 +214,6 @@ func peek_uint8{reader: Reader, bitwise_ptr: BitwiseBuiltin*}() -> (byte: felt) 
         assert [bitwise_ptr].y = 0xFF000000;
         let first_byte = [bitwise_ptr].x_and_y / BYTE ** 3;
         let bitwise_ptr = bitwise_ptr + BitwiseBuiltin.SIZE;
-        // let (first_byte, _) = unsigned_div_rem([reader.head], BYTE ** 3);
         return (first_byte,);
     } else {
         // The Reader is not empty, so we read the first byte from its payload
@@ -233,7 +221,6 @@ func peek_uint8{reader: Reader, bitwise_ptr: BitwiseBuiltin*}() -> (byte: felt) 
         assert [bitwise_ptr].y = 0xFF000000;
         let first_byte = [bitwise_ptr].x_and_y / BYTE ** 3;
         let bitwise_ptr = bitwise_ptr + BitwiseBuiltin.SIZE;
-        // let (first_byte, _) = unsigned_div_rem(reader.payload, BYTE ** 3);
         return (first_byte,);
     }
 }
@@ -253,16 +240,13 @@ func flush_writer(writer: Writer) {
     // Write what's left in our writer
     // Then fill up the uint32 with trailing zeros
     let base = pow2(8 * (UINT32_SIZE - writer.offset));
-    // let (base) = pow(BYTE, UINT32_SIZE - writer.offset);
     assert [writer.head] = writer.payload * base;
     return ();
 }
 
 func write_uint8{writer: Writer}(source) {
     alloc_locals;
-
     let value = writer.payload * BYTE + source;
-
     let offset = writer.offset + 1;
     if (offset == UINT32_SIZE) {
         assert [writer.head] = value;
@@ -282,7 +266,6 @@ func write_uint16{writer: Writer, bitwise_ptr: BitwiseBuiltin*}(source) {
     let uint8_1 = bitwise_ptr[0].x_and_y / BYTE;
     let uint8_0 = bitwise_ptr[1].x_and_y;
     let bitwise_ptr = bitwise_ptr + 2 * BitwiseBuiltin.SIZE;
-    // let (uint8_1, uint8_0) = unsigned_div_rem(source, BYTE);
     write_uint8(uint8_0);
     write_uint8(uint8_1);
     return ();
@@ -303,9 +286,6 @@ func write_uint32{writer: Writer, bitwise_ptr: BitwiseBuiltin*}(source) {
     let uint8_2 = bitwise_ptr[2].x_and_y / BYTE ** 2;
     let uint8_3 = bitwise_ptr[3].x_and_y / BYTE ** 3;
     let bitwise_ptr = bitwise_ptr + 4 * BitwiseBuiltin.SIZE;
-    // let (uint24, uint8_0) = unsigned_div_rem(source, BYTE);
-    // let (uint16, uint8_1) = unsigned_div_rem(uint24, BYTE);
-    // let (uint8_3, uint8_2) = unsigned_div_rem(uint16, BYTE);
     write_uint8(uint8_0);
     write_uint8(uint8_1);
     write_uint8(uint8_2);
@@ -340,13 +320,6 @@ func write_uint64{writer: Writer, bitwise_ptr: BitwiseBuiltin*}(source: felt) {
     let uint8_6 = bitwise_ptr[6].x_and_y / BYTE ** 6;
     let uint8_7 = bitwise_ptr[7].x_and_y / BYTE ** 7;
     let bitwise_ptr = bitwise_ptr + 8 * BitwiseBuiltin.SIZE;
-    // let (uint56, uint8_0) = unsigned_div_rem(source, BYTE);
-    // let (uint48, uint8_1) = unsigned_div_rem(uint56, BYTE);
-    // let (uint40, uint8_2) = unsigned_div_rem(uint48, BYTE);
-    // let (uint32, uint8_3) = unsigned_div_rem(uint40, BYTE);
-    // let (uint24, uint8_4) = unsigned_div_rem(uint32, BYTE);
-    // let (uint16, uint8_5) = unsigned_div_rem(uint24, BYTE);
-    // let (uint8_7, uint8_6) = unsigned_div_rem(uint16, BYTE);
     write_uint8(uint8_0);
     write_uint8(uint8_1);
     write_uint8(uint8_2);
@@ -411,9 +384,6 @@ func write_uint32_endian{writer: Writer, bitwise_ptr: BitwiseBuiltin*}(source) {
     let uint8_2 = bitwise_ptr[2].x_and_y / BYTE;
     let uint8_3 = bitwise_ptr[3].x_and_y;
     let bitwise_ptr = bitwise_ptr + 4 * BitwiseBuiltin.SIZE;
-    // let (uint24, uint8_3) = unsigned_div_rem(source, BYTE);
-    // let (uint16, uint8_2) = unsigned_div_rem(uint24, BYTE);
-    // let (uint8_0, uint8_1) = unsigned_div_rem(uint16, BYTE);
     write_uint8(uint8_0);
     write_uint8(uint8_1);
     write_uint8(uint8_2);
@@ -442,7 +412,6 @@ func byte_size_to_felt_size{bitwise_ptr: BitwiseBuiltin*}(byte_size) -> (felt_si
     let size_div_4 = bitwise_ptr[0].x_and_y / 4;
     let size_mod_4 = bitwise_ptr[1].x_and_y;
     let bitwise_ptr = bitwise_ptr + BitwiseBuiltin.SIZE * 2;
-    // let (size_div_4, size_mod_4) = unsigned_div_rem(byte_size, UINT32_SIZE);
     if (size_mod_4 == 0) {
         return (size_div_4,);
     } else {
