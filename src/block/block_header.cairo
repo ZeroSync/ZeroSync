@@ -494,17 +494,20 @@ func target_to_bits{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(target) -> (b
 
     let is_greater_than_2 = (2 - exponent) * (1 - exponent) * exponent;
     if (is_greater_than_2 == 0) {
-        // TODO: assert that masked_target == expected_target here too
-        return (bits=bits);
+        with_attr error_message("Hint provided an invalid value for `bits`") {
+            assert expected_target = target;
+        }
+        return (bits,);
     } else {
         // if exponent >= 3 we check that
         // ((target & (threshold * 0xffffff)) - expected_target) == 0
         let (threshold) = pow(BYTE, exponent - 3);
         let mask = threshold * 0xffffff;
         let (masked_target) = bitwise_and(target, mask);
-        assert (masked_target - expected_target) = 0;
-
-        return (bits=bits);
+        with_attr error_message("Hint provided an invalid value for `bits`") {
+            assert masked_target = expected_target;
+        }
+        return (bits,);
     }
 }
 
