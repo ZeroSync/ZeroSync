@@ -61,7 +61,7 @@ struct BlockHeader {
 
 // Read a BlockHeader from a Uint32 array
 //
-func read_block_header{reader: Reader, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() -> (result: BlockHeader) {
+func read_block_header{reader: Reader, bitwise_ptr: BitwiseBuiltin*}() -> (result: BlockHeader) {
     alloc_locals;
 
     let (version) = read_uint32();
