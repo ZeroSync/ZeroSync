@@ -104,7 +104,7 @@ func test_read_uint64{bitwise_ptr: BitwiseBuiltin*}() {
 }
 
 @external
-func test_read_varint{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
+func test_read_varint{bitwise_ptr: BitwiseBuiltin*}() {
     alloc_locals;
 
     let (array) = alloc();
@@ -252,7 +252,6 @@ func test_read_2_4_8_bytes{bitwise_ptr: BitwiseBuiltin*}() {
     return ();
 }
 
-// TODO
 @external
 func test_read_overflow_uint32{bitwise_ptr: BitwiseBuiltin*}() {
     alloc_locals;
@@ -261,8 +260,11 @@ func test_read_overflow_uint32{bitwise_ptr: BitwiseBuiltin*}() {
 
     let (reader) = init_reader(array);
 
-    // %{ expect_revert() %}
-    let (uint32) = read_uint32{reader=reader}();
+    with reader {
+        let (uint32) = read_uint32();
+    }
+
+    assert 0xff030201 = uint32;
 
     return ();
 }
