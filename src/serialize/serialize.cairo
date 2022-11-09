@@ -12,6 +12,7 @@ from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.pow import pow
 from starkware.cairo.common.math import unsigned_div_rem, assert_le
 from starkware.cairo.common.math_cmp import is_le
+from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 
 // The base for byte-wise shifts via multiplication and integer division
 const BYTE = 2 ** 8;
@@ -33,25 +34,40 @@ func init_reader(array: felt*) -> (reader: Reader) {
 }
 
 // Read a byte from the reader
-func read_uint8{reader: Reader, range_check_ptr}() -> (byte: felt) {
+func read_uint8{reader: Reader, bitwise_ptr: BitwiseBuiltin*}() -> (byte: felt) {
     if (reader.offset == 0) {
         // The Reader is empty, so we read from the head, return the first byte,
         // and copy the remaining three bytes into the Reader's payload.
-        let (byte, payload) = unsigned_div_rem([reader.head], BYTE ** 3);
+
+        assert bitwise_ptr[0].x = [reader.head];
+        assert bitwise_ptr[0].y = 0xFF000000;
+        assert bitwise_ptr[1].x = [reader.head];
+        assert bitwise_ptr[1].y = 0x00FFFFFF;
+        let byte = bitwise_ptr[0].x_and_y / BYTE ** 3;
+        let payload = bitwise_ptr[1].x_and_y;
+        let bitwise_ptr = bitwise_ptr + BitwiseBuiltin.SIZE * 2;
+        // let (byte, payload) = unsigned_div_rem([reader.head], BYTE ** 3);
+        let reader = Reader(reader.head + 1, UINT32_SIZE - 1, payload * BYTE);
         // TODO: Check for overflows. What if `byte` > 255 here?
         // assert_le(byte, BYTE - 1)
-        let reader = Reader(reader.head + 1, UINT32_SIZE - 1, payload * BYTE);
         return (byte,);
     } else {
         // The Reader is not empty. So we read the first byte from its payload
         // and continue with the remaining bytes.
-        let (byte, payload) = unsigned_div_rem(reader.payload, BYTE ** 3);
+        assert bitwise_ptr[0].x = reader.payload;
+        assert bitwise_ptr[0].y = 0xFF000000;
+        assert bitwise_ptr[1].x = reader.payload;
+        assert bitwise_ptr[1].y = 0x00FFFFFF;
+        let byte = bitwise_ptr[0].x_and_y / BYTE ** 3;
+        let payload = bitwise_ptr[1].x_and_y;
+        let bitwise_ptr = bitwise_ptr + BitwiseBuiltin.SIZE * 2;
+        // let (byte, payload) = unsigned_div_rem(reader.payload, BYTE ** 3);
         let reader = Reader(reader.head, reader.offset - 1, payload * BYTE);
         return (byte,);
     }
 }
 
-func _read_n_bytes_into_felt{reader: Reader, range_check_ptr}(
+func _read_n_bytes_into_felt{reader: Reader, bitwise_ptr: BitwiseBuiltin*}(
     output: felt*, value, base, loop_counter
 ) {
     if (loop_counter == 0) {
@@ -63,21 +79,21 @@ func _read_n_bytes_into_felt{reader: Reader, range_check_ptr}(
     return ();
 }
 
-func read_uint16{reader: Reader, range_check_ptr}() -> (result: felt) {
+func read_uint16{reader: Reader, bitwise_ptr: BitwiseBuiltin*}() -> (result: felt) {
     alloc_locals;
     let (result) = alloc();
     _read_n_bytes_into_felt(result, 0, 1, UINT16_SIZE);
     return ([result],);
 }
 
-func read_uint32{reader: Reader, range_check_ptr}() -> (result: felt) {
+func read_uint32{reader: Reader, bitwise_ptr: BitwiseBuiltin*}() -> (result: felt) {
     alloc_locals;
     let (result) = alloc();
     _read_n_bytes_into_felt(result, 0, 1, UINT32_SIZE);
     return ([result],);
 }
 
-func read_uint64{reader: Reader, range_check_ptr}() -> (result: felt) {
+func read_uint64{reader: Reader, bitwise_ptr: BitwiseBuiltin*}() -> (result: felt) {
     alloc_locals;
     let (result) = alloc();
     _read_n_bytes_into_felt(result, 0, 1, UINT64_SIZE);
@@ -91,7 +107,7 @@ func read_uint64{reader: Reader, range_check_ptr}() -> (result: felt) {
 // - https://developer.bitcoin.org/reference/transactions.html#compactsize-unsigned-integers
 // - https://github.com/bitcoin/bitcoin/blob/9ba73758c908ce0c49f1bd9727ea496958e24d54/src/serialize.h#L275
 //
-func read_varint{reader: Reader, range_check_ptr}() -> (value: felt, byte_size: felt) {
+func read_varint{reader: Reader, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() -> (value: felt, byte_size: felt) {
     // Read the first byte
     let (first_byte) = read_uint8();
 
@@ -128,7 +144,7 @@ func read_varint{reader: Reader, range_check_ptr}() -> (value: felt, byte_size: 
     return (first_byte, UINT8_SIZE);
 }
 
-func _read_into_uint32_array{reader: Reader, range_check_ptr}(output: felt*, loop_counter) {
+func _read_into_uint32_array{reader: Reader, bitwise_ptr: BitwiseBuiltin*}(output: felt*, loop_counter) {
     if (loop_counter == 0) {
         return ();
     }
@@ -137,7 +153,7 @@ func _read_into_uint32_array{reader: Reader, range_check_ptr}(output: felt*, loo
     return ();
 }
 
-func read_bytes{reader: Reader, range_check_ptr}(length: felt) -> (result: felt*) {
+func read_bytes{reader: Reader, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(length: felt) -> (result: felt*) {
     alloc_locals;
 
     let (result) = alloc();
@@ -149,7 +165,7 @@ func read_bytes{reader: Reader, range_check_ptr}(length: felt) -> (result: felt*
     return (result,);
 }
 
-func read_bytes_endian{reader: Reader, range_check_ptr}(length: felt) -> (result: felt*) {
+func read_bytes_endian{reader: Reader, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(length: felt) -> (result: felt*) {
     alloc_locals;
 
     let (result) = alloc();
@@ -160,7 +176,7 @@ func read_bytes_endian{reader: Reader, range_check_ptr}(length: felt) -> (result
     return (result,);
 }
 
-func _read_into_uint32_array_endian{reader: Reader, range_check_ptr}(output: felt*, loop_counter) {
+func _read_into_uint32_array_endian{reader: Reader, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(output: felt*, loop_counter) {
     if (loop_counter == 0) {
         return ();
     }
@@ -169,7 +185,7 @@ func _read_into_uint32_array_endian{reader: Reader, range_check_ptr}(output: fel
     return ();
 }
 
-func _read_n_bytes_into_felt_endian{reader: Reader, range_check_ptr}(
+func _read_n_bytes_into_felt_endian{reader: Reader, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
     output: felt*, value, base, loop_counter
 ) {
     if (loop_counter == 0) {
@@ -181,19 +197,27 @@ func _read_n_bytes_into_felt_endian{reader: Reader, range_check_ptr}(
     return ();
 }
 
-func read_hash{reader: Reader, range_check_ptr}() -> (result: felt*) {
+func read_hash{reader: Reader, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() -> (result: felt*) {
     return read_bytes_endian(32);
 }
 
 // Peek the first byte from a reader without increasing the reader's cursor
-func peek_uint8{reader: Reader, range_check_ptr}() -> (byte: felt) {
+func peek_uint8{reader: Reader, bitwise_ptr: BitwiseBuiltin*}() -> (byte: felt) {
     if (reader.offset == 0) {
         // The Reader's payload is empty, so we read from the head
-        let (first_byte, _) = unsigned_div_rem([reader.head], BYTE ** 3);
+        assert [bitwise_ptr].x = [reader.head];
+        assert [bitwise_ptr].y = 0xFF000000;
+        let first_byte = [bitwise_ptr].x_and_y / BYTE ** 3;
+        let bitwise_ptr = bitwise_ptr + BitwiseBuiltin.SIZE;
+        // let (first_byte, _) = unsigned_div_rem([reader.head], BYTE ** 3);
         return (first_byte,);
     } else {
         // The Reader is not empty, so we read the first byte from its payload
-        let (first_byte, _) = unsigned_div_rem(reader.payload, BYTE ** 3);
+        assert [bitwise_ptr].x = reader.payload;
+        assert [bitwise_ptr].y = 0xFF000000;
+        let first_byte = [bitwise_ptr].x_and_y / BYTE ** 3;
+        let bitwise_ptr = bitwise_ptr + BitwiseBuiltin.SIZE;
+        // let (first_byte, _) = unsigned_div_rem(reader.payload, BYTE ** 3);
         return (first_byte,);
     }
 }

@@ -6,6 +6,7 @@
 %lang starknet
 
 from starkware.cairo.common.alloc import alloc
+from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from crypto.sha256d.sha256d import assert_hashes_equal
 from serialize.serialize import (
     flush_writer,
@@ -29,7 +30,7 @@ from serialize.serialize import (
 )
 
 @external
-func test_read_uint8{range_check_ptr}() {
+func test_read_uint8{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     alloc_locals;
 
     let (array) = alloc();
@@ -57,7 +58,7 @@ func test_read_uint8{range_check_ptr}() {
 }
 
 @external
-func test_read_uint16{range_check_ptr}() {
+func test_read_uint16{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     alloc_locals;
 
     let (array) = alloc();
@@ -72,7 +73,7 @@ func test_read_uint16{range_check_ptr}() {
 }
 
 @external
-func test_read_uint32{range_check_ptr}() {
+func test_read_uint32{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     alloc_locals;
 
     let (array) = alloc();
@@ -87,7 +88,7 @@ func test_read_uint32{range_check_ptr}() {
 }
 
 @external
-func test_read_uint64{range_check_ptr}() {
+func test_read_uint64{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     alloc_locals;
 
     let (array) = alloc();
@@ -103,7 +104,7 @@ func test_read_uint64{range_check_ptr}() {
 }
 
 @external
-func test_read_varint{range_check_ptr}() {
+func test_read_varint{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     alloc_locals;
 
     let (array) = alloc();
@@ -135,7 +136,7 @@ func test_read_varint{range_check_ptr}() {
 }
 
 @external
-func test_a_series_of_different_reads{range_check_ptr}() {
+func test_a_series_of_different_reads{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     alloc_locals;
 
     let (array) = alloc();
@@ -161,7 +162,7 @@ func test_a_series_of_different_reads{range_check_ptr}() {
 }
 
 @external
-func test_read_bytes{range_check_ptr}() {
+func test_read_bytes{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     alloc_locals;
 
     let (array) = alloc();
@@ -194,7 +195,7 @@ func test_read_bytes{range_check_ptr}() {
 }
 
 @external
-func test_read_bytes_endian{range_check_ptr}() {
+func test_read_bytes_endian{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     alloc_locals;
 
     let (array) = alloc();
@@ -228,7 +229,7 @@ func test_read_bytes_endian{range_check_ptr}() {
 }
 
 @external
-func test_read_2_4_8_bytes{range_check_ptr}() {
+func test_read_2_4_8_bytes{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     alloc_locals;
 
     let (array) = alloc();
@@ -253,7 +254,7 @@ func test_read_2_4_8_bytes{range_check_ptr}() {
 
 // TODO
 @external
-func test_read_overflow_uint32{range_check_ptr}() {
+func test_read_overflow_uint32{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     alloc_locals;
     let (array) = alloc();
     assert array[0] = 0x05010203ff;

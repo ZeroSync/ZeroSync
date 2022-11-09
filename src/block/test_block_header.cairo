@@ -31,7 +31,7 @@ from block.block_header import (
 // - https://blockstream.info/block/000000000000000009a11b3972c8e532fe964de937c9e0096b43814e67af3728
 // - https://blockstream.info/api/block/000000000000000009a11b3972c8e532fe964de937c9e0096b43814e67af3728/header
 @external
-func test_serialize_block_header{range_check_ptr}() {
+func test_serialize_block_header{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     alloc_locals;
     setup_python_defs();
 

@@ -47,7 +47,7 @@ struct TxOutput {
 }
 
 // Read a Transaction from a buffer
-func read_transaction{reader: Reader, range_check_ptr}() -> (
+func read_transaction{reader: Reader, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() -> (
     transaction: Transaction, byte_size: felt
 ) {
     alloc_locals;
@@ -91,7 +91,7 @@ func read_transaction{reader: Reader, range_check_ptr}() -> (
 }
 
 // Read transaction inputs from a buffer
-func read_inputs{reader: Reader, range_check_ptr}(input_count) -> (
+func read_inputs{reader: Reader, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(input_count) -> (
     inputs: TxInput*, byte_size: felt
 ) {
     alloc_locals;
@@ -101,7 +101,7 @@ func read_inputs{reader: Reader, range_check_ptr}(input_count) -> (
 }
 
 // LOOP: Read transaction inputs from a buffer
-func _read_inputs_loop{reader: Reader, range_check_ptr}(inputs: TxInput*, loop_counter) -> (
+func _read_inputs_loop{reader: Reader, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(inputs: TxInput*, loop_counter) -> (
     byte_size: felt
 ) {
     alloc_locals;
@@ -117,7 +117,7 @@ func _read_inputs_loop{reader: Reader, range_check_ptr}(inputs: TxInput*, loop_c
 }
 
 // Read a transaction input from a buffer
-func read_input{reader: Reader, range_check_ptr}() -> (input: TxInput, byte_size: felt) {
+func read_input{reader: Reader, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() -> (input: TxInput, byte_size: felt) {
     alloc_locals;
     let (txid) = read_hash();
     let (vout) = read_uint32();
@@ -142,7 +142,7 @@ func read_input{reader: Reader, range_check_ptr}() -> (input: TxInput, byte_size
 }
 
 // Read outputs from a buffer
-func read_outputs{reader: Reader, range_check_ptr}(output_count) -> (
+func read_outputs{reader: Reader, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(output_count) -> (
     outputs: TxOutput*, byte_size: felt
 ) {
     alloc_locals;
@@ -152,7 +152,7 @@ func read_outputs{reader: Reader, range_check_ptr}(output_count) -> (
 }
 
 // LOOP: Read transaction outputs
-func _read_outputs_loop{reader: Reader, range_check_ptr}(outputs: TxOutput*, loop_counter) -> (
+func _read_outputs_loop{reader: Reader, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(outputs: TxOutput*, loop_counter) -> (
     byte_size: felt
 ) {
     alloc_locals;
@@ -169,7 +169,7 @@ func _read_outputs_loop{reader: Reader, range_check_ptr}(outputs: TxOutput*, loo
 
 // Read an output from a buffer
 // Compute the output's byte size
-func read_output{reader: Reader, range_check_ptr}() -> (output: TxOutput, byte_size: felt) {
+func read_output{reader: Reader, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() -> (output: TxOutput, byte_size: felt) {
     alloc_locals;
     let (amount) = read_uint64();
     let script_pub_key_size = read_varint();

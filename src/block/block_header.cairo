@@ -61,7 +61,7 @@ struct BlockHeader {
 
 // Read a BlockHeader from a Uint32 array
 //
-func read_block_header{reader: Reader, range_check_ptr}() -> (result: BlockHeader) {
+func read_block_header{reader: Reader, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() -> (result: BlockHeader) {
     alloc_locals;
 
     let (version) = read_uint32();
@@ -262,7 +262,7 @@ func validate_prev_block_hash(context: BlockHeaderValidationContext) {
 // Validate that a block header's proof-of-work matches its target.
 // Expects that the 4 most significant bytes of `block_hash` are zero.
 //
-func validate_proof_of_work{range_check_ptr}(context: BlockHeaderValidationContext) {
+func validate_proof_of_work{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(context: BlockHeaderValidationContext) {
     // Swap the endianess in the uint32 chunks of the hash
     let (reader) = init_reader(context.block_hash);
     let (hash) = read_bytes{reader=reader}(32);
