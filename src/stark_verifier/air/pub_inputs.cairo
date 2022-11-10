@@ -31,3 +31,16 @@ func read_public_inputs() -> (proof: PublicInputs*) {
     %}
     return (proof=pub_inputs_ptr);
 }
+
+func read_mem_values(mem: MemEntry*, address: felt, length: felt, output: felt*) {
+    if (length == 0) {
+        return ();
+    }
+    assert mem.address = address;
+    assert output[0] = mem.value;
+    return read_mem_values(
+        mem=&mem[1],
+        address=address + 1,
+        length=length - 1,
+        output=&output[1]);
+}
