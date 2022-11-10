@@ -1,1 +1,8 @@
+clear; echo "# Cairo TODOs\n"
 grep -nr --include "*.cairo" "// TODO:" .| sed "s/\/\/ TODO://g" | sed "s|.*/||g"
+echo 
+
+echo
+echo "# Rust TODOs\n"
+grep -nr --include "*.rs" "// TODO:" .| sed "s/\/\/ TODO://g" | sed "s|.*/||g"
+echo 

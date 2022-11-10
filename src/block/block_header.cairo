@@ -61,7 +61,7 @@ struct BlockHeader {
 
 // Read a BlockHeader from a Uint32 array
 //
-func read_block_header{reader: Reader, range_check_ptr}() -> (result: BlockHeader) {
+func read_block_header{reader: Reader, bitwise_ptr: BitwiseBuiltin*}() -> (result: BlockHeader) {
     alloc_locals;
 
     let (version) = read_uint32();
@@ -151,7 +151,7 @@ func fetch_block_header(block_height) -> (raw_block_header: felt*) {
 
 // Read a block header and its validation context from a reader and a previous validation context
 //
-func read_block_header_validation_context{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
+func read_block_header_validation_context{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, sha256_ptr: felt*}(
     prev_chain_state: ChainState) -> (context: BlockHeaderValidationContext) {
     alloc_locals;
 
@@ -185,22 +185,22 @@ func read_block_header_validation_context{range_check_ptr, bitwise_ptr: BitwiseB
 //
 func bits_to_target{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(bits) -> (target: felt) {
     alloc_locals;
-    // Ensure that the max target is not exceeded (0x1d00FFFF)
-    with_attr error_message("Bits exceeded the max target.") {
+    // Ensure that the max target does not exceeded (0x1d00FFFF)
+    with_attr error_message("Bits ({bits}) exceeded the max target ({MAX_BITS}).") {
         assert_le(bits, MAX_BITS);
     }
 
     // Decode the 4 bytes of `bits` into exponent and significand.
     // There's 1 byte for the exponent followed by 3 bytes for the significand
 
-    // To do so, first we need a mask with the first 8 bits:
+    // To do so, first we need a mask for the first 8 bits:
     const MASK_BITS_TO_SHIFT = 0xFF000000;
-    // Then, using a bitwise and to get only the first 8 bits.
+    // Then, using a bitwise AND to get only the first 8 bits.
     let (bits_to_shift) = bitwise_and(bits, MASK_BITS_TO_SHIFT);
     // And finally, do the shifts
     let exponent = bits_to_shift / 0x1000000;
 
-    // extract last 3 bytes from `bits` to get the significand
+    // Extract the last 3 bytes from `bits` to get the significand
     let (significand) = bitwise_and(bits, 0x00ffffff);
 
     // The target is the `significand` shifted `exponent` times to the left
@@ -210,8 +210,7 @@ func bits_to_target{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(bits) -> (tar
     let is_greater_than_2 = (2 - exponent) * (1 - exponent) * exponent;
     if (is_greater_than_2 == 0) {
         let (shift) = pow(BYTE, 3 - exponent);
-        local target;
-        %{ ids.target = ids.significand // ids.shift %}
+        let (target, _rem) = unsigned_div_rem(significand, shift);
         return (target=target);
     } else {
         let (shift) = pow(BYTE, exponent - 3);
@@ -250,24 +249,27 @@ func validate_and_apply_block_header{range_check_ptr, bitwise_ptr : BitwiseBuilt
 // Validate that a block header correctly extends the current chain
 //
 func validate_prev_block_hash(context: BlockHeaderValidationContext) {
-    assert_hashes_equal(
-        context.prev_chain_state.best_block_hash, context.block_header.prev_block_hash
-    );
+    with_attr error_message("Invalid `prev_block_hash`. This block does not extend the current chain.") {
+        assert_hashes_equal(
+            context.prev_chain_state.best_block_hash, 
+            context.block_header.prev_block_hash
+        );
+    }
     return ();
 }
 
 
-// Validate a block header's proof-of-work matches its target.
+// Validate that a block header's proof-of-work matches its target.
 // Expects that the 4 most significant bytes of `block_hash` are zero.
 //
-func validate_proof_of_work{range_check_ptr}(context: BlockHeaderValidationContext) {
+func validate_proof_of_work{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(context: BlockHeaderValidationContext) {
     // Swap the endianess in the uint32 chunks of the hash
     let (reader) = init_reader(context.block_hash);
     let (hash) = read_bytes{reader=reader}(32);
 
     // Validate that the hash's most significant uint32 chunk is zero
     // This guarantees that the hash fits into a felt.
-    with_attr error_message("Hash's most significant uint32 chunk is not zero.") {
+    with_attr error_message("Hash's most significant uint32 chunk ({hash[7]}) is not zero.") {
         assert 0 = hash[7];
     }
     // Sum up the other 7 uint32 chunks of the hash into 1 felt
@@ -281,7 +283,7 @@ func validate_proof_of_work{range_check_ptr}(context: BlockHeaderValidationConte
                     hash[6] * BASE ** 6;
 
     // Validate that the hash is smaller than the target
-    with_attr error_message("Insufficient proof of work. Expected block hash to be less than or equal to target.") {
+    with_attr error_message("Insufficient proof of work. Expected block hash ({hash_felt}) to be less than or equal to target ({context.target}).") {
         assert_le_felt(hash_felt, context.target);
     }
     return ();
@@ -295,7 +297,7 @@ func validate_proof_of_work{range_check_ptr}(context: BlockHeaderValidationConte
 // - https://github.com/bitcoin/bitcoin/blob/3a7e0a210c86e3c1750c7e04e3d1d689cf92ddaa/src/rpc/blockchain.cpp#L76
 //
 func validate_target(context: BlockHeaderValidationContext) {  
-    with_attr error_message("Invalid target.") {
+    with_attr error_message("Target is {context.block_header.bits}. Expected {context.prev_chain_state.current_target}") {
         assert context.prev_chain_state.current_target = context.block_header.bits;
     }
     return ();
@@ -316,14 +318,14 @@ func validate_timestamp{range_check_ptr}(context: BlockHeaderValidationContext) 
     let (median_time) = compute_timestamps_median(prev_timestamps);
 
     // Compare this block's timestamp to the median time
-    with_attr error_message("Median time is greater than block's timestamp.") {
+    with_attr error_message("Median time ({median_time}) is greater than block's timestamp ({context.block_header.time}).") {
         assert_le(median_time, context.block_header.time);
     }
     return ();
 }
 
 
-// Compute the total work invested into the longest chain
+// Compute the total work invested into the chain
 //
 func compute_total_work{range_check_ptr}(
     context: BlockHeaderValidationContext) -> (work: felt) {
@@ -479,8 +481,7 @@ func target_to_bits{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(target) -> (b
         ids.bits = target_to_bits(ids.target)
     %}
 
-    // We need to perform 24 right-shifts
-    // So we need only the 8 most significative bits.
+    /// Compute the `exponent` which is the most significant byte of `bits`.
 
     // To do so, first we need a mask with the first 8 bits:
     const MASK_BITS_TO_SHIFT = 0xFF000000;
@@ -493,16 +494,20 @@ func target_to_bits{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(target) -> (b
 
     let is_greater_than_2 = (2 - exponent) * (1 - exponent) * exponent;
     if (is_greater_than_2 == 0) {
-        return (bits=bits);
+        with_attr error_message("Hint provided an invalid value for `bits`") {
+            assert expected_target = target;
+        }
+        return (bits,);
     } else {
         // if exponent >= 3 we check that
         // ((target & (threshold * 0xffffff)) - expected_target) == 0
         let (threshold) = pow(BYTE, exponent - 3);
         let mask = threshold * 0xffffff;
         let (masked_target) = bitwise_and(target, mask);
-        assert (masked_target - expected_target) = 0;
-
-        return (bits=bits);
+        with_attr error_message("Hint provided an invalid value for `bits`") {
+            assert masked_target = expected_target;
+        }
+        return (bits,);
     }
 }
 

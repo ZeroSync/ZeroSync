@@ -15,10 +15,8 @@ from stark_verifier.air.air_instance import (
 )
 from stark_verifier.air.pub_inputs import PublicInputs
 from stark_verifier.air.stark_proof import (
-    Queries,
     Context,
     TraceLayout,
-    FriProof,
     ProofOptions,
     StarkProof,
     read_stark_proof,
@@ -141,6 +139,7 @@ func perform_verification{
     
     // Draw an out-of-domain point z from the coin.
     let (z) = draw();
+    %{ print('z', hex(ids.z)) %}
 
     // 3 ----- OOD consistency check --------------------------------------------------------------
 
@@ -177,7 +176,7 @@ func perform_verification{
     reseed(value=value);
 
     // Finally, make sure the values are the same.
-    with_attr error_message("Ood constraint evaluations differ.") {
+    with_attr error_message("Ood constraint evaluations differ. ${ood_constraint_evaluation_1} != ${ood_constraint_evaluation_2}") {
         assert ood_constraint_evaluation_1 = ood_constraint_evaluation_2;
     }
 
@@ -292,8 +291,9 @@ func main{
 }() -> () {
     
     // Deserialize proof
-    let (proof, pub_inputs) = read_stark_proof();
+    //let (proof, pub_inputs) = read_stark_proof();
 
-    verify(proof=proof, pub_inputs=pub_inputs);
+    //verify(proof=proof, pub_inputs=pub_inputs);
+
     return ();
 }

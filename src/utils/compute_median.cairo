@@ -4,6 +4,10 @@ from starkware.cairo.common.math_cmp import is_le
 const TIMESTAMP_COUNT = 11;
 const TIMESTAMP_MEDIAN_INDEX = 5;
 
+// TODO: implement the efficient algorithm to compute the median using a hint.
+// To verify the hint iterate through the array and ensure that 
+// median_occurences > abs( num_elements_lt_median - num_elements_gt_median )
+
 func compute_timestamps_median{range_check_ptr}(timestamp_array : felt*) -> (
         median_value : felt
     ) {
@@ -30,9 +34,7 @@ func sort_unsigned_loop{range_check_ptr}(arr_len : felt, arr : felt*, sorted_arr
     let (lowest_element_index, lowest_element) = find_lowest_element(arr_len, arr);
 
     // push the lowest element to the sorted array
-    with_attr error_message("The lowest element is in the index 0.") {
-        assert sorted_array[0] = lowest_element;
-    }
+    assert sorted_array[0] = lowest_element;
 
     // remove the lowest element from the remaining elements
     let (arr : felt*) = copy_array_without_index(arr_len, arr, lowest_element_index);
@@ -91,9 +93,7 @@ func copy_array_without_index_loop{range_check_ptr}(
         return ();
     }
 
-    with_attr error_message("New array has invalid value in the new index") {
-        assert new_arr[new_index] = arr[index];
-    }
+    assert new_arr[new_index] = arr[index];
 
     copy_array_without_index_loop(
         index + 1, arr_len, arr, removed_index, new_index + 1, new_arr

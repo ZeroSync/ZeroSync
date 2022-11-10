@@ -9,7 +9,9 @@
 
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin, HashBuiltin
-from starkware.cairo.common.math import assert_le
+from starkware.cairo.common.math import assert_le, unsigned_div_rem
+from starkware.cairo.common.memset import memset
+from utils.pow2 import pow2
 
 from serialize.serialize import Reader, Writer, read_varint
 from block.block_header import (
@@ -23,7 +25,7 @@ from transaction.transaction import (
     TransactionValidationContext,
     read_transaction_validation_context,
     validate_and_apply_transaction,
-    validate_output,
+    validate_outputs_loop,
 )
 from block.merkle_tree import compute_merkle_root
 from crypto.sha256d.sha256d import assert_hashes_equal, copy_hash, HASH_FELT_SIZE
@@ -65,7 +67,7 @@ func fetch_transaction_count(block_height) -> (transaction_count: felt) {
     return (transaction_count,);
 }
 
-func read_block_validation_context{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
+func read_block_validation_context{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, sha256_ptr: felt*}(
     prev_state: State
 ) -> (context: BlockValidationContext) {
     alloc_locals;
@@ -74,7 +76,6 @@ func read_block_validation_context{range_check_ptr, bitwise_ptr: BitwiseBuiltin*
     
     let block_height = prev_state.chain_state.block_height + 1;
     let (transaction_count) = fetch_transaction_count(block_height);
-
     let (transaction_contexts) = read_transaction_validation_contexts(block_height, transaction_count);
 
     return (
@@ -88,7 +89,7 @@ func read_block_validation_context{range_check_ptr, bitwise_ptr: BitwiseBuiltin*
 }
 
 func read_transaction_validation_contexts{
-    range_check_ptr, bitwise_ptr: BitwiseBuiltin*
+    range_check_ptr, bitwise_ptr: BitwiseBuiltin*, sha256_ptr: felt*
 }(block_height, transaction_count) -> (contexts: TransactionValidationContext*) {
     alloc_locals;
 
@@ -98,7 +99,7 @@ func read_transaction_validation_contexts{
 }
 
 func _read_transaction_validation_contexts_loop{
-    range_check_ptr, bitwise_ptr: BitwiseBuiltin*
+    range_check_ptr, bitwise_ptr: BitwiseBuiltin*, sha256_ptr: felt*
 }(contexts: TransactionValidationContext*, block_height, loop_counter, transaction_count) {
     if (loop_counter == 0) {
         return ();
@@ -116,7 +117,7 @@ func _read_transaction_validation_contexts_loop{
 // and return the next state
 //
 func validate_and_apply_block{
-    range_check_ptr, bitwise_ptr: BitwiseBuiltin*, hash_ptr: HashBuiltin*
+    range_check_ptr, bitwise_ptr: BitwiseBuiltin*, hash_ptr: HashBuiltin*, sha256_ptr: felt*
 }(context: BlockValidationContext) -> (next_state: State) {
     alloc_locals;
 
@@ -129,7 +130,7 @@ func validate_and_apply_block{
 
 // Compute the Merkle root of all transactions in this block
 // and validate that it matches the Merkle root in the block header.
-func validate_merkle_root{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
+func validate_merkle_root{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, sha256_ptr: felt*}(
     context: BlockValidationContext
 ) {
     alloc_locals;
@@ -143,7 +144,7 @@ func validate_merkle_root{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
 
     // Validate that the computed Merkle root
     // matches the Merkle root in this block's header
-    with_attr error_message("Computed Merkle root don't match the Merkle root in the block's header.") {
+    with_attr error_message("Computed Merkle root doesn't match the Merkle root in the block's header.") {
         assert_hashes_equal(context.header_context.block_header.merkle_root_hash, merkle_root);
     }
     return ();
@@ -211,6 +212,7 @@ func _validate_and_apply_transactions_loop{
 //
 // See also:
 // - https://developer.bitcoin.org/reference/transactions.html#coinbase-input-the-input-of-the-first-transaction-in-a-block
+// - https://bitcoin.stackexchange.com/questions/20721/what-is-the-format-of-the-coinbase-transaction
 func validate_and_apply_coinbase{range_check_ptr, hash_ptr: HashBuiltin*, utreexo_roots: felt*}(
     context: BlockValidationContext, total_fees
 ) {
@@ -218,24 +220,48 @@ func validate_and_apply_coinbase{range_check_ptr, hash_ptr: HashBuiltin*, utreex
 
     let tx_context = context.transaction_contexts[0];
 
-    // TODO: Check if we can we have multiple genesis outputs
-    let output_index = 0;
-    let output = tx_context.transaction.outputs[output_index];
-    validate_output(tx_context, output, output_index);
+    /// Validate the coinbase input
+    // Ensure there is exactly one coinbase input
+    with_attr error_message("`input_count` of coinbase should be 1") {
+        assert 1 = tx_context.transaction.input_count;
+    }
+    // Ensure the input's vout is 0xFFFFFFFF
+    with_attr error_message("`vout` of coinbase input should be 0xFFFFFFFF") {
+        assert 0xFFFFFFFF = tx_context.transaction.inputs[0].vout;
+    }
+    // Ensure the input's TXID is zero
+    with_attr error_message("`txid` of coinbase input should be 0") {
+        // Using `memset` as hack for `assert`
+        memset(tx_context.transaction.inputs[0].txid, 0x00000000, 8);
+    }
+    
 
-    let (block_reward) = compute_block_reward(context.header_context.block_height);
-    with_attr error_message("block_reward + total_fees is greater than the outputs amount.") {
-        assert_le(output.amount, block_reward + total_fees);
+    /// Validate the outputs' amounts
+    // Sum up the total amount of all outputs 
+    // and also add the outputs to the UTXO set.
+    let (total_output_amount) = validate_outputs_loop(
+        tx_context,
+        tx_context.transaction.outputs,
+        0,
+        0,
+        tx_context.transaction.output_count
+    );
+    // Ensure the total amount is at most the block reward + TX fees
+    let block_reward = compute_block_reward(context.header_context.block_height);
+    with_attr error_message("`total_output_amount <= block_reward + total_fees` should be true") {
+        assert_le(total_output_amount, block_reward + total_fees);
     }
 
+    // TODO: implement BIP34
     return ();
 }
 
 
 // Compute the miner's block reward with respect to the block height
-// 
-func compute_block_reward(block_height) -> (block_reward: felt){
-    // TODO: implement compute_block_reward 
-    let block_reward = 50 * 10**8;
-    return (block_reward,);
+//
+func compute_block_reward{range_check_ptr} (block_height) -> felt {
+    let (number_halvings,_) = unsigned_div_rem(block_height , 210000);
+    let denominator = pow2(number_halvings);
+    let (block_reward,_) = unsigned_div_rem(50*10**8 , denominator); 
+    return block_reward;
 }
