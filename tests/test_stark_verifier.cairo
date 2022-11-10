@@ -3,9 +3,12 @@
 //
 %lang starknet
 
+from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
+from starkware.cairo.common.hash import HashBuiltin
+
 from stark_verifier.air.stark_proof import read_stark_proof, StarkProof
 from stark_verifier.air.pub_inputs import read_public_inputs, PublicInputs
-// from stark_verifier.stark_verifier import verify
+from stark_verifier.stark_verifier import verify
 
 @external
 func __setup__() {
@@ -56,20 +59,24 @@ func test_read_pub_inputs{}() {
 }
 
 /// Test proof verification
-// @external
-// func test_verify{}() {
-//     %{ 
-//         from tests.utils import parse_proof
-//         json_data = parse_proof('fibonacci')
-//     %}
-//     let (proof: StarkProof*) = read_stark_proof();
+@external
+func test_verify{
+    pedersen_ptr: HashBuiltin*,
+    range_check_ptr,
+    bitwise_ptr: BitwiseBuiltin*,
+}() {
+    %{ 
+        from tests.utils import parse_proof
+        json_data = parse_proof('fibonacci')
+    %}
+    let (proof: StarkProof*) = read_stark_proof();
 
-//     %{ 
-//         from tests.utils import parse_public_inputs
-//         json_data = parse_public_inputs('fibonacci')
-//     %}
-//     let (pub_inputs: PublicInputs*) = read_public_inputs();
-    
-//     verify(proof, pub_inputs);
-//     return ();
-// }
+    %{ 
+        from tests.utils import parse_public_inputs
+        json_data = parse_public_inputs('fibonacci')
+    %}
+    let (pub_inputs: PublicInputs*) = read_public_inputs();
+ 
+    verify(proof, pub_inputs);
+    return ();
+}

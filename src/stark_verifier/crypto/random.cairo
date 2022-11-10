@@ -17,6 +17,7 @@ from starkware.cairo.common.uint256 import Uint256, uint256_lt
 from stark_verifier.air.pub_inputs import (
     MemEntry,
     PublicInputs,
+    read_mem_values,
 )
 from stark_verifier.air.stark_proof import Context
 from stark_verifier.air.transitions.frame import EvaluationFrame
@@ -257,15 +258,25 @@ func seed_with_pub_inputs{
     pedersen_ptr: HashBuiltin*,
     bitwise_ptr: BitwiseBuiltin*,
 }(
-    pub_inputs: PublicInputs,
+    pub_inputs: PublicInputs*,
 ) -> (res: Uint256) {
     alloc_locals;
+
+    let (mem_values: felt*) = alloc();
+    //let mem: MemEntry* = &pub_inputs.mem;
+    let mem_length = pub_inputs.fin._pc;
+    read_mem_values(
+        mem=&pub_inputs.mem,
+        address=pub_inputs.init._pc,
+        length=mem_length,
+        output=mem_values,
+    );
 
     let (hash_state_ptr) = hash_init();
     let (hash_state_ptr) = hash_update{hash_ptr=pedersen_ptr}(
         hash_state_ptr=hash_state_ptr,
-        data_ptr=pub_inputs.mem.elements,
-        data_length=pub_inputs.mem.n_elements * MemEntry.SIZE,
+        data_ptr=mem_values,
+        data_length=mem_length,
     );
     let (pub_mem_hash) = hash_finalize{hash_ptr=pedersen_ptr}(hash_state_ptr=hash_state_ptr);
 
@@ -283,7 +294,7 @@ func seed_with_pub_inputs{
         blake2s_add_felt(num=pub_inputs.rc_min, bigend=1);
         blake2s_add_felt(num=pub_inputs.rc_max, bigend=1);
 
-        blake2s_add_felt(num=pub_inputs.mem.n_elements, bigend=1);
+        blake2s_add_felt(num=mem_length, bigend=1);
         blake2s_add_felt(num=pub_mem_hash, bigend=1);
 
         blake2s_add_felt(num=pub_inputs.num_steps, bigend=1);

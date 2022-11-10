@@ -1,6 +1,5 @@
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
-from starkware.cairo.common.uint256 import Uint256
 
 from stark_verifier.air.stark_proof import (
     ParsedOodFrame,
@@ -8,7 +7,10 @@ from stark_verifier.air.stark_proof import (
 )
 from stark_verifier.air.air_instance import AirInstance
 from stark_verifier.air.transitions.frame import EvaluationFrame
-from stark_verifier.utils import Vec
+from stark_verifier.utils import (
+    Digest,
+    Vec,
+)
 
 struct TraceOodFrame {
     main_frame: EvaluationFrame,
@@ -17,11 +19,11 @@ struct TraceOodFrame {
 
 struct Channel {
     // Trace queries
-    trace_roots: Uint256*,
+    trace_roots: Digest*,
     // Constraint queries
-    constraint_root: Uint256,
+    constraint_root: Digest,
     // FRI proof
-    fri_roots: Uint256*,
+    fri_roots: Digest*,
     // OOD frame
     ood_trace_frame: TraceOodFrame,
     ood_constraint_evaluations: Vec,
@@ -38,7 +40,7 @@ func channel_new{
     bitwise_ptr: BitwiseBuiltin*,
 }(
     air: AirInstance,
-    proof: StarkProof,
+    proof: StarkProof*,
 ) -> (channel: Channel) {
     // Parsed commitments
     tempvar trace_roots = proof.commitments.trace_roots;
@@ -63,11 +65,11 @@ func channel_new{
     return (channel=channel);
 }
 
-func read_trace_commitments{channel: Channel}() -> (res: Uint256*) {
+func read_trace_commitments{channel: Channel}() -> (res: Digest*) {
     return (res=channel.trace_roots);
 }
 
-func read_constraint_commitment{channel: Channel}() -> (res: Uint256) {
+func read_constraint_commitment{channel: Channel}() -> (res: Digest) {
     return (res=channel.constraint_root);
 }
 

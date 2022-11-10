@@ -5,6 +5,7 @@ from starkware.cairo.common.cairo_blake2s.blake2s import finalize_blake2s
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.hash import HashBuiltin
 from starkware.cairo.common.math import assert_lt
+from starkware.cairo.common.registers import get_fp_and_pc
 from starkware.cairo.common.uint256 import Uint256
 
 from stark_verifier.air.air_instance import (
@@ -68,8 +69,10 @@ func verify{
     range_check_ptr,
     pedersen_ptr: HashBuiltin*,
     bitwise_ptr: BitwiseBuiltin*,
-}(proof: StarkProof, pub_inputs: PublicInputs) -> () {
+}(proof: StarkProof*, pub_inputs: PublicInputs*) -> () {
     alloc_locals;
+
+    let (__fp__, _) = get_fp_and_pc();
 
     // Initialize hasher
     let (blake2s_ptr: felt*) = alloc();
