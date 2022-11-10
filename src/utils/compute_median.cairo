@@ -18,7 +18,6 @@ func compute_timestamps_median{range_check_ptr}(timestamp_array : felt*) -> (
             arr.append( memory[ids.timestamp_array + i] )
         arr.sort()
         ids.median = arr[ids.TIMESTAMP_MEDIAN_INDEX]
-        print('median', ids.median, arr)
     %}
 
     let (lt, eq, gt) = count_values(median, timestamp_array, TIMESTAMP_COUNT);
@@ -46,7 +45,6 @@ func count_values{range_check_ptr}(median, arr: felt*, arr_len) -> (felt, felt, 
     }
 
     let is_lt = is_le([arr], median);
-
     if(is_lt == 1){
         return (lt + 1, eq, gt);
     }
