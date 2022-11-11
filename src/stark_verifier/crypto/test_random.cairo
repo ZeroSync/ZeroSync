@@ -19,7 +19,7 @@ func test_draw_integers{
     let (blake2s_ptr: felt*) = alloc();
     local blake2s_ptr_start: felt* = blake2s_ptr;
 
-    let seed = Uint256(1,1);
+    tempvar seed: felt* = new (0,0,0,0,0,0,0,0);
     let (public_coin) = random_coin_new(seed);
     
     let (elements) = alloc();
@@ -51,7 +51,8 @@ func test_leading_zeros{
     let (blake2s_ptr: felt*) = alloc();
     local blake2s_ptr_start: felt* = blake2s_ptr;
 
-    let seed = Uint256(1, 2**128 / 2**32);
+    // let seed = Uint256(1, 2**128 / 2**32);
+    tempvar seed: felt* = new (1,0,0,0,0,0,0,1);
     let (public_coin) = random_coin_new(seed);
     
     with blake2s_ptr, public_coin { 

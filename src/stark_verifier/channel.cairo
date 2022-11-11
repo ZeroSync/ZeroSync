@@ -7,10 +7,7 @@ from stark_verifier.air.stark_proof import (
 )
 from stark_verifier.air.air_instance import AirInstance
 from stark_verifier.air.transitions.frame import EvaluationFrame
-from stark_verifier.utils import (
-    Digest,
-    Vec,
-)
+from stark_verifier.utils import ( Vec )
 
 struct TraceOodFrame {
     main_frame: EvaluationFrame,
@@ -19,11 +16,11 @@ struct TraceOodFrame {
 
 struct Channel {
     // Trace queries
-    trace_roots: Digest*,
+    trace_roots: felt*,
     // Constraint queries
-    constraint_root: Digest,
+    constraint_root: felt*,
     // FRI proof
-    fri_roots: Digest*,
+    fri_roots: felt*,
     // OOD frame
     ood_trace_frame: TraceOodFrame,
     ood_constraint_evaluations: Vec,
@@ -65,11 +62,11 @@ func channel_new{
     return (channel=channel);
 }
 
-func read_trace_commitments{channel: Channel}() -> (res: Digest*) {
+func read_trace_commitments{channel: Channel}() -> (res: felt*) {
     return (res=channel.trace_roots);
 }
 
-func read_constraint_commitment{channel: Channel}() -> (res: Digest) {
+func read_constraint_commitment{channel: Channel}() -> (res: felt*) {
     return (res=channel.constraint_root);
 }
 

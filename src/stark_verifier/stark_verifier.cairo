@@ -1,7 +1,7 @@
 %builtins pedersen range_check bitwise
 
 from starkware.cairo.common.alloc import alloc
-from starkware.cairo.common.cairo_blake2s.blake2s import finalize_blake2s
+from starkware.cairo.common.cairo_blake2s.blake2s import (finalize_blake2s, STATE_SIZE_FELTS)
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.hash import HashBuiltin
 from starkware.cairo.common.math import assert_lt
@@ -79,7 +79,7 @@ func verify{
     local blake2s_ptr_start: felt* = blake2s_ptr;
 
     // Build a seed for the public coin; the initial seed is the hash of public inputs
-    let (public_coin_seed: Uint256) = seed_with_pub_inputs{blake2s_ptr=blake2s_ptr}(pub_inputs);
+    let (public_coin_seed: felt*) = seed_with_pub_inputs{blake2s_ptr=blake2s_ptr}(pub_inputs);
 
     // Create an AIR instance for the computation specified in the proof.
     let (air) = air_instance_new(proof, proof.context.options);
@@ -116,13 +116,13 @@ func perform_verification{
     let (trace_commitments) = read_trace_commitments();
 
     // Reseed the coin with the commitment to the main trace segment
-    reseed(value=trace_commitments[0]);
+    reseed(value=trace_commitments);
 
     // Process auxiliary trace segments to build a set of random elements for each segment,
     // and to reseed the coin.
     let (aux_trace_rand_elements: felt*) = alloc();
     process_aux_segments(
-        trace_commitments=trace_commitments + 1,
+        trace_commitments=trace_commitments + STATE_SIZE_FELTS,
         trace_commitments_len=air.context.trace_layout.num_aux_segments,
         aux_segment_rands=air.context.trace_layout.aux_segment_rands,
         aux_trace_rand_elements=aux_trace_rand_elements,
@@ -260,7 +260,7 @@ func process_aux_segments{
     channel: Channel,
     public_coin: PublicCoin,
 }(
-    trace_commitments: Uint256*,
+    trace_commitments: felt*,
     trace_commitments_len: felt,
     aux_segment_rands: felt*,
     aux_trace_rand_elements: felt*,
@@ -269,12 +269,12 @@ func process_aux_segments{
         n_elements=[aux_segment_rands],
         elements=aux_trace_rand_elements,
     );
-    reseed(value=trace_commitments[0]);
+    reseed(value=trace_commitments);
     if (trace_commitments_len == 0) {
         return ();
     }
     process_aux_segments(
-        trace_commitments=trace_commitments + 1,
+        trace_commitments=trace_commitments + STATE_SIZE_FELTS,
         trace_commitments_len=trace_commitments_len - 1,
         aux_segment_rands=aux_segment_rands + 1,
         aux_trace_rand_elements=aux_trace_rand_elements,
