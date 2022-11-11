@@ -5,7 +5,7 @@ from starkware.cairo.common.math import assert_nn_le, unsigned_div_rem
 from starkware.cairo.common.math_cmp import is_le
 from starkware.cairo.common.memcpy import memcpy
 from starkware.cairo.common.memset import memset
-from starkware.cairo.common.pow import pow
+from utils.pow2 import pow2
 
 from crypto.sha256.packed_sha256 import (
     BLOCK_SIZE,
@@ -181,7 +181,7 @@ func _sha256_input{range_check_ptr, sha256_ptr: felt*}(
     with_attr error_message("n_bytes is negative or greater than 3.") {
         assert_nn_le(n_bytes, 3);
     }
-    let (padding) = pow(256, 3 - n_bytes);
+    let padding = pow2(8 * (3 - n_bytes));
     local range_check_ptr = range_check_ptr;
 
     assert sha256_ptr[0] = input[0] + padding * 0x80;

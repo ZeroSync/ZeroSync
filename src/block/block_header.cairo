@@ -8,7 +8,6 @@ from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.bitwise import bitwise_and
 from starkware.cairo.common.math import assert_le, unsigned_div_rem, assert_le_felt, split_felt
 from starkware.cairo.common.math_cmp import is_le_felt
-from starkware.cairo.common.pow import pow
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.memcpy import memcpy
 from starkware.cairo.common.uint256 import (
@@ -16,6 +15,7 @@ from starkware.cairo.common.uint256 import (
 from serialize.serialize import (
     Reader, read_uint32, read_hash, UINT32_SIZE, BYTE, init_reader, read_bytes )
 from crypto.sha256d.sha256d import sha256d_felt_sized, assert_hashes_equal
+from utils.pow2 import pow2
 from utils.compute_median import compute_timestamps_median
 // The size of a block header is 80 bytes
 const BLOCK_HEADER_SIZE = 80;
@@ -209,11 +209,11 @@ func bits_to_target{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(bits) -> (tar
     // it is less than 3.
     let is_greater_than_2 = (2 - exponent) * (1 - exponent) * exponent;
     if (is_greater_than_2 == 0) {
-        let (shift) = pow(BYTE, 3 - exponent);
+        let shift = pow2(8 * (3 - exponent));
         let (target, _rem) = unsigned_div_rem(significand, shift);
         return (target=target);
     } else {
-        let (shift) = pow(BYTE, exponent - 3);
+        let shift = pow2(8 * (exponent - 3));
         let target = significand * shift;
         return (target=target);
     }
@@ -501,7 +501,7 @@ func target_to_bits{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(target) -> (b
     } else {
         // if exponent >= 3 we check that
         // ((target & (threshold * 0xffffff)) - expected_target) == 0
-        let (threshold) = pow(BYTE, exponent - 3);
+        let threshold = pow2(8 * (exponent - 3));
         let mask = threshold * 0xffffff;
         let (masked_target) = bitwise_and(target, mask);
         with_attr error_message("Hint provided an invalid value for `bits`") {

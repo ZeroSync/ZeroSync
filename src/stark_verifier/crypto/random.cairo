@@ -11,8 +11,8 @@ from starkware.cairo.common.hash_state import hash_finalize, hash_init, hash_upd
 from starkware.cairo.common.math import assert_nn_le, assert_le
 from starkware.cairo.common.math_cmp import is_le
 from starkware.cairo.common.bool import TRUE
-from starkware.cairo.common.pow import pow
 from starkware.cairo.common.uint256 import Uint256, uint256_lt
+from utils.pow2 import pow2
 
 from stark_verifier.air.pub_inputs import (
     MemEntry,
@@ -318,7 +318,7 @@ func get_leading_zeros{range_check_ptr, public_coin: PublicCoin}() -> (res: felt
     %}
 
     // Verify leading zeros count
-    let (ceil_pow2) = pow(2, 128 - lzcnt);
+    let ceil_pow2 = pow2(128 - lzcnt);
 
     // 2**(log2-1) < public_coin.seed.high <= 2**log2
     with_attr error_message("Error in 2**(log2-1) < public_coin.seed.high <= 2**log2 verification.") {

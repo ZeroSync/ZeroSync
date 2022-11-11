@@ -3,12 +3,12 @@ from starkware.cairo.common.alloc     import alloc
 from starkware.cairo.common.memcpy    import memcpy
 from starkware.cairo.common.memset    import memset
 from starkware.cairo.common.bool      import TRUE
-from starkware.cairo.common.pow       import pow
 from starkware.cairo.common.math      import unsigned_div_rem
 from starkware.cairo.common.math_cmp  import is_nn
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.bitwise   import bitwise_and
 from starkware.cairo.common.registers import get_fp_and_pc
+from utils.pow2                       import pow2
 
 // byte size
 const SIZEOF_UINT32 = 4;
@@ -48,7 +48,7 @@ func __prepare_chunk{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
     let le_3_bytes = is_nn(SIZEOF_UINT32-1 - n_bytes);
     if (le_3_bytes == TRUE) {
         let max_4 = min(n_bytes, SIZEOF_UINT32);
-        let (max_pow_256_4) = pow(BYTE, max_4);
+        let max_pow_256_4 = pow2(8 * max_4);
         assert [bitwise_ptr].x = [data_ptr];
         assert [bitwise_ptr].y = (max_pow_256_4 - 1) * WORD / max_pow_256_4;
         let uint32 = [bitwise_ptr].x_and_y;
