@@ -1,53 +1,43 @@
 from starkware.cairo.common.alloc import alloc
-from starkware.cairo.common.math_cmp import is_le
-from starkware.cairo.common.math import abs_value, assert_le
+from starkware.cairo.common.math import sign, abs_value, assert_le
 
 const TIMESTAMP_COUNT = 11;
 const TIMESTAMP_MEDIAN_INDEX = 5;
 
 // Compute the median value of an array of 11 timestamps
 //
-func compute_timestamps_median{range_check_ptr}(timestamp_array : felt*) -> (
-        median_value : felt
-    ) {
+func compute_timestamps_median{range_check_ptr}(timestamp_array : felt*) -> (felt) {
     alloc_locals;
+    // Compute the median using a hint
     local median;
     %{
-        arr = []
+        timestamps = []
         for i in range(ids.TIMESTAMP_COUNT):
-            arr.append( memory[ids.timestamp_array + i] )
-        arr.sort()
-        ids.median = arr[ids.TIMESTAMP_MEDIAN_INDEX]
+            timestamps.append( memory[ids.timestamp_array + i] )
+        timestamps.sort()
+        ids.median = timestamps[ids.TIMESTAMP_MEDIAN_INDEX]
     %}
-
-    let (lt, eq, gt) = count_values(median, timestamp_array, TIMESTAMP_COUNT);
-
-    // Ensure the median occurs at least once
-    if(eq == 0){
-        assert 1 = 0;
-    }
-
     // To verify the hint iterate through the array and ensure that 
     // num_elems_eq_median > abs( num_elems_lt_median - num_elems_gt_median )
-    let diff = abs_value(lt - gt);
-    assert_le(diff + 1, eq);
-    
+    tempvar signs_diff = 0;
+    tempvar n_multiple_median = 0;
+    tempvar timestamp_ptr = timestamp_array;
+    tempvar n_timestamps = 11;
+    tempvar range_check_ptr = range_check_ptr;
+    verify_median_loop:
+        let delta_sign = sign([timestamp_ptr] - median);
+        if(delta_sign == 0) {
+            tempvar signs_diff = signs_diff;
+            tempvar n_multiple_median = n_multiple_median + 1;
+        } else {
+            tempvar signs_diff = signs_diff + delta_sign;
+            tempvar n_multiple_median = n_multiple_median;
+        }
+        tempvar timestamp_ptr = timestamp_ptr + 1;
+        tempvar n_timestamps = n_timestamps - 1;
+        tempvar range_check_ptr = range_check_ptr;
+    jmp verify_median_loop if n_timestamps != 0;
+    let absolute_signs = abs_value(signs_diff);
+    assert_le(absolute_signs + 1, n_multiple_median);
     return (median,);
-}
-
-func count_values{range_check_ptr}(median, arr: felt*, arr_len) -> (felt, felt, felt){
-    if(arr_len == 0) {
-        return (0, 0, 0);
-    }
-    let (lt, eq, gt) = count_values(median, arr + 1, arr_len - 1);
-    if ([arr] == median) {
-        return (lt, eq + 1, gt);
-    }
-
-    let is_lt = is_le([arr], median);
-    if(is_lt == 1){
-        return (lt + 1, eq, gt);
-    }
-
-    return (lt, eq, gt + 1);
 }
