@@ -28,9 +28,18 @@ func test_compute_timestamps_median_edge_case1{range_check_ptr}() {
     tempvar timestamps: felt* = new (1, 2, 3, 4, 5, 5, 6, 7, 8, 9, 10);
     let (median) = compute_timestamps_median(timestamps);
 
-    %{ expect_revert() %}
-
-    assert 6 = median;
+    assert 5 = median;
 
     return ();
 }
+
+@external
+func test_compute_timestamps_median_edge_case2{range_check_ptr}() {
+    tempvar timestamps: felt* = new (1, 2, 2, 2, 2, 3, 4, 5, 6, 7, 8);
+    let (median) = compute_timestamps_median(timestamps);
+
+    assert 3 = median;
+
+    return ();
+}
+
