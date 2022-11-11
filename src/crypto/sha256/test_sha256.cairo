@@ -175,7 +175,7 @@ func test_sha256_64_bytes{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
 }
 
 // Test that sha256 validates that every element of the input array is an uint32
-// and throws and error otherwise
+// and throws an error otherwise
 //
 @external
 func test_sha256_uint32_overflow{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
