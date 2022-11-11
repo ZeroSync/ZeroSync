@@ -1,7 +1,7 @@
 %lang starknet
 
 from starkware.cairo.common.alloc import alloc
-from utils.compute_median import compute_timestamps_median
+from utils.compute_median import compute_timestamps_median, verify_timestamps_median
 
 @external
 func test_compute_timestamps_median{range_check_ptr}() {
@@ -43,3 +43,20 @@ func test_compute_timestamps_median_edge_case2{range_check_ptr}() {
     return ();
 }
 
+@external
+func test_verify_timestamps_median{range_check_ptr}() {
+    tempvar timestamps: felt* = new (1, 2, 2, 2, 2, 3, 4, 5, 6, 7, 8);
+    %{ expect_revert(error_message = "invalid timestamps median") %}
+    verify_timestamps_median(timestamps, 2);
+
+    return ();
+}
+
+@external
+func test_verify_timestamps_median_2{range_check_ptr}() {
+    tempvar timestamps: felt* = new (0, 1, 2, 3, 4, 6, 7, 8, 9, 10, 11);
+    %{ expect_revert(error_message = "invalid timestamps median") %}
+    verify_timestamps_median(timestamps, 5);
+
+    return ();
+}
