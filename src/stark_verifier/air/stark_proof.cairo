@@ -33,9 +33,9 @@ struct Context {
 }
 
 struct ParsedCommitments {
-    trace_roots: Digest*,
-    constraint_root: Digest,
-    fri_roots: Digest*,
+    trace_roots: felt*,
+    constraint_root: felt*,
+    fri_roots: felt*,
 }
 
 struct ParsedOodFrame {
