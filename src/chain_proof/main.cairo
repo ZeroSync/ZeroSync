@@ -94,8 +94,8 @@ func main{
 
     // Perform a state transition
     with sha256_ptr {
-        let (context) = read_block_validation_context(prev_state);
-        let (next_state) = validate_and_apply_block{hash_ptr=pedersen_ptr}(context);
+        let context = read_block_validation_context(prev_state);
+        let next_state = validate_and_apply_block{hash_ptr=pedersen_ptr}(context);
     }
 
     // Print the next state
