@@ -10,7 +10,6 @@ from stark_verifier.crypto.random import (
     reseed,
     reseed_with_int,
     seed_with_pub_inputs,
-    seed_with_proof_context,
 )
 from stark_verifier.air.stark_proof import (
     Context,
@@ -60,7 +59,7 @@ struct DeepCompositionCoefficients {
     degree: (felt, felt),
 }
 
-func air_instance_new(proof: StarkProof, options: ProofOptions) -> (res: AirInstance) {
+func air_instance_new(proof: StarkProof*, options: ProofOptions) -> (res: AirInstance) {
     alloc_locals;
     let (aux_segment_widths: felt*) = alloc();
     let (aux_segment_rands: felt*) = alloc();

@@ -34,7 +34,11 @@ func test_compute_merkle_root{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
         ], ids.root_expected)
     %}
 
-    let (root) = compute_merkle_root(leaves, leaves_len);
+    // initialize sha256_ptr
+    let sha256_ptr: felt* = alloc();
+    with sha256_ptr {
+        let (root) = compute_merkle_root(leaves, leaves_len);
+    }
     assert_hashes_equal(root, root_expected);
     return ();
 }
@@ -66,7 +70,11 @@ func test_compute_merkle_root_power_of_2{range_check_ptr, bitwise_ptr: BitwiseBu
         ], ids.root_expected)
     %}
 
-    let (root) = compute_merkle_root(leaves, leaves_len);
+    // initialize sha256_ptr
+    let sha256_ptr: felt* = alloc();
+    with sha256_ptr {
+        let (root) = compute_merkle_root(leaves, leaves_len);
+    }
     assert_hashes_equal(root, root_expected);
     return ();
 }
@@ -103,7 +111,41 @@ func test_compute_merkle_root_uneven{range_check_ptr, bitwise_ptr: BitwiseBuilti
         ], ids.root_expected)
     %}
 
-    let (root) = compute_merkle_root(leaves, leaves_len);
+    // initialize sha256_ptr
+    let sha256_ptr: felt* = alloc();
+    with sha256_ptr {
+        let (root) = compute_merkle_root(leaves, leaves_len);
+    }
     assert_hashes_equal(root, root_expected);
+    return ();
+}
+
+// Test CVE-2012-2459
+@external
+func test_compute_merkle_root_CVE_2012_2459{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
+    alloc_locals;
+    setup_python_defs();
+    let (leaves) = alloc();
+    local leaves_len;
+    %{
+        txs = [
+            "df70f26b6df54332ad29c08aab5e5d5560d1468311e90484ebd89f87ac6264e8",
+            "2148314cd02237786abe127f23b7346df8a116a2851745cb987652a3e132fc50",
+            "06c303894833eb5d639f06f95ceb2c4bd08e0ab4ae1d94cccfa54f02e9b35990",
+            "90ae3d27a5215dbb8e2e1657c927f81bdb9601106a6159f5384b4cde53836f24",
+            "51cfe20029ed6366e7f475a123ad84c96c54522e9ae64cb2f548811124a6f833",
+            "1e856be000b0fbaa5929b887755095106f4f0d3d19f9cd9cb07ab2239c8b4b18",
+            "9d6314d68d9de8250513563e02f83ffc80973ec8b7c2966835e2cbcac3320898",
+            "5d6e3fc4b0c44b867b83b7d7ca365754a8bb87d93c4f365ecacc1f0109b4c99c",
+        ]
+        ids.leaves_len = hashes_from_hex(txs + txs, ids.leaves)
+    %}
+
+    // initialize sha256_ptr
+    let sha256_ptr: felt* = alloc();
+    %{ expect_revert(error_message = "unexpected node duplication in merkle tree") %}
+    with sha256_ptr {
+        compute_merkle_root(leaves, leaves_len);
+    }
     return ();
 }

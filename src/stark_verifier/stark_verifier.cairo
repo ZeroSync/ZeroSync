@@ -1,9 +1,11 @@
-%builtins range_check bitwise
+%builtins pedersen range_check bitwise
 
 from starkware.cairo.common.alloc import alloc
-from starkware.cairo.common.cairo_blake2s.blake2s import finalize_blake2s
+from starkware.cairo.common.cairo_blake2s.blake2s import (finalize_blake2s, STATE_SIZE_FELTS)
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
+from starkware.cairo.common.hash import HashBuiltin
 from starkware.cairo.common.math import assert_lt
+from starkware.cairo.common.registers import get_fp_and_pc
 from starkware.cairo.common.uint256 import Uint256
 
 from stark_verifier.air.air_instance import (
@@ -14,10 +16,8 @@ from stark_verifier.air.air_instance import (
 )
 from stark_verifier.air.pub_inputs import PublicInputs
 from stark_verifier.air.stark_proof import (
-    Queries,
     Context,
     TraceLayout,
-    FriProof,
     ProofOptions,
     StarkProof,
     read_stark_proof,
@@ -52,7 +52,6 @@ from stark_verifier.crypto.random import (
     reseed_with_int,
     reseed_with_ood_frames,
     seed_with_pub_inputs,
-    seed_with_proof_context,
 )
 from stark_verifier.evaluator import evaluate_constraints
 from stark_verifier.fri.fri_verifier import (
@@ -68,32 +67,26 @@ from stark_verifier.utils import Vec
 // LICENSE.winterfell.md)
 func verify{
     range_check_ptr,
+    pedersen_ptr: HashBuiltin*,
     bitwise_ptr: BitwiseBuiltin*,
-}(proof: StarkProof, pub_inputs: PublicInputs) -> () {
+}(proof: StarkProof*, pub_inputs: PublicInputs*) -> () {
     alloc_locals;
 
-    // Build a seed for the public coin; the initial seed is the hash of public inputs and proof
-    // context, but as the protocol progresses, the coin will be reseeded with the info received
-    // from the prover.
-    //
-    // TODO: Winterfell serializes public input and context structs into a vector of bytes, which 
-    // is expensive to do in Cairo (but doable). We may want to modify the prover so that these 
-    // are serialized using field elements.
-    //
-    //let (public_coin_seed: felt*) = alloc();
-    //let (public_coin_seed_2) = seed_with_pub_inputs(pub_inputs, seed=public_coin_seed);
-    //let (public_coin_seed_3) = seed_with_proof_context(proof.context, seed=public_coin_seed_2);
+    let (__fp__, _) = get_fp_and_pc();
+
+    // Initialize hasher
+    let (blake2s_ptr: felt*) = alloc();
+    local blake2s_ptr_start: felt* = blake2s_ptr;
+
+    // Build a seed for the public coin; the initial seed is the hash of public inputs
+    let (public_coin_seed: felt*) = seed_with_pub_inputs{blake2s_ptr=blake2s_ptr}(pub_inputs);
 
     // Create an AIR instance for the computation specified in the proof.
     let (air) = air_instance_new(proof, proof.context.options);
 
     // Create a public coin and channel struct
-    let (public_coin) = random_coin_new(Uint256(0,0)); //public_coin_seed_3);
+    let (public_coin) = random_coin_new(public_coin_seed);
     let (channel) = channel_new(air, proof);
-
-    // Initialize hasher
-    let (blake2s_ptr: felt*) = alloc();
-    local blake2s_ptr_start: felt* = blake2s_ptr;
 
     with blake2s_ptr, channel, public_coin { 
         perform_verification(air=air);
@@ -123,13 +116,13 @@ func perform_verification{
     let (trace_commitments) = read_trace_commitments();
 
     // Reseed the coin with the commitment to the main trace segment
-    reseed(value=trace_commitments[0]);
+    reseed(value=trace_commitments);
 
     // Process auxiliary trace segments to build a set of random elements for each segment,
     // and to reseed the coin.
     let (aux_trace_rand_elements: felt*) = alloc();
     process_aux_segments(
-        trace_commitments=trace_commitments + 1,
+        trace_commitments=trace_commitments + STATE_SIZE_FELTS,
         trace_commitments_len=air.context.trace_layout.num_aux_segments,
         aux_segment_rands=air.context.trace_layout.aux_segment_rands,
         aux_trace_rand_elements=aux_trace_rand_elements,
@@ -149,6 +142,7 @@ func perform_verification{
     
     // Draw an out-of-domain point z from the coin.
     let (z) = draw();
+    %{ print('z', hex(ids.z)) %}
 
     // 3 ----- OOD consistency check --------------------------------------------------------------
 
@@ -185,7 +179,9 @@ func perform_verification{
     reseed(value=value);
 
     // Finally, make sure the values are the same.
-    assert ood_constraint_evaluation_1 = ood_constraint_evaluation_2;
+    with_attr error_message("Ood constraint evaluations differ. ${ood_constraint_evaluation_1} != ${ood_constraint_evaluation_2}") {
+        assert ood_constraint_evaluation_1 = ood_constraint_evaluation_2;
+    }
 
     // 4 ----- FRI commitments --------------------------------------------------------------------
 
@@ -264,7 +260,7 @@ func process_aux_segments{
     channel: Channel,
     public_coin: PublicCoin,
 }(
-    trace_commitments: Uint256*,
+    trace_commitments: felt*,
     trace_commitments_len: felt,
     aux_segment_rands: felt*,
     aux_trace_rand_elements: felt*,
@@ -273,12 +269,12 @@ func process_aux_segments{
         n_elements=[aux_segment_rands],
         elements=aux_trace_rand_elements,
     );
-    reseed(value=trace_commitments[0]);
+    reseed(value=trace_commitments);
     if (trace_commitments_len == 0) {
         return ();
     }
     process_aux_segments(
-        trace_commitments=trace_commitments + 1,
+        trace_commitments=trace_commitments + STATE_SIZE_FELTS,
         trace_commitments_len=trace_commitments_len - 1,
         aux_segment_rands=aux_segment_rands + 1,
         aux_trace_rand_elements=aux_trace_rand_elements,
@@ -292,13 +288,15 @@ func reduce_evaluations(evaluations: Vec) -> (res: felt) {
 }
 
 func main{
+    pedersen_ptr: HashBuiltin*,
     range_check_ptr,
     bitwise_ptr: BitwiseBuiltin*,
 }() -> () {
     
     // Deserialize proof
-    let (proof, pub_inputs) = read_stark_proof();
+    //let (proof, pub_inputs) = read_stark_proof();
 
-    verify(proof=proof, pub_inputs=pub_inputs);
+    //verify(proof=proof, pub_inputs=pub_inputs);
+
     return ();
 }

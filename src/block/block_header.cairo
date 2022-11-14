@@ -8,7 +8,6 @@ from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.bitwise import bitwise_and
 from starkware.cairo.common.math import assert_le, unsigned_div_rem, assert_le_felt, split_felt
 from starkware.cairo.common.math_cmp import is_le_felt
-from starkware.cairo.common.pow import pow
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.memcpy import memcpy
 from starkware.cairo.common.uint256 import (
@@ -16,7 +15,8 @@ from starkware.cairo.common.uint256 import (
 from serialize.serialize import (
     Reader, read_uint32, read_hash, UINT32_SIZE, BYTE, init_reader, read_bytes )
 from crypto.sha256d.sha256d import sha256d_felt_sized, assert_hashes_equal
-
+from utils.pow2 import pow2
+from utils.compute_median import compute_timestamps_median
 // The size of a block header is 80 bytes
 const BLOCK_HEADER_SIZE = 80;
 // The size of a block header encoded as an array of Uint32 is 20 felts
@@ -61,7 +61,7 @@ struct BlockHeader {
 
 // Read a BlockHeader from a Uint32 array
 //
-func read_block_header{reader: Reader, range_check_ptr}() -> (result: BlockHeader) {
+func read_block_header{reader: Reader, bitwise_ptr: BitwiseBuiltin*}() -> (result: BlockHeader) {
     alloc_locals;
 
     let (version) = read_uint32();
@@ -151,7 +151,7 @@ func fetch_block_header(block_height) -> (raw_block_header: felt*) {
 
 // Read a block header and its validation context from a reader and a previous validation context
 //
-func read_block_header_validation_context{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
+func read_block_header_validation_context{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, sha256_ptr: felt*}(
     prev_chain_state: ChainState) -> (context: BlockHeaderValidationContext) {
     alloc_locals;
 
@@ -183,18 +183,40 @@ func read_block_header_validation_context{range_check_ptr, bitwise_ptr: BitwiseB
 // See also:
 // - https://developer.bitcoin.org/reference/block_chain.html#target-nbits
 //
-func bits_to_target{range_check_ptr}(bits) -> (target: felt) {
+func bits_to_target{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(bits) -> (target: felt) {
     alloc_locals;
-    // Ensure that the max target is not exceeded (0x1d00FFFF)
-    assert_le(bits, MAX_BITS);
+    // Ensure that the max target does not exceeded (0x1d00FFFF)
+    with_attr error_message("Bits ({bits}) exceeded the max target ({MAX_BITS}).") {
+        assert_le(bits, MAX_BITS);
+    }
 
     // Decode the 4 bytes of `bits` into exponent and significand.
     // There's 1 byte for the exponent followed by 3 bytes for the significand
-    let (exponent, significand) = unsigned_div_rem(bits, BYTE ** 3);
+
+    // To do so, first we need a mask for the first 8 bits:
+    const MASK_BITS_TO_SHIFT = 0xFF000000;
+    // Then, using a bitwise AND to get only the first 8 bits.
+    let (bits_to_shift) = bitwise_and(bits, MASK_BITS_TO_SHIFT);
+    // And finally, do the shifts
+    let exponent = bits_to_shift / 0x1000000;
+
+    // Extract the last 3 bytes from `bits` to get the significand
+    let (significand) = bitwise_and(bits, 0x00ffffff);
 
     // The target is the `significand` shifted `exponent` times to the left
-    let (shift_left) = pow(BYTE, exponent - 3);
-    return (significand * shift_left,);
+    // when the exponent is greater than 3.
+    // And it is `significand` shifted `exponent` times to the right when
+    // it is less than 3.
+    let is_greater_than_2 = (2 - exponent) * (1 - exponent) * exponent;
+    if (is_greater_than_2 == 0) {
+        let shift = pow2(8 * (3 - exponent));
+        let (target, _rem) = unsigned_div_rem(significand, shift);
+        return (target=target);
+    } else {
+        let shift = pow2(8 * (exponent - 3));
+        let target = significand * shift;
+        return (target=target);
+    }
 }
 
 
@@ -227,24 +249,27 @@ func validate_and_apply_block_header{range_check_ptr, bitwise_ptr : BitwiseBuilt
 // Validate that a block header correctly extends the current chain
 //
 func validate_prev_block_hash(context: BlockHeaderValidationContext) {
-    assert_hashes_equal(
-        context.prev_chain_state.best_block_hash, context.block_header.prev_block_hash
-    );
+    with_attr error_message("Invalid `prev_block_hash`. This block does not extend the current chain.") {
+        assert_hashes_equal(
+            context.prev_chain_state.best_block_hash, 
+            context.block_header.prev_block_hash
+        );
+    }
     return ();
 }
 
 
-// Validate a block header's proof-of-work matches its target.
+// Validate that a block header's proof-of-work matches its target.
 // Expects that the 4 most significant bytes of `block_hash` are zero.
 //
-func validate_proof_of_work{range_check_ptr}(context: BlockHeaderValidationContext) {
+func validate_proof_of_work{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(context: BlockHeaderValidationContext) {
     // Swap the endianess in the uint32 chunks of the hash
     let (reader) = init_reader(context.block_hash);
     let (hash) = read_bytes{reader=reader}(32);
 
     // Validate that the hash's most significant uint32 chunk is zero
     // This guarantees that the hash fits into a felt.
-    with_attr error_message("Hash's most significant uint32 chunk is not zero.") {
+    with_attr error_message("Hash's most significant uint32 chunk ({hash[7]}) is not zero.") {
         assert 0 = hash[7];
     }
     // Sum up the other 7 uint32 chunks of the hash into 1 felt
@@ -258,7 +283,7 @@ func validate_proof_of_work{range_check_ptr}(context: BlockHeaderValidationConte
                     hash[6] * BASE ** 6;
 
     // Validate that the hash is smaller than the target
-    with_attr error_message("Insufficient proof of work. Expected block hash to be less than or equal to target.") {
+    with_attr error_message("Insufficient proof of work. Expected block hash ({hash_felt}) to be less than or equal to target ({context.target}).") {
         assert_le_felt(hash_felt, context.target);
     }
     return ();
@@ -271,8 +296,10 @@ func validate_proof_of_work{range_check_ptr}(context: BlockHeaderValidationConte
 // - https://github.com/bitcoin/bitcoin/blob/7fcf53f7b4524572d1d0c9a5fdc388e87eb02416/src/pow.cpp#L13
 // - https://github.com/bitcoin/bitcoin/blob/3a7e0a210c86e3c1750c7e04e3d1d689cf92ddaa/src/rpc/blockchain.cpp#L76
 //
-func validate_target(context: BlockHeaderValidationContext) {    
-    assert context.prev_chain_state.current_target = context.block_header.bits;
+func validate_target(context: BlockHeaderValidationContext) {  
+    with_attr error_message("Target is {context.block_header.bits}. Expected {context.prev_chain_state.current_target}") {
+        assert context.prev_chain_state.current_target = context.block_header.bits;
+    }
     return ();
 }
 
@@ -287,30 +314,18 @@ func validate_target(context: BlockHeaderValidationContext) {
 func validate_timestamp{range_check_ptr}(context: BlockHeaderValidationContext) {
     alloc_locals;
 
-    // TODO: implement validation of median
-    // Step 1: Let Python sort the array and compute a permutation (array of indexes)
-    // Step 2: Use that permutation to create a sorted array of pointers in Cairo
-    // Step 3: Prove sortedness of the sorted array in linear time
-    // Step 4: Read the median from the sorted array
-    
     let prev_timestamps = context.prev_chain_state.prev_timestamps;
-    local median_time;
-    %{
-        timestamps = []
-        for i in range(11):
-            timestamp = memory[ids.prev_timestamps + i]
-            timestamps.append(timestamp)
-        timestamps.sort()
-        ids.median_time = timestamps[5]
-    %}
+    let (median_time) = compute_timestamps_median(prev_timestamps);
 
     // Compare this block's timestamp to the median time
-    assert_le(median_time, context.block_header.time);
+    with_attr error_message("Median time ({median_time}) is greater than block's timestamp ({context.block_header.time}).") {
+        assert_le(median_time, context.block_header.time);
+    }
     return ();
 }
 
 
-// Compute the total work invested into the longest chain
+// Compute the total work invested into the chain
 //
 func compute_total_work{range_check_ptr}(
     context: BlockHeaderValidationContext) -> (work: felt) {
@@ -328,8 +343,6 @@ func compute_total_work{range_check_ptr}(
 // - https://github.com/bitcoin/bitcoin/blob/v0.16.2/src/validation.cpp#L3713
 //
 func compute_work_from_target{range_check_ptr}(target) -> (work: felt) {
-    // TODO: Check all boundaries. This is just a dummy implementation
-    // TODO: Write tests for compute_work_from_target
     let (hi, lo) = split_felt(target);
     let target256 = Uint256(lo, hi);
     let (neg_target256) = uint256_neg(target256);
@@ -442,65 +455,61 @@ func adjust_difficulty{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
 
 // Calculate bits from target
 //
-func target_to_bits{range_check_ptr}(target) -> (bits: felt) {
+func target_to_bits{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(target) -> (bits: felt) {
     alloc_locals;
     local bits;
     
     %{
-        # Same as ceil( log2(target) )
-        def bits(target):
-            count = 0
-            while target != 0:
-                target //= 2 
-                count += 1
-            return count + 1
+        def target_to_bits(target):
+            if target == 0:
+                return 0
+            target = min(target, ids.MAX_TARGET)
+            size = (target.bit_length() + 7) // 8
+            mask64 = 0xffffffffffffffff
+            if size <= 3:
+                compact = (target & mask64) << (8 * (3 - size))
+            else:
+                compact = (target >> (8 * (size - 3))) & mask64
 
-        def get_low64(target):
-            return (2**64 - 1) & target
+            if compact & 0x00800000:
+                compact >>= 8
+                size += 1
+            assert compact == (compact & 0x007fffff)
+            assert size < 256
+            return compact | size << 24
 
-        target = ids.target
-        fNegative = False 
-
-        #
-        # This code is ported from Bitcoin Core
-        # https://github.com/bitcoin/bitcoin/blob/8e3c266a4f02093d57d563f32ba73d3ab4b5f208/src/arith_uint256.cpp#L218
-        #
-        
-        nSize = (bits(target) + 7) // 8
-        nCompact = 0
-        if nSize <= 3:
-            nCompact = get_low64(target) << 8 * (3 - nSize)
-        else:
-            bn = target >> 8 * (nSize - 3)
-            nCompact = get_low64(bn)
-        
-        # The 0x00800000 bit denotes the sign.
-        # Thus, if it is already set, divide the mantissa by 256 and increase the exponent.
-        if nCompact & 0x00800000:
-            nCompact >>= 8
-            nSize += 1
-        
-        assert((nCompact & ~0x007fffff) == 0)
-        assert(nSize < 256)
-        nCompact |= nSize << 24
-        nCompact |= 0x00800000 if fNegative and (nCompact & 0x007fffff) else 0
-        
-        
-        ids.bits = nCompact
+        ids.bits = target_to_bits(ids.target)
     %}
 
-    // TODO: verify the python output using `bits_to_target`
+    /// Compute the `exponent` which is the most significant byte of `bits`.
 
-    // cast bits to uint32 
-    // exponent <- highest_bit_of_target
+    // To do so, first we need a mask with the first 8 bits:
+    const MASK_BITS_TO_SHIFT = 0xFF000000;
+    // Then, using a bitwise and to get only the first 8 bits.
+    let (bits_to_shift) = bitwise_and(bits, MASK_BITS_TO_SHIFT);
+    // And finally, do the shifts
+    let exponent = bits_to_shift / 0x1000000;
 
-    // const TARGET_BITMASK = 0xffffff * pow(2**32, exponent); // ???
-    // let target = bitwise_and(target, TARGET_BITMASK);
-    // assert bits_to_target(bits) = target;
+    let (expected_target) = bits_to_target(bits);
 
-    return (bits,);
+    let is_greater_than_2 = (2 - exponent) * (1 - exponent) * exponent;
+    if (is_greater_than_2 == 0) {
+        with_attr error_message("Hint provided an invalid value for `bits`") {
+            assert expected_target = target;
+        }
+        return (bits,);
+    } else {
+        // if exponent >= 3 we check that
+        // ((target & (threshold * 0xffffff)) - expected_target) == 0
+        let threshold = pow2(8 * (exponent - 3));
+        let mask = threshold * 0xffffff;
+        let (masked_target) = bitwise_and(target, mask);
+        with_attr error_message("Hint provided an invalid value for `bits`") {
+            assert masked_target = expected_target;
+        }
+        return (bits,);
+    }
 }
-
 
 // Convert a felt to a Uint256
 //

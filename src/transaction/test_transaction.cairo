@@ -44,12 +44,12 @@ func test_read_transaction{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
 
     let (transaction, byte_size) = read_transaction{reader=reader}();
 
-    assert transaction.version = 0x01;
+    assert 0x01 = transaction.version;
 
-    assert transaction.outputs[0].amount = 300000;
-    assert transaction.outputs[1].amount = 11883137;
+    assert 300000 = transaction.outputs[0].amount;
+    assert 11883137 = transaction.outputs[1].amount;
 
-    assert byte_size = 259;
+    assert 259 = byte_size;
 
     let (expected_script_pub_key) = alloc();
     local expected_script_pub_key_len;
@@ -59,8 +59,9 @@ func test_read_transaction{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
         ids.expected_script_pub_key_len = felt_size
         ids.expected_script_pub_key_size = byte_size
     %}
-
+    
     assert 0x19 = transaction.outputs[0].script_pub_key_size;
+
     memcpy(
         expected_script_pub_key, transaction.outputs[0].script_pub_key, expected_script_pub_key_len
     );
@@ -96,10 +97,10 @@ func test_read_segwit_transaction{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}
 
     let (transaction, byte_size) = read_transaction{reader=reader}();
 
-    assert transaction.version = 0x02;
+    assert 0x02 = transaction.version;
 
-    assert transaction.outputs[0].amount = 295;
-    assert transaction.outputs[1].amount = 45422;
+    assert 295 = transaction.outputs[0].amount;
+    assert 45422 = transaction.outputs[1].amount;
 
     // assert byte_size = 259
     return ();
@@ -119,15 +120,19 @@ func test_read_transaction_validation_context{range_check_ptr, bitwise_ptr: Bitw
         	], ids.txid_expected)
     %}
 
-    let (context) = read_transaction_validation_context(328734, 1);
+    // initialize sha256_ptr
+    let sha256_ptr: felt* = alloc();
+    with sha256_ptr {
+        let (context) = read_transaction_validation_context(328734, 1);
+    }
+    assert 0x01 = context.transaction.version;
 
-    assert context.transaction.version = 0x01;
+    assert 300000 = context.transaction.outputs[0].amount;
+    assert 11883137 = context.transaction.outputs[1].amount;
 
-    assert context.transaction.outputs[0].amount = 300000;
-    assert context.transaction.outputs[1].amount = 11883137;
-
-    assert context.transaction_size = 259;
+    assert 259 = context.transaction_size;
 
     assert_hashes_equal(context.txid, txid_expected);
+    
     return ();
 }

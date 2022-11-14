@@ -17,11 +17,11 @@ func test_utreexo_basics{range_check_ptr, pedersen_ptr: HashBuiltin*}() {
 
     utreexo_add{hash_ptr=pedersen_ptr, utreexo_roots=utreexo_roots}(0x111111111111111111111111);
     assert 0x111111111111111111111111 = utreexo_roots[0];
-
+    
     utreexo_add{hash_ptr=pedersen_ptr, utreexo_roots=utreexo_roots}(0x222222222222222222222222);
     assert 0 = utreexo_roots[0];
     assert 0x1b586e993478db71562f0cfe2ad81ccc463b0d18e64bde2fc825530714d8328 = utreexo_roots[1];
-
+    
     utreexo_add{hash_ptr=pedersen_ptr, utreexo_roots=utreexo_roots}(0x333333333333333333333333);
     assert 0x333333333333333333333333 = utreexo_roots[0];
     assert 0x1b586e993478db71562f0cfe2ad81ccc463b0d18e64bde2fc825530714d8328 = utreexo_roots[1];
@@ -78,7 +78,6 @@ func test_utreexo_inclusion{range_check_ptr, pedersen_ptr: HashBuiltin*}() {
     assert utreexo_roots[24] = 0;
     assert utreexo_roots[25] = 0;
     assert utreexo_roots[26] = 0;
-
     let leaf = 0x17da72c9147f43a3491e2f378f3d62f626136ca5d5c77d61f7cee2f76d595ea;
     let leaf_index = 9;
 

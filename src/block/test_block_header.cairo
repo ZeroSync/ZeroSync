@@ -19,6 +19,7 @@ from block.block_header import (
     read_block_header_validation_context,
     validate_and_apply_block_header,
     ChainState,
+    compute_work_from_target,
 )
 
 // Test block header serialization
@@ -30,7 +31,7 @@ from block.block_header import (
 // - https://blockstream.info/block/000000000000000009a11b3972c8e532fe964de937c9e0096b43814e67af3728
 // - https://blockstream.info/api/block/000000000000000009a11b3972c8e532fe964de937c9e0096b43814e67af3728/header
 @external
-func test_serialize_block_header{range_check_ptr}() {
+func test_serialize_block_header{bitwise_ptr: BitwiseBuiltin*}() {
     alloc_locals;
     setup_python_defs();
 
@@ -56,7 +57,6 @@ func test_serialize_block_header{range_check_ptr}() {
             ids.prev_block_hash_expected)
     %}
     assert_hashes_equal(block_header.prev_block_hash, prev_block_hash_expected);
-
 
     return ();
 }
@@ -112,15 +112,22 @@ func test_read_block_header_validation_context{range_check_ptr, bitwise_ptr: Bit
         prev_timestamps,
     );
 
+    // initialize sha256_ptr
+    let sha256_ptr: felt* = alloc();
+
     // Read a block header from the byte stream
     // This is our next chain tip
-    let (context) = read_block_header_validation_context(prev_chain_state);
+    with sha256_ptr {
+        let (context) = read_block_header_validation_context(prev_chain_state);
+    }
 
     // Sanity check: block version should be 2
-    assert context.block_header.version = 0x02;
+    assert 0x02 = context.block_header.version;
 
     // Check if the target was computed correctly
-    assert context.target = 0x1bc330000000000000000000000000000000000000000000;
+    with_attr error_message("Target computed incorrectly.") {
+        assert 0x1bc330000000000000000000000000000000000000000000 = context.target;
+    }
     // Check if the block hash is correct
     let (block_hash_expected) = alloc();
     %{
@@ -128,7 +135,9 @@ func test_read_block_header_validation_context{range_check_ptr, bitwise_ptr: Bit
             "000000000000000009a11b3972c8e532fe964de937c9e0096b43814e67af3728"
             ], ids.block_hash_expected)
     %}
-    assert_hashes_equal(context.block_hash, block_hash_expected);
+    with_attr error_message("Invalid block hash.") {
+        assert_hashes_equal(context.block_hash, block_hash_expected);
+    }
 
     // Try to validate the block header.
     // This should succeed for valid block headers
@@ -136,15 +145,25 @@ func test_read_block_header_validation_context{range_check_ptr, bitwise_ptr: Bit
 
     // Sanity check for prev_timestamps of next_state
     // First element is the timestamp of this block
-    assert next_state.prev_timestamps[0] = 1415239972;
+    with_attr error_message("The first element does not correspond to the timestamp of the block.") {
+        assert 1415239972 = next_state.prev_timestamps[0];
+    }
     // Our 2nd element should be the 1st of the dummy
-    assert next_state.prev_timestamps[1] = 0;
+    with_attr error_message("The state does not correspond with the dummy.") {
+        assert 0 = next_state.prev_timestamps[1];
+    }
     // ...
-    assert next_state.prev_timestamps[7] = 6;
+    with_attr error_message("The state does not correspond with the dummy.") {
+        assert 6 = next_state.prev_timestamps[7];
+    }
     // ...
-    assert next_state.prev_timestamps[9] = 8;
+    with_attr error_message("The state does not correspond with the dummy.") {
+        assert 8 = next_state.prev_timestamps[9];
+    }
     // Our 11th element should be the 10th of the dummy
-    assert next_state.prev_timestamps[10] = 9;
+    with_attr error_message("The state does not correspond with the dummy.") {
+        assert 9 = next_state.prev_timestamps[10];
+    }
 
     return ();
 }
@@ -154,20 +173,11 @@ func test_bits_to_target{bitwise_ptr: BitwiseBuiltin*, range_check_ptr}() {
     alloc_locals;
     let bits = 0x181bc330;
     let (target) = bits_to_target(bits);
-    assert target = 0x1bc330000000000000000000000000000000000000000000;
+    with_attr error_message("Invalid target.") {
+        assert 0x1bc330000000000000000000000000000000000000000000 = target;
+    }
     return ();
 }
-
-@external
-func test_target_to_bits{bitwise_ptr: BitwiseBuiltin*, range_check_ptr}() {
-    alloc_locals;
-    let target = 0x1bc330000000000000000000000000000000000000000000;
-    let (bits) = target_to_bits(target);
-    assert bits = 0x181bc330;
-    return ();
-}
-
-
 
 // Test a current_target adjustment
 // After this block the current_target gets adjusted because it is a last block of an epoch.
@@ -213,12 +223,19 @@ func test_adjust_current_target{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}()
         prev_timestamps,
     );
 
+    // initialize sha256_ptr
+    let sha256_ptr: felt* = alloc();
+
     // Read a block header from the byte stream
     // This is our next chain tip
-    let (context) = read_block_header_validation_context(prev_chain_state);
+    with sha256_ptr {
+        let (context) = read_block_header_validation_context(prev_chain_state);
+    }
 
     // Sanity check: block version should be 2
-    assert context.block_header.version = 0x02;
+    with_attr error_message("Invalid block version.") {
+        assert 0x02 = context.block_header.version;
+    }
 
     // Check if the target was computed correctly
     assert context.target = 0x5db8b0000000000000000000000000000000000000000000000;
@@ -230,14 +247,19 @@ func test_adjust_current_target{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}()
             "000000000000041fb61665c8a31b8b5c3ae8fe81903ea81530c979d5094e6f9d"
             ], ids.block_hash_expected)
     %}
-    assert_hashes_equal(context.block_hash, block_hash_expected);
+
+    with_attr error_message("invalid block hash") {
+        assert_hashes_equal(context.block_hash, block_hash_expected);
+    }
 
     // Try to validate the block header.
     // This should succeed for valid block headers
     let (next_state) = validate_and_apply_block_header(context);
 
     // Verify that the current_target was correctly adjusted
-    assert next_state.current_target = 0x1a057e08;
+    with_attr error_message("The current_target wasn't adjusted correctly.") {
+        assert 0x1a057e08 = next_state.current_target;
+    }
     
     return ();
 }
@@ -273,15 +295,24 @@ func test_insufficient_pow{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
         prev_timestamps,
     );
 
+    // initialize sha256_ptr
+    let sha256_ptr: felt* = alloc();
+
     // Block 1 will be read here.
-    let (context) = read_block_header_validation_context(prev_chain_state);
+    with sha256_ptr {
+        let (context) = read_block_header_validation_context(prev_chain_state);
+    }
     
     // Check if the block hash is correct.
-    assert_hashes_equal(context.block_hash, block_hash_expected);
+    with_attr error_message("Invalid block hash.") {
+        assert_hashes_equal(context.block_hash, block_hash_expected);
+    }
 
     // Try to validate the block header.
     // This should succeed for the currently correct target.
-    let (next_state) = validate_and_apply_block_header(context);
+    with sha256_ptr {
+        let (next_state) = validate_and_apply_block_header(context);
+    }
 
     // Run a test with manipulated target.
     let (prev_timestamps) = dummy_prev_timestamps();
@@ -296,10 +327,14 @@ func test_insufficient_pow{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     );
 
     // Block 1 will be read here.
-    let (context) = read_block_header_validation_context(prev_chain_state);
+    with sha256_ptr {
+        let (context) = read_block_header_validation_context(prev_chain_state);
+    }
 
     // Check if the block hash is correct
-    assert_hashes_equal(context.block_hash, block_hash_expected);
+    with_attr error_message("Invalid block hash.") {
+        assert_hashes_equal(context.block_hash, block_hash_expected);
+    }
 
     // Manipulate the target and set it to 1.
     let low_target_context = BlockHeaderValidationContext(
@@ -315,5 +350,55 @@ func test_insufficient_pow{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     %{ expect_revert() %}
     let (next_state) = validate_and_apply_block_header(low_target_context);
     
+    return ();
+}
+
+@external
+func test_compute_work_from_target1{range_check_ptr}() {
+    let expected_work = 0x0100010001;
+    let target = 0x00000000ffff0000000000000000000000000000000000000000000000000000;
+    let (work) = compute_work_from_target(target);
+    assert expected_work = work;
+
+    return ();
+}
+
+@external
+func test_compute_work_from_target2{range_check_ptr}() {
+    let expected_work = 0x26d946e509ac00026d;
+    let target = 0x00000000000000000696f4000000000000000000000000000000000000000000;
+    let (work) = compute_work_from_target(target);
+    assert expected_work = work;
+
+    return ();
+}
+
+@external
+func test_compute_work_from_target3{range_check_ptr}() {
+    let expected_work = 0xe10005d2a0269364ff907d1d1d3ce0e1b351d743fe3222740c2440d07;
+    let target = 0x12345600;
+    let (work) = compute_work_from_target(target);
+    assert expected_work = work;
+
+    return ();
+}
+
+@external
+func test_compute_work_from_target4{range_check_ptr}() {
+    let expected_work = 0x1c040c95d1a74d2e27abbbd2255f66c9db2cad7511eb970cd4dac39e4;
+    let target = 0x92340000;
+    let (work) = compute_work_from_target(target);
+    assert expected_work = work;
+
+    return ();
+}
+
+@external
+func test_compute_work_from_target5{range_check_ptr}() {
+    let expected_work = 0x21809b468faa88dbe34f;
+    let target = 0x00000000000000000007a4290000000000000000000000000000000000000000;
+    let (work) = compute_work_from_target(target);
+    assert expected_work = work;
+
     return ();
 }

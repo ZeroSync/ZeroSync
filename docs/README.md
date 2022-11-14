@@ -9,7 +9,7 @@ This is an early stage project. Expect frequent breaking changes. [Here is the p
 WARNING: THIS CODE IS STILL FULL OF CRITICAL SECURITY BUGS!
 
 ## Requirements
-- Python 3.7
+- Python 3.9
 - Cairo. [Installation Guide](https://www.cairo-lang.org/docs/quickstart.html) (Programming language for provable programs)
 - [Protostar](https://docs.swmansion.com/protostar/docs/tutorials/installation) (Automated testing)
 - [Giza](https://github.com/maxgillett/giza) (Required for prover. Not necessary for development and testing)
