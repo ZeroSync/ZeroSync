@@ -286,17 +286,3 @@ func reduce_evaluations(evaluations: Vec) -> (res: felt) {
     // TODO
     return (res=0);
 }
-
-func main{
-    pedersen_ptr: HashBuiltin*,
-    range_check_ptr,
-    bitwise_ptr: BitwiseBuiltin*,
-}() -> () {
-    
-    // Deserialize proof
-    //let (proof, pub_inputs) = read_stark_proof();
-
-    //verify(proof=proof, pub_inputs=pub_inputs);
-
-    return ();
-}

@@ -97,14 +97,15 @@ for i in range(start_block_height, end_block_height):
 		'current_target' :   r.read(),
 		'prev_timestamps' :  r.read_n(11),
 		'epoch_start_time' : r.read(),
-		'utreexo_roots' :    felts_to_hex( r.read_n(27) )
+		'utreexo_roots' :    felts_to_hex( r.read_n(27) ),
+		'program_hash' :  felts_to_hash( r.read_n(8) ),
 	}
 
 	print('block height:', chain_state['block_height'])
 
 
 	# Run Giza prover
-	cmd = f'giza prove --trace={output_dir}/trace.bin --memory={output_dir}/memory.bin --program={output_dir}/program.json --output={output_dir}/proof_{i}.bin --num-outputs=50'
+	cmd = f'giza prove --trace={output_dir}/trace.bin --memory={output_dir}/memory.bin --program={output_dir}/program.json --output={output_dir}/proof.bin --num-outputs=50'
 	program_output_string = os.popen(cmd).read()
 
 	# Write the chain state into a json file
