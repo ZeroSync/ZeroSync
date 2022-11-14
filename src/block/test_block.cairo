@@ -12,6 +12,7 @@ from starkware.cairo.common.memcpy import memcpy
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin, HashBuiltin
 
 from utils.python_utils import setup_python_defs
+from crypto.sha256.sha256 import finalize_sha256
 from transaction.transaction import TransactionValidationContext
 from block.block_header import ChainState
 from utreexo.utreexo import utreexo_init, utreexo_add
@@ -54,7 +55,7 @@ func dummy_prev_timestamps() -> (timestamps: felt*) {
 // - Block explorer: https://blockstream.info/block/000000004d15e01d3ffc495df7bb638c2b35c5b5dd0ba405615f513e3393f0c7
 // - Stackoverflow: https://stackoverflow.com/questions/67631407/raw-or-hex-of-a-whole-bitcoin-block
 // - Blockchair: https://api.blockchair.com/bitcoin/raw/block/000000004d15e01d3ffc495df7bb638c2b35c5b5dd0ba405615f513e3393f0c7
-// @external
+@external
 func test_verify_block_with_1_transaction{
     range_check_ptr, bitwise_ptr: BitwiseBuiltin*, pedersen_ptr: HashBuiltin*
 }() {
@@ -86,11 +87,13 @@ func test_verify_block_with_1_transaction{
 
     // initialize sha256_ptr
     let sha256_ptr: felt* = alloc();
+    let sha256_ptr_start = sha256_ptr;
 
     // Parse the block validation context
     with sha256_ptr {
         let (context) = read_block_validation_context(prev_state);
         validate_and_apply_block{hash_ptr=pedersen_ptr}(context);
+        finalize_sha256(sha256_ptr_start, sha256_ptr);
     }
     return ();
 }
@@ -140,6 +143,7 @@ func test_verify_block_with_4_transactions{
 
     // initialize sha256_ptr
     let sha256_ptr: felt* = alloc();
+    let sha256_ptr_start = sha256_ptr;
 
     // Parse the block validation context using the previous state
     with sha256_ptr {
@@ -154,6 +158,7 @@ func test_verify_block_with_4_transactions{
     // Validate the block
     with sha256_ptr {
         let (next_state) = validate_and_apply_block{hash_ptr=pedersen_ptr}(context);
+        finalize_sha256(sha256_ptr_start, sha256_ptr);
     }
 
     return ();
@@ -204,6 +209,7 @@ func test_verify_block_with_27_transactions{
 
     // initialize sha256_ptr
     let sha256_ptr: felt* = alloc();
+    let sha256_ptr_start = sha256_ptr;
 
     // Parse the block validation context using the previous state
     with sha256_ptr {
@@ -222,6 +228,7 @@ func test_verify_block_with_27_transactions{
     // Validate the block
     with sha256_ptr {
         validate_and_apply_block{hash_ptr = pedersen_ptr}(context);
+        finalize_sha256(sha256_ptr_start, sha256_ptr);
     }
     return ();
 }
@@ -270,6 +277,7 @@ func test_verify_block_with_49_transactions{
     
     // initialize sha256_ptr
     let sha256_ptr: felt* = alloc();
+    let sha256_ptr_start = sha256_ptr;
 
     // Parse the block validation context using the previous state
     with sha256_ptr {
@@ -289,11 +297,79 @@ func test_verify_block_with_49_transactions{
     // Validate the block
     with sha256_ptr {
         validate_and_apply_block{hash_ptr = pedersen_ptr}(context);
+        finalize_sha256(sha256_ptr_start, sha256_ptr);
     }
     return ();
 }
 
 // TODO: Add tests between 49 and 2496 transactions
+
+// Test a Bitcoin block with 108 transactions.
+//
+// Example: Block at height 222224
+//
+// - Block hash: 00000000000000ae408a0d645b4a2dafdb886e46add4963ac0b4b10cb4c95d26
+// - Block explorer: https://blockstream.info/block/00000000000000ae408a0d645b4a2dafdb886e46add4963ac0b4b10cb4c95d26
+// @external
+func test_verify_block_with_108_transactions{
+    range_check_ptr, bitwise_ptr: BitwiseBuiltin*, pedersen_ptr: HashBuiltin*
+}() {
+    alloc_locals;
+    setup_python_defs();
+
+    // Create a dummy for the previous chain state
+    // Block 222223: https://blockstream.info/block/00000000000000ae408a0d645b4a2dafdb886e46add4963ac0b4b10cb4c95d26
+    let (prev_block_hash) = alloc();
+    %{
+        hashes_from_hex([
+                "000000000000011dd201c22edad20e9945440fce0b5d991a3afcc16ab789ecf5"
+        ], ids.prev_block_hash)
+    %}
+
+    let (prev_timestamps) = dummy_prev_timestamps();
+
+    let prev_chain_state = ChainState(
+            block_height = 222223,
+            total_work = 0,
+            best_block_hash = prev_block_hash,
+            current_target = 0x1a04985c,
+            epoch_start_time = 0,
+            prev_timestamps,
+            );
+
+    // We need some UTXOs to spend in this block
+    reset_bridge_node();
+    let (utreexo_roots) = utreexo_init();
+    dummy_utxo_insert_block_number{hash_ptr=pedersen_ptr,utreexo_roots=utreexo_roots}(222224);
+
+    let prev_state = State(prev_chain_state, utreexo_roots);
+    
+    // initialize sha256_ptr
+    let sha256_ptr: felt* = alloc();
+    let sha256_ptr_start = sha256_ptr;
+
+    // Parse the block validation context using the previous state
+    with sha256_ptr {
+        let (context) = read_block_validation_context(prev_state);
+    }
+
+    // Sanity Check
+    // Transaction count should be 49
+    assert 108 = context.transaction_count;
+
+    // Sanity Check
+    // The second output of the second transaction should be 13.08 BTC
+
+    let transaction = context.transaction_contexts[1].transaction;
+    assert transaction.outputs[1].amount = 1308000000;
+    
+    // Validate the block
+    with sha256_ptr {
+        validate_and_apply_block{hash_ptr = pedersen_ptr}(context);
+        finalize_sha256(sha256_ptr_start, sha256_ptr);
+    }
+    return ();
+}
 
 // Test a Bitcoin block with 2496 transactions.
 //
@@ -339,6 +415,7 @@ func test_verify_block_with_2496_transactions{
 
     // initialize sha256_ptr
     let sha256_ptr: felt* = alloc();
+    let sha256_ptr_start = sha256_ptr;
 
     // Parse the block validation context using the previous state
     with sha256_ptr {
@@ -356,9 +433,10 @@ func test_verify_block_with_2496_transactions{
     assert 1071525 = transaction.outputs[1].amount;
 
     // Validate the block
-    // with sha256_ptr {
-    //     validate_and_apply_block{hash_ptr = pedersen_ptr}(context);
-    // }
+    with sha256_ptr {
+        validate_and_apply_block{hash_ptr = pedersen_ptr}(context);
+        finalize_sha256(sha256_ptr_start, sha256_ptr);
+    }
     return ();
 }
 
