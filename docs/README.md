@@ -10,6 +10,17 @@
   .<a href="https://github.com/ZeroSync/ZeroSync/discussions">Ask a Question</a>
 </div>
 
+<div align="center">
+<br />
+
+![GitHub Workflow Status](https://img.shields.io/github/workflow/status/ZeroSync/ZeroSync/CI?style=flat-square&logo=github)
+[![Project license](https://img.shields.io/github/license/ZeroSync/ZeroSync.svg?style=flat-square)](LICENSE)
+[![Pull Requests welcome](https://img.shields.io/badge/PRs-welcome-ff69b4.svg?style=flat-square)](https://github.com/ZeroSync/ZeroSync/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
+![GitHub Repo stars](https://img.shields.io/github/stars/ZeroSync/ZeroSync?style=social)
+[![Twitter Follow](https://img.shields.io/twitter/follow/ZeroSync_?style=social)](https://twitter.com/ZeroSync_)
+
+</div>
+
 <details open="open">
 <summary>Table of Contents</summary>
 
