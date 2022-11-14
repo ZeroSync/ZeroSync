@@ -23,12 +23,11 @@ from block.block import (
     State,
     read_block_validation_context,
     validate_and_apply_block,
-    compute_block_reward )
-
-
+    compute_block_reward,
+)
 
 // Create a dummy for the previous timestamps
-func dummy_prev_timestamps() -> (timestamps: felt*) {
+func dummy_prev_timestamps() -> felt* {
     let (prev_timestamps) = alloc();
     assert prev_timestamps[0] = 0;
     assert prev_timestamps[1] = 1;
@@ -41,11 +40,8 @@ func dummy_prev_timestamps() -> (timestamps: felt*) {
     assert prev_timestamps[8] = 8;
     assert prev_timestamps[9] = 9;
     assert prev_timestamps[10] = 10;
-    return (prev_timestamps,);
+    return prev_timestamps;
 }
-
-
-
 
 // Test a simple Bitcoin block with only a single transaction.
 //
@@ -71,17 +67,17 @@ func test_verify_block_with_1_transaction{
         ], ids.prev_block_hash)
     %}
 
-    let (prev_timestamps) = dummy_prev_timestamps();
+    let prev_timestamps = dummy_prev_timestamps();
 
     let prev_chain_state = ChainState(
-            block_height = 6424,
-            total_work = 0,
-            best_block_hash = prev_block_hash,
-            current_target = 0x1d00ffff,
-            epoch_start_time = 0,
-            prev_timestamps,
-            );
-    let (utreexo_roots) = utreexo_init();
+        block_height=6424,
+        total_work=0,
+        best_block_hash=prev_block_hash,
+        current_target=0x1d00ffff,
+        epoch_start_time=0,
+        prev_timestamps,
+    );
+    let utreexo_roots = utreexo_init();
 
     let prev_state = State(prev_chain_state, utreexo_roots);
 
@@ -91,13 +87,12 @@ func test_verify_block_with_1_transaction{
 
     // Parse the block validation context
     with sha256_ptr {
-        let (context) = read_block_validation_context(prev_state);
+        let context = read_block_validation_context(prev_state);
         validate_and_apply_block{hash_ptr=pedersen_ptr}(context);
         finalize_sha256(sha256_ptr_start, sha256_ptr);
     }
     return ();
 }
-
 
 // Test a Bitcoin block with 4 transactions.
 //
@@ -124,20 +119,20 @@ func test_verify_block_with_4_transactions{
         ], ids.prev_block_hash)
     %}
 
-    let (prev_timestamps) = dummy_prev_timestamps();
+    let prev_timestamps = dummy_prev_timestamps();
 
     let prev_chain_state = ChainState(
-            block_height=99999,
-            total_work=0,
-            best_block_hash=prev_block_hash,
-            current_target=0x1b04864c,
-            epoch_start_time=0,
-            prev_timestamps,
-            );
+        block_height=99999,
+        total_work=0,
+        best_block_hash=prev_block_hash,
+        current_target=0x1b04864c,
+        epoch_start_time=0,
+        prev_timestamps,
+    );
 
     // We need some UTXOs to spend in this block
-    let (utreexo_roots) = utreexo_init();
-    dummy_utxo_insert_block_number{hash_ptr=pedersen_ptr,utreexo_roots=utreexo_roots}(100000);
+    let utreexo_roots = utreexo_init();
+    dummy_utxo_insert_block_number{hash_ptr=pedersen_ptr, utreexo_roots=utreexo_roots}(100000);
 
     let prev_state = State(prev_chain_state, utreexo_roots);
 
@@ -147,7 +142,7 @@ func test_verify_block_with_4_transactions{
 
     // Parse the block validation context using the previous state
     with sha256_ptr {
-        let (context) = read_block_validation_context(prev_state);
+        let context = read_block_validation_context(prev_state);
     }
 
     // Sanity Check
@@ -157,13 +152,12 @@ func test_verify_block_with_4_transactions{
 
     // Validate the block
     with sha256_ptr {
-        let (next_state) = validate_and_apply_block{hash_ptr=pedersen_ptr}(context);
+        let next_state = validate_and_apply_block{hash_ptr=pedersen_ptr}(context);
         finalize_sha256(sha256_ptr_start, sha256_ptr);
     }
 
     return ();
 }
-
 
 // Test a Bitcoin block with 27 transactions.
 //
@@ -189,21 +183,21 @@ func test_verify_block_with_27_transactions{
         ], ids.prev_block_hash)
     %}
 
-    let (prev_timestamps) = dummy_prev_timestamps();
+    let prev_timestamps = dummy_prev_timestamps();
 
     let prev_chain_state = ChainState(
-            block_height=169999,
-            total_work=0,
-            best_block_hash=prev_block_hash,
-            current_target=0x1a0b350c,
-            epoch_start_time=0,
-            prev_timestamps,
-            );
+        block_height=169999,
+        total_work=0,
+        best_block_hash=prev_block_hash,
+        current_target=0x1a0b350c,
+        epoch_start_time=0,
+        prev_timestamps,
+    );
 
     // We need some UTXOs to spend in this block
     reset_bridge_node();
-    let (utreexo_roots) = utreexo_init();
-    dummy_utxo_insert_block_number{hash_ptr=pedersen_ptr,utreexo_roots=utreexo_roots}(170000);
+    let utreexo_roots = utreexo_init();
+    dummy_utxo_insert_block_number{hash_ptr=pedersen_ptr, utreexo_roots=utreexo_roots}(170000);
 
     let prev_state = State(prev_chain_state, utreexo_roots);
 
@@ -213,7 +207,7 @@ func test_verify_block_with_27_transactions{
 
     // Parse the block validation context using the previous state
     with sha256_ptr {
-        let (context) = read_block_validation_context(prev_state);
+        let context = read_block_validation_context(prev_state);
     }
 
     // Sanity Check
@@ -227,12 +221,11 @@ func test_verify_block_with_27_transactions{
 
     // Validate the block
     with sha256_ptr {
-        validate_and_apply_block{hash_ptr = pedersen_ptr}(context);
+        validate_and_apply_block{hash_ptr=pedersen_ptr}(context);
         finalize_sha256(sha256_ptr_start, sha256_ptr);
     }
     return ();
 }
-
 
 // Test a Bitcoin block with 49 transactions.
 //
@@ -257,31 +250,31 @@ func test_verify_block_with_49_transactions{
         ], ids.prev_block_hash)
     %}
 
-    let (prev_timestamps) = dummy_prev_timestamps();
+    let prev_timestamps = dummy_prev_timestamps();
 
     let prev_chain_state = ChainState(
-            block_height = 328733,
-            total_work = 0,
-            best_block_hash = prev_block_hash,
-            current_target = 0x181bc330,
-            epoch_start_time = 0,
-            prev_timestamps,
-            );
+        block_height=328733,
+        total_work=0,
+        best_block_hash=prev_block_hash,
+        current_target=0x181bc330,
+        epoch_start_time=0,
+        prev_timestamps,
+    );
 
     // We need some UTXOs to spend in this block
     reset_bridge_node();
-    let (utreexo_roots) = utreexo_init();
-    dummy_utxo_insert_block_number{hash_ptr=pedersen_ptr,utreexo_roots=utreexo_roots}(328734);
+    let utreexo_roots = utreexo_init();
+    dummy_utxo_insert_block_number{hash_ptr=pedersen_ptr, utreexo_roots=utreexo_roots}(328734);
 
     let prev_state = State(prev_chain_state, utreexo_roots);
-    
+
     // initialize sha256_ptr
     let sha256_ptr: felt* = alloc();
     let sha256_ptr_start = sha256_ptr;
 
     // Parse the block validation context using the previous state
     with sha256_ptr {
-        let (context) = read_block_validation_context(prev_state);
+        let context = read_block_validation_context(prev_state);
     }
 
     // Sanity Check
@@ -293,10 +286,10 @@ func test_verify_block_with_49_transactions{
 
     let transaction = context.transaction_contexts[1].transaction;
     assert transaction.outputs[1].amount = 11883137;
-    
+
     // Validate the block
     with sha256_ptr {
-        validate_and_apply_block{hash_ptr = pedersen_ptr}(context);
+        validate_and_apply_block{hash_ptr=pedersen_ptr}(context);
         finalize_sha256(sha256_ptr_start, sha256_ptr);
     }
     return ();
@@ -326,31 +319,31 @@ func test_verify_block_with_108_transactions{
         ], ids.prev_block_hash)
     %}
 
-    let (prev_timestamps) = dummy_prev_timestamps();
+    let prev_timestamps = dummy_prev_timestamps();
 
     let prev_chain_state = ChainState(
-            block_height = 222223,
-            total_work = 0,
-            best_block_hash = prev_block_hash,
-            current_target = 0x1a04985c,
-            epoch_start_time = 0,
-            prev_timestamps,
-            );
+        block_height=222223,
+        total_work=0,
+        best_block_hash=prev_block_hash,
+        current_target=0x1a04985c,
+        epoch_start_time=0,
+        prev_timestamps,
+    );
 
     // We need some UTXOs to spend in this block
     reset_bridge_node();
-    let (utreexo_roots) = utreexo_init();
-    dummy_utxo_insert_block_number{hash_ptr=pedersen_ptr,utreexo_roots=utreexo_roots}(222224);
+    let utreexo_roots = utreexo_init();
+    dummy_utxo_insert_block_number{hash_ptr=pedersen_ptr, utreexo_roots=utreexo_roots}(222224);
 
     let prev_state = State(prev_chain_state, utreexo_roots);
-    
+
     // initialize sha256_ptr
     let sha256_ptr: felt* = alloc();
     let sha256_ptr_start = sha256_ptr;
 
     // Parse the block validation context using the previous state
     with sha256_ptr {
-        let (context) = read_block_validation_context(prev_state);
+        let context = read_block_validation_context(prev_state);
     }
 
     // Sanity Check
@@ -362,10 +355,10 @@ func test_verify_block_with_108_transactions{
 
     let transaction = context.transaction_contexts[1].transaction;
     assert transaction.outputs[1].amount = 1308000000;
-    
+
     // Validate the block
     with sha256_ptr {
-        validate_and_apply_block{hash_ptr = pedersen_ptr}(context);
+        validate_and_apply_block{hash_ptr=pedersen_ptr}(context);
         finalize_sha256(sha256_ptr_start, sha256_ptr);
     }
     return ();
@@ -396,20 +389,20 @@ func test_verify_block_with_2496_transactions{
         ], ids.prev_block_hash)
     %}
 
-    let (prev_timestamps) = dummy_prev_timestamps();
+    let prev_timestamps = dummy_prev_timestamps();
 
     let prev_chain_state = ChainState(
-            block_height = 749999,
-            total_work = 0,
-            best_block_hash = prev_block_hash,
-            current_target = 0x1709ed88,
-            epoch_start_time = 0,
-            prev_timestamps,
-            );
+        block_height=749999,
+        total_work=0,
+        best_block_hash=prev_block_hash,
+        current_target=0x1709ed88,
+        epoch_start_time=0,
+        prev_timestamps,
+    );
     // We need some UTXOs to spend in this block
     reset_bridge_node();
-    let (utreexo_roots) = utreexo_init();
-    dummy_utxo_insert_block_number{hash_ptr=pedersen_ptr,utreexo_roots=utreexo_roots}(750000);
+    let utreexo_roots = utreexo_init();
+    dummy_utxo_insert_block_number{hash_ptr=pedersen_ptr, utreexo_roots=utreexo_roots}(750000);
 
     let prev_state = State(prev_chain_state, utreexo_roots);
 
@@ -419,13 +412,13 @@ func test_verify_block_with_2496_transactions{
 
     // Parse the block validation context using the previous state
     with sha256_ptr {
-        let (context) = read_block_validation_context(prev_state);
+        let context = read_block_validation_context(prev_state);
     }
 
     // Sanity Check
     // Transaction count should be 49
     assert 2496 = context.transaction_count;
-    
+
     // Sanity Check
     // The second output of the third transaction should be 0.01071525 BTC
 
@@ -434,42 +427,40 @@ func test_verify_block_with_2496_transactions{
 
     // Validate the block
     with sha256_ptr {
-        validate_and_apply_block{hash_ptr = pedersen_ptr}(context);
+        validate_and_apply_block{hash_ptr=pedersen_ptr}(context);
         finalize_sha256(sha256_ptr_start, sha256_ptr);
     }
     return ();
 }
 
 @external
-func test_block_reward {range_check_ptr}() {
+func test_block_reward{range_check_ptr}() {
+    alloc_locals;
 
-  alloc_locals;
+    let result1 = compute_block_reward(0);
+    assert result1 = 50 * 10 ** 8;
 
-  let result1 = compute_block_reward(0);
-  assert result1 = 50*10**8;
+    let result2 = compute_block_reward(42);
+    assert result2 = 50 * 10 ** 8;
 
-  let result2 = compute_block_reward(42);
-  assert result2 = 50*10**8;
+    let result3 = compute_block_reward(210000);
+    assert result3 = 25 * 10 ** 8;
 
-  let result3 = compute_block_reward(210000);
-  assert result3 = 25*10**8;
+    // current reward
+    let result4 = compute_block_reward(787520);
+    assert result4 = 625 * 10 ** 6;
 
-  //current reward
-  let result4 = compute_block_reward(787520);
-  assert result4 = 625*10**6;
+    // when we start rounding
+    let result5 = compute_block_reward(2100000);
+    assert result5 = 4882812;
 
-  //when we start rounding
-  let result5 = compute_block_reward(2100000);
-  assert result5 = 4882812;
+    // last halving
+    let result6 = compute_block_reward(6720000);
+    assert result6 = 1;
 
+    // reward gets 0
+    let result7 = compute_block_reward(6930000);
+    assert result7 = 0;
 
-  //last halving
-  let result6 = compute_block_reward(6720000);
-  assert result6 = 1;
-
-  //reward gets 0
-  let result7 = compute_block_reward(6930000);
-  assert result7 = 0;
- 
-  return();
+    return ();
 }

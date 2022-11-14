@@ -19,7 +19,7 @@ struct PublicInputs {
     rc_min: felt,
     rc_max: felt,
     mem: MemEntry,
-    num_steps: felt, // number of execution steps
+    num_steps: felt,  // number of execution steps
 }
 
 func read_public_inputs() -> (proof: PublicInputs*) {
@@ -38,9 +38,5 @@ func read_mem_values(mem: MemEntry*, address: felt, length: felt, output: felt*)
     }
     assert mem.address = address;
     assert output[0] = mem.value;
-    return read_mem_values(
-        mem=&mem[1],
-        address=address + 1,
-        length=length - 1,
-        output=&output[1]);
+    return read_mem_values(mem=&mem[1], address=address + 1, length=length - 1, output=&output[1]);
 }

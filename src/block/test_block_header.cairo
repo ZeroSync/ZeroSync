@@ -13,7 +13,8 @@ from serialize.serialize import init_reader, init_writer, flush_writer
 from crypto.sha256d.sha256d import assert_hashes_equal
 from block.block_header import (
     read_block_header,
-    bits_to_target, target_to_bits,
+    bits_to_target,
+    target_to_bits,
     BLOCK_HEADER_FELT_SIZE,
     BlockHeaderValidationContext,
     read_block_header_validation_context,
@@ -43,9 +44,9 @@ func test_serialize_block_header{bitwise_ptr: BitwiseBuiltin*}() {
             "aab3147124d95a5430c31b18fe9f0864"), ids.block_header_raw)
     %}
 
-    let (reader) = init_reader(block_header_raw);
+    let reader = init_reader(block_header_raw);
 
-    let (block_header) = read_block_header{reader=reader}();
+    let block_header = read_block_header{reader=reader}();
 
     // Test block version
     assert block_header.version = 0x02;
@@ -93,7 +94,6 @@ func test_read_block_header_validation_context{range_check_ptr, bitwise_ptr: Bit
     alloc_locals;
     setup_python_defs();
 
-
     // Create a dummy for the previous chain state
     let (prev_block_hash) = alloc();
     %{
@@ -104,11 +104,11 @@ func test_read_block_header_validation_context{range_check_ptr, bitwise_ptr: Bit
 
     let (prev_timestamps) = dummy_prev_timestamps();
     let prev_chain_state = ChainState(
-        block_height = 328733,
-        total_work = 0,
-        best_block_hash = prev_block_hash,
-        current_target = 0x181bc330,
-        epoch_start_time = 0,
+        block_height=328733,
+        total_work=0,
+        best_block_hash=prev_block_hash,
+        current_target=0x181bc330,
+        epoch_start_time=0,
         prev_timestamps,
     );
 
@@ -118,7 +118,7 @@ func test_read_block_header_validation_context{range_check_ptr, bitwise_ptr: Bit
     // Read a block header from the byte stream
     // This is our next chain tip
     with sha256_ptr {
-        let (context) = read_block_header_validation_context(prev_chain_state);
+        let context = read_block_header_validation_context(prev_chain_state);
     }
 
     // Sanity check: block version should be 2
@@ -141,11 +141,12 @@ func test_read_block_header_validation_context{range_check_ptr, bitwise_ptr: Bit
 
     // Try to validate the block header.
     // This should succeed for valid block headers
-    let (next_state) = validate_and_apply_block_header(context);
+    let next_state = validate_and_apply_block_header(context);
 
     // Sanity check for prev_timestamps of next_state
     // First element is the timestamp of this block
-    with_attr error_message("The first element does not correspond to the timestamp of the block.") {
+    with_attr error_message(
+            "The first element does not correspond to the timestamp of the block.") {
         assert 1415239972 = next_state.prev_timestamps[0];
     }
     // Our 2nd element should be the 1st of the dummy
@@ -172,7 +173,7 @@ func test_read_block_header_validation_context{range_check_ptr, bitwise_ptr: Bit
 func test_bits_to_target{bitwise_ptr: BitwiseBuiltin*, range_check_ptr}() {
     alloc_locals;
     let bits = 0x181bc330;
-    let (target) = bits_to_target(bits);
+    let target = bits_to_target(bits);
     with_attr error_message("Invalid target.") {
         assert 0x1bc330000000000000000000000000000000000000000000 = target;
     }
@@ -195,7 +196,6 @@ func test_adjust_current_target{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}()
     alloc_locals;
     setup_python_defs();
 
-
     // Create a dummy for the previous chain state
     let (prev_block_hash) = alloc();
     %{
@@ -209,17 +209,17 @@ func test_adjust_current_target{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}()
     // https://blockstream.info/api/block/000000000000002e00a243fe9aa49c78f573091d17372c2ae0ae5e0f24f55b52
     let epoch_start_time = 1348092851;
 
-    // The current_target of the previous epoch 
+    // The current_target of the previous epoch
     let prev_current_target = 0x1a05db8b;
 
     let (prev_timestamps) = dummy_prev_timestamps();
 
     let prev_chain_state = ChainState(
-        block_height = 201598,
-        total_work = 0,
-        best_block_hash = prev_block_hash,
-        current_target = prev_current_target,
-        epoch_start_time = epoch_start_time,
+        block_height=201598,
+        total_work=0,
+        best_block_hash=prev_block_hash,
+        current_target=prev_current_target,
+        epoch_start_time=epoch_start_time,
         prev_timestamps,
     );
 
@@ -229,7 +229,7 @@ func test_adjust_current_target{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}()
     // Read a block header from the byte stream
     // This is our next chain tip
     with sha256_ptr {
-        let (context) = read_block_header_validation_context(prev_chain_state);
+        let context = read_block_header_validation_context(prev_chain_state);
     }
 
     // Sanity check: block version should be 2
@@ -254,13 +254,13 @@ func test_adjust_current_target{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}()
 
     // Try to validate the block header.
     // This should succeed for valid block headers
-    let (next_state) = validate_and_apply_block_header(context);
+    let next_state = validate_and_apply_block_header(context);
 
     // Verify that the current_target was correctly adjusted
     with_attr error_message("The current_target wasn't adjusted correctly.") {
         assert 0x1a057e08 = next_state.current_target;
     }
-    
+
     return ();
 }
 
@@ -268,7 +268,7 @@ func test_adjust_current_target{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}()
 func test_insufficient_pow{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     alloc_locals;
     setup_python_defs();
-    
+
     // Block hashes for block 0 and 1
     // https://blockstream.info/block/00000000839a8e6886ab5951d76f411475428afc90947ee320161bbf18eb6048
     // https://blockstream.info/block/000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f
@@ -287,11 +287,11 @@ func test_insufficient_pow{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     let (prev_timestamps) = dummy_prev_timestamps();
 
     let prev_chain_state = ChainState(
-        block_height = 0,
-        total_work = 0,
-        best_block_hash = prev_block_hash,
-        current_target = 0x1d00ffff,
-        epoch_start_time = 0,
+        block_height=0,
+        total_work=0,
+        best_block_hash=prev_block_hash,
+        current_target=0x1d00ffff,
+        epoch_start_time=0,
         prev_timestamps,
     );
 
@@ -300,9 +300,9 @@ func test_insufficient_pow{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
 
     // Block 1 will be read here.
     with sha256_ptr {
-        let (context) = read_block_header_validation_context(prev_chain_state);
+        let context = read_block_header_validation_context(prev_chain_state);
     }
-    
+
     // Check if the block hash is correct.
     with_attr error_message("Invalid block hash.") {
         assert_hashes_equal(context.block_hash, block_hash_expected);
@@ -311,24 +311,24 @@ func test_insufficient_pow{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     // Try to validate the block header.
     // This should succeed for the currently correct target.
     with sha256_ptr {
-        let (next_state) = validate_and_apply_block_header(context);
+        let next_state = validate_and_apply_block_header(context);
     }
 
     // Run a test with manipulated target.
     let (prev_timestamps) = dummy_prev_timestamps();
 
     let prev_chain_state = ChainState(
-        block_height = 0,
-        total_work = 0,
-        best_block_hash = prev_block_hash,
-        current_target = 0x1d00ffff,
-        epoch_start_time = 0,
+        block_height=0,
+        total_work=0,
+        best_block_hash=prev_block_hash,
+        current_target=0x1d00ffff,
+        epoch_start_time=0,
         prev_timestamps,
     );
 
     // Block 1 will be read here.
     with sha256_ptr {
-        let (context) = read_block_header_validation_context(prev_chain_state);
+        let context = read_block_header_validation_context(prev_chain_state);
     }
 
     // Check if the block hash is correct
@@ -338,18 +338,18 @@ func test_insufficient_pow{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
 
     // Manipulate the target and set it to 1.
     let low_target_context = BlockHeaderValidationContext(
-        block_header = context.block_header,
-        block_hash = context.block_hash,
-        target = 1,
-        prev_chain_state = context.prev_chain_state,
-        block_height = context.block_height
+        block_header=context.block_header,
+        block_hash=context.block_hash,
+        target=1,
+        prev_chain_state=context.prev_chain_state,
+        block_height=context.block_height,
     );
-    
+
     // Try to validate the block header.
     // This should fail now because of the low target and pow validation.
     %{ expect_revert() %}
-    let (next_state) = validate_and_apply_block_header(low_target_context);
-    
+    let next_state = validate_and_apply_block_header(low_target_context);
+
     return ();
 }
 
@@ -357,7 +357,7 @@ func test_insufficient_pow{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
 func test_compute_work_from_target1{range_check_ptr}() {
     let expected_work = 0x0100010001;
     let target = 0x00000000ffff0000000000000000000000000000000000000000000000000000;
-    let (work) = compute_work_from_target(target);
+    let work = compute_work_from_target(target);
     assert expected_work = work;
 
     return ();
@@ -367,7 +367,7 @@ func test_compute_work_from_target1{range_check_ptr}() {
 func test_compute_work_from_target2{range_check_ptr}() {
     let expected_work = 0x26d946e509ac00026d;
     let target = 0x00000000000000000696f4000000000000000000000000000000000000000000;
-    let (work) = compute_work_from_target(target);
+    let work = compute_work_from_target(target);
     assert expected_work = work;
 
     return ();
@@ -377,7 +377,7 @@ func test_compute_work_from_target2{range_check_ptr}() {
 func test_compute_work_from_target3{range_check_ptr}() {
     let expected_work = 0xe10005d2a0269364ff907d1d1d3ce0e1b351d743fe3222740c2440d07;
     let target = 0x12345600;
-    let (work) = compute_work_from_target(target);
+    let work = compute_work_from_target(target);
     assert expected_work = work;
 
     return ();
@@ -387,7 +387,7 @@ func test_compute_work_from_target3{range_check_ptr}() {
 func test_compute_work_from_target4{range_check_ptr}() {
     let expected_work = 0x1c040c95d1a74d2e27abbbd2255f66c9db2cad7511eb970cd4dac39e4;
     let target = 0x92340000;
-    let (work) = compute_work_from_target(target);
+    let work = compute_work_from_target(target);
     assert expected_work = work;
 
     return ();
@@ -397,7 +397,7 @@ func test_compute_work_from_target4{range_check_ptr}() {
 func test_compute_work_from_target5{range_check_ptr}() {
     let expected_work = 0x21809b468faa88dbe34f;
     let target = 0x00000000000000000007a4290000000000000000000000000000000000000000;
-    let (work) = compute_work_from_target(target);
+    let work = compute_work_from_target(target);
     assert expected_work = work;
 
     return ();

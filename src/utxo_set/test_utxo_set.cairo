@@ -18,7 +18,7 @@ func test_utxo_set{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, pedersen_ptr: 
     alloc_locals;
     setup_python_defs();
     reset_bridge_node();
-    let (utreexo_roots) = utreexo_init();
+    let utreexo_roots = utreexo_init();
 
     let (txid) = alloc();
     %{
@@ -45,7 +45,7 @@ func test_utxo_set{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, pedersen_ptr: 
     }(txid, vout);
 
     assert amount = out_amount;
-    
+
     // assert script_pub_key_size = out_script_pub_key_len
 
     return ();

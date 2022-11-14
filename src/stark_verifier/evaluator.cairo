@@ -1,7 +1,4 @@
-from stark_verifier.air.air_instance import (
-    AirInstance,
-    ConstraintCompositionCoefficients,
-)
+from stark_verifier.air.air_instance import AirInstance, ConstraintCompositionCoefficients
 from stark_verifier.air.transitions.frame import EvaluationFrame
 
 func evaluate_constraints(

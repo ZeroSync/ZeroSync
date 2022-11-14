@@ -13,31 +13,29 @@ const HASH_FELT_SIZE = 8;
 
 func sha256d{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, sha256_ptr: felt*}(
     input: felt*, byte_size: felt
-) -> (
-    result: felt*
-) {
+) -> felt* {
     alloc_locals;
-    let (felt_size) = byte_size_to_felt_size(byte_size);
-    return _compute_double_sha256(felt_size, input, byte_size);
+    let felt_size = byte_size_to_felt_size(byte_size);
+    let result = _compute_double_sha256(felt_size, input, byte_size);
+    return result;
 }
 
 // Hashing
 func sha256d_felt_sized{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, sha256_ptr: felt*}(
     input: felt*, felt_size: felt
-) -> (result: felt*) {
+) -> felt* {
     alloc_locals;
     let byte_size = felt_size * UINT32_SIZE;
-    let (hash) = _compute_double_sha256(felt_size, input, byte_size);
-    return (hash,);
+    return _compute_double_sha256(felt_size, input, byte_size);
 }
 
 func _compute_double_sha256{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, sha256_ptr: felt*}(
     felt_size: felt, input: felt*, byte_size: felt
-) -> (result: felt*) {
+) -> felt* {
     alloc_locals;
-    let (hash_first_round) = compute_sha256(input, byte_size);
-    let (hash_second_round) = compute_sha256(hash_first_round, HASH_SIZE);
-    return (hash_second_round,);
+    let hash_first_round = compute_sha256(input, byte_size);
+    let hash = compute_sha256(hash_first_round, HASH_SIZE);
+    return hash;
 }
 
 // Copy a hash represented as an array of 8 x Uint32.
@@ -48,7 +46,7 @@ func copy_hash(source: felt*, destination: felt*) {
 }
 
 // Assert equality of two hashes represented as an array of 8 x Uint32
-// 
+//
 func assert_hashes_equal(hash1: felt*, hash2: felt*) {
     // We're doing some odd gymnastics here,
     // because in Cairo it isn't straight-forward to determine if a variable is uninitialized.
@@ -69,11 +67,11 @@ func assert_hashes_not_equal(hash1: felt*, hash2: felt*) {
 }
 
 func _assert_hashes_not_equal_loop(hash1_ptr: felt*, hash2_ptr: felt*, length) {
-    if(length == 0) {
+    if (length == 0) {
         assert 1 = 0;
         return ();
     }
-    if([hash1_ptr] != [hash2_ptr]) {
+    if ([hash1_ptr] != [hash2_ptr]) {
         return ();
     }
     return _assert_hashes_not_equal_loop(hash1_ptr + 1, hash2_ptr + 1, length - 1);

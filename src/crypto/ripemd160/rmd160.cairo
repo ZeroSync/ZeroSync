@@ -48,7 +48,7 @@ const RMD160_STATE_SIZE_FELTS = 5;
 // Output is an array of 5 32-bit words (big endian).
 func compute_rmd160{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, rmd160_ptr: felt*}(
     data: felt*, n_bytes: felt, n_felts: felt
-) -> (output: felt*) {
+) -> felt* {
     alloc_locals;
 
     // Pad the input data
@@ -72,7 +72,7 @@ func compute_rmd160{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, rmd160_ptr: f
     change_uint32_byte_order_array(rmd160_ptr, rmd160_ptr + RMD160_STATE_SIZE_FELTS, output);
     // Set `rmd160_ptr` to the next chunk.
     let rmd160_ptr = rmd160_ptr + RMD160_STATE_SIZE_FELTS;
-    return (output,);
+    return output;
 }
 
 // Inner loop for rmd160. `rmd160_ptr` points to the start of the block.
