@@ -19,7 +19,7 @@ struct ProofOptions {
     hash_fn: felt,
     field_extension: felt,
     fri_folding_factor: felt,
-    fri_max_remainder_size: felt, // stored as power of 2
+    fri_max_remainder_size: felt,  // stored as power of 2
 }
 
 struct Context {
@@ -48,7 +48,7 @@ struct ParsedOodFrame {
 //
 // See also:
 // https://github.com/novifinancial/winterfell/blob/ecea359802538692c4e967b083107c6b08f3302e/air/src/proof/mod.rs#L51
-// 
+//
 struct StarkProof {
     // Basic metadata about the execution of the computation described by this proof.
     context: Context,

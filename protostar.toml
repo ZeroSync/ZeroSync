@@ -1,5 +1,8 @@
-["protostar.config"]
-protostar_version = "0.4.2"
+[project]
+protostar-version = "0.7.0"
+lib-path = "src"
+cairo_path = ["src"]
 
-["protostar.project"]
-libs_path = "src"
+[test]
+target = ["src"]
+

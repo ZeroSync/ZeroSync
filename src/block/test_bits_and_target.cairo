@@ -31,16 +31,16 @@ func test_general{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     return ();
 }
 
-func _bits_to_target_tests{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(test_index){
+func _bits_to_target_tests{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(test_index) {
     alloc_locals;
 
     if (test_index == 0) {
         return ();
     }
 
-    local input; 
+    local input;
     local expected_output;
-    
+
     %{
         # Read JSON file
         import json
@@ -54,23 +54,23 @@ func _bits_to_target_tests{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(test_i
         io.close()
     %}
 
-    let (result) = bits_to_target(input);
+    let result = bits_to_target(input);
     assert expected_output = result;
 
     _bits_to_target_tests(test_index - 1);
     return ();
 }
 
-func _target_to_bits_tests{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(test_index){
+func _target_to_bits_tests{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(test_index) {
     alloc_locals;
-    
+
     if (test_index == 0) {
         return ();
     }
 
     local input;
     local expected_output;
-    
+
     %{
         # Read JSON file
         import json
@@ -84,7 +84,7 @@ func _target_to_bits_tests{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(test_i
         io.close()
     %}
 
-    let (result) = target_to_bits(input);
+    let result = target_to_bits(input);
     assert expected_output = result;
 
     _target_to_bits_tests(test_index - 1);

@@ -1,7 +1,7 @@
 %builtins pedersen range_check bitwise
 
 from starkware.cairo.common.alloc import alloc
-from starkware.cairo.common.cairo_blake2s.blake2s import (finalize_blake2s, STATE_SIZE_FELTS)
+from starkware.cairo.common.cairo_blake2s.blake2s import finalize_blake2s, STATE_SIZE_FELTS
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.hash import HashBuiltin
 from starkware.cairo.common.math import assert_lt
@@ -54,22 +54,17 @@ from stark_verifier.crypto.random import (
     seed_with_pub_inputs,
 )
 from stark_verifier.evaluator import evaluate_constraints
-from stark_verifier.fri.fri_verifier import (
-    fri_verifier_new,
-    fri_verify,
-)
+from stark_verifier.fri.fri_verifier import fri_verifier_new, fri_verify
 from stark_verifier.utils import Vec
 
 // Verifies that the specified computation was executed correctly against the specified inputs.
 //
 // These subroutines are intended to be as close to a line-by-line transcription of the
-// Winterfell verifier code (see https://github.com/novifinancial/winterfell and the associated 
+// Winterfell verifier code (see https://github.com/novifinancial/winterfell and the associated
 // LICENSE.winterfell.md)
-func verify{
-    range_check_ptr,
-    pedersen_ptr: HashBuiltin*,
-    bitwise_ptr: BitwiseBuiltin*,
-}(proof: StarkProof*, pub_inputs: PublicInputs*) -> () {
+func verify{range_check_ptr, pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*}(
+    proof: StarkProof*, pub_inputs: PublicInputs*
+) -> () {
     alloc_locals;
 
     let (__fp__, _) = get_fp_and_pc();
@@ -88,7 +83,7 @@ func verify{
     let (public_coin) = random_coin_new(public_coin_seed);
     let (channel) = channel_new(air, proof);
 
-    with blake2s_ptr, channel, public_coin { 
+    with blake2s_ptr, channel, public_coin {
         perform_verification(air=air);
     }
 
@@ -105,9 +100,7 @@ func perform_verification{
     bitwise_ptr: BitwiseBuiltin*,
     channel: Channel,
     public_coin: PublicCoin,
-}(
-    air: AirInstance
-) -> () {
+}(air: AirInstance) -> () {
     alloc_locals;
 
     // 1 ----- Trace commitment -------------------------------------------------------------------
@@ -136,10 +129,10 @@ func perform_verification{
     // Read the commitment to evaluations of the constraint composition polynomial over the LDE
     // domain sent by the prover.
     let (constraint_commitment) = read_constraint_commitment();
-    
+
     // Update the public coin.
     reseed(value=constraint_commitment);
-    
+
     // Draw an out-of-domain point z from the coin.
     let (z) = draw();
     %{ print('z', hex(ids.z)) %}
@@ -162,8 +155,7 @@ func perform_verification{
 
     // Reseed the public coin with the OOD frames.
     reseed_with_ood_frames(
-        ood_main_trace_frame=ood_main_trace_frame,
-        ood_aux_trace_frame=ood_aux_trace_frame,
+        ood_main_trace_frame=ood_main_trace_frame, ood_aux_trace_frame=ood_aux_trace_frame
     );
 
     // Read evaluations of composition polynomial columns sent by the prover, and reduce them into
@@ -179,7 +171,8 @@ func perform_verification{
     reseed(value=value);
 
     // Finally, make sure the values are the same.
-    with_attr error_message("Ood constraint evaluations differ. ${ood_constraint_evaluation_1} != ${ood_constraint_evaluation_2}") {
+    with_attr error_message(
+            "Ood constraint evaluations differ. ${ood_constraint_evaluation_1} != ${ood_constraint_evaluation_2}") {
         assert ood_constraint_evaluation_1 = ood_constraint_evaluation_2;
     }
 
@@ -202,29 +195,28 @@ func perform_verification{
 
     // Make sure the proof-of-work specified by the grinding factor is satisfied.
     let (leading_zeros) = get_leading_zeros();
-    //assert_lt(leading_zeros, air.options.grinding_factor);
+    // assert_lt(leading_zeros, air.options.grinding_factor);
 
     // Draw pseudorandom query positions for the LDE domain from the public coin.
     let (query_positions: felt*) = alloc();
     draw_integers(
         n_elements=air.options.num_queries,
         elements=query_positions,
-        domain_size=air.lde_domain_size
+        domain_size=air.lde_domain_size,
     );
 
     // Read evaluations of trace and constraint composition polynomials at the queried positions.
     // This also checks that the read values are valid against trace and constraint commitments.
-    let (queried_main_trace_states, queried_aux_trace_states) = read_queried_trace_states(query_positions);
+    let (queried_main_trace_states, queried_aux_trace_states) = read_queried_trace_states(
+        query_positions
+    );
     let (queried_constraint_evaluations) = read_constraint_evaluations(query_positions);
 
     // 6 ----- DEEP composition -------------------------------------------------------------------
 
     // Compute evaluations of the DEEP composition polynomial at the queried positions.
     let (composer) = deep_composer_new(
-        air=air,
-        query_positions=query_positions,
-        z=z,
-        cc=deep_coefficients,
+        air=air, query_positions=query_positions, z=z, cc=deep_coefficients
     );
     let (t_composition) = compose_trace_columns(
         composer,
@@ -234,15 +226,9 @@ func perform_verification{
         ood_aux_trace_frame,
     );
     let (c_composition) = compose_constraint_evaluations(
-        composer,
-        queried_constraint_evaluations,
-        ood_constraint_evaluations,
+        composer, queried_constraint_evaluations, ood_constraint_evaluations
     );
-    let (deep_evaluations) = combine_compositions(
-        composer,
-        t_composition,
-        c_composition,
-    );
+    let (deep_evaluations) = combine_compositions(composer, t_composition, c_composition);
 
     // 7 ----- Verify low-degree proof -------------------------------------------------------------
 
@@ -265,10 +251,7 @@ func process_aux_segments{
     aux_segment_rands: felt*,
     aux_trace_rand_elements: felt*,
 ) -> () {
-    draw_elements(
-        n_elements=[aux_segment_rands],
-        elements=aux_trace_rand_elements,
-    );
+    draw_elements(n_elements=[aux_segment_rands], elements=aux_trace_rand_elements);
     reseed(value=trace_commitments);
     if (trace_commitments_len == 0) {
         return ();
@@ -287,16 +270,11 @@ func reduce_evaluations(evaluations: Vec) -> (res: felt) {
     return (res=0);
 }
 
-func main{
-    pedersen_ptr: HashBuiltin*,
-    range_check_ptr,
-    bitwise_ptr: BitwiseBuiltin*,
-}() -> () {
-    
+func main{pedersen_ptr: HashBuiltin*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() -> () {
     // Deserialize proof
-    //let (proof, pub_inputs) = read_stark_proof();
+    // let (proof, pub_inputs) = read_stark_proof();
 
-    //verify(proof=proof, pub_inputs=pub_inputs);
+    // verify(proof=proof, pub_inputs=pub_inputs);
 
     return ();
 }

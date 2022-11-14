@@ -15,7 +15,9 @@ func change_uint32_byte_order{range_check_ptr}(source) -> felt {
     return uint8_3 * MAX_BYTE ** 3 + uint8_2 * MAX_BYTE ** 2 + uint8_1 * MAX_BYTE ** 1 + uint8_0;
 }
 
-func change_uint32_byte_order_array{range_check_ptr}(source: felt*, source_end: felt*, output: felt* ) {
+func change_uint32_byte_order_array{range_check_ptr}(
+    source: felt*, source_end: felt*, output: felt*
+) {
     if (source == source_end) {
         return ();
     }

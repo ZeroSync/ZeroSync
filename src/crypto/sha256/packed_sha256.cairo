@@ -83,7 +83,7 @@ func compute_message_schedule{bitwise_ptr: BitwiseBuiltin*}(message: felt*) {
 
 func sha2_compress{bitwise_ptr: BitwiseBuiltin*}(
     state: felt*, message: felt*, round_constants: felt*
-) -> (new_state: felt*) {
+) -> felt* {
     alloc_locals;
 
     // Defining the following constants as local variables saves some instructions.
@@ -212,11 +212,11 @@ func sha2_compress{bitwise_ptr: BitwiseBuiltin*}(
     assert res[7] = bitwise_ptr[7].x_and_y;
     let bitwise_ptr = bitwise_ptr + 8 * BitwiseBuiltin.SIZE;
 
-    return (res,);
+    return res;
 }
 
 // Returns the 64 round constants of SHA256.
-func get_round_constants() -> (round_constants: felt*) {
+func get_round_constants() -> felt* {
     alloc_locals;
     let (__fp__, _) = get_fp_and_pc();
     local round_constants = 0x428A2F98 * SHIFTS;
@@ -283,5 +283,5 @@ func get_round_constants() -> (round_constants: felt*) {
     local a = 0xA4506CEB * SHIFTS;
     local a = 0xBEF9A3F7 * SHIFTS;
     local a = 0xC67178F2 * SHIFTS;
-    return (&round_constants,);
+    return &round_constants;
 }
