@@ -1,4 +1,4 @@
-%builtins pedersen range_check bitwise
+// %builtins pedersen range_check bitwise
 
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_blake2s.blake2s import finalize_blake2s, STATE_SIZE_FELTS

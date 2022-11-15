@@ -98,7 +98,7 @@ for i in range(start_block_height, end_block_height):
 		'prev_timestamps' :  r.read_n(11),
 		'epoch_start_time' : r.read(),
 		'utreexo_roots' :    felts_to_hex( r.read_n(27) ),
-		'program_hash' :  felts_to_hash( r.read_n(8) ),
+		'program_hash' :  	hex( r.read() )
 	}
 
 	print('block height:', chain_state['block_height'])
