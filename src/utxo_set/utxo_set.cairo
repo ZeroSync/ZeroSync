@@ -7,7 +7,6 @@ from crypto.sha256d.sha256d import HASH_FELT_SIZE
 from utils.python_utils import setup_python_defs
 from utreexo.utreexo import utreexo_add, utreexo_delete, fetch_inclusion_proof
 
-
 func utxo_set_insert{range_check_ptr, hash_ptr: HashBuiltin*, utreexo_roots: felt*}(
     txid: felt*, vout, amount, script_pub_key: felt*, script_pub_key_size
 ) {
@@ -80,7 +79,6 @@ func hash_output{hash_ptr: HashBuiltin*}(
     let (hash) = hash2(txid_hash, tmp2);
     return (hash,);
 }
-
 
 // This is a modified version of:
 // https://github.com/starkware-libs/cairo-lang/blob/54d7e92a703b3b5a1e07e9389608178129946efc/src/starkware/cairo/common/hash_chain.cairo#L8

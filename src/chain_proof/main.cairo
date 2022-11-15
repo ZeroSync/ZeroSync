@@ -11,6 +11,7 @@ from block.block import State, validate_and_apply_block, read_block_validation_c
 from utreexo.utreexo import UTREEXO_ROOTS_LEN
 from utils.python_utils import setup_python_defs
 from crypto.sha256.sha256 import finalize_sha256
+from chain_proof.recurse import recurse
 
 func serialize_chain_state{output_ptr: felt*}(chain_state: ChainState) {
     serialize_word(chain_state.block_height);
@@ -77,6 +78,7 @@ func main{
     local epoch_start_time: felt;
     let (prev_timestamps) = alloc();
     let (prev_utreexo_roots) = alloc();
+    let (program_hash) = alloc();
     %{
         ids.block_height = program_input["block_height"] if program_input["block_height"] != -1 else PRIME - 1
         ids.total_work = program_input["total_work"]
@@ -85,6 +87,7 @@ func main{
         ids.epoch_start_time = program_input["epoch_start_time"]
         segments.write_arg(ids.prev_timestamps, program_input["prev_timestamps"])
         segments.write_arg(ids.prev_utreexo_roots, felts_from_hex_strings( program_input["utreexo_roots"] ) )
+        segments.write_arg(ids.program_hash, felts_from_hash( program_input["program_hash"]) )
     %}
 
     let prev_chain_state = ChainState(
@@ -94,15 +97,19 @@ func main{
 
     // Perform a state transition
     with sha256_ptr {
-        let (context) = read_block_validation_context(prev_state);
-        let (next_state) = validate_and_apply_block{hash_ptr=pedersen_ptr}(context);
+        let context = read_block_validation_context(prev_state);
+        let next_state = validate_and_apply_block{hash_ptr=pedersen_ptr}(context);
     }
 
+    // Validate the previous chain proof
+    if(next_state.chain_state.block_height != 0){        
+        recurse(program_hash);
+    }
+    
     // Print the next state
     serialize_chain_state(next_state.chain_state);
     serialize_array(next_state.utreexo_roots, UTREEXO_ROOTS_LEN);
-
-    // TODO: validate the previous chain proof
+    serialize_array(program_hash, HASH_FELT_SIZE);
 
     // finalize sha256_ptr
     finalize_sha256(sha256_ptr_start, sha256_ptr);

@@ -2,38 +2,41 @@ name: ZeroSync CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ '*' ]
-    
+    branches: ["*"]
+
 permissions:
   contents: read
+
+env:
+  PROTOSTAR_VERSION: 0.7.0
 
 jobs:
   build:
     name: Build and test
     runs-on: ubuntu-latest
     steps:
-    - name: Install Rust 1.62.1 
-      uses: actions-rs/toolchain@v1
-      with:
-          toolchain: 1.62.1 
+      - name: Install Rust 1.62.1
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: 1.62.1
           override: true
           components: rustfmt, clippy
-    - uses: actions/checkout@v3
-    - name: Python3 Build
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.9'
-    - name: Install libgmp3-dev
-      run: sudo apt install -y libgmp3-dev
-    - name: Install test dependencies
-      run: pip install ecdsa fastecdsa sympy cairo-lang==0.9.1
-    - name: Install Cairo
-      run: pip3 install cairo-lang
-    - name: Run utreexo bridge node
-      run: python src/utreexo/bridge_node.py &
-    - name: Install Protostar
-      run: curl -L https://raw.githubusercontent.com/software-mansion/protostar/master/install.sh | bash
-    - name: protostar
-      run: ../../../.protostar/dist/protostar/protostar test --cairo-path=./src target src
+      - uses: actions/checkout@v3
+      - name: Python3 Build
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.9"
+      - name: Install libgmp3-dev
+        run: sudo apt install -y libgmp3-dev
+      - name: Install test dependencies
+        run: pip install ecdsa fastecdsa sympy cairo-lang==0.9.1
+      - name: Install Cairo
+        run: pip3 install cairo-lang
+      - name: Run utreexo bridge node
+        run: python src/utreexo/bridge_node.py &
+      - name: Install Protostar
+        run: curl -L https://raw.githubusercontent.com/software-mansion/protostar/master/install.sh | bash -s -- -v $PROTOSTAR_VERSION
+      - name: protostar
+        run: ../../../.protostar/dist/protostar/protostar test --cairo-path=./src target src
