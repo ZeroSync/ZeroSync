@@ -60,7 +60,7 @@ struct StarkProof {
     pow_nonce: felt,
 }
 
-func read_stark_proof() -> (proof: StarkProof*) {
+func read_stark_proof() -> StarkProof* {
     let (proof_ptr: StarkProof*) = alloc();
     %{
         # Note the following:
@@ -71,5 +71,5 @@ func read_stark_proof() -> (proof: StarkProof*) {
         my_memory = [(int(x, 16) if x.startswith('0x') else addr + int(x)) for x in json_data]
         segments.write_arg(addr, my_memory)
     %}
-    return (proof=proof_ptr);
+    return proof_ptr;
 }

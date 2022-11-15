@@ -4,10 +4,10 @@ from stark_verifier.channel import Channel
 struct FriVerifier {
 }
 
-func fri_verifier_new(air: AirInstance) -> (res: FriVerifier) {
+func fri_verifier_new(air: AirInstance) -> FriVerifier {
     alloc_locals;
-
-    return (res=FriVerifier());
+    let res = FriVerifier();
+    return res;
 }
 
 func fri_verify{channel: Channel}(

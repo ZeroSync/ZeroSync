@@ -10,5 +10,5 @@ func evaluate_constraints(
     z: felt,
 ) -> felt {
     // TODO
-    return (res=0);
+    return 0;
 }

@@ -317,7 +317,7 @@ func validate_timestamp{range_check_ptr}(context: BlockHeaderValidationContext) 
     alloc_locals;
 
     let prev_timestamps = context.prev_chain_state.prev_timestamps;
-    let (median_time) = compute_timestamps_median(prev_timestamps);
+    let median_time = compute_timestamps_median(prev_timestamps);
 
     // Compare this block's timestamp to the median time
     with_attr error_message(

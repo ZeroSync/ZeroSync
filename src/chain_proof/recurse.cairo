@@ -74,8 +74,7 @@ func parse_public_inputs() -> PublicInputs* {
             return json.loads(completed_process.stdout)
         json_data = parse_public_inputs()
     %}
-    let (pub_inputs: PublicInputs*) = read_public_inputs();
-    return pub_inputs;
+    return read_public_inputs();
 }
 
 
@@ -93,7 +92,6 @@ func parse_proof() -> StarkProof* {
             return json.loads(completed_process.stdout)
         json_data = parse_proof()
     %}
-    let (proof: StarkProof*) = read_stark_proof();
-    return proof;
+    return read_stark_proof();
 }
 

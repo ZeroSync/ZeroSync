@@ -74,14 +74,14 @@ func verify{range_check_ptr, pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBui
     local blake2s_ptr_start: felt* = blake2s_ptr;
 
     // Build a seed for the public coin; the initial seed is the hash of public inputs
-    let (public_coin_seed: felt*) = seed_with_pub_inputs{blake2s_ptr=blake2s_ptr}(pub_inputs);
+    let public_coin_seed: felt* = seed_with_pub_inputs{blake2s_ptr=blake2s_ptr}(pub_inputs);
 
     // Create an AIR instance for the computation specified in the proof.
-    let (air) = air_instance_new(proof, proof.context.options);
+    let air = air_instance_new(proof, proof.context.options);
 
     // Create a public coin and channel struct
-    let (public_coin) = random_coin_new(public_coin_seed);
-    let (channel) = channel_new(air, proof);
+    let public_coin = random_coin_new(public_coin_seed);
+    let channel = channel_new(air, proof);
 
     with blake2s_ptr, channel, public_coin {
         perform_verification(air=air);
@@ -106,7 +106,7 @@ func perform_verification{
     // 1 ----- Trace commitment -------------------------------------------------------------------
 
     // Read the commitments to evaluations of the trace polynomials over the LDE domain.
-    let (trace_commitments) = read_trace_commitments();
+    let trace_commitments = read_trace_commitments();
 
     // Reseed the coin with the commitment to the main trace segment
     reseed(value=trace_commitments);
@@ -122,19 +122,19 @@ func perform_verification{
     );
 
     // Build random coefficients for the composition polynomial
-    let (constraint_coeffs) = get_constraint_composition_coefficients(air=air);
+    let constraint_coeffs = get_constraint_composition_coefficients(air=air);
 
     // 2 ----- Constraint commitment --------------------------------------------------------------
 
     // Read the commitment to evaluations of the constraint composition polynomial over the LDE
     // domain sent by the prover.
-    let (constraint_commitment) = read_constraint_commitment();
+    let constraint_commitment = read_constraint_commitment();
 
     // Update the public coin.
     reseed(value=constraint_commitment);
 
     // Draw an out-of-domain point z from the coin.
-    let (z) = draw();
+    let z = draw();
     %{ print('z', hex(ids.z)) %}
 
     // 3 ----- OOD consistency check --------------------------------------------------------------
@@ -144,7 +144,7 @@ func perform_verification{
     let (ood_main_trace_frame, ood_aux_trace_frame) = read_ood_trace_frame();
 
     // Evaluate constraints over the OOD frames.
-    let (ood_constraint_evaluation_1) = evaluate_constraints(
+    let ood_constraint_evaluation_1 = evaluate_constraints(
         air=air,
         constraint_coeffs=constraint_coeffs,
         ood_main_trace_frame=ood_main_trace_frame,
@@ -162,9 +162,9 @@ func perform_verification{
     // a single value by computing sum(z^i * value_i), where value_i is the evaluation of the ith
     // column polynomial at z^m, where m is the total number of column polynomials. Also, reseed
     // the public coin with the OOD constraint evaluations received from the prover.
-    let (ood_constraint_evaluations) = read_ood_constraint_evaluations();
-    let (ood_constraint_evaluation_2) = reduce_evaluations(evaluations=ood_constraint_evaluations);
-    let (value) = hash_elements(
+    let ood_constraint_evaluations = read_ood_constraint_evaluations();
+    let ood_constraint_evaluation_2 = reduce_evaluations(evaluations=ood_constraint_evaluations);
+    let value = hash_elements(
         n_elements=ood_constraint_evaluations.n_elements,
         elements=ood_constraint_evaluations.elements,
     );
@@ -179,22 +179,22 @@ func perform_verification{
     // 4 ----- FRI commitments --------------------------------------------------------------------
 
     // Draw coefficients for computing DEEP composition polynomial from the public coin.
-    let (deep_coefficients) = get_deep_composition_coefficients(air=air);
+    let deep_coefficients = get_deep_composition_coefficients(air=air);
 
     // Instantiates a FRI verifier with the FRI layer commitments read from the channel. From the
     // verifier's perspective, this is equivalent to executing the commit phase of the FRI protocol.
     // The verifier uses these commitments to update the public coin and draw random points alpha
     // from them.
-    let (fri_verifier) = fri_verifier_new(air=air);
+    let fri_verifier = fri_verifier_new(air=air);
 
     // 5 ----- Trace and constraint queries -------------------------------------------------------
 
     // Read proof-of-work nonce sent by the prover and update the public coin with it.
-    let (pow_nonce) = read_pow_nonce();
+    let pow_nonce = read_pow_nonce();
     reseed_with_int(pow_nonce);
 
     // Make sure the proof-of-work specified by the grinding factor is satisfied.
-    let (leading_zeros) = get_leading_zeros();
+    let leading_zeros = get_leading_zeros();
     // assert_lt(leading_zeros, air.options.grinding_factor);
 
     // Draw pseudorandom query positions for the LDE domain from the public coin.
@@ -210,25 +210,25 @@ func perform_verification{
     let (queried_main_trace_states, queried_aux_trace_states) = read_queried_trace_states(
         query_positions
     );
-    let (queried_constraint_evaluations) = read_constraint_evaluations(query_positions);
+    let queried_constraint_evaluations = read_constraint_evaluations(query_positions);
 
     // 6 ----- DEEP composition -------------------------------------------------------------------
 
     // Compute evaluations of the DEEP composition polynomial at the queried positions.
-    let (composer) = deep_composer_new(
+    let composer = deep_composer_new(
         air=air, query_positions=query_positions, z=z, cc=deep_coefficients
     );
-    let (t_composition) = compose_trace_columns(
+    let t_composition = compose_trace_columns(
         composer,
         queried_main_trace_states,
         queried_aux_trace_states,
         ood_main_trace_frame,
         ood_aux_trace_frame,
     );
-    let (c_composition) = compose_constraint_evaluations(
+    let c_composition = compose_constraint_evaluations(
         composer, queried_constraint_evaluations, ood_constraint_evaluations
     );
-    let (deep_evaluations) = combine_compositions(composer, t_composition, c_composition);
+    let deep_evaluations = combine_compositions(composer, t_composition, c_composition);
 
     // 7 ----- Verify low-degree proof -------------------------------------------------------------
 
@@ -267,5 +267,5 @@ func process_aux_segments{
 
 func reduce_evaluations(evaluations: Vec) -> felt {
     // TODO
-    return (res=0);
+    return 0;
 }

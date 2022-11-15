@@ -32,7 +32,7 @@ func serialize_array{output_ptr: felt*}(array: felt*, array_len) {
     return ();
 }
 
-func fetch_block(block_height) -> (block_data: felt*) {
+func fetch_block(block_height) -> felt* {
     let (block_data) = alloc();
 
     %{
@@ -52,7 +52,7 @@ func fetch_block(block_height) -> (block_data: felt*) {
         from_hex(block_hex, ids.block_data)
     %}
 
-    return (block_data,);
+    return block_data;
 }
 
 func main{

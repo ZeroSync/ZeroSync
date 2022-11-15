@@ -32,15 +32,16 @@ struct PublicCoin {
 }
 
 // Returns a new random coin instantiated with the provided `seed`.
-func random_coin_new(seed: felt*) -> (res: PublicCoin) {
-    return (res=PublicCoin(seed=seed, counter=0));
+func random_coin_new(seed: felt*) -> PublicCoin {
+    let public_coin = PublicCoin(seed=seed, counter=0);
+    return public_coin;
 }
 
 // Returns a hash of two digests. This method is intended for use in construction of
 // Merkle trees.
 func merge{range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*}(
     seed: felt*, value: felt*
-) -> (digest: felt*) {
+) -> felt* {
     alloc_locals;
     let (data: felt*) = alloc();
 
@@ -51,14 +52,14 @@ func merge{range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*}(
     memcpy(data + 8, value, 8);
     let (digest) = blake2s_as_words(data=data, n_bytes=64);
 
-    return (digest=digest);
+    return digest;
 }
 
 // Returns hash(`seed` || `value`). This method is intended for use in PRNG and PoW contexts.
 // This function does not ensure that value fits within a u64 integer.
 func merge_with_int{range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*}(
     seed: felt*, value: felt
-) -> (digest: felt*) {
+) -> felt* {
     alloc_locals;
     let (data: felt*) = alloc();
     let data_start = data;
@@ -71,12 +72,12 @@ func merge_with_int{range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBui
         ));
 
     let (digest) = blake2s_as_words(data=data_start, n_bytes=40);
-    return (digest=digest);
+    return digest;
 }
 
 func hash_elements{range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*}(
     n_elements: felt, elements: felt*
-) -> (res: felt*) {
+) -> felt* {
     alloc_locals;
     let (data) = alloc();
     let data_start = data;
@@ -85,7 +86,7 @@ func hash_elements{range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuil
     }
     // let (res) = blake2s(data=data_start, n_bytes=n_elements * 32);
     let (res) = blake2s_as_words(data=data, n_bytes=40);
-    return (res=res);
+    return res;
 }
 
 // Reseeds the coin with the specified data by setting the new seed to hash(`seed` || `value`).
@@ -93,7 +94,7 @@ func hash_elements{range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuil
 func reseed{
     range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*, public_coin: PublicCoin
 }(value: felt*) {
-    let (digest) = merge(seed=public_coin.seed, value=value);
+    let digest = merge(seed=public_coin.seed, value=value);
     let public_coin = PublicCoin(seed=digest, counter=0);
     return ();
 }
@@ -107,7 +108,7 @@ func reseed_with_int{
     with_attr error_message("Value (${value}) is negative or greater than (2 ** 64 - 1).") {
         assert_nn_le(value, 2 ** 64 - 1);
     }
-    let (digest) = merge_with_int(seed=public_coin.seed, value=value);
+    let digest = merge_with_int(seed=public_coin.seed, value=value);
     let public_coin = PublicCoin(seed=digest, counter=0);
     return ();
 }
@@ -125,7 +126,7 @@ func draw{
 }() -> felt {
     alloc_locals;
     tempvar public_coin = PublicCoin(public_coin.seed, public_coin.counter + 1);
-    let (local digest) = merge_with_int(seed=public_coin.seed, value=public_coin.counter);
+    let digest = merge_with_int(seed=public_coin.seed, value=public_coin.counter);
     local num: Uint256 = Uint256(
         low=digest[0] + digest[1] * 2 ** 32 + digest[2] * 2 ** 64 + digest[3] * 2 ** 96,
         high=digest[4] + digest[5] * 2 ** 32 + digest[6] * 2 ** 64 + digest[7] * 2 ** 96
@@ -148,8 +149,8 @@ func draw_pair{
     range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*, public_coin: PublicCoin
 }() -> (res1: felt, res2: felt) {
     alloc_locals;
-    let (res1) = draw();
-    let (res2) = draw();
+    let res1 = draw();
+    let res2 = draw();
     return (res1=res1, res2=res2);
 }
 
@@ -159,7 +160,7 @@ func draw_elements{
     if (n_elements == 0) {
         return ();
     }
-    let (res) = draw();
+    let res = draw();
     assert [elements] = res;
     draw_elements(n_elements=n_elements - 1, elements=&elements[1]);
     return ();
@@ -222,7 +223,7 @@ func draw_integers{
 
 func seed_with_pub_inputs{
     range_check_ptr, blake2s_ptr: felt*, pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*
-}(pub_inputs: PublicInputs*) -> (res: felt*) {
+}(pub_inputs: PublicInputs*) -> felt* {
     alloc_locals;
 
     let (mem_values: felt*) = alloc();
@@ -260,7 +261,7 @@ func seed_with_pub_inputs{
 
     let n_bytes = (data - data_start) * 4;
     let (res) = blake2s_as_words(data=data_start, n_bytes=n_bytes);
-    return (res=res);
+    return res;
 }
 
 func get_leading_zeros{range_check_ptr, public_coin: PublicCoin}() -> felt {

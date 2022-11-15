@@ -18,7 +18,7 @@ func test_draw_integers{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     local blake2s_ptr_start: felt* = blake2s_ptr;
 
     tempvar seed: felt* = new (0, 0, 0, 0, 0, 0, 0, 0);
-    let (public_coin) = random_coin_new(seed);
+    let public_coin = random_coin_new(seed);
 
     let (elements) = alloc();
     let n_elements = 4;
@@ -47,7 +47,7 @@ func test_leading_zeros{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
 
     // let seed = Uint256(1, 2**128 / 2**32);
     tempvar seed: felt* = new (1, 0, 0, 0, 0, 0, 0, 1);
-    let (public_coin) = random_coin_new(seed);
+    let public_coin = random_coin_new(seed);
 
     with blake2s_ptr, public_coin {
         let leading_zeros = get_leading_zeros();

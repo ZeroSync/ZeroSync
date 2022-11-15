@@ -6,7 +6,7 @@ const TIMESTAMP_MEDIAN_INDEX = 5;
 
 // Compute the median value of an array of 11 timestamps
 //
-func compute_timestamps_median{range_check_ptr}(timestamp_array: felt*) -> (felt,) {
+func compute_timestamps_median{range_check_ptr}(timestamp_array: felt*) -> felt {
     alloc_locals;
     // Compute the median using a hint
     local median;
@@ -18,7 +18,7 @@ func compute_timestamps_median{range_check_ptr}(timestamp_array: felt*) -> (felt
         ids.median = timestamps[ids.TIMESTAMP_MEDIAN_INDEX]
     %}
     verify_timestamps_median(timestamp_array, median);
-    return (median,);
+    return median;
 }
 
 // Verify the median value of an array of 11 timestamps

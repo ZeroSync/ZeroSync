@@ -55,15 +55,14 @@ struct DeepCompositionCoefficients {
     degree: (felt, felt),
 }
 
-func air_instance_new(proof: StarkProof*, options: ProofOptions) -> (res: AirInstance) {
+func air_instance_new(proof: StarkProof*, options: ProofOptions) -> AirInstance {
     alloc_locals;
     let (aux_segment_widths: felt*) = alloc();
     let (aux_segment_rands: felt*) = alloc();
 
     // TODO: Use correct values for Cairo AIR. Make configurable for other
     // VMs and custom AIRs
-    return (
-        res=AirInstance(
+    let res = AirInstance(
         main_segment_width=30,
         aux_trace_width=2,
         aux_segment_widths=aux_segment_widths,
@@ -76,14 +75,14 @@ func air_instance_new(proof: StarkProof*, options: ProofOptions) -> (res: AirIns
         ce_blowup_factor=4,
         eval_frame_size=2,
         lde_domain_size=options.blowup_factor * proof.context.trace_length,
-        ),
     );
+    return res;
 }
 
 // Returns coefficients needed to construct the constraint composition polynomial
 func get_constraint_composition_coefficients{
     range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*, public_coin: PublicCoin
-}(air: AirInstance) -> (res: ConstraintCompositionCoefficients) {
+}(air: AirInstance) -> ConstraintCompositionCoefficients {
     alloc_locals;
 
     let (t_coefficients_a: felt*) = alloc();
@@ -107,13 +106,13 @@ func get_constraint_composition_coefficients{
         boundary_b=b_coefficients_b,
     );
 
-    return (res=res);
+    return res;
 }
 
 // Returns coefficients needed to construct the DEEP composition polynomial
 func get_deep_composition_coefficients{
     range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*, public_coin: PublicCoin
-}(air: AirInstance) -> (res: DeepCompositionCoefficients) {
+}(air: AirInstance) -> DeepCompositionCoefficients {
     alloc_locals;
 
     let (t_coefficients: TraceCoefficients*) = alloc();
@@ -131,7 +130,7 @@ func get_deep_composition_coefficients{
     let res = DeepCompositionCoefficients(
         trace=t_coefficients, constraints=c_coefficients, degree=(lambda, mu)
     );
-    return (res=res);
+    return res;
 }
 
 func set_trace_coefficients{

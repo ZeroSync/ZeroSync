@@ -62,8 +62,8 @@ func test_serialize_block_header{bitwise_ptr: BitwiseBuiltin*}() {
     return ();
 }
 
-// Create a dummy for the previous timestamps
-func dummy_prev_timestamps() -> (timestamps: felt*) {
+// Create a dummy for the previoustimestamp
+func dummy_prev_timestamps() -> felt* {
     let (prev_timestamps) = alloc();
     assert prev_timestamps[0] = 0;
     assert prev_timestamps[1] = 1;
@@ -76,7 +76,7 @@ func dummy_prev_timestamps() -> (timestamps: felt*) {
     assert prev_timestamps[8] = 8;
     assert prev_timestamps[9] = 9;
     assert prev_timestamps[10] = 10;
-    return (prev_timestamps,);
+    return prev_timestamps;
 }
 
 // Test a block header validation context
@@ -102,7 +102,7 @@ func test_read_block_header_validation_context{range_check_ptr, bitwise_ptr: Bit
         ], ids.prev_block_hash)
     %}
 
-    let (prev_timestamps) = dummy_prev_timestamps();
+    let prev_timestamps = dummy_prev_timestamps();
     let prev_chain_state = ChainState(
         block_height=328733,
         total_work=0,
@@ -212,7 +212,7 @@ func test_adjust_current_target{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}()
     // The current_target of the previous epoch
     let prev_current_target = 0x1a05db8b;
 
-    let (prev_timestamps) = dummy_prev_timestamps();
+    let prev_timestamps = dummy_prev_timestamps();
 
     let prev_chain_state = ChainState(
         block_height=201598,
@@ -284,7 +284,7 @@ func test_insufficient_pow{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     %}
 
     // Run a sanity check that header validation does not error with correct pow.
-    let (prev_timestamps) = dummy_prev_timestamps();
+    let prev_timestamps = dummy_prev_timestamps();
 
     let prev_chain_state = ChainState(
         block_height=0,
@@ -315,7 +315,7 @@ func test_insufficient_pow{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     }
 
     // Run a test with manipulated target.
-    let (prev_timestamps) = dummy_prev_timestamps();
+    let prev_timestamps = dummy_prev_timestamps();
 
     let prev_chain_state = ChainState(
         block_height=0,
