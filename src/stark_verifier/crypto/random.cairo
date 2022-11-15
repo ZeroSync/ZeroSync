@@ -92,7 +92,7 @@ func hash_elements{range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuil
 // where value is a U256 integer representing a hash digest
 func reseed{
     range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*, public_coin: PublicCoin
-}(value: felt*) -> () {
+}(value: felt*) {
     let (digest) = merge(seed=public_coin.seed, value=value);
     let public_coin = PublicCoin(seed=digest, counter=0);
     return ();
@@ -103,7 +103,7 @@ func reseed{
 // This function ensures that value fits within a u64 integer.
 func reseed_with_int{
     range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*, public_coin: PublicCoin
-}(value: felt) -> () {
+}(value: felt) {
     with_attr error_message("Value (${value}) is negative or greater than (2 ** 64 - 1).") {
         assert_nn_le(value, 2 ** 64 - 1);
     }
@@ -114,7 +114,7 @@ func reseed_with_int{
 
 func reseed_with_ood_frames{
     range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*, public_coin: PublicCoin
-}(ood_main_trace_frame: EvaluationFrame, ood_aux_trace_frame: EvaluationFrame) -> () {
+}(ood_main_trace_frame: EvaluationFrame, ood_aux_trace_frame: EvaluationFrame) {
     // TODO
     return ();
 }
@@ -122,7 +122,7 @@ func reseed_with_ood_frames{
 // Returns the next pseudo-random field element
 func draw{
     range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*, public_coin: PublicCoin
-}() -> (res: felt) {
+}() -> felt {
     alloc_locals;
     tempvar public_coin = PublicCoin(public_coin.seed, public_coin.counter + 1);
     let (local digest) = merge_with_int(seed=public_coin.seed, value=public_coin.counter);
@@ -138,7 +138,7 @@ func draw{
     );
     if (is_valid == 1) {
         let res = (num.low + num.high * 2 ** 128) / R_MONTGOMERY;
-        return (res=res);
+        return res;
     } else {
         return draw();
     }
@@ -155,7 +155,7 @@ func draw_pair{
 
 func draw_elements{
     range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*, public_coin: PublicCoin
-}(n_elements: felt, elements: felt*) -> () {
+}(n_elements: felt, elements: felt*) {
     if (n_elements == 0) {
         return ();
     }
@@ -178,7 +178,7 @@ func contains(element: felt, array: felt*, array_len: felt) -> felt {
 
 func _draw_integers_loop{
     range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*, public_coin: PublicCoin
-}(n_elements: felt, elements: felt*, domain_size: felt, index: felt) -> () {
+}(n_elements: felt, elements: felt*, domain_size: felt, index: felt) {
     alloc_locals;
     if (n_elements == index) {
         return ();
@@ -188,7 +188,7 @@ func _draw_integers_loop{
     let v_mask = domain_size - 1;
 
     // draw values from PRNG until we get as many unique values as specified by n_elements
-    let (element) = draw();
+    let element = draw();
 
     // convert to integer and limit the integer to the number of bits which can fit
     // into the specified domain
@@ -216,7 +216,7 @@ func _draw_integers_loop{
 // /See also: https://github.com/ZeroSync/winterfell/blob/main/crypto/src/random/mod.rs#L252
 func draw_integers{
     range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*, public_coin: PublicCoin
-}(n_elements: felt, elements: felt*, domain_size: felt) -> () {
+}(n_elements: felt, elements: felt*, domain_size: felt) {
     return _draw_integers_loop(n_elements, elements, domain_size, 0);
 }
 
@@ -263,7 +263,7 @@ func seed_with_pub_inputs{
     return (res=res);
 }
 
-func get_leading_zeros{range_check_ptr, public_coin: PublicCoin}() -> (res: felt) {
+func get_leading_zeros{range_check_ptr, public_coin: PublicCoin}() -> felt {
     alloc_locals;
 
     let seed = public_coin.seed + 4;
@@ -291,8 +291,8 @@ func get_leading_zeros{range_check_ptr, public_coin: PublicCoin}() -> (res: felt
     // Ensure that less or equal 64 leading zeros
     let is_lzcnt_le_64 = is_le(lzcnt, 64);
     if (is_lzcnt_le_64 == TRUE) {
-        return (lzcnt,);
+        return lzcnt;
     } else {
-        return (64,);
+        return 64;
     }
 }

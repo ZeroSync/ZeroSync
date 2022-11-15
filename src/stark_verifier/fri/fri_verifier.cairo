@@ -12,7 +12,7 @@ func fri_verifier_new(air: AirInstance) -> (res: FriVerifier) {
 
 func fri_verify{channel: Channel}(
     fri_verifier: FriVerifier, evaluations: felt*, positions: felt*
-) -> () {
+) {
     // TODO
     return ();
 }

@@ -422,20 +422,20 @@ func rmd160_compress{bitwise_ptr: BitwiseBuiltin*, range_check_ptr}(
     // combine results
     let (local res: felt*) = alloc();
 
-    let (res0) = uint32_add([state + 1], cc);
-    let (res0) = uint32_add(res0, ddd);
+    let res0 = uint32_add([state + 1], cc);
+    let res0 = uint32_add(res0, ddd);
 
-    let (res1) = uint32_add([state + 2], dd);
-    let (res1) = uint32_add(res1, eee);
+    let res1 = uint32_add([state + 2], dd);
+    let res1 = uint32_add(res1, eee);
 
-    let (res2) = uint32_add([state + 3], ee);
-    let (res2) = uint32_add(res2, aaa);
+    let res2 = uint32_add([state + 3], ee);
+    let res2 = uint32_add(res2, aaa);
 
-    let (res3) = uint32_add([state + 4], aa);
-    let (res3) = uint32_add(res3, bbb);
+    let res3 = uint32_add([state + 4], aa);
+    let res3 = uint32_add(res3, bbb);
 
-    let (res4) = uint32_add([state + 0], bb);
-    let (res4) = uint32_add(res4, ccc);
+    let res4 = uint32_add([state + 0], bb);
+    let res4 = uint32_add(res4, ccc);
 
     assert output[0] = res0;
     assert output[1] = res1;

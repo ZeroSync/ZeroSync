@@ -8,7 +8,7 @@ func evaluate_constraints(
     ood_aux_trace_frame: EvaluationFrame,
     aux_trace_rand_elements: felt*,
     z: felt,
-) -> (res: felt) {
+) -> felt {
     // TODO
     return (res=0);
 }

@@ -136,7 +136,7 @@ func get_deep_composition_coefficients{
 
 func set_trace_coefficients{
     range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*, public_coin: PublicCoin
-}(n_vec: felt, n_coefficients: felt, coefficients: TraceCoefficients*) -> () {
+}(n_vec: felt, n_coefficients: felt, coefficients: TraceCoefficients*) {
     if (n_vec == 0) {
         return ();
     }
@@ -151,7 +151,7 @@ func set_trace_coefficients{
 // list of coefficients
 func draw_pairs{
     range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*, public_coin: PublicCoin
-}(n_pairs: felt, coefficients_a: felt*, coefficients_b: felt*) -> () {
+}(n_pairs: felt, coefficients_a: felt*, coefficients_b: felt*) {
     let (num1, num2) = draw_pair();
     coefficients_a[0] = num1;
     coefficients_b[0] = num2;

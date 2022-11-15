@@ -19,12 +19,12 @@ from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 // - https://github.com/bitcoin/bitcoin/issues/19598#issuecomment-693212439
 func compute_merkle_root{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, sha256_ptr: felt*}(
     leaves: felt*, leaves_len: felt
-) -> (hash: felt*) {
+) -> felt* {
     alloc_locals;
 
     // The trivial case is a tree with a single leaf
     if (leaves_len == 1) {
-        return (leaves,);
+        return leaves;
     }
 
     // If the number of leaves is odd then duplicate the last leaf

@@ -64,7 +64,7 @@ from stark_verifier.utils import Vec
 // LICENSE.winterfell.md)
 func verify{range_check_ptr, pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*}(
     proof: StarkProof*, pub_inputs: PublicInputs*
-) -> () {
+) {
     alloc_locals;
 
     let (__fp__, _) = get_fp_and_pc();
@@ -100,7 +100,7 @@ func perform_verification{
     bitwise_ptr: BitwiseBuiltin*,
     channel: Channel,
     public_coin: PublicCoin,
-}(air: AirInstance) -> () {
+}(air: AirInstance) {
     alloc_locals;
 
     // 1 ----- Trace commitment -------------------------------------------------------------------
@@ -250,7 +250,7 @@ func process_aux_segments{
     trace_commitments_len: felt,
     aux_segment_rands: felt*,
     aux_trace_rand_elements: felt*,
-) -> () {
+) {
     draw_elements(n_elements=[aux_segment_rands], elements=aux_trace_rand_elements);
     reseed(value=trace_commitments);
     if (trace_commitments_len == 0) {
@@ -265,7 +265,7 @@ func process_aux_segments{
     return ();
 }
 
-func reduce_evaluations(evaluations: Vec) -> (res: felt) {
+func reduce_evaluations(evaluations: Vec) -> felt {
     // TODO
     return (res=0);
 }

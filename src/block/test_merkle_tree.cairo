@@ -37,7 +37,7 @@ func test_compute_merkle_root{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     // initialize sha256_ptr
     let sha256_ptr: felt* = alloc();
     with sha256_ptr {
-        let (root) = compute_merkle_root(leaves, leaves_len);
+        let root = compute_merkle_root(leaves, leaves_len);
     }
     assert_hashes_equal(root, root_expected);
     return ();
@@ -73,7 +73,7 @@ func test_compute_merkle_root_power_of_2{range_check_ptr, bitwise_ptr: BitwiseBu
     // initialize sha256_ptr
     let sha256_ptr: felt* = alloc();
     with sha256_ptr {
-        let (root) = compute_merkle_root(leaves, leaves_len);
+        let root = compute_merkle_root(leaves, leaves_len);
     }
     assert_hashes_equal(root, root_expected);
     return ();
@@ -114,7 +114,7 @@ func test_compute_merkle_root_uneven{range_check_ptr, bitwise_ptr: BitwiseBuilti
     // initialize sha256_ptr
     let sha256_ptr: felt* = alloc();
     with sha256_ptr {
-        let (root) = compute_merkle_root(leaves, leaves_len);
+        let root = compute_merkle_root(leaves, leaves_len);
     }
     assert_hashes_equal(root, root_expected);
     return ();
