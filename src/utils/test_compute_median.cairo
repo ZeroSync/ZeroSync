@@ -1,58 +1,62 @@
 %lang starknet
 
 from starkware.cairo.common.alloc import alloc
-from utils.compute_median import compute_timestamps_median, find_lowest_element, sort_unsigned
-from block.block_header import BlockHeader
+from utils.compute_median import compute_timestamps_median, verify_timestamps_median
 
-@view
+@external
 func test_compute_timestamps_median{range_check_ptr}() {
     tempvar timestamps: felt* = new (10, 16, 8, 0, 3, 3, 7, 20, 0, 4, 10);
-    let (median) = compute_timestamps_median(timestamps);
+    let median = compute_timestamps_median(timestamps);
 
     assert 7 = median;
 
     return ();
 }
 
-@view
-func test_find_lowest_element{range_check_ptr}() {
-    let (lowest_element_index, lowest_element) = find_lowest_element(4, new (10, 4, 3, 7));
+@external
+func test_compute_timestamps_median_zero{range_check_ptr}() {
+    tempvar timestamps: felt* = new (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+    let median = compute_timestamps_median(timestamps);
 
-    assert 2 = lowest_element_index;
-    assert 3 = lowest_element;
-
-    return ();
-}
-
-@view
-func test_sort_unsigned{range_check_ptr}(){
-    let (sorted_array : felt*) = sort_unsigned(4, new (10, 4, 3, 7));
-
-    assert 3 = sorted_array[0];
-    assert 4 = sorted_array[1];
-    assert 7 = sorted_array[2];
-    assert 10 = sorted_array[3];
+    assert 5 = median;
 
     return ();
 }
 
+@external
+func test_compute_timestamps_median_edge_case1{range_check_ptr}() {
+    tempvar timestamps: felt* = new (1, 2, 3, 4, 5, 5, 6, 7, 8, 9, 10);
+    let median = compute_timestamps_median(timestamps);
 
-@view
-func test_sort_unsigned_with_equal_values{range_check_ptr}(){
-    let (sorted_array : felt*) = sort_unsigned(
-        11, new (10, 16, 8, 0, 3, 3, 7, 20, 0, 4, 10)
-    );
-    assert 0 = sorted_array[0];
-    assert 0 = sorted_array[1];
-    assert 3 = sorted_array[2];
-    assert 3 = sorted_array[3];
-    assert 4 = sorted_array[4];
-    assert 7 = sorted_array[5];
-    assert 8 = sorted_array[6];
-    assert 10 = sorted_array[7];
-    assert 10 = sorted_array[8];
-    assert 16 = sorted_array[9];
-    assert 20 = sorted_array[10];
-    
+    assert 5 = median;
+
+    return ();
+}
+
+@external
+func test_compute_timestamps_median_edge_case2{range_check_ptr}() {
+    tempvar timestamps: felt* = new (1, 2, 2, 2, 2, 3, 4, 5, 6, 7, 8);
+    let median = compute_timestamps_median(timestamps);
+
+    assert 3 = median;
+
+    return ();
+}
+
+@external
+func test_verify_timestamps_median{range_check_ptr}() {
+    tempvar timestamps: felt* = new (1, 2, 2, 2, 2, 3, 4, 5, 6, 7, 8);
+    %{ expect_revert(error_message = "invalid timestamps median") %}
+    verify_timestamps_median(timestamps, 2);
+
+    return ();
+}
+
+@external
+func test_verify_timestamps_median_2{range_check_ptr}() {
+    tempvar timestamps: felt* = new (0, 1, 2, 3, 4, 6, 7, 8, 9, 10, 11);
+    %{ expect_revert(error_message = "invalid timestamps median") %}
+    verify_timestamps_median(timestamps, 5);
+
     return ();
 }

@@ -1,7 +1,7 @@
 // Program to compute the 10th Fibonacci number
 // https://www.cairo-lang.org/docs/how_cairo_works/functions.html#id4
 
-func fib(first_element, second_element, n) -> (res: felt) {
+func fib(first_element, second_element, n) -> felt {
     jmp fib_body if n != 0;
     [ap] = second_element, ap++;
     ret;

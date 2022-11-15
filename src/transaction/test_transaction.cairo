@@ -9,7 +9,7 @@ from starkware.cairo.common.alloc import alloc
 from serialize.serialize import init_reader, init_writer, flush_writer, read_uint8
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.memcpy import memcpy
-from crypto.sha256d.sha256d import assert_hashes_equal
+from crypto.hash_utils import assert_hashes_equal
 from utils.python_utils import setup_python_defs
 
 from transaction.transaction import read_transaction, read_transaction_validation_context
@@ -40,7 +40,7 @@ func test_read_transaction{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
             "000000", ids.transaction_raw)
     %}
 
-    let (reader) = init_reader(transaction_raw);
+    let reader = init_reader(transaction_raw);
 
     let (transaction, byte_size) = read_transaction{reader=reader}();
 
@@ -59,7 +59,7 @@ func test_read_transaction{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
         ids.expected_script_pub_key_len = felt_size
         ids.expected_script_pub_key_size = byte_size
     %}
-    
+
     assert 0x19 = transaction.outputs[0].script_pub_key_size;
 
     memcpy(
@@ -93,7 +93,7 @@ func test_read_segwit_transaction{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}
             "3f5d68e866ecec219500000000"), ids.transaction_raw)
     %}
 
-    let (reader) = init_reader(transaction_raw);
+    let reader = init_reader(transaction_raw);
 
     let (transaction, byte_size) = read_transaction{reader=reader}();
 
@@ -123,7 +123,7 @@ func test_read_transaction_validation_context{range_check_ptr, bitwise_ptr: Bitw
     // initialize sha256_ptr
     let sha256_ptr: felt* = alloc();
     with sha256_ptr {
-        let (context) = read_transaction_validation_context(328734, 1);
+        let context = read_transaction_validation_context(328734, 1);
     }
     assert 0x01 = context.transaction.version;
 
@@ -133,6 +133,6 @@ func test_read_transaction_validation_context{range_check_ptr, bitwise_ptr: Bitw
     assert 259 = context.transaction_size;
 
     assert_hashes_equal(context.txid, txid_expected);
-    
+
     return ();
 }

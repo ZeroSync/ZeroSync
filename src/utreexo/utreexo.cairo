@@ -11,11 +11,11 @@ from starkware.cairo.common.memset import memset
 
 const UTREEXO_ROOTS_LEN = 27;  // ~ log2( 70,000,000 UTXOs )
 
-func utreexo_init() -> (utreexo_roots: felt*) {
+func utreexo_init() -> felt* {
     alloc_locals;
     let (utreexo_roots) = alloc();
     memset(utreexo_roots, 0, UTREEXO_ROOTS_LEN);
-    return (utreexo_roots,);
+    return utreexo_roots;
 }
 
 func utreexo_add{hash_ptr: HashBuiltin*, utreexo_roots: felt*}(leaf) {
@@ -39,9 +39,9 @@ func _utreexo_add_loop{hash_ptr: HashBuiltin*}(roots_in: felt*, roots_out: felt*
     }
 
     let (n) = hash2(r, n);
-    
+
     assert roots_out[h] = 0;
-    
+
     return _utreexo_add_loop(roots_in, roots_out, n, h + 1);
 }
 
@@ -78,7 +78,7 @@ func _utreexo_delete_loop{hash_ptr: HashBuiltin*}(
     }
 
     if (roots_in[h] == 0) {
-            assert roots_out[h] = p;
+        assert roots_out[h] = p;
         return _utreexo_delete_loop(roots_in, roots_out, proof, proof_len, n, h + 1);
     }
 
@@ -90,7 +90,7 @@ func _utreexo_delete_loop{hash_ptr: HashBuiltin*}(
 func utreexo_prove_inclusion{hash_ptr: HashBuiltin*}(
     utreexo_roots: felt*, leaf, leaf_index, proof: felt*, proof_len
 ) {
-    let (proof_root) = _utreexo_prove_inclusion_loop(proof, proof_len, leaf_index, leaf);
+    let proof_root = _utreexo_prove_inclusion_loop(proof, proof_len, leaf_index, leaf);
     with_attr error_message("The leaf {leaf} is not included in the Utreexo set.") {
         assert utreexo_roots[proof_len] = proof_root;
     }
@@ -99,9 +99,9 @@ func utreexo_prove_inclusion{hash_ptr: HashBuiltin*}(
 
 func _utreexo_prove_inclusion_loop{hash_ptr: HashBuiltin*}(
     proof: felt*, proof_len, index, prev_node
-) -> (proof_root: felt) {
+) -> felt {
     if (proof_len == 0) {
-        return (prev_node,);
+        return prev_node;
     }
 
     alloc_locals;

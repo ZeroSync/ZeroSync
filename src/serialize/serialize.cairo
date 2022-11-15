@@ -30,12 +30,13 @@ struct Reader {
     payload: felt,
 }
 
-func init_reader(array: felt*) -> (reader: Reader) {
-    return (Reader(array, 0, 0),);
+func init_reader(array: felt*) -> Reader {
+    let reader = Reader(array, 0, 0);
+    return reader;
 }
 
 // Read a byte from the reader
-func read_uint8{reader: Reader, bitwise_ptr: BitwiseBuiltin*}() -> (byte: felt) {
+func read_uint8{reader: Reader, bitwise_ptr: BitwiseBuiltin*}() -> felt {
     if (reader.offset == 0) {
         // The Reader is empty, so we read from the head, return the first byte,
         // and copy the remaining three bytes into the Reader's payload.
@@ -50,7 +51,7 @@ func read_uint8{reader: Reader, bitwise_ptr: BitwiseBuiltin*}() -> (byte: felt) 
         let bitwise_ptr = bitwise_ptr + BitwiseBuiltin.SIZE * 2;
 
         let reader = Reader(reader.head + 1, UINT32_SIZE - 1, payload * BYTE);
-        return (byte,);
+        return byte;
     } else {
         // The Reader is not empty. So we read the first byte from its payload
         // and continue with the remaining bytes.
@@ -65,7 +66,7 @@ func read_uint8{reader: Reader, bitwise_ptr: BitwiseBuiltin*}() -> (byte: felt) 
         let bitwise_ptr = bitwise_ptr + BitwiseBuiltin.SIZE * 2;
 
         let reader = Reader(reader.head, reader.offset - 1, payload * BYTE);
-        return (byte,);
+        return byte;
     }
 }
 
@@ -76,30 +77,30 @@ func _read_n_bytes_into_felt{reader: Reader, bitwise_ptr: BitwiseBuiltin*}(
         assert [output] = value;
         return ();
     }
-    let (byte) = read_uint8();
+    let byte = read_uint8();
     _read_n_bytes_into_felt(output, byte * base + value, base * BYTE, loop_counter - 1);
     return ();
 }
 
-func read_uint16{reader: Reader, bitwise_ptr: BitwiseBuiltin*}() -> (result: felt) {
+func read_uint16{reader: Reader, bitwise_ptr: BitwiseBuiltin*}() -> felt {
     alloc_locals;
     let (result) = alloc();
     _read_n_bytes_into_felt(result, 0, 1, UINT16_SIZE);
-    return ([result],);
+    return [result];
 }
 
-func read_uint32{reader: Reader, bitwise_ptr: BitwiseBuiltin*}() -> (result: felt) {
+func read_uint32{reader: Reader, bitwise_ptr: BitwiseBuiltin*}() -> felt {
     alloc_locals;
     let (result) = alloc();
     _read_n_bytes_into_felt(result, 0, 1, UINT32_SIZE);
-    return ([result],);
+    return [result];
 }
 
-func read_uint64{reader: Reader, bitwise_ptr: BitwiseBuiltin*}() -> (result: felt) {
+func read_uint64{reader: Reader, bitwise_ptr: BitwiseBuiltin*}() -> felt {
     alloc_locals;
     let (result) = alloc();
     _read_n_bytes_into_felt(result, 0, 1, UINT64_SIZE);
-    return ([result],);
+    return [result];
 }
 
 // Reads a VarInt from the buffer and returns a pair
@@ -111,21 +112,21 @@ func read_uint64{reader: Reader, bitwise_ptr: BitwiseBuiltin*}() -> (result: fel
 //
 func read_varint{reader: Reader, bitwise_ptr: BitwiseBuiltin*}() -> (value: felt, byte_size: felt) {
     alloc_locals;
-    
+
     // Read the first byte
-    let (first_byte) = read_uint8();
+    let first_byte = read_uint8();
 
     // Now check how many more bytes we have to read
 
     if (first_byte == 0xff) {
         // This varint has 8 more bytes
-        let (uint64) = read_uint64();
+        let uint64 = read_uint64();
         // Ensure that `uint64 > 0xFFFFFFFF`
         assert [bitwise_ptr].x = uint64;
         assert [bitwise_ptr].y = 0xFFFFFFFF00000000;
         let high_bits = [bitwise_ptr].x_and_y;
         let bitwise_ptr = bitwise_ptr + BitwiseBuiltin.SIZE;
-        if(high_bits == 0) {
+        if (high_bits == 0) {
             with_attr error_message("Expected canonical encoding") {
                 assert 1 = 0;
             }
@@ -135,13 +136,13 @@ func read_varint{reader: Reader, bitwise_ptr: BitwiseBuiltin*}() -> (value: felt
 
     if (first_byte == 0xfe) {
         // This varint has 4 more bytes
-        let (uint32) = read_uint32();
+        let uint32 = read_uint32();
         // Ensure that `uint32 > 0xFFFF`
         assert [bitwise_ptr].x = uint32;
         assert [bitwise_ptr].y = 0xFFFF0000;
         let high_bits = [bitwise_ptr].x_and_y;
         let bitwise_ptr = bitwise_ptr + BitwiseBuiltin.SIZE;
-        if(high_bits == 0) {
+        if (high_bits == 0) {
             with_attr error_message("Expected canonical encoding") {
                 assert 1 = 0;
             }
@@ -151,13 +152,13 @@ func read_varint{reader: Reader, bitwise_ptr: BitwiseBuiltin*}() -> (value: felt
 
     if (first_byte == 0xfd) {
         // This varint has 2 more bytes
-        let (uint16) = read_uint16();
+        let uint16 = read_uint16();
         // Ensure that `uint16 > 252` which is equivalent to `uint16 + 3 > 255`
         assert [bitwise_ptr].x = uint16 + 3;
         assert [bitwise_ptr].y = 0xFF00;
         let high_bits = [bitwise_ptr].x_and_y;
         let bitwise_ptr = bitwise_ptr + BitwiseBuiltin.SIZE;
-        if(high_bits == 0) {
+        if (high_bits == 0) {
             with_attr error_message("Expected canonical encoding") {
                 assert 1 = 0;
             }
@@ -169,7 +170,9 @@ func read_varint{reader: Reader, bitwise_ptr: BitwiseBuiltin*}() -> (value: felt
     return (first_byte, UINT8_SIZE);
 }
 
-func _read_into_uint32_array{reader: Reader, bitwise_ptr: BitwiseBuiltin*}(output: felt*, loop_counter) {
+func _read_into_uint32_array{reader: Reader, bitwise_ptr: BitwiseBuiltin*}(
+    output: felt*, loop_counter
+) {
     if (loop_counter == 0) {
         return ();
     }
@@ -178,7 +181,7 @@ func _read_into_uint32_array{reader: Reader, bitwise_ptr: BitwiseBuiltin*}(outpu
     return ();
 }
 
-func read_bytes{reader: Reader, bitwise_ptr: BitwiseBuiltin*}(length: felt) -> (result: felt*) {
+func read_bytes{reader: Reader, bitwise_ptr: BitwiseBuiltin*}(length: felt) -> felt* {
     alloc_locals;
     let (result) = alloc();
 
@@ -195,10 +198,10 @@ func read_bytes{reader: Reader, bitwise_ptr: BitwiseBuiltin*}(length: felt) -> (
     _read_into_uint32_array(result, len_div_4);
     // Read up to three more bytes
     _read_n_bytes_into_felt(result + len_div_4, 0, 1, len_mod_4);
-    return (result,);
+    return result;
 }
 
-func read_bytes_endian{reader: Reader, bitwise_ptr: BitwiseBuiltin*}(length: felt) -> (result: felt*) {
+func read_bytes_endian{reader: Reader, bitwise_ptr: BitwiseBuiltin*}(length: felt) -> felt* {
     alloc_locals;
     let (result) = alloc();
 
@@ -213,10 +216,12 @@ func read_bytes_endian{reader: Reader, bitwise_ptr: BitwiseBuiltin*}(length: fel
 
     _read_into_uint32_array_endian(result, len_div_4);
     _read_n_bytes_into_felt_endian(result + len_div_4, 0, BYTE ** 3, len_mod_4);
-    return (result,);
+    return result;
 }
 
-func _read_into_uint32_array_endian{reader: Reader, bitwise_ptr: BitwiseBuiltin*}(output: felt*, loop_counter) {
+func _read_into_uint32_array_endian{reader: Reader, bitwise_ptr: BitwiseBuiltin*}(
+    output: felt*, loop_counter
+) {
     if (loop_counter == 0) {
         return ();
     }
@@ -232,37 +237,37 @@ func _read_n_bytes_into_felt_endian{reader: Reader, bitwise_ptr: BitwiseBuiltin*
         assert [output] = value;
         return ();
     }
-    let (byte) = read_uint8();
+    let byte = read_uint8();
     _read_n_bytes_into_felt_endian(output, value + byte * base, base / BYTE, loop_counter - 1);
     return ();
 }
 
-func read_hash{reader: Reader, bitwise_ptr: BitwiseBuiltin*}() -> (result: felt*) {
+func read_hash{reader: Reader, bitwise_ptr: BitwiseBuiltin*}() -> felt* {
     return read_bytes_endian(32);
 }
 
 // Peek the first byte from a reader without increasing the reader's cursor
-func peek_uint8{reader: Reader, bitwise_ptr: BitwiseBuiltin*}() -> (byte: felt) {
+func peek_uint8{reader: Reader, bitwise_ptr: BitwiseBuiltin*}() -> felt {
     if (reader.offset == 0) {
         // The Reader's payload is empty, so we read from the head
-        
+
         // Compute `unsigned_div_rem([reader.head], 256 ** 3)` using `BitwiseBuiltin`
         assert [bitwise_ptr].x = [reader.head];
         assert [bitwise_ptr].y = 0xFF000000;
         let first_byte = [bitwise_ptr].x_and_y / BYTE ** 3;
         let bitwise_ptr = bitwise_ptr + BitwiseBuiltin.SIZE;
 
-        return (first_byte,);
+        return first_byte;
     } else {
         // The Reader is not empty, so we read the first byte from its payload
-        
+
         // Compute `unsigned_div_rem(reader.payload, 256 ** 3)` using `BitwiseBuiltin`
         assert [bitwise_ptr].x = reader.payload;
         assert [bitwise_ptr].y = 0xFF000000;
         let first_byte = [bitwise_ptr].x_and_y / BYTE ** 3;
         let bitwise_ptr = bitwise_ptr + BitwiseBuiltin.SIZE;
 
-        return (first_byte,);
+        return first_byte;
     }
 }
 
@@ -272,8 +277,9 @@ struct Writer {
     payload: felt,
 }
 
-func init_writer(array: felt*) -> (writer: Writer) {
-    return (Writer(array, 0, 0),);
+func init_writer(array: felt*) -> Writer {
+    let writer = Writer(array, 0, 0);
+    return writer;
 }
 
 // Any unwritten data in the writer's temporary memory is written to the writer.
@@ -300,7 +306,7 @@ func write_uint8{writer: Writer}(source) {
 
 func write_uint16{writer: Writer, bitwise_ptr: BitwiseBuiltin*}(source) {
     alloc_locals;
-    
+
     // Compute `unsigned_div_rem(source, 256)` using `BitwiseBuiltin`
     assert bitwise_ptr[0].x = source;
     assert bitwise_ptr[0].y = 0xFFFFFF00;
@@ -369,7 +375,7 @@ func write_uint64{writer: Writer, bitwise_ptr: BitwiseBuiltin*}(source: felt) {
     let uint8_6 = bitwise_ptr[6].x_and_y / BYTE ** 6;
     let uint8_7 = bitwise_ptr[7].x_and_y / BYTE ** 7;
     let bitwise_ptr = bitwise_ptr + 8 * BitwiseBuiltin.SIZE;
-    
+
     write_uint8(uint8_0);
     write_uint8(uint8_1);
     write_uint8(uint8_2);
@@ -457,7 +463,7 @@ func write_hash{writer: Writer, bitwise_ptr: BitwiseBuiltin*}(source: felt*) {
 }
 
 // Return the number of UINT32 felt chunks required to store byte_size bytes.
-func byte_size_to_felt_size{bitwise_ptr: BitwiseBuiltin*}(byte_size) -> (felt_size: felt) {
+func byte_size_to_felt_size{bitwise_ptr: BitwiseBuiltin*}(byte_size) -> felt {
     // Compute `unsigned_div_rem(byte_size, 4)` using `BitwiseBuiltin`
     assert bitwise_ptr[0].x = byte_size;
     assert bitwise_ptr[0].y = 0xFFFFFFFC;
@@ -467,8 +473,8 @@ func byte_size_to_felt_size{bitwise_ptr: BitwiseBuiltin*}(byte_size) -> (felt_si
     let size_mod_4 = bitwise_ptr[1].x_and_y;
     let bitwise_ptr = bitwise_ptr + BitwiseBuiltin.SIZE * 2;
     if (size_mod_4 == 0) {
-        return (size_div_4,);
+        return size_div_4;
     } else {
-        return (size_div_4 + 1,);
+        return size_div_4 + 1;
     }
 }

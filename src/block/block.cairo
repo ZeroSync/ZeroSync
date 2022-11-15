@@ -28,7 +28,7 @@ from transaction.transaction import (
     validate_outputs_loop,
 )
 from block.merkle_tree import compute_merkle_root
-from crypto.sha256d.sha256d import assert_hashes_equal, copy_hash, HASH_FELT_SIZE
+from crypto.hash_utils import assert_hashes_equal, copy_hash, HASH_FELT_SIZE
 
 // The state of the headers chain and the UTXO set
 struct State {
@@ -44,8 +44,7 @@ struct BlockValidationContext {
     transaction_contexts: TransactionValidationContext*,
     prev_utreexo_roots: felt*,
 }
-
-func fetch_transaction_count(block_height) -> (transaction_count: felt) {
+func fetch_transaction_count(block_height) -> felt {
     alloc_locals;
     local transaction_count;
 
@@ -64,38 +63,38 @@ func fetch_transaction_count(block_height) -> (transaction_count: felt) {
 
         ids.transaction_count = block["tx_count"]
     %}
-    return (transaction_count,);
+    return transaction_count;
 }
 
-func read_block_validation_context{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, sha256_ptr: felt*}(
-    prev_state: State
-) -> (context: BlockValidationContext) {
+func read_block_validation_context{
+    range_check_ptr, bitwise_ptr: BitwiseBuiltin*, sha256_ptr: felt*
+}(prev_state: State) -> BlockValidationContext {
     alloc_locals;
 
-    let (header_context) = read_block_header_validation_context(prev_state.chain_state);
-    
-    let block_height = prev_state.chain_state.block_height + 1;
-    let (transaction_count) = fetch_transaction_count(block_height);
-    let (transaction_contexts) = read_transaction_validation_contexts(block_height, transaction_count);
+    let header_context = read_block_header_validation_context(prev_state.chain_state);
 
-    return (
-        BlockValidationContext(
-        header_context,
-        transaction_count,
-        transaction_contexts,
-        prev_state.utreexo_roots
-        ),
+    let block_height = prev_state.chain_state.block_height + 1;
+    let transaction_count = fetch_transaction_count(block_height);
+    let transaction_contexts = read_transaction_validation_contexts(
+        block_height, transaction_count
     );
+
+    let ctx = BlockValidationContext(
+        header_context, transaction_count, transaction_contexts, prev_state.utreexo_roots
+    );
+    return ctx;
 }
 
 func read_transaction_validation_contexts{
     range_check_ptr, bitwise_ptr: BitwiseBuiltin*, sha256_ptr: felt*
-}(block_height, transaction_count) -> (contexts: TransactionValidationContext*) {
+}(block_height, transaction_count) -> TransactionValidationContext* {
     alloc_locals;
 
     let (contexts: TransactionValidationContext*) = alloc();
-    _read_transaction_validation_contexts_loop(contexts, block_height, transaction_count, transaction_count);
-    return (contexts,);
+    _read_transaction_validation_contexts_loop(
+        contexts, block_height, transaction_count, transaction_count
+    );
+    return contexts;
 }
 
 func _read_transaction_validation_contexts_loop{
@@ -105,11 +104,16 @@ func _read_transaction_validation_contexts_loop{
         return ();
     }
 
-    let (context) = read_transaction_validation_context(block_height, transaction_count - loop_counter);
+    let context = read_transaction_validation_context(
+        block_height, transaction_count - loop_counter
+    );
     assert [contexts] = context;
 
     return _read_transaction_validation_contexts_loop(
-        contexts + TransactionValidationContext.SIZE, block_height, loop_counter - 1, transaction_count
+        contexts + TransactionValidationContext.SIZE,
+        block_height,
+        loop_counter - 1,
+        transaction_count,
     );
 }
 
@@ -118,14 +122,15 @@ func _read_transaction_validation_contexts_loop{
 //
 func validate_and_apply_block{
     range_check_ptr, bitwise_ptr: BitwiseBuiltin*, hash_ptr: HashBuiltin*, sha256_ptr: felt*
-}(context: BlockValidationContext) -> (next_state: State) {
+}(context: BlockValidationContext) -> State {
     alloc_locals;
 
-    let (next_chain_state) = validate_and_apply_block_header(context.header_context);
+    let next_chain_state = validate_and_apply_block_header(context.header_context);
     validate_merkle_root(context);
     let utreexo_roots = context.prev_utreexo_roots;
     validate_and_apply_transactions{utreexo_roots=utreexo_roots}(context);
-    return (State(next_chain_state, utreexo_roots),);
+    let state = State(next_chain_state, utreexo_roots);
+    return state;
 }
 
 // Compute the Merkle root of all transactions in this block
@@ -140,11 +145,12 @@ func validate_merkle_root{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, sha256_
     _copy_txids_into_array_loop(context.transaction_contexts, txids, context.transaction_count);
 
     // Compute the Merkle root of the TXIDs
-    let (merkle_root) = compute_merkle_root(txids, context.transaction_count);
+    let merkle_root = compute_merkle_root(txids, context.transaction_count);
 
     // Validate that the computed Merkle root
     // matches the Merkle root in this block's header
-    with_attr error_message("Computed Merkle root doesn't match the Merkle root in the block's header.") {
+    with_attr error_message(
+            "Computed Merkle root doesn't match the Merkle root in the block's header.") {
         assert_hashes_equal(context.header_context.block_header.merkle_root_hash, merkle_root);
     }
     return ();
@@ -170,7 +176,7 @@ func validate_and_apply_transactions{range_check_ptr, hash_ptr: HashBuiltin*, ut
     alloc_locals;
 
     // Validate all transactions except for the coinbase with the regular validation rules
-    let (total_fees) = _validate_and_apply_transactions_loop(
+    let total_fees = _validate_and_apply_transactions_loop(
         context.transaction_contexts + TransactionValidationContext.SIZE,
         context.header_context,
         0,
@@ -190,13 +196,13 @@ func _validate_and_apply_transactions_loop{
     header_context: BlockHeaderValidationContext,
     total_fees,
     loop_counter,
-) -> (total_fees: felt) {
+) -> felt {
     if (loop_counter == 0) {
-        return (total_fees,);
+        return total_fees;
     }
 
     alloc_locals;
-    let (tx_fee) = validate_and_apply_transaction([tx_contexts], header_context);
+    let tx_fee = validate_and_apply_transaction([tx_contexts], header_context);
 
     return _validate_and_apply_transactions_loop(
         tx_contexts + TransactionValidationContext.SIZE,
@@ -220,7 +226,7 @@ func validate_and_apply_coinbase{range_check_ptr, hash_ptr: HashBuiltin*, utreex
 
     let tx_context = context.transaction_contexts[0];
 
-    /// Validate the coinbase input
+    // / Validate the coinbase input
     // Ensure there is exactly one coinbase input
     with_attr error_message("`input_count` of coinbase should be 1") {
         assert 1 = tx_context.transaction.input_count;
@@ -234,17 +240,12 @@ func validate_and_apply_coinbase{range_check_ptr, hash_ptr: HashBuiltin*, utreex
         // Using `memset` as hack for `assert`
         memset(tx_context.transaction.inputs[0].txid, 0x00000000, 8);
     }
-    
 
-    /// Validate the outputs' amounts
-    // Sum up the total amount of all outputs 
+    // / Validate the outputs' amounts
+    // Sum up the total amount of all outputs
     // and also add the outputs to the UTXO set.
-    let (total_output_amount) = validate_outputs_loop(
-        tx_context,
-        tx_context.transaction.outputs,
-        0,
-        0,
-        tx_context.transaction.output_count
+    let total_output_amount = validate_outputs_loop(
+        tx_context, tx_context.transaction.outputs, 0, 0, tx_context.transaction.output_count
     );
     // Ensure the total amount is at most the block reward + TX fees
     let block_reward = compute_block_reward(context.header_context.block_height);
@@ -256,12 +257,11 @@ func validate_and_apply_coinbase{range_check_ptr, hash_ptr: HashBuiltin*, utreex
     return ();
 }
 
-
 // Compute the miner's block reward with respect to the block height
 //
-func compute_block_reward{range_check_ptr} (block_height) -> felt {
-    let (number_halvings,_) = unsigned_div_rem(block_height , 210000);
+func compute_block_reward{range_check_ptr}(block_height) -> felt {
+    let (number_halvings, _) = unsigned_div_rem(block_height, 210000);
     let denominator = pow2(number_halvings);
-    let (block_reward,_) = unsigned_div_rem(50*10**8 , denominator); 
+    let (block_reward, _) = unsigned_div_rem(50 * 10 ** 8, denominator);
     return block_reward;
 }

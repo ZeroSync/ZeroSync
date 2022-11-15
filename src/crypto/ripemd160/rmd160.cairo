@@ -48,7 +48,7 @@ const RMD160_STATE_SIZE_FELTS = 5;
 // Output is an array of 5 32-bit words (big endian).
 func compute_rmd160{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, rmd160_ptr: felt*}(
     data: felt*, n_bytes: felt, n_felts: felt
-) -> (output: felt*) {
+) -> felt* {
     alloc_locals;
 
     // Pad the input data
@@ -72,7 +72,7 @@ func compute_rmd160{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, rmd160_ptr: f
     change_uint32_byte_order_array(rmd160_ptr, rmd160_ptr + RMD160_STATE_SIZE_FELTS, output);
     // Set `rmd160_ptr` to the next chunk.
     let rmd160_ptr = rmd160_ptr + RMD160_STATE_SIZE_FELTS;
-    return (output,);
+    return output;
 }
 
 // Inner loop for rmd160. `rmd160_ptr` points to the start of the block.
@@ -422,20 +422,20 @@ func rmd160_compress{bitwise_ptr: BitwiseBuiltin*, range_check_ptr}(
     // combine results
     let (local res: felt*) = alloc();
 
-    let (res0) = uint32_add([state + 1], cc);
-    let (res0) = uint32_add(res0, ddd);
+    let res0 = uint32_add([state + 1], cc);
+    let res0 = uint32_add(res0, ddd);
 
-    let (res1) = uint32_add([state + 2], dd);
-    let (res1) = uint32_add(res1, eee);
+    let res1 = uint32_add([state + 2], dd);
+    let res1 = uint32_add(res1, eee);
 
-    let (res2) = uint32_add([state + 3], ee);
-    let (res2) = uint32_add(res2, aaa);
+    let res2 = uint32_add([state + 3], ee);
+    let res2 = uint32_add(res2, aaa);
 
-    let (res3) = uint32_add([state + 4], aa);
-    let (res3) = uint32_add(res3, bbb);
+    let res3 = uint32_add([state + 4], aa);
+    let res3 = uint32_add(res3, bbb);
 
-    let (res4) = uint32_add([state + 0], bb);
-    let (res4) = uint32_add(res4, ccc);
+    let res4 = uint32_add([state + 0], bb);
+    let res4 = uint32_add(res4, ccc);
 
     assert output[0] = res0;
     assert output[1] = res1;

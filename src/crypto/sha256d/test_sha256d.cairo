@@ -10,12 +10,8 @@ from starkware.cairo.common.uint256 import Uint256
 from crypto.sha256.sha256 import finalize_sha256
 
 from utils.python_utils import setup_python_defs
-from crypto.sha256d.sha256d import (
-    _compute_double_sha256,
-    sha256d,
-    assert_hashes_equal,
-    HASH_FELT_SIZE,
-)
+from crypto.hash_utils import assert_hashes_equal
+from crypto.sha256d.sha256d import _compute_double_sha256, sha256d
 
 @external
 func test_compute_double_sha256{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
@@ -30,7 +26,7 @@ func test_compute_double_sha256{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}()
     let sha256_ptr: felt* = alloc();
     let sha256_ptr_start = sha256_ptr;
     with sha256_ptr {
-        let (hash) = sha256d(input, byte_size);
+        let hash = sha256d(input, byte_size);
     }
     // 8cb9012517c817fead650287d61bdd9c68803b6bf9c64133dcab3e65b5a50cb9
     assert hash[0] = 0x4f8b42c2;
@@ -84,7 +80,7 @@ func test_sha256d_long_input{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     let sha256_ptr: felt* = alloc();
     let sha256_ptr_start = sha256_ptr;
     with sha256_ptr {
-        let (hash) = sha256d(input, byte_size);
+        let hash = sha256d(input, byte_size);
     }
 
     assert_hashes_equal(hash_expected, hash);
@@ -125,7 +121,7 @@ func test_sha256d_long_input_2{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() 
     let sha256_ptr: felt* = alloc();
     let sha256_ptr_start = sha256_ptr;
     with sha256_ptr {
-        let (hash) = sha256d(input, 135);
+        let hash = sha256d(input, 135);
     }
 
     assert_hashes_equal(hash_expected, hash);

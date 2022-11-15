@@ -1,102 +1,53 @@
 from starkware.cairo.common.alloc import alloc
-from starkware.cairo.common.math_cmp import is_le
+from starkware.cairo.common.math import sign, abs_value, assert_le
 
 const TIMESTAMP_COUNT = 11;
 const TIMESTAMP_MEDIAN_INDEX = 5;
 
-// TODO: implement the efficient algorithm to compute the median using a hint.
-// To verify the hint iterate through the array and ensure that 
-// median_occurences > abs( num_elements_lt_median - num_elements_gt_median )
-
-func compute_timestamps_median{range_check_ptr}(timestamp_array : felt*) -> (
-        median_value : felt
-    ) {
-    let (sorted_timestamp_array : felt*) = sort_unsigned(TIMESTAMP_COUNT, timestamp_array);
-    return (median_value=sorted_timestamp_array[TIMESTAMP_MEDIAN_INDEX]);
-}
-
-// Implement a naive sort algorithm for an array of felts without using any hint.
-// Complexity is O(n^2) but this is not a problem as it is used to sort an array of only 11 elements.
-func sort_unsigned{range_check_ptr}(arr_len : felt, arr : felt*) -> (sorted_array : felt*) {
+// Compute the median value of an array of 11 timestamps
+//
+func compute_timestamps_median{range_check_ptr}(timestamp_array: felt*) -> felt {
     alloc_locals;
-
-    let (local sorted_array : felt*) = alloc();
-    sort_unsigned_loop(arr_len, arr, sorted_array);
-    return (sorted_array=sorted_array);
+    // Compute the median using a hint
+    local median;
+    %{
+        timestamps = []
+        for i in range(ids.TIMESTAMP_COUNT):
+            timestamps.append( memory[ids.timestamp_array + i] )
+        timestamps.sort()
+        ids.median = timestamps[ids.TIMESTAMP_MEDIAN_INDEX]
+    %}
+    verify_timestamps_median(timestamp_array, median);
+    return median;
 }
 
-func sort_unsigned_loop{range_check_ptr}(arr_len : felt, arr : felt*, sorted_array : felt*){
-    if (arr_len == 0) {
-        return ();
+// Verify the median value of an array of 11 timestamps
+//
+func verify_timestamps_median{range_check_ptr}(timestamp_array: felt*, median) {
+    // To verify the hint iterate through the array and ensure that
+    // num_elems_eq_median > abs( num_elems_lt_median - num_elems_gt_median )
+    tempvar signs_diff = 0;
+    tempvar n_median_occurences = 0;
+    tempvar timestamp_ptr = timestamp_array;
+    tempvar n_timestamps = 11;
+    tempvar range_check_ptr = range_check_ptr;
+
+    verify_median_loop:
+    let delta_sign = sign([timestamp_ptr] - median);
+    if (delta_sign == 0) {
+        tempvar signs_diff = signs_diff;
+        tempvar n_median_occurences = n_median_occurences + 1;
+    } else {
+        tempvar signs_diff = signs_diff + delta_sign;
+        tempvar n_median_occurences = n_median_occurences;
     }
-
-    // find the lowest element out of remaining elements
-    let (lowest_element_index, lowest_element) = find_lowest_element(arr_len, arr);
-
-    // push the lowest element to the sorted array
-    assert sorted_array[0] = lowest_element;
-
-    // remove the lowest element from the remaining elements
-    let (arr : felt*) = copy_array_without_index(arr_len, arr, lowest_element_index);
-
-    sort_unsigned_loop(arr_len - 1, arr, sorted_array + 1);
-    return ();
-}
-
-func find_lowest_element{range_check_ptr}(arr_len : felt, arr : felt*) -> (
-    lowest_element_index : felt, lowest_element : felt
-){
-    return find_lowest_element_loop(0, arr_len, arr, 0);
-}
-
-func find_lowest_element_loop{range_check_ptr}(
-    index : felt, arr_len : felt, arr : felt*, lowest_element_index : felt
-) -> (lowest_element_index : felt, lowest_element : felt){
-    if (index == arr_len) {
-        return (
-            lowest_element_index=lowest_element_index, lowest_element=arr[lowest_element_index]
-        );
+    tempvar timestamp_ptr = timestamp_ptr + 1;
+    tempvar n_timestamps = n_timestamps - 1;
+    tempvar range_check_ptr = range_check_ptr;
+    jmp verify_median_loop if n_timestamps != 0;
+    let absolute_signs = abs_value(signs_diff);
+    with_attr error_message("invalid timestamps median") {
+        assert_le(absolute_signs + 1, n_median_occurences);
     }
-
-    let is_lower = is_le(arr[index], arr[lowest_element_index]);
-    let new_lowest_element_index = index * is_lower + lowest_element_index * (1 - is_lower);
-
-    return find_lowest_element_loop(index + 1, arr_len, arr, new_lowest_element_index);
-}
-
-func copy_array_without_index{range_check_ptr}(
-    arr_len : felt, arr : felt*, removed_index : felt
-) -> (new_arr : felt*) {
-    alloc_locals;
-
-    let (local new_arr : felt*) = alloc();
-    copy_array_without_index_loop(0, arr_len, arr, removed_index, 0, new_arr);
-    return (new_arr=new_arr);
-}
-
-func copy_array_without_index_loop{range_check_ptr}(
-    index : felt,
-    arr_len : felt,
-    arr : felt*,
-    removed_index : felt,
-    new_index : felt,
-    new_arr : felt*,
-){
-    if (index == arr_len) {
-        return ();
-    }
-
-    if (index == removed_index) {
-        copy_array_without_index_loop(
-            index + 1, arr_len, arr, removed_index, new_index, new_arr
-        );
-        return ();
-    }
-
-    assert new_arr[new_index] = arr[index];
-
-    copy_array_without_index_loop(
-        index + 1, arr_len, arr, removed_index, new_index + 1, new_arr
-    );
     return ();
 }
