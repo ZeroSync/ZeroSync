@@ -5,7 +5,7 @@ from starkware.cairo.common.cairo_builtins import BitwiseBuiltin, HashBuiltin
 from starkware.cairo.common.serialize import serialize_word
 
 from serialize.serialize import init_reader
-from crypto.sha256d.sha256d import HASH_FELT_SIZE
+from crypto.hash_utils import HASH_FELT_SIZE
 from block.block_header import ChainState
 from block.block import State, validate_and_apply_block, read_block_validation_context
 from utreexo.utreexo import UTREEXO_ROOTS_LEN

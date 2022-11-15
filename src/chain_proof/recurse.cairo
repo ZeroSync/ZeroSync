@@ -6,7 +6,7 @@ from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.hash import HashBuiltin
 from stark_verifier.air.stark_proof import StarkProof, read_stark_proof
 from stark_verifier.stark_verifier import verify
-from crypto.sha256d.sha256d import assert_hashes_equal
+from crypto.hash_utils import assert_hashes_equal
 
 
 func recurse{pedersen_ptr: HashBuiltin*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(block_height, expected_program_hash){

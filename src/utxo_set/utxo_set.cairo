@@ -3,7 +3,7 @@ from starkware.cairo.common.cairo_builtins import BitwiseBuiltin, HashBuiltin
 from starkware.cairo.common.math import unsigned_div_rem
 from starkware.cairo.common.hash import hash2
 
-from crypto.sha256d.sha256d import HASH_FELT_SIZE
+from crypto.hash_utils import HASH_FELT_SIZE
 from utils.python_utils import setup_python_defs
 from utreexo.utreexo import utreexo_add, utreexo_delete, fetch_inclusion_proof
 

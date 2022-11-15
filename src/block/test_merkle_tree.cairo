@@ -9,7 +9,7 @@
 
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
-from crypto.sha256d.sha256d import assert_hashes_equal
+from crypto.hash_utils import assert_hashes_equal
 from block.merkle_tree import compute_merkle_root
 from utils.python_utils import setup_python_defs
 

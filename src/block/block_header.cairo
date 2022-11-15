@@ -27,7 +27,8 @@ from serialize.serialize import (
     init_reader,
     read_bytes,
 )
-from crypto.sha256d.sha256d import sha256d_felt_sized, assert_hashes_equal
+from crypto.sha256d.sha256d import sha256d_felt_sized
+from crypto.hash_utils import assert_hashes_equal
 from utils.pow2 import pow2
 from utils.compute_median import compute_timestamps_median
 // The size of a block header is 80 bytes

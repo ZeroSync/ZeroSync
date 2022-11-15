@@ -12,7 +12,7 @@ from starkware.cairo.common.uint256 import Uint256
 
 from utils.python_utils import setup_python_defs
 from crypto.sha256.sha256 import compute_sha256
-from crypto.sha256d.sha256d import assert_hashes_equal
+from crypto.hash_utils import assert_hashes_equal
 from crypto.sha256.sha256 import finalize_sha256
 
 @external

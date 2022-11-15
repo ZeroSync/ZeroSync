@@ -6,13 +6,8 @@
 
 from starkware.cairo.common.math import unsigned_div_rem
 from starkware.cairo.common.alloc import alloc
-from crypto.sha256d.sha256d import (
-    sha256d_felt_sized,
-    copy_hash,
-    HASH_SIZE,
-    HASH_FELT_SIZE,
-    assert_hashes_not_equal,
-)
+from crypto.sha256d.sha256d import sha256d_felt_sized
+from crypto.hash_utils import copy_hash, assert_hashes_not_equal, HASH_FELT_SIZE
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 
 // Compute the Merkle root hash of a set of hashes

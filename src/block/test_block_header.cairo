@@ -10,7 +10,7 @@ from starkware.cairo.common.memcpy import memcpy
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from utils.python_utils import setup_python_defs
 from serialize.serialize import init_reader, init_writer, flush_writer
-from crypto.sha256d.sha256d import assert_hashes_equal
+from crypto.hash_utils import assert_hashes_equal
 from block.block_header import (
     read_block_header,
     bits_to_target,

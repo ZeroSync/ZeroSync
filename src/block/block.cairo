@@ -28,7 +28,7 @@ from transaction.transaction import (
     validate_outputs_loop,
 )
 from block.merkle_tree import compute_merkle_root
-from crypto.sha256d.sha256d import assert_hashes_equal, copy_hash, HASH_FELT_SIZE
+from crypto.hash_utils import assert_hashes_equal, copy_hash, HASH_FELT_SIZE
 
 // The state of the headers chain and the UTXO set
 struct State {
