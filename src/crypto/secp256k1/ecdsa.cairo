@@ -9,15 +9,16 @@ from starkware.cairo.common.cairo_secp.signature import (
     div_mod_n,
 )
 
-func get_ecpoint_from_pubkey{range_check_ptr}(x: Uint256, y: Uint256) -> (ec : EcPoint) {
+func get_ecpoint_from_pubkey{range_check_ptr}(x: Uint256, y: Uint256) -> EcPoint {
     if (y.low - 2) * (y.low - 3) == 0 {
         let (x1: BigInt3) = uint256_to_bigint(x);
-        let (ec: EcPoint) = get_point_from_x(x1, y.low);
-        return (ec=ec);
+        let (point: EcPoint) = get_point_from_x(x1, y.low);
+        return point;
     }
     let (x1: BigInt3) = uint256_to_bigint(x);
     let (y1: BigInt3) = uint256_to_bigint(y);
-    return (ec=EcPoint(x1, y1));
+    let point = EcPoint(x1, y1)
+    return point;
 }
 
 // Verifies a Secp256k1 ECDSA signature.
