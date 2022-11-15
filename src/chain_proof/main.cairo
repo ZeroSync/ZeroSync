@@ -78,7 +78,7 @@ func main{
     local epoch_start_time: felt;
     let (prev_timestamps) = alloc();
     let (prev_utreexo_roots) = alloc();
-    let (program_hash) = alloc();
+    local program_hash: felt;
     %{
         ids.block_height = program_input["block_height"] if program_input["block_height"] != -1 else PRIME - 1
         ids.total_work = program_input["total_work"]
@@ -87,7 +87,7 @@ func main{
         ids.epoch_start_time = program_input["epoch_start_time"]
         segments.write_arg(ids.prev_timestamps, program_input["prev_timestamps"])
         segments.write_arg(ids.prev_utreexo_roots, felts_from_hex_strings( program_input["utreexo_roots"] ) )
-        segments.write_arg(ids.program_hash, felts_from_hash( program_input["program_hash"]) )
+        ids.program_hash = int( program_input["program_hash"], 16)
     %}
 
     let prev_chain_state = ChainState(
@@ -102,14 +102,12 @@ func main{
     }
 
     // Validate the previous chain proof
-    if(next_state.chain_state.block_height != 0){        
-        recurse(program_hash);
-    }
+    recurse(next_state.chain_state.block_height, program_hash);
     
     // Print the next state
     serialize_chain_state(next_state.chain_state);
     serialize_array(next_state.utreexo_roots, UTREEXO_ROOTS_LEN);
-    serialize_array(program_hash, HASH_FELT_SIZE);
+    serialize_word(program_hash);
 
     // finalize sha256_ptr
     finalize_sha256(sha256_ptr_start, sha256_ptr);
