@@ -1,4 +1,5 @@
 bin/
+target/
 build
 zerosync.egg-info
 .DS_Store
