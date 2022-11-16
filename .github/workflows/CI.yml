@@ -38,5 +38,7 @@ jobs:
         run: python src/utreexo/bridge_node.py &
       - name: Install Protostar
         run: curl -L https://raw.githubusercontent.com/software-mansion/protostar/master/install.sh | bash -s -- -v $PROTOSTAR_VERSION
-      - name: protostar
+      - name: Run Unit Tests
         run: ../../../.protostar/dist/protostar/protostar test --cairo-path=./src target src
+      - name: Run Integration Tests
+        run: ../../../.protostar/dist/protostar/protostar test --cairo-path=./src tests

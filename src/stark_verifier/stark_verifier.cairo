@@ -260,7 +260,7 @@ func process_aux_segments{
         trace_commitments=trace_commitments + STATE_SIZE_FELTS,
         trace_commitments_len=trace_commitments_len - 1,
         aux_segment_rands=aux_segment_rands + 1,
-        aux_trace_rand_elements=aux_trace_rand_elements,
+        aux_trace_rand_elements=aux_trace_rand_elements + [aux_segment_rands],
     );
     return ();
 }

@@ -5,7 +5,7 @@ use std::fs::File;
 use std::io::{BufReader, Read};
 use std::iter::zip;
 use winter_utils::{Deserializable, SliceReader};
-use winterfell::{StarkProof, HashFunction, FieldExtension};
+use winterfell::{FieldExtension, HashFunction, StarkProof};
 
 use winter_air::proof::{Commitments, Context, OodFrame};
 use winter_air::DefaultEvaluationFrame;
@@ -122,7 +122,7 @@ impl Writeable for Context {
     fn write_into(&self, target: &mut DynamicMemory) {
         self.trace_layout().write_into(target);
         self.trace_length().write_into(target); // Do not serialize as a power of two
-                                                
+
         self.get_trace_info().meta().len().write_into(target);
         target.write_array(self.get_trace_info().meta().to_vec());
 
@@ -145,15 +145,21 @@ impl WriteableWith<&ProcessorAir> for Commitments {
             .parse::<Blake2s_256<Felt>>(num_trace_segments, num_fri_layers)
             .unwrap();
 
-        for trace_commitment in trace_commitments {
-            ByteDigest(trace_commitment.as_bytes()).write_into(target);
-        }
+        target.write_array(
+            trace_commitments
+                .iter()
+                .map(|x| ByteDigest(x.as_bytes()))
+                .collect::<Vec<_>>(),
+        );
 
         ByteDigest(constraint_commitment.as_bytes()).write_into(target);
 
-        for fri_commitment in fri_commitments {
-            ByteDigest(fri_commitment.as_bytes()).write_into(target);
-        }
+        target.write_array(
+            fri_commitments
+                .iter()
+                .map(|x| ByteDigest(x.as_bytes()))
+                .collect::<Vec<_>>(),
+        );
     }
 }
 
@@ -253,8 +259,13 @@ impl Writeable for Table<Felt> {
 impl Writeable for Felt {
     fn write_into(&self, target: &mut DynamicMemory) {
         let mut hex_string = "0x".to_owned();
+        // TODO: Why do we not have to_be_bytes implemented?
         for byte in self.to_raw().to_le_bytes() {
-            hex_string += format!("{:02x?}", byte).as_str();
+            hex_string += format!("{:02x?}", byte)
+                .chars()
+                .rev()
+                .collect::<String>()
+                .as_str();
         }
         target.write_hex_value(hex_string);
     }
