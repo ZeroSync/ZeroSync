@@ -74,9 +74,9 @@ cmd = f'cairo-compile src/chain_proof/main.cairo --cairo_path src --output {outp
 print( os.popen(cmd).read() )
 
 
-# Copy genesis state into the output directory
+# Copy genesis state.json into the output directory
 # also read the program_length from program.json
-# and add it to the state.json object
+# and add it to the state.json
 f = open('src/chain_proof/state_0.json')
 genesis_state = json.load(f)
 

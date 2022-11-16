@@ -1,5 +1,6 @@
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
+from starkware.cairo.common.registers import get_fp_and_pc
 
 from stark_verifier.air.stark_proof import ParsedOodFrame, StarkProof
 from stark_verifier.air.air_instance import AirInstance
@@ -59,7 +60,8 @@ func read_trace_commitments{channel: Channel}() -> felt* {
 }
 
 func read_constraint_commitment{channel: Channel}() -> felt* {
-    return channel.constraint_root;
+    let (__fp__, _) = get_fp_and_pc(); 
+    return &channel.constraint_root;
 }
 
 func read_ood_trace_frame{channel: Channel}() -> (res1: EvaluationFrame, res2: EvaluationFrame) {
