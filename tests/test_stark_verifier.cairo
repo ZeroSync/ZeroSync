@@ -29,7 +29,7 @@ func test_read_stark_proof{}() {
         from tests.utils import parse_proof
         json_data = parse_proof('fibonacci')
     %}
-    let (proof: StarkProof*) = read_stark_proof();
+    let proof: StarkProof* = read_stark_proof();
 
     %{ 
         # TODO: Assert that all proof fields were deserialized correctly using utils.py
@@ -48,7 +48,7 @@ func test_read_pub_inputs{}() {
         from tests.utils import parse_public_inputs
         json_data = parse_public_inputs('fibonacci')
     %}
-    let (pub_inputs: PublicInputs*) = read_public_inputs();
+    let pub_inputs: PublicInputs* = read_public_inputs();
 
     %{
         # TODO: Assert that all proof fields were deserialized correctly using utils.py
@@ -69,13 +69,13 @@ func test_verify{
         from tests.utils import parse_proof
         json_data = parse_proof('fibonacci')
     %}
-    let (proof: StarkProof*) = read_stark_proof();
+    let proof: StarkProof* = read_stark_proof();
 
     %{ 
         from tests.utils import parse_public_inputs
         json_data = parse_public_inputs('fibonacci')
     %}
-    let (pub_inputs: PublicInputs*) = read_public_inputs();
+    let pub_inputs: PublicInputs* = read_public_inputs();
  
     verify(proof, pub_inputs);
     return ();
