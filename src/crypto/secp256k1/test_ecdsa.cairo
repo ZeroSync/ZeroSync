@@ -1,9 +1,7 @@
 %lang starknet
 
 from starkware.cairo.common.uint256 import Uint256
-from starkware.cairo.common.cairo_secp.ec import EcPoint
-from starkware.cairo.common.cairo_secp.bigint import BigInt3
-from crypto.secp256k1.ecdsa import verify_ecdsa_secp256k1, _verify_ecdsa_secp256k1
+from crypto.secp256k1.ecdsa import verify_ecdsa_secp256k1
 
 @external
 func test_ecsda_secp256k1{range_check_ptr}() {
