@@ -31,18 +31,19 @@ func recurse{pedersen_ptr: HashBuiltin*, range_check_ptr, bitwise_ptr: BitwiseBu
         mem=&pub_inputs.mem, address=pub_inputs.init._pc, length=mem_length, output=mem_values
     );
 
-    // 2. Compute the program's hash and compare it to the `expected_program_hash` given to us 
-    // as a public input to the child proof
+    // 2. Compute the program's hash and compare it to the `expected_program_hash` 
+    // given to us as a public input to the child proof. This is to resolve the hash cycle,
+    // because a program cannot contain its own hash.
     let program_hash = compute_program_hash(mem_values, program_length);
     assert expected_program_hash = program_hash;
 
-    // 2. Read the parent proof from the location it was written to by main.py
+    // 3. Read the parent proof from the location it was written to by main.py
     let proof = parse_proof();
 
-    // 3. Verify the proof with its public inputs using the verifier
+    // 4. Verify the proof with its public inputs using the verifier
     verify(proof, pub_inputs_ptr);
 
-    // 4. Parse the `next_state` of the parent proof from its public inputs into a bitcoin `State` 
+    // 5. Parse the `next_state` of the parent proof from its public inputs
     // and then verify it is equal to the child proof's `prev_state`
     verify_prev_state(mem_values + program_length, prev_state, program_hash, program_length);
 
