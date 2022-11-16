@@ -10,14 +10,14 @@ from starkware.cairo.common.cairo_secp.signature import (
 )
 
 func get_ecpoint_from_pubkey{range_check_ptr}(x: Uint256, y: Uint256) -> EcPoint {
-    if (y.low - 2) * (y.low - 3) == 0 {
+    if ((y.low - 2) * (y.low - 3) == 0) {
         let (x1: BigInt3) = uint256_to_bigint(x);
         let (point: EcPoint) = get_point_from_x(x1, y.low);
         return point;
     }
     let (x1: BigInt3) = uint256_to_bigint(x);
     let (y1: BigInt3) = uint256_to_bigint(y);
-    let point = EcPoint(x1, y1)
+    let point = EcPoint(x1, y1);
     return point;
 }
 
@@ -30,7 +30,7 @@ func verify_ecdsa_secp256k1{range_check_ptr}(
 ) {
     alloc_locals;
 
-    let (ec: EcPoint) = get_ecpoint_from_pubkey(point_x, point_y)
+    let pt: EcPoint = get_ecpoint_from_pubkey(point_x, point_y);
     let (r: BigInt3) = uint256_to_bigint(sig_r);
     let (s: BigInt3) = uint256_to_bigint(sig_s);
     let (z: BigInt3) = uint256_to_bigint(tx_hash);
@@ -43,13 +43,13 @@ func verify_ecdsa_secp256k1{range_check_ptr}(
     let (gen_pt: EcPoint) = get_generator_point();
 
     // Compute u1 and u2.
-    let (u1: BigInt3) = div_mod_n(msg_hash, s);
+    let (u1: BigInt3) = div_mod_n(z, s);
     let (u2: BigInt3) = div_mod_n(r, s);
 
     // The following assert also implies that res is not the zero point.
     with_attr error_message("Invalid signature.") {
         let (gen_u1: EcPoint) = ec_mul(gen_pt, u1);
-        let (pub_u2: EcPoint) = ec_mul(public_key_pt, u2);
+        let (pub_u2: EcPoint) = ec_mul(pt, u2);
         let (res) = ec_add(gen_u1, pub_u2);
         assert res.x = r;
     }
