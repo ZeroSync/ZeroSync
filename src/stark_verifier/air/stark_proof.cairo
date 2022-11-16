@@ -7,9 +7,9 @@ from stark_verifier.utils import Vec, Digest
 
 struct TraceLayout {
     main_segment_width: felt,
+    num_aux_segments: felt,
     aux_segment_widths: felt*,
     aux_segment_rands: felt*,
-    num_aux_segments: felt,
 }
 
 struct ProofOptions {
