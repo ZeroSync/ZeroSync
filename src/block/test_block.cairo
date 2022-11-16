@@ -12,7 +12,7 @@ from starkware.cairo.common.memcpy import memcpy
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin, HashBuiltin
 
 from utils.python_utils import setup_python_defs
-from crypto.sha256.sha256 import finalize_sha256
+from crypto.sha256 import finalize_sha256
 from transaction.transaction import TransactionValidationContext
 from block.block_header import ChainState
 from utreexo.utreexo import utreexo_init, utreexo_add

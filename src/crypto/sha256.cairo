@@ -9,7 +9,7 @@ from utils.pow2 import pow2
 
 from crypto.hash_utils import HASH_FELT_SIZE
 
-from crypto.sha256.packed_sha256 import (
+from crypto.sha256_packed import (
     BLOCK_SIZE,
     compute_message_schedule,
     sha2_compress,

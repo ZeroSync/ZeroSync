@@ -15,7 +15,7 @@ from block.block_header import (
     read_block_header,
     bits_to_target,
     target_to_bits,
-    BLOCK_HEADER_FELT_SIZE,
+    BLOCK_HEADER_SIZE,
     BlockHeaderValidationContext,
     read_block_header_validation_context,
     validate_and_apply_block_header,
