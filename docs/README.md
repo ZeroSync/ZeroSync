@@ -24,11 +24,23 @@ python src/utreexo/bridge_node.py
 ```
 
 
-## Run all Tests
+## Run all Unit Tests
 ```sh
 protostar test --cairo-path=./src target src
 ```
 
+## Build Parser
+```sh
+cd src/stark_verifier/parser/
+cargo +nightly build
+
+cd ../../..
+```
+
+## Run all Integration Tests
+```sh
+protostar test --cairo-path=./src tests
+```
 
 
 ## Run the Chain Prover
