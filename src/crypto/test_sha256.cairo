@@ -11,14 +11,13 @@ from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.uint256 import Uint256
 
 from utils.python_utils import setup_python_defs
-from crypto.sha256.sha256 import compute_sha256
-from crypto.sha256d.sha256d import assert_hashes_equal
-from crypto.sha256.sha256 import finalize_sha256
+from crypto.hash_utils import assert_hashes_equal
+from crypto.sha256 import compute_sha256, finalize_sha256
 
 @external
 func test_sha256{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     alloc_locals;
-    
+
     // initialize sha256_ptr
     let sha256_ptr: felt* = alloc();
     let sha256_ptr_start = sha256_ptr;
@@ -30,7 +29,7 @@ func test_sha256{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
 
     // ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad
     with sha256_ptr {
-        let (hash) = compute_sha256(input, byte_size);
+        let hash = compute_sha256(input, byte_size);
     }
 
     assert 0xba7816bf = hash[0];
@@ -46,7 +45,6 @@ func test_sha256{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
 
     return ();
 }
-
 
 // Test a sha256 input with 1'000'000 repetitions of the character "a".
 // This results in a 2'000'000 byte test vector.
@@ -73,14 +71,13 @@ func test_sha256_16M_bits{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     let sha256_ptr: felt* = alloc();
     let sha256_ptr_start = sha256_ptr;
     with sha256_ptr {
-        let (output) = compute_sha256(input, input_byte_size);
+        let output = compute_sha256(input, input_byte_size);
     }
     assert_hashes_equal(output, expected_output);
     // finalize sha256_ptr
     finalize_sha256(sha256_ptr_start, sha256_ptr);
     return ();
 }
-
 
 // Test a sha256 input with 10'000 repetitions of the character "a".
 // This results in a 20'000 byte test vector.
@@ -105,7 +102,7 @@ func test_sha256_160K_bits{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     let sha256_ptr: felt* = alloc();
     let sha256_ptr_start = sha256_ptr;
     with sha256_ptr {
-        let (output) = compute_sha256(input, input_byte_size);
+        let output = compute_sha256(input, input_byte_size);
     }
     assert_hashes_equal(output, expected_output);
     // finalize sha256_ptr
@@ -137,7 +134,7 @@ func test_sha256_896_bits{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     let sha256_ptr: felt* = alloc();
     let sha256_ptr_start = sha256_ptr;
     with sha256_ptr {
-        let (output) = compute_sha256(input, input_byte_size);
+        let output = compute_sha256(input, input_byte_size);
     }
     assert_hashes_equal(output, expected_output);
     // finalize sha256_ptr
@@ -166,7 +163,7 @@ func test_sha256_64_bytes{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     let sha256_ptr: felt* = alloc();
     let sha256_ptr_start = sha256_ptr;
     with sha256_ptr {
-        let (output) = compute_sha256(input, input_byte_size);
+        let output = compute_sha256(input, input_byte_size);
     }
     assert_hashes_equal(output, expected_output);
     // finalize sha256_ptr
@@ -189,14 +186,14 @@ func test_sha256_uint32_overflow{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
     assert [input + 3] = 0x000010000;
 
     %{ expect_revert() %}
-    
+
     // initialize sha256_ptr
     let sha256_ptr: felt* = alloc();
     let sha256_ptr_start = sha256_ptr;
     with sha256_ptr {
-        let (output) = compute_sha256(input, n_bytes);
+        let output = compute_sha256(input, n_bytes);
     }
-    
+
     // finalize sha256_ptr
     finalize_sha256(sha256_ptr_start, sha256_ptr);
     return ();
@@ -207,11 +204,11 @@ func test_sha256_uint32_overflow{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
 //
 func test_sha256_uint32_padding{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     alloc_locals;
-    
+
     // initialize sha256_ptr
     let sha256_ptr: felt* = alloc();
     let sha256_ptr_start = sha256_ptr;
-    
+
     let n_bytes = 14;
     let (input) = alloc();
     assert [input + 0] = 0xFFFFFFFF;
@@ -219,7 +216,7 @@ func test_sha256_uint32_padding{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}()
     assert [input + 2] = 0xFFFFFFFF;
     assert [input + 3] = 0xFFFFFFFF;
     with sha256_ptr {
-        let (output_0) = compute_sha256(input, n_bytes);
+        let output_0 = compute_sha256(input, n_bytes);
     }
 
     let n_bytes = 14;
@@ -229,11 +226,11 @@ func test_sha256_uint32_padding{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}()
     assert [input + 2] = 0xFFFFFFFF;
     assert [input + 3] = 0xFFFF0000;
     with sha256_ptr {
-        let (output_1) = compute_sha256(input, n_bytes);
+        let output_1 = compute_sha256(input, n_bytes);
     }
 
     assert_hashes_equal(output_0, output_1);
-    
+
     // finalize sha256_ptr
     finalize_sha256(sha256_ptr_start, sha256_ptr);
     return ();

@@ -7,9 +7,9 @@ from stark_verifier.utils import Vec, Digest
 
 struct TraceLayout {
     main_segment_width: felt,
+    num_aux_segments: felt,
     aux_segment_widths: felt*,
     aux_segment_rands: felt*,
-    num_aux_segments: felt,
 }
 
 struct ProofOptions {
@@ -19,7 +19,7 @@ struct ProofOptions {
     hash_fn: felt,
     field_extension: felt,
     fri_folding_factor: felt,
-    fri_max_remainder_size: felt, // stored as power of 2
+    fri_max_remainder_size: felt,  // stored as power of 2
 }
 
 struct Context {
@@ -48,7 +48,7 @@ struct ParsedOodFrame {
 //
 // See also:
 // https://github.com/novifinancial/winterfell/blob/ecea359802538692c4e967b083107c6b08f3302e/air/src/proof/mod.rs#L51
-// 
+//
 struct StarkProof {
     // Basic metadata about the execution of the computation described by this proof.
     context: Context,
@@ -60,7 +60,7 @@ struct StarkProof {
     pow_nonce: felt,
 }
 
-func read_stark_proof() -> (proof: StarkProof*) {
+func read_stark_proof() -> StarkProof* {
     let (proof_ptr: StarkProof*) = alloc();
     %{
         # Note the following:
@@ -71,5 +71,5 @@ func read_stark_proof() -> (proof: StarkProof*) {
         my_memory = [(int(x, 16) if x.startswith('0x') else addr + int(x)) for x in json_data]
         segments.write_arg(addr, my_memory)
     %}
-    return (proof=proof_ptr);
+    return proof_ptr;
 }

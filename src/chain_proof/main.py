@@ -73,18 +73,30 @@ os.popen(f'mkdir -p {output_dir}')
 cmd = f'cairo-compile src/chain_proof/main.cairo --cairo_path src --output {output_dir}/program.json'
 print( os.popen(cmd).read() )
 
-file_name = 'src/chain_proof/state_0.json' 
+
+# Copy genesis state.json into the output directory
+# also read the program_length from program.json
+# and add it to the state.json
+f = open('src/chain_proof/state_0.json')
+genesis_state = json.load(f)
+
+f = open(f'{output_dir}/program.json')
+program = json.load(f)
+genesis_state['program_length'] = len(program['data'])
+
+with open(f'{output_dir}/chain_state.json', 'w') as outfile:
+    outfile.write( json.dumps(genesis_state) )
+
+chain_state_file = f'{output_dir}/chain_state.json'
+
 
 # The first Bitcoin TX ever occured in block 170. The second TX occured in block 181.
 start_block_height = 0
 end_block_height = 100
-
 for i in range(start_block_height, end_block_height):
-	if i >= 1:
-		file_name = f'{output_dir}/chain_state.json'
 
 	# Run the Cairo runner
-	cmd = f'cairo-run --program={output_dir}/program.json --layout=all --print_output --program_input={file_name} --trace_file={output_dir}/trace.bin --memory_file={output_dir}/memory.bin'
+	cmd = f'cairo-run --program={output_dir}/program.json --layout=all --print_output --program_input={chain_state_file} --trace_file={output_dir}/trace.bin --memory_file={output_dir}/memory.bin'
 	program_output_string = os.popen(cmd).read()
 	program_output = parse_cairo_output(program_output_string)
 
@@ -97,14 +109,16 @@ for i in range(start_block_height, end_block_height):
 		'current_target' :   r.read(),
 		'prev_timestamps' :  r.read_n(11),
 		'epoch_start_time' : r.read(),
-		'utreexo_roots' :    felts_to_hex( r.read_n(27) )
+		'utreexo_roots' :    felts_to_hex( r.read_n(27) ),
+		'program_hash' :  	 hex( r.read() ),
+		'program_length' :   r.read()
 	}
 
 	print('block height:', chain_state['block_height'])
 
 
 	# Run Giza prover
-	cmd = f'giza prove --trace={output_dir}/trace.bin --memory={output_dir}/memory.bin --program={output_dir}/program.json --output={output_dir}/proof_{i}.bin --num-outputs=50'
+	cmd = f'giza prove --trace={output_dir}/trace.bin --memory={output_dir}/memory.bin --program={output_dir}/program.json --output={output_dir}/proof.bin --num-outputs=50'
 	program_output_string = os.popen(cmd).read()
 
 	# Write the chain state into a json file

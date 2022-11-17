@@ -1,7 +1,4 @@
-from stark_verifier.air.air_instance import (
-    AirInstance,
-    ConstraintCompositionCoefficients,
-)
+from stark_verifier.air.air_instance import AirInstance, ConstraintCompositionCoefficients
 from stark_verifier.air.transitions.frame import EvaluationFrame
 
 func evaluate_constraints(
@@ -11,7 +8,7 @@ func evaluate_constraints(
     ood_aux_trace_frame: EvaluationFrame,
     aux_trace_rand_elements: felt*,
     z: felt,
-) -> (res: felt) {
+) -> felt {
     // TODO
-    return (res=0);
+    return 0;
 }

@@ -11,10 +11,24 @@ from starkware.cairo.common.math_cmp import is_le_felt
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.memcpy import memcpy
 from starkware.cairo.common.uint256 import (
-    Uint256, uint256_neg, uint256_add, uint256_sub, uint256_mul, uint256_unsigned_div_rem )
+    Uint256,
+    uint256_neg,
+    uint256_add,
+    uint256_sub,
+    uint256_mul,
+    uint256_unsigned_div_rem,
+)
 from serialize.serialize import (
-    Reader, read_uint32, read_hash, UINT32_SIZE, BYTE, init_reader, read_bytes )
-from crypto.sha256d.sha256d import sha256d_felt_sized, assert_hashes_equal
+    Reader,
+    read_uint32,
+    read_hash,
+    UINT32_SIZE,
+    BYTE,
+    init_reader,
+    read_bytes,
+)
+from crypto.hash256 import hash256
+from crypto.hash_utils import assert_hashes_equal
 from utils.pow2 import pow2
 from utils.compute_median import compute_timestamps_median
 // The size of a block header is 80 bytes
@@ -27,11 +41,10 @@ const MAX_BITS = 0x1d00FFFF;
 // The minimum amount of work required for a block to be valid (represented as `target`)
 const MAX_TARGET = 0x00000000FFFF0000000000000000000000000000000000000000000000000000;
 // An epoch should be two weeks (represented as number of seconds)
-// seconds/minute * minutes/hour * hours/day * 14 days 
+// seconds/minute * minutes/hour * hours/day * 14 days
 const EXPECTED_EPOCH_TIMESPAN = 60 * 60 * 24 * 14;
-// Number of blocks per epoch 
+// Number of blocks per epoch
 const BLOCKS_PER_EPOCH = 2016;
-
 
 // Definition of a Bitcoin block header
 //
@@ -58,23 +71,21 @@ struct BlockHeader {
     nonce: felt,
 }
 
-
 // Read a BlockHeader from a Uint32 array
 //
-func read_block_header{reader: Reader, bitwise_ptr: BitwiseBuiltin*}() -> (result: BlockHeader) {
+func read_block_header{reader: Reader, bitwise_ptr: BitwiseBuiltin*}() -> BlockHeader {
     alloc_locals;
 
-    let (version) = read_uint32();
-    let (prev_block_hash) = read_hash();
-    let (merkle_root_hash) = read_hash();
-    let (time) = read_uint32();
-    let (bits) = read_uint32();
-    let (nonce) = read_uint32();
+    let version = read_uint32();
+    let prev_block_hash = read_hash();
+    let merkle_root_hash = read_hash();
+    let time = read_uint32();
+    let bits = read_uint32();
+    let nonce = read_uint32();
 
-    return (BlockHeader(
-        version, prev_block_hash, merkle_root_hash, time, bits, nonce),);
+    let block_header = BlockHeader(version, prev_block_hash, merkle_root_hash, time, bits, nonce);
+    return block_header;
 }
-
 
 // A summary of the current state of a block chain
 //
@@ -100,11 +111,9 @@ struct ChainState {
     prev_timestamps: felt*,
 }
 
-
 // The validation context for block headers
 //
 struct BlockHeaderValidationContext {
-
     // The block header parsed into a struct
     block_header: BlockHeader,
 
@@ -124,7 +133,7 @@ struct BlockHeaderValidationContext {
 
 // Fetch a block header from our blockchain data provider
 //
-func fetch_block_header(block_height) -> (raw_block_header: felt*) {
+func fetch_block_header(block_height) -> felt* {
     let (raw_block_header) = alloc();
 
     %{
@@ -145,45 +154,39 @@ func fetch_block_header(block_height) -> (raw_block_header: felt*) {
         from_hex(block_hex, ids.raw_block_header)
     %}
 
-    return (raw_block_header,);
+    return raw_block_header;
 }
-
 
 // Read a block header and its validation context from a reader and a previous validation context
 //
-func read_block_header_validation_context{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, sha256_ptr: felt*}(
-    prev_chain_state: ChainState) -> (context: BlockHeaderValidationContext) {
+func read_block_header_validation_context{
+    range_check_ptr, bitwise_ptr: BitwiseBuiltin*, sha256_ptr: felt*
+}(prev_chain_state: ChainState) -> BlockHeaderValidationContext {
     alloc_locals;
 
     let block_height = prev_chain_state.block_height + 1;
 
-    let (raw_block_header) = fetch_block_header(block_height);
-    let (reader) = init_reader(raw_block_header);
+    let raw_block_header = fetch_block_header(block_height);
+    let reader = init_reader(raw_block_header);
 
-    let (block_header) = read_block_header{reader=reader}();
+    let block_header = read_block_header{reader=reader}();
 
-    let (target) = bits_to_target(block_header.bits);
+    let target = bits_to_target(block_header.bits);
 
-    let (block_hash) = sha256d_felt_sized(raw_block_header, BLOCK_HEADER_FELT_SIZE);
+    let block_hash = hash256(raw_block_header, BLOCK_HEADER_SIZE);
 
-    return (
-        BlockHeaderValidationContext(
-            block_header,
-            block_hash,
-            target,
-            prev_chain_state,
-            block_height
-        ),
+    let ctx = BlockHeaderValidationContext(
+        block_header, block_hash, target, prev_chain_state, block_height
     );
+    return ctx;
 }
-
 
 // Calculate target from bits
 //
 // See also:
 // - https://developer.bitcoin.org/reference/block_chain.html#target-nbits
 //
-func bits_to_target{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(bits) -> (target: felt) {
+func bits_to_target{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(bits) -> felt {
     alloc_locals;
     // Ensure that the max target does not exceeded (0x1d00FFFF)
     with_attr error_message("Bits ({bits}) exceeded the max target ({MAX_BITS}).") {
@@ -211,20 +214,20 @@ func bits_to_target{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(bits) -> (tar
     if (is_greater_than_2 == 0) {
         let shift = pow2(8 * (3 - exponent));
         let (target, _rem) = unsigned_div_rem(significand, shift);
-        return (target=target);
+        return target;
     } else {
         let shift = pow2(8 * (exponent - 3));
         let target = significand * shift;
-        return (target=target);
+        return target;
     }
 }
-
 
 // Validate a block header, apply it to the previous state
 // and return the next state
 //
-func validate_and_apply_block_header{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
-    context: BlockHeaderValidationContext) -> (next_state: ChainState) {
+func validate_and_apply_block_header{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
+    context: BlockHeaderValidationContext
+) -> ChainState {
     alloc_locals;
     // Validate previous block hash
     validate_prev_block_hash(context);
@@ -240,32 +243,32 @@ func validate_and_apply_block_header{range_check_ptr, bitwise_ptr : BitwiseBuilt
 
     // Apply this block to the previous state
     // and return the next state
-    let (next_state) = apply_block_header(context);
+    let next_state = apply_block_header(context);
 
-    return (next_state,);
+    return next_state;
 }
-
 
 // Validate that a block header correctly extends the current chain
 //
 func validate_prev_block_hash(context: BlockHeaderValidationContext) {
-    with_attr error_message("Invalid `prev_block_hash`. This block does not extend the current chain.") {
+    with_attr error_message(
+            "Invalid `prev_block_hash`. This block does not extend the current chain.") {
         assert_hashes_equal(
-            context.prev_chain_state.best_block_hash, 
-            context.block_header.prev_block_hash
+            context.prev_chain_state.best_block_hash, context.block_header.prev_block_hash
         );
     }
     return ();
 }
 
-
 // Validate that a block header's proof-of-work matches its target.
 // Expects that the 4 most significant bytes of `block_hash` are zero.
 //
-func validate_proof_of_work{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(context: BlockHeaderValidationContext) {
+func validate_proof_of_work{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
+    context: BlockHeaderValidationContext
+) {
     // Swap the endianess in the uint32 chunks of the hash
-    let (reader) = init_reader(context.block_hash);
-    let (hash) = read_bytes{reader=reader}(32);
+    let reader = init_reader(context.block_hash);
+    let hash = read_bytes{reader=reader}(32);
 
     // Validate that the hash's most significant uint32 chunk is zero
     // This guarantees that the hash fits into a felt.
@@ -275,20 +278,20 @@ func validate_proof_of_work{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(conte
     // Sum up the other 7 uint32 chunks of the hash into 1 felt
     const BASE = 2 ** 32;
     let hash_felt = hash[0] * BASE ** 0 +
-                    hash[1] * BASE ** 1 +
-                    hash[2] * BASE ** 2 +
-                    hash[3] * BASE ** 3 +
-                    hash[4] * BASE ** 4 +
-                    hash[5] * BASE ** 5 +
-                    hash[6] * BASE ** 6;
+        hash[1] * BASE ** 1 +
+        hash[2] * BASE ** 2 +
+        hash[3] * BASE ** 3 +
+        hash[4] * BASE ** 4 +
+        hash[5] * BASE ** 5 +
+        hash[6] * BASE ** 6;
 
     // Validate that the hash is smaller than the target
-    with_attr error_message("Insufficient proof of work. Expected block hash ({hash_felt}) to be less than or equal to target ({context.target}).") {
+    with_attr error_message(
+            "Insufficient proof of work. Expected block hash ({hash_felt}) to be less than or equal to target ({context.target}).") {
         assert_le_felt(hash_felt, context.target);
     }
     return ();
 }
-
 
 // Validate that the proof-of-work target is sufficiently difficult
 //
@@ -296,13 +299,13 @@ func validate_proof_of_work{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(conte
 // - https://github.com/bitcoin/bitcoin/blob/7fcf53f7b4524572d1d0c9a5fdc388e87eb02416/src/pow.cpp#L13
 // - https://github.com/bitcoin/bitcoin/blob/3a7e0a210c86e3c1750c7e04e3d1d689cf92ddaa/src/rpc/blockchain.cpp#L76
 //
-func validate_target(context: BlockHeaderValidationContext) {  
-    with_attr error_message("Target is {context.block_header.bits}. Expected {context.prev_chain_state.current_target}") {
+func validate_target(context: BlockHeaderValidationContext) {
+    with_attr error_message(
+            "Target is {context.block_header.bits}. Expected {context.prev_chain_state.current_target}") {
         assert context.prev_chain_state.current_target = context.block_header.bits;
     }
     return ();
 }
-
 
 // Validate that the timestamp of a block header is strictly greater than the median time
 // of the 11 most recent blocks.
@@ -315,24 +318,22 @@ func validate_timestamp{range_check_ptr}(context: BlockHeaderValidationContext) 
     alloc_locals;
 
     let prev_timestamps = context.prev_chain_state.prev_timestamps;
-    let (median_time) = compute_timestamps_median(prev_timestamps);
+    let median_time = compute_timestamps_median(prev_timestamps);
 
     // Compare this block's timestamp to the median time
-    with_attr error_message("Median time ({median_time}) is greater than block's timestamp ({context.block_header.time}).") {
+    with_attr error_message(
+            "Median time ({median_time}) is greater than block's timestamp ({context.block_header.time}).") {
         assert_le(median_time, context.block_header.time);
     }
     return ();
 }
 
-
 // Compute the total work invested into the chain
 //
-func compute_total_work{range_check_ptr}(
-    context: BlockHeaderValidationContext) -> (work: felt) {
-    let (work_in_block) = compute_work_from_target(context.target);
-    return (context.prev_chain_state.total_work + work_in_block,);
+func compute_total_work{range_check_ptr}(context: BlockHeaderValidationContext) -> felt {
+    let work_in_block = compute_work_from_target(context.target);
+    return context.prev_chain_state.total_work + work_in_block;
 }
-
 
 // Convert a target into units of work.
 // Work is the expected number of hashes required to hit a target.
@@ -342,20 +343,19 @@ func compute_total_work{range_check_ptr}(
 // - https://github.com/bitcoin/bitcoin/blob/v0.16.2/src/chain.cpp#L121
 // - https://github.com/bitcoin/bitcoin/blob/v0.16.2/src/validation.cpp#L3713
 //
-func compute_work_from_target{range_check_ptr}(target) -> (work: felt) {
+func compute_work_from_target{range_check_ptr}(target) -> felt {
     let (hi, lo) = split_felt(target);
     let target256 = Uint256(lo, hi);
     let (neg_target256) = uint256_neg(target256);
     let (not_target256) = uint256_sub(neg_target256, Uint256(1, 0));
     let (div, _) = uint256_unsigned_div_rem(not_target256, target256);
     let (result, _) = uint256_add(div, Uint256(1, 0));
-    return (result.low + result.high * 2 ** 128,);
+    return result.low + result.high * 2 ** 128;
 }
-
 
 // Compute the 11 most recent timestamps for the next state
 //
-func next_prev_timestamps(context: BlockHeaderValidationContext) -> (timestamps: felt*) {
+func next_prev_timestamps(context: BlockHeaderValidationContext) -> felt* {
     // Copy the timestamp of the most recent block
     alloc_locals;
     let (timestamps) = alloc();
@@ -364,34 +364,30 @@ func next_prev_timestamps(context: BlockHeaderValidationContext) -> (timestamps:
     // Copy the 10 most recent timestamps from the previous state
     let prev_timestamps = context.prev_chain_state.prev_timestamps;
     memcpy(timestamps + 1, prev_timestamps, 10);
-    return (timestamps,);
+    return timestamps;
 }
-
 
 // Apply a block header to a previous chain state to obtain the next chain state
 //
-func apply_block_header{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
-    context: BlockHeaderValidationContext) -> (next_state: ChainState) {
+func apply_block_header{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
+    context: BlockHeaderValidationContext
+) -> ChainState {
     alloc_locals;
 
-    let (prev_timestamps) = next_prev_timestamps(context);
-    let (total_work) = compute_total_work(context);
+    let prev_timestamps = next_prev_timestamps(context);
+    let total_work = compute_total_work(context);
     let (current_target, epoch_start_time) = adjust_difficulty(context);
 
-    return (
-        ChainState(
-            context.block_height,
-            total_work,
-            context.block_hash,
-            current_target,
-            epoch_start_time,
-            prev_timestamps
-        ),
+    let chain_state = ChainState(
+        context.block_height,
+        total_work,
+        context.block_hash,
+        current_target,
+        epoch_start_time,
+        prev_timestamps,
     );
+    return chain_state;
 }
-
-
-
 
 // Adjust the current_target after about 2 weeks of blocks
 // See also:
@@ -399,15 +395,16 @@ func apply_block_header{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
 // - https://en.bitcoin.it/wiki/Target
 // - https://github.com/bitcoin/bitcoin/blob/7fcf53f7b4524572d1d0c9a5fdc388e87eb02416/src/pow.cpp#L49
 //
-func adjust_difficulty{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
-    context: BlockHeaderValidationContext) -> (current_target:felt, epoch_start_time:felt){
+func adjust_difficulty{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
+    context: BlockHeaderValidationContext
+) -> (current_target: felt, epoch_start_time: felt) {
     alloc_locals;
     let current_target = context.prev_chain_state.current_target;
 
     let (_, position_in_epoch) = unsigned_div_rem(context.block_height, BLOCKS_PER_EPOCH);
     if (position_in_epoch == BLOCKS_PER_EPOCH - 1) {
         // This is the last block of the current epoch, so we adjust the current_target now.
-        
+
         let state = context.prev_chain_state;
 
         //
@@ -417,14 +414,14 @@ func adjust_difficulty{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
 
         let fe_actual_timespan = context.block_header.time - state.epoch_start_time;
 
-        // Limit adjustment step        
+        // Limit adjustment step
         let is_too_large = is_le_felt(EXPECTED_EPOCH_TIMESPAN * 4, fe_actual_timespan);
         let is_too_small = is_le_felt(fe_actual_timespan, EXPECTED_EPOCH_TIMESPAN / 4);
 
-        if (is_too_large == 1){
+        if (is_too_large == 1) {
             tempvar fe_actual_timespan = EXPECTED_EPOCH_TIMESPAN * 4;
         } else {
-            if (is_too_small == 1){
+            if (is_too_small == 1) {
                 tempvar fe_actual_timespan = EXPECTED_EPOCH_TIMESPAN / 4;
             } else {
                 tempvar fe_actual_timespan = fe_actual_timespan;
@@ -435,15 +432,15 @@ func adjust_difficulty{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
         // Retarget
         let bn_pow_limit = felt_to_uint256(MAX_TARGET);
 
-        let ( fe_target ) = bits_to_target(state.current_target);
-        let bn_new = felt_to_uint256( fe_target );
+        let fe_target = bits_to_target(state.current_target);
+        let bn_new = felt_to_uint256(fe_target);
 
-        let (bn_new, _) = uint256_mul( bn_new, actual_timespan );
+        let (bn_new, _) = uint256_mul(bn_new, actual_timespan);
 
         let UINT256_MAX_TARGET = felt_to_uint256(EXPECTED_EPOCH_TIMESPAN);
         let (bn_new, _) = uint256_unsigned_div_rem(bn_new, UINT256_MAX_TARGET);
 
-        let (next_target) = target_to_bits(bn_new.low + bn_new.high * 2**128);
+        let next_target = target_to_bits(bn_new.low + bn_new.high * 2 ** 128);
 
         // Return next target and reset the epoch start time
         return (next_target, context.block_header.time);
@@ -452,13 +449,12 @@ func adjust_difficulty{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
     }
 }
 
-
 // Calculate bits from target
 //
-func target_to_bits{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(target) -> (bits: felt) {
+func target_to_bits{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(target) -> felt {
     alloc_locals;
     local bits;
-    
+
     %{
         def target_to_bits(target):
             if target == 0:
@@ -481,7 +477,7 @@ func target_to_bits{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(target) -> (b
         ids.bits = target_to_bits(ids.target)
     %}
 
-    /// Compute the `exponent` which is the most significant byte of `bits`.
+    // / Compute the `exponent` which is the most significant byte of `bits`.
 
     // To do so, first we need a mask with the first 8 bits:
     const MASK_BITS_TO_SHIFT = 0xFF000000;
@@ -490,14 +486,14 @@ func target_to_bits{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(target) -> (b
     // And finally, do the shifts
     let exponent = bits_to_shift / 0x1000000;
 
-    let (expected_target) = bits_to_target(bits);
+    let expected_target = bits_to_target(bits);
 
     let is_greater_than_2 = (2 - exponent) * (1 - exponent) * exponent;
     if (is_greater_than_2 == 0) {
         with_attr error_message("Hint provided an invalid value for `bits`") {
             assert expected_target = target;
         }
-        return (bits,);
+        return bits;
     } else {
         // if exponent >= 3 we check that
         // ((target & (threshold * 0xffffff)) - expected_target) == 0
@@ -507,13 +503,13 @@ func target_to_bits{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(target) -> (b
         with_attr error_message("Hint provided an invalid value for `bits`") {
             assert masked_target = expected_target;
         }
-        return (bits,);
+        return bits;
     }
 }
 
 // Convert a felt to a Uint256
 //
-func felt_to_uint256{range_check_ptr}(value) -> Uint256{
+func felt_to_uint256{range_check_ptr}(value) -> Uint256 {
     let (high, low) = split_felt(value);
     let value256 = Uint256(low, high);
     return value256;

@@ -1,21 +1,17 @@
 //
 // To run only this test suite use:
-// protostar test --cairo-path=./src target src/**/*_sha256d*
+// protostar test --cairo-path=./src target src/**/*_hash256*
 //
 %lang starknet
 
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.uint256 import Uint256
-from crypto.sha256.sha256 import finalize_sha256
+from crypto.sha256 import finalize_sha256
 
 from utils.python_utils import setup_python_defs
-from crypto.sha256d.sha256d import (
-    _compute_double_sha256,
-    sha256d,
-    assert_hashes_equal,
-    HASH_FELT_SIZE,
-)
+from crypto.hash_utils import assert_hashes_equal
+from crypto.hash256 import _compute_double_sha256, hash256
 
 @external
 func test_compute_double_sha256{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
@@ -30,7 +26,7 @@ func test_compute_double_sha256{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}()
     let sha256_ptr: felt* = alloc();
     let sha256_ptr_start = sha256_ptr;
     with sha256_ptr {
-        let (hash) = sha256d(input, byte_size);
+        let hash = hash256(input, byte_size);
     }
     // 8cb9012517c817fead650287d61bdd9c68803b6bf9c64133dcab3e65b5a50cb9
     assert hash[0] = 0x4f8b42c2;
@@ -54,7 +50,7 @@ func test_compute_double_sha256{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}()
 // See also:
 //  - Example transaction: https://blockstream.info/api/tx/b9818f9eb8925f2b5b9aaf3e804306efa1a0682a7173c0b7edb5f2e05cc435bd/hex
 @external
-func test_sha256d_long_input{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
+func test_hash256_long_input{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     alloc_locals;
 
     // Use Python to convert hex string into uint32 array
@@ -84,7 +80,7 @@ func test_sha256d_long_input{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     let sha256_ptr: felt* = alloc();
     let sha256_ptr_start = sha256_ptr;
     with sha256_ptr {
-        let (hash) = sha256d(input, byte_size);
+        let hash = hash256(input, byte_size);
     }
 
     assert_hashes_equal(hash_expected, hash);
@@ -99,7 +95,7 @@ func test_sha256d_long_input{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
 // See also:
 //  - Example transaction: https://blockstream.info/api/tx/b9818f9eb8925f2b5b9aaf3e804306efa1a0682a7173c0b7edb5f2e05cc435bd/hex
 @external
-func test_sha256d_long_input_2{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
+func test_hash256_long_input_2{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     alloc_locals;
 
     // Use Python to convert hex string into uint32 array
@@ -125,7 +121,7 @@ func test_sha256d_long_input_2{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() 
     let sha256_ptr: felt* = alloc();
     let sha256_ptr_start = sha256_ptr;
     with sha256_ptr {
-        let (hash) = sha256d(input, 135);
+        let hash = hash256(input, 135);
     }
 
     assert_hashes_equal(hash_expected, hash);

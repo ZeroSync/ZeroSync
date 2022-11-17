@@ -1,15 +1,32 @@
+// Wrapper library for a sha256 implementation to be used
+//
+// Allows to switch between different implementations and dummies
+//
+from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
+from starkware.cairo.common.alloc import alloc
+
+from serialize.serialize import byte_size_to_felt_size
+
+func ripemd160{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(input: felt*, byte_size) -> felt* {
+    let felt_size = byte_size_to_felt_size(byte_size);
+    let rmd160_ptr: felt* = alloc();
+    let rmd160_ptr_start = rmd160_ptr;
+    let hash = compute_rmd160{rmd160_ptr=rmd160_ptr}(
+        data=input, n_bytes=byte_size, n_felts=felt_size
+    );
+    return hash;
+}
+
 //
 // RIPEMD160 implementation as specified at https://homes.esat.kuleuven.be/~bosselae/ripemd160.html
 //
 
-from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
-from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.math import unsigned_div_rem
 from starkware.cairo.common.math_cmp import is_le
 from starkware.cairo.common.memcpy import memcpy
 
 from utils.pow2 import pow2
-from crypto.ripemd160.utils import (
+from crypto.ripemd160_utils import (
     MAX_32_BIT,
     FF,
     GG,
@@ -24,7 +41,6 @@ from crypto.ripemd160.utils import (
     uint32_add,
     change_uint32_byte_order_array,
 )
-
 const RMD160_INPUT_CHUNK_SIZE_FELTS = 16;
 const RMD160_INPUT_CHUNK_SIZE_BYTES = 64;
 const RMD160_STATE_SIZE_FELTS = 5;
@@ -48,7 +64,7 @@ const RMD160_STATE_SIZE_FELTS = 5;
 // Output is an array of 5 32-bit words (big endian).
 func compute_rmd160{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, rmd160_ptr: felt*}(
     data: felt*, n_bytes: felt, n_felts: felt
-) -> (output: felt*) {
+) -> felt* {
     alloc_locals;
 
     // Pad the input data
@@ -72,7 +88,7 @@ func compute_rmd160{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, rmd160_ptr: f
     change_uint32_byte_order_array(rmd160_ptr, rmd160_ptr + RMD160_STATE_SIZE_FELTS, output);
     // Set `rmd160_ptr` to the next chunk.
     let rmd160_ptr = rmd160_ptr + RMD160_STATE_SIZE_FELTS;
-    return (output,);
+    return output;
 }
 
 // Inner loop for rmd160. `rmd160_ptr` points to the start of the block.
@@ -422,20 +438,20 @@ func rmd160_compress{bitwise_ptr: BitwiseBuiltin*, range_check_ptr}(
     // combine results
     let (local res: felt*) = alloc();
 
-    let (res0) = uint32_add([state + 1], cc);
-    let (res0) = uint32_add(res0, ddd);
+    let res0 = uint32_add([state + 1], cc);
+    let res0 = uint32_add(res0, ddd);
 
-    let (res1) = uint32_add([state + 2], dd);
-    let (res1) = uint32_add(res1, eee);
+    let res1 = uint32_add([state + 2], dd);
+    let res1 = uint32_add(res1, eee);
 
-    let (res2) = uint32_add([state + 3], ee);
-    let (res2) = uint32_add(res2, aaa);
+    let res2 = uint32_add([state + 3], ee);
+    let res2 = uint32_add(res2, aaa);
 
-    let (res3) = uint32_add([state + 4], aa);
-    let (res3) = uint32_add(res3, bbb);
+    let res3 = uint32_add([state + 4], aa);
+    let res3 = uint32_add(res3, bbb);
 
-    let (res4) = uint32_add([state + 0], bb);
-    let (res4) = uint32_add(res4, ccc);
+    let res4 = uint32_add([state + 0], bb);
+    let res4 = uint32_add(res4, ccc);
 
     assert output[0] = res0;
     assert output[1] = res1;

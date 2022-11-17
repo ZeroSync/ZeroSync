@@ -7,7 +7,9 @@ from starkware.cairo.common.memcpy import memcpy
 from starkware.cairo.common.memset import memset
 from utils.pow2 import pow2
 
-from crypto.sha256.packed_sha256 import (
+from crypto.hash_utils import HASH_FELT_SIZE
+
+from crypto.sha256_packed import (
     BLOCK_SIZE,
     compute_message_schedule,
     sha2_compress,
@@ -16,7 +18,8 @@ from crypto.sha256.packed_sha256 import (
 
 const SHA256_INPUT_CHUNK_SIZE_FELTS = 16;
 const SHA256_INPUT_CHUNK_SIZE_BYTES = 64;
-const SHA256_STATE_SIZE_FELTS = 8;
+// A 256-bit hash is represented as an array of 8 x Uint32
+const SHA256_STATE_SIZE_FELTS = HASH_FELT_SIZE;
 // Each instance consists of 16 words of message, 8 words for the input state and 8 words
 // for the output state.
 const SHA256_INSTANCE_SIZE = SHA256_INPUT_CHUNK_SIZE_FELTS + 2 * SHA256_STATE_SIZE_FELTS;
@@ -40,7 +43,7 @@ const SHA256_INSTANCE_SIZE = SHA256_INPUT_CHUNK_SIZE_FELTS + 2 * SHA256_STATE_SI
 // Note: You must call finalize_sha2() at the end of the program. Otherwise, this function
 // is not sound and a malicious prover may return a wrong result.
 // Note: the interface of this function may change in the future.
-func compute_sha256{range_check_ptr, sha256_ptr: felt*}(data: felt*, n_bytes: felt) -> (output: felt*) {
+func compute_sha256{range_check_ptr, sha256_ptr: felt*}(data: felt*, n_bytes: felt) -> felt* {
     alloc_locals;
 
     // Set the initial input state to IV.
@@ -59,7 +62,7 @@ func compute_sha256{range_check_ptr, sha256_ptr: felt*}(data: felt*, n_bytes: fe
     let output = sha256_ptr;
     // Set `sha256_ptr` to the end of the output state.
     let sha256_ptr = sha256_ptr + SHA256_STATE_SIZE_FELTS;
-    return (output,);
+    return output;
 }
 
 // Computes the sha256 hash of the input chunk from `message` to `message + SHA256_INPUT_CHUNK_SIZE_FELTS`
@@ -120,7 +123,11 @@ func sha256_inner{range_check_ptr, sha256_ptr: felt*}(
         _sha256_chunk{message=message, state=state, output=output}();
 
         let sha256_ptr = sha256_ptr + SHA256_STATE_SIZE_FELTS;
-        memcpy(output + SHA256_STATE_SIZE_FELTS + SHA256_INPUT_CHUNK_SIZE_FELTS, output, SHA256_STATE_SIZE_FELTS);
+        memcpy(
+            output + SHA256_STATE_SIZE_FELTS + SHA256_INPUT_CHUNK_SIZE_FELTS,
+            output,
+            SHA256_STATE_SIZE_FELTS,
+        );
         let sha256_ptr = sha256_ptr + SHA256_STATE_SIZE_FELTS;
 
         return sha256_inner(data=data, n_bytes=n_bytes - r, total_bytes=total_bytes);
@@ -129,7 +136,11 @@ func sha256_inner{range_check_ptr, sha256_ptr: felt*}(
         _sha256_chunk{message=message, state=state, output=output}();
 
         let sha256_ptr = sha256_ptr + SHA256_STATE_SIZE_FELTS;
-        memcpy(output + SHA256_STATE_SIZE_FELTS + SHA256_INPUT_CHUNK_SIZE_FELTS, output, SHA256_STATE_SIZE_FELTS);
+        memcpy(
+            output + SHA256_STATE_SIZE_FELTS + SHA256_INPUT_CHUNK_SIZE_FELTS,
+            output,
+            SHA256_STATE_SIZE_FELTS,
+        );
         let sha256_ptr = sha256_ptr + SHA256_STATE_SIZE_FELTS;
 
         return sha256_inner(
@@ -290,7 +301,7 @@ func _finalize_sha256_inner{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
     local sha256_ptr: felt* = sha256_ptr;
     local range_check_ptr = range_check_ptr;
     compute_message_schedule(message_start);
-    let (outputs) = sha2_compress(input_state_start, message_start, round_constants);
+    let outputs = sha2_compress(input_state_start, message_start, round_constants);
     local bitwise_ptr: BitwiseBuiltin* = bitwise_ptr;
 
     // Handle outputs.
@@ -348,7 +359,7 @@ func finalize_sha256{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
 
     let (__fp__, _) = get_fp_and_pc();
 
-    let (round_constants) = get_round_constants();
+    let round_constants = get_round_constants();
 
     // We reuse the output state of the previous chunk as input to the next.
     tempvar n = (sha256_ptr_end - sha256_ptr_start) / SHA256_INSTANCE_SIZE;
