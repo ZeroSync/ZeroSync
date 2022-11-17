@@ -42,6 +42,12 @@ cd ../../..
 protostar test --cairo-path=./src tests
 ```
 
+Run some tests with the Rust verifier to derive a detailed ground truth:
+
+```sh
+cargo +nightly test -- --nocapture
+```
+
 
 ## Run the Chain Prover
 ```sh
