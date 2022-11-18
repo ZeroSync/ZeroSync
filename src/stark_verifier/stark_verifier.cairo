@@ -80,7 +80,9 @@ func verify{range_check_ptr, pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBui
     let air = air_instance_new(proof, proof.context.options);
 
     // Create a public coin and channel struct
-    let public_coin = random_coin_new(public_coin_seed);
+    with blake2s_ptr {
+        let public_coin = random_coin_new(public_coin_seed, 32);
+    }
     let channel = channel_new(air, proof);
 
     with blake2s_ptr, channel, public_coin {

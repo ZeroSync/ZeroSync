@@ -4,14 +4,14 @@ mod tests {
     use std::io::{BufReader, Read};
 
     use winter_air::DefaultEvaluationFrame;
-    use winter_crypto::{hashers::Blake2s_256, RandomCoin};
+    use winter_crypto::{hashers::Blake2s_256, Digest, Hasher, RandomCoin};
     use winter_utils::{Deserializable, Serializable, SliceReader};
     use winterfell::{Air, AuxTraceRandElements, StarkProof, VerifierChannel, VerifierError};
 
     use giza_air::{ProcessorAir, PublicInputs};
     use giza_core::Felt;
 
-    use blake2::blake2s::{blake2s};
+    use blake2::blake2s::blake2s;
 
     // TODO: Use workspace so we can share code with parser package, and not duplicate here.
     // We can also convert these tests to exported Python-callable functions, that return
@@ -35,12 +35,15 @@ mod tests {
 
     #[test]
     fn draw_felt() -> Result<(), VerifierError> {
-        let mut public_coin_seed = vec![0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0];
+        let public_coin_seed = vec![0u8; 32];
         let mut public_coin = RandomCoin::<Felt, Blake2s_256<Felt>>::new(&public_coin_seed);
+        //let seed = Blake2s_256::<Felt>::hash(&public_coin_seed);
+        //let digest = Blake2s_256::<Felt>::merge_with_int(seed, 1);
+        //println!("merge_with_int digest: {:02X?}\n", digest);
         let z = public_coin
             .draw::<Felt>()
             .map_err(|_| VerifierError::RandomCoinError)?;
-        println!("draw_felt: {}\n", z.to_raw() );
+        println!("draw_felt: {}\n", z.to_raw());
 
         Ok(())
     }
@@ -52,8 +55,11 @@ mod tests {
         // the first 32 bytes are zeros
         // the 8 remaining bytes are the 64 bits of the value
         data[32..].copy_from_slice(&value.to_le_bytes());
-        let digest:[u8;32] = blake2s(32, &[], &data).as_bytes().try_into().expect("slice with incorrect length");
-        println!("merge_with_int digest: {:02X?}\n", digest );
+        let digest: [u8; 32] = blake2s(32, &[], &data)
+            .as_bytes()
+            .try_into()
+            .expect("slice with incorrect length");
+        println!("merge_with_int digest: {:02X?}\n", digest);
     }
 
     #[test]
