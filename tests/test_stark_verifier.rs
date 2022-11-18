@@ -11,6 +11,8 @@ mod tests {
     use giza_air::{ProcessorAir, PublicInputs};
     use giza_core::Felt;
 
+    use blake2::blake2s::{blake2s};
+
     // TODO: Use workspace so we can share code with parser package, and not duplicate here.
     // We can also convert these tests to exported Python-callable functions, that return
     // "ground truth" values for use in Protostar tests.
@@ -32,8 +34,26 @@ mod tests {
     }
 
     #[test]
-    fn draw_felt() {
-        // TODO
+    fn draw_felt() -> Result<(), VerifierError> {
+        let mut public_coin_seed = vec![0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0];
+        let mut public_coin = RandomCoin::<Felt, Blake2s_256<Felt>>::new(&public_coin_seed);
+        let z = public_coin
+            .draw::<Felt>()
+            .map_err(|_| VerifierError::RandomCoinError)?;
+        println!("draw_felt: {}\n", z.to_raw() );
+
+        Ok(())
+    }
+
+    #[test]
+    fn merge_with_int() {
+        let value = 1u64;
+        let mut data = [0; 40];
+        // the first 32 bytes are zeros
+        // the 8 remaining bytes are the 64 bits of the value
+        data[32..].copy_from_slice(&value.to_le_bytes());
+        let digest:[u8;32] = blake2s(32, &[], &data).as_bytes().try_into().expect("slice with incorrect length");
+        println!("merge_with_int digest: {:02X?}\n", digest );
     }
 
     #[test]
@@ -95,7 +115,7 @@ mod tests {
             .draw::<Felt>()
             .map_err(|_| VerifierError::RandomCoinError)?;
 
-        println!("{}", z.to_raw());
+        println!("draw_ood_point_z: {}", z.to_raw());
 
         Ok(())
     }
