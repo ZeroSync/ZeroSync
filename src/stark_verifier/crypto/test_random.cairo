@@ -49,7 +49,9 @@ func test_draw{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     local blake2s_ptr_start: felt* = blake2s_ptr;
 
     tempvar seed: felt* = new (0, 0, 0, 0, 0, 0, 0, 0);
-    let public_coin = random_coin_new(seed);
+    with blake2s_ptr {
+        let public_coin = random_coin_new(seed, 32);
+    }
 
     with blake2s_ptr, public_coin {
         let element = draw();
@@ -69,7 +71,9 @@ func test_draw_integers{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     local blake2s_ptr_start: felt* = blake2s_ptr;
 
     tempvar seed: felt* = new (0, 0, 0, 0, 0, 0, 0, 0);
-    let public_coin = random_coin_new(seed);
+    with blake2s_ptr {
+        let public_coin = random_coin_new(seed, 32);
+    }
 
     let (elements) = alloc();
     let n_elements = 4;
@@ -88,6 +92,7 @@ func test_draw_integers{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     return ();
 }
 
+// TODO: Test for a grinded seed
 @external
 func test_leading_zeros{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     alloc_locals;
@@ -95,19 +100,18 @@ func test_leading_zeros{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     local blake2s_ptr_start: felt* = blake2s_ptr;
 
     tempvar seed: felt* = new (1, 0, 0, 0, 0, 0, 0, 1);
-    let public_coin = random_coin_new(seed);
+    with blake2s_ptr {
+        let public_coin = random_coin_new(seed, 32);
+    }
 
     with blake2s_ptr, public_coin {
         let leading_zeros = get_leading_zeros();
     }
 
-    %{ assert ids.leading_zeros == 31 %}
+    %{ assert ids.leading_zeros == 1 %}
     finalize_blake2s(blake2s_ptr_start, blake2s_ptr);
     return ();
 }
-
-
-
 
 
 //

@@ -30,8 +30,9 @@ struct PublicCoin {
 }
 
 // Returns a new random coin instantiated with the provided `seed`.
-func random_coin_new(seed: felt*) -> PublicCoin {
-    let public_coin = PublicCoin(seed=seed, counter=0);
+func random_coin_new{range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*}(seed: felt*, n_bytes: felt) -> PublicCoin {
+    let (digest) = blake2s_as_words(data=seed, n_bytes=n_bytes);
+    let public_coin = PublicCoin(seed=digest, counter=0);
     return public_coin;
 }
 
@@ -72,7 +73,7 @@ func merge_with_int{range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBui
     // Write high and low into data in little endian order
     assert data[0] = low;
     assert data[1] = high;
-    
+
     // Compute the blake2s hash
     let (digest) = blake2s_as_words(data=data_start, n_bytes=40);
     return digest;
@@ -124,17 +125,19 @@ func reseed_with_ood_frames{
 }
 
 // Returns the next pseudo-random field element
-func draw {
+func draw{
     range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*, public_coin: PublicCoin
 }() -> felt {
     alloc_locals;
     tempvar public_coin = PublicCoin(public_coin.seed, public_coin.counter + 1);
     let digest = merge_with_int(seed=public_coin.seed, value=public_coin.counter);
     
-    %{ print('draw_felt:', hex(memory[ids.digest]), hex(memory[ids.digest+1]),'...', hex(memory[ids.digest + 6]), hex(memory[ids.digest + 7])) %}
-    
     let low = digest[0] + digest[1] * 2 ** 32 + digest[2] * 2 ** 64 + digest[3] * 2 ** 96;
     let high = digest[4] + digest[5] * 2 ** 32 + digest[6] * 2 ** 64 + digest[7] * 2 ** 96;
+
+    %{
+        print("draw_felt:", hex((ids.high * 2**128 + ids.low) % PRIME))
+    %}
 
     return high * 2**128 + low;
 }
