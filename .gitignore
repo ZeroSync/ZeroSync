@@ -4,4 +4,3 @@ build
 zerosync.egg-info
 .DS_Store
 tmp
-tests/stark_proofs

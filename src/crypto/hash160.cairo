@@ -9,7 +9,6 @@ func hash160{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, sha256_ptr: felt*}(
     input: felt*, byte_size
 ) -> felt* {
     alloc_locals;
-    // let (felt_size) = byte_size_to_felt_size(byte_size);
     let partial_result = compute_sha256(input, byte_size);
     let hash = ripemd160(partial_result, 32);
     return hash;

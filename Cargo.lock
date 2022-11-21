@@ -915,6 +915,7 @@ name = "zerosync"
 version = "0.1.0"
 dependencies = [
  "bincode",
+ "blake2-rfc",
  "giza-air",
  "giza-core",
  "serde",

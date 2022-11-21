@@ -347,14 +347,81 @@ func test_verify_block_with_108_transactions{
     }
 
     // Sanity Check
-    // Transaction count should be 49
+    // Transaction count should be 108
     assert 108 = context.transaction_count;
 
     // Sanity Check
-    // The second output of the second transaction should be 13.08 BTC
+    // The second output of the second transaction should be 2000 BTC
 
     let transaction = context.transaction_contexts[1].transaction;
-    assert transaction.outputs[1].amount = 1308000000;
+    assert transaction.outputs[1].amount = 2 * 10 ** 11;
+
+    // Validate the block
+    with sha256_ptr {
+        validate_and_apply_block{hash_ptr=pedersen_ptr}(context);
+        finalize_sha256(sha256_ptr_start, sha256_ptr);
+    }
+    return ();
+}
+
+// Test a Bitcoin block with 933 transactions.
+//
+// Example: Block at height 383838
+//
+// - Block hash: 00000000000000000e9b42248aa61593ccc4aa0a399b3cb6b50c650f45761c3a
+// - Block explorer: https://blockstream.info/block/00000000000000000e9b42248aa61593ccc4aa0a399b3cb6b50c650f45761c3a
+// @external
+func test_verify_block_with_933_transactions{
+    range_check_ptr, bitwise_ptr: BitwiseBuiltin*, pedersen_ptr: HashBuiltin*
+}() {
+    alloc_locals;
+    setup_python_defs();
+
+    // Create a dummy for the previous chain state
+    // Block 383837: https://blockstream.info/block/0000000000000000017b5c4e4fcf210dec65fc67cbfdd841a1af77f178bb7ab7
+    let (prev_block_hash) = alloc();
+    %{
+        hashes_from_hex([
+                "0000000000000000017b5c4e4fcf210dec65fc67cbfdd841a1af77f178bb7ab7"
+        ], ids.prev_block_hash)
+    %}
+
+    let prev_timestamps = dummy_prev_timestamps();
+
+    let prev_chain_state = ChainState(
+        block_height=383837,
+        total_work=0,
+        best_block_hash=prev_block_hash,
+        current_target=0x1810b289,
+        epoch_start_time=0,
+        prev_timestamps,
+    );
+
+    // We need some UTXOs to spend in this block
+    reset_bridge_node();
+    let utreexo_roots = utreexo_init();
+    dummy_utxo_insert_block_number{hash_ptr=pedersen_ptr, utreexo_roots=utreexo_roots}(383838);
+
+    let prev_state = State(prev_chain_state, utreexo_roots);
+
+    // initialize sha256_ptr
+    let sha256_ptr: felt* = alloc();
+    let sha256_ptr_start = sha256_ptr;
+
+    // Parse the block validation context using the previous state
+    with sha256_ptr {
+        let context = read_block_validation_context(prev_state);
+    }
+
+    // Sanity Check
+    // Transaction count should be 108
+    assert 108 = context.transaction_count;
+
+    // Sanity Check
+    // The second output of the second transaction should be 8.96275171 BTC
+
+    let transaction = context.transaction_contexts[1].transaction;
+    assert transaction.outputs[1].amount = 896275171;
 
     // Validate the block
     with sha256_ptr {

@@ -4,7 +4,6 @@ from starkware.cairo.common.cairo_blake2s.blake2s import (
     blake2s_bigend,
     blake2s_felts,
     blake2s_add_felts,
-    blake2s_add_uint256_bigend,
     blake2s,
     blake2s_as_words,
 )
@@ -15,15 +14,14 @@ from starkware.cairo.common.math import assert_nn_le, assert_le
 from starkware.cairo.common.math_cmp import is_le
 from starkware.cairo.common.bool import TRUE
 from starkware.cairo.common.memcpy import memcpy
+from starkware.cairo.common.memset import memset
 from utils.pow2 import pow2
-from starkware.cairo.common.uint256 import Uint256, uint256_lt
+from utils.endianness import byteswap32
 
 from stark_verifier.air.pub_inputs import MemEntry, PublicInputs, read_mem_values
 from stark_verifier.air.stark_proof import Context
 from stark_verifier.air.transitions.frame import EvaluationFrame
 
-// Montgomery constant
-const R_MONTGOMERY = 2 ** 256;
 
 // Pseudo-random element generator for finite fields.
 struct PublicCoin {
@@ -32,8 +30,9 @@ struct PublicCoin {
 }
 
 // Returns a new random coin instantiated with the provided `seed`.
-func random_coin_new(seed: felt*) -> PublicCoin {
-    let public_coin = PublicCoin(seed=seed, counter=0);
+func random_coin_new{range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*}(seed: felt*, n_bytes: felt) -> PublicCoin {
+    let (digest) = blake2s_as_words(data=seed, n_bytes=n_bytes);
+    let public_coin = PublicCoin(seed=digest, counter=0);
     return public_coin;
 }
 
@@ -44,9 +43,6 @@ func merge{range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*}(
 ) -> felt* {
     alloc_locals;
     let (data: felt*) = alloc();
-
-    // blake2s_add_uint256_bigend{data=data}(seed);
-    // blake2s_add_uint256_bigend{data=data}(value);
 
     memcpy(data, seed, 8);
     memcpy(data + 8, value, 8);
@@ -66,11 +62,19 @@ func merge_with_int{range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBui
 
     memcpy(data, seed, 8);
     let data = data + 8;
-    blake2s_add_uint256_bigend{data=data}(Uint256(
-        low=value,
-        high=value * 2 ** 64,
-        ));
 
+    // Convert value : u64 -> (high: u32, low:u32)  
+    assert [bitwise_ptr].x = value;
+    assert [bitwise_ptr].y = 0xffffffff;
+    let low = [bitwise_ptr].x_and_y;
+    let high = (value - low) / 2**32;
+    let bitwise_ptr = bitwise_ptr + BitwiseBuiltin.SIZE;
+
+    // Write high and low into data in little endian order
+    assert data[0] = low;
+    assert data[1] = high;
+
+    // Compute the blake2s hash
     let (digest) = blake2s_as_words(data=data_start, n_bytes=40);
     return digest;
 }
@@ -84,8 +88,8 @@ func hash_elements{range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuil
     with data {
         blake2s_add_felts(n_elements=n_elements, elements=elements, bigend=1);
     }
-    // let (res) = blake2s(data=data_start, n_bytes=n_elements * 32);
-    let (res) = blake2s_as_words(data=data, n_bytes=40);
+
+    let (res) = blake2s_as_words(data=data, n_bytes=n_elements * 32);
     return res;
 }
 
@@ -127,23 +131,17 @@ func draw{
     alloc_locals;
     tempvar public_coin = PublicCoin(public_coin.seed, public_coin.counter + 1);
     let digest = merge_with_int(seed=public_coin.seed, value=public_coin.counter);
-    local num: Uint256 = Uint256(
-        low=digest[0] + digest[1] * 2 ** 32 + digest[2] * 2 ** 64 + digest[3] * 2 ** 96,
-        high=digest[4] + digest[5] * 2 ** 32 + digest[6] * 2 ** 64 + digest[7] * 2 ** 96
-        );
-    let (is_valid) = uint256_lt(
-        num, Uint256(
-        low=0x1f,
-        high=0xf80000000000020f0000000000000000
-        )
-    );
-    if (is_valid == 1) {
-        let res = (num.low + num.high * 2 ** 128) / R_MONTGOMERY;
-        return res;
-    } else {
-        return draw();
-    }
+    
+    let low = digest[0] + digest[1] * 2 ** 32 + digest[2] * 2 ** 64 + digest[3] * 2 ** 96;
+    let high = digest[4] + digest[5] * 2 ** 32 + digest[6] * 2 ** 64 + digest[7] * 2 ** 96;
+
+    %{
+        print("draw_felt:", hex((ids.high * 2**128 + ids.low) % PRIME))
+    %}
+
+    return high * 2**128 + low;
 }
+
 
 func draw_pair{
     range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*, public_coin: PublicCoin
