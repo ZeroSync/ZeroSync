@@ -414,8 +414,8 @@ func test_verify_block_with_933_transactions{
     }
 
     // Sanity Check
-    // Transaction count should be 108
-    assert 108 = context.transaction_count;
+    // Transaction count should be 933
+    assert 933 = context.transaction_count;
 
     // Sanity Check
     // The second output of the second transaction should be 8.96275171 BTC
