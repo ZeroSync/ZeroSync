@@ -75,6 +75,8 @@ func verify{range_check_ptr, pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBui
 
     // Build a seed for the public coin; the initial seed is the hash of public inputs
     let public_coin_seed: felt* = seed_with_pub_inputs{blake2s_ptr=blake2s_ptr}(pub_inputs);
+    %{ print('public_coin_seed', hex(memory[ids.public_coin_seed]) , '\n expected:  24 A4 AB 84 83 7A A9 66 AF 16 E2 BF 5D C8 D9 B4 36 CC 16 9B 22 E0 22 8B 14 14 E9 5A 0E DA 5A 04') %}
+
 
     // Create an AIR instance for the computation specified in the proof.
     let air = air_instance_new(proof, proof.context.options);

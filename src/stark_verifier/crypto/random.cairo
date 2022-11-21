@@ -135,10 +135,6 @@ func draw{
     let low = digest[0] + digest[1] * 2 ** 32 + digest[2] * 2 ** 64 + digest[3] * 2 ** 96;
     let high = digest[4] + digest[5] * 2 ** 32 + digest[6] * 2 ** 64 + digest[7] * 2 ** 96;
 
-    %{
-        print("draw_felt:", hex((ids.high * 2**128 + ids.low) % PRIME))
-    %}
-
     return high * 2**128 + low;
 }
 
@@ -227,9 +223,9 @@ func seed_with_pub_inputs{
     let (mem_values: felt*) = alloc();
     // TODO: We need to record `mem_length` in the public inputs, and 
     // pass it to `read_mem_values` here
-    let mem_length = 16; //pub_inputs.mem_length;
+    let mem_length = pub_inputs.mem_length;
     read_mem_values(
-        mem=&pub_inputs.mem,
+        mem=pub_inputs.mem,
         address=0, //pub_inputs.init._pc,
         length=mem_length,
         output=mem_values

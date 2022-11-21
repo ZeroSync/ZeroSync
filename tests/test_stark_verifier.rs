@@ -79,6 +79,8 @@ mod tests {
         let mut public_coin_seed = Vec::new();
         pub_inputs.write_into(&mut public_coin_seed);
 
+        println!("seed: {:02X?}", public_coin_seed );
+
         let air = ProcessorAir::new(proof.get_trace_info(), pub_inputs, proof.options().clone());
 
         let mut public_coin = RandomCoin::<Felt, Blake2s_256<Felt>>::new(&public_coin_seed);

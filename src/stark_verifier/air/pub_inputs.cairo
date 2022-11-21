@@ -18,7 +18,8 @@ struct PublicInputs {
     fin: RegisterState,
     rc_min: felt,
     rc_max: felt,
-    mem: MemEntry,
+    mem: MemEntry*,
+    mem_length: felt,
     num_steps: felt,  // number of execution steps
 }
 
