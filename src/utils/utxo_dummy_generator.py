@@ -116,7 +116,6 @@ if __name__ == "__main__":
     if block_height < 0:
         print("ERROR: Specify a block height above zero.")
         exit(2)
-    
-    dummys = generate_utxo_dummys(block_height)    
-    print(dummys)
 
+    dummys = generate_utxo_dummys(block_height)
+    print(dummys)
