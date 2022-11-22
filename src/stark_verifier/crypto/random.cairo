@@ -221,19 +221,19 @@ func seed_with_pub_inputs{
     alloc_locals;
 
     let (mem_values: felt*) = alloc();
-    // TODO: We need to record `mem_length` in the public inputs, and 
-    // pass it to `read_mem_values` here
     let mem_length = pub_inputs.mem_length;
     read_mem_values(
         mem=pub_inputs.mem,
-        address=0, //pub_inputs.init._pc,
+        address=0,
         length=mem_length,
         output=mem_values
     );
 
     let (hash_state_ptr) = hash_init();
     let (hash_state_ptr) = hash_update{hash_ptr=pedersen_ptr}(
-        hash_state_ptr=hash_state_ptr, data_ptr=mem_values, data_length=mem_length
+        hash_state_ptr=hash_state_ptr,
+        data_ptr=mem_values,
+        data_length=mem_length
     );
     let (pub_mem_hash) = hash_finalize{hash_ptr=pedersen_ptr}(hash_state_ptr=hash_state_ptr);
 

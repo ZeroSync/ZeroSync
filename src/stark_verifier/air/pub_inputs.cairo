@@ -27,7 +27,7 @@ func read_public_inputs() -> PublicInputs* {
     let (pub_inputs_ptr: PublicInputs*) = alloc();
     %{
         addr = ids.pub_inputs_ptr.address_
-        my_memory = [(int(x[2:][::-1], 16) if x.startswith('0x') else addr + int(x)) for x in json_data]
+        my_memory = [(int(x[2:], 16) if x.startswith('0x') else addr + int(x)) for x in json_data]
         segments.write_arg(addr, my_memory)
     %}
     return pub_inputs_ptr;
