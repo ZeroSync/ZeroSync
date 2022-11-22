@@ -139,20 +139,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5d6d530bdd2d52966a6d03b7a964add7ae1a288d25214066fd4b600f0f796400"
 dependencies = [
  "arrayvec 0.4.12",
- "constant_time_eq",
+ "constant_time_eq 0.1.5",
 ]
 
 [[package]]
 name = "blake3"
-version = "1.3.1"
+version = "1.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a08e53fc5a564bb15bfe6fae56bd71522205f1f91893f9c0116edad6496c183f"
+checksum = "895adc16c8b3273fbbc32685a7d55227705eda08c01e77704020f3491924b44b"
 dependencies = [
  "arrayref",
  "arrayvec 0.7.2",
  "cc",
  "cfg-if",
- "constant_time_eq",
+ "constant_time_eq 0.2.4",
 ]
 
 [[package]]
@@ -187,9 +187,9 @@ checksum = "14c189c53d098945499cdfa7ecc63567cf3886b3332b312a5b4585d8d3a6a610"
 
 [[package]]
 name = "cc"
-version = "1.0.76"
+version = "1.0.77"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "76a284da2e6fe2092f2353e51713435363112dfd60030e22add80be333fb928f"
+checksum = "e9f73505338f7d905b19d18738976aae232eb46b8efc15554ffc56deb5d9ebe4"
 
 [[package]]
 name = "cfg-if"
@@ -202,6 +202,12 @@ name = "constant_time_eq"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "245097e9a4535ee1e3e3931fcfcd55a796a44c643e8596ff6566d68f09b87bbc"
+
+[[package]]
+name = "constant_time_eq"
+version = "0.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f3ad85c1f65dc7b37604eb0e89748faf0b9653065f2a8ef69f96a687ec1e9279"
 
 [[package]]
 name = "cpufeatures"
@@ -266,9 +272,9 @@ dependencies = [
 
 [[package]]
 name = "digest"
-version = "0.10.5"
+version = "0.10.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "adfbc57365a37acbd2ebf2b64d7e69bb766e2fea813521ed536f5d0520dcf86c"
+checksum = "8168378f4e5023e7218c89c891c0fd8ecdb5e5e4f18cb78f38cf245dd021e76f"
 dependencies = [
  "block-buffer 0.10.3",
  "crypto-common",
@@ -335,7 +341,7 @@ dependencies = [
 [[package]]
 name = "giza-air"
 version = "0.1.0"
-source = "git+https://github.com/zerosync/giza#be014ff0799e11492c7092d7e8f1a580885d9895"
+source = "git+https://github.com/zerosync/giza#b2a63313fbd9242d71d460b7d259ea05eb10b222"
 dependencies = [
  "giza-core",
  "serde",
@@ -349,7 +355,7 @@ dependencies = [
 [[package]]
 name = "giza-core"
 version = "0.1.0"
-source = "git+https://github.com/zerosync/giza#be014ff0799e11492c7092d7e8f1a580885d9895"
+source = "git+https://github.com/zerosync/giza#b2a63313fbd9242d71d460b7d259ea05eb10b222"
 dependencies = [
  "ff",
  "hex",
@@ -612,9 +618,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.87"
+version = "1.0.89"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6ce777b7b150d76b9cf60d28b55f5847135a003f7d7350c6be7a773508ce7d45"
+checksum = "020ff22c755c2ed3f8cf162dbb41a7268d934702f3ed3631656ea597e08fc3db"
 dependencies = [
  "itoa",
  "ryu",
@@ -640,14 +646,14 @@ version = "0.10.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bdf0c33fae925bdc080598b84bc15c55e7b9a4a43b3c704da051f977469691c9"
 dependencies = [
- "digest 0.10.5",
+ "digest 0.10.6",
  "keccak",
 ]
 
 [[package]]
 name = "starknet-crypto"
-version = "0.1.0"
-source = "git+https://github.com/xJonathanLEI/starknet-rs#d5ef5e2f7c682ceb7d7b1925f88153b2524cef75"
+version = "0.2.0"
+source = "git+https://github.com/xJonathanLEI/starknet-rs#6ff372d0ac44e012cc807ccb154bcf2db3a91550"
 dependencies = [
  "crypto-bigint",
  "hex",
@@ -657,15 +663,35 @@ dependencies = [
  "num-traits",
  "rfc6979",
  "sha2",
+ "starknet-crypto-codegen",
+ "starknet-curve",
  "starknet-ff",
  "thiserror",
  "zeroize",
 ]
 
 [[package]]
-name = "starknet-ff"
+name = "starknet-crypto-codegen"
 version = "0.1.0"
-source = "git+https://github.com/xJonathanLEI/starknet-rs#d5ef5e2f7c682ceb7d7b1925f88153b2524cef75"
+source = "git+https://github.com/xJonathanLEI/starknet-rs#6ff372d0ac44e012cc807ccb154bcf2db3a91550"
+dependencies = [
+ "starknet-curve",
+ "starknet-ff",
+ "syn",
+]
+
+[[package]]
+name = "starknet-curve"
+version = "0.1.0"
+source = "git+https://github.com/xJonathanLEI/starknet-rs#6ff372d0ac44e012cc807ccb154bcf2db3a91550"
+dependencies = [
+ "starknet-ff",
+]
+
+[[package]]
+name = "starknet-ff"
+version = "0.2.0"
+source = "git+https://github.com/xJonathanLEI/starknet-rs#6ff372d0ac44e012cc807ccb154bcf2db3a91550"
 dependencies = [
  "ark-ff",
  "bigdecimal",
@@ -918,8 +944,11 @@ dependencies = [
  "blake2-rfc",
  "giza-air",
  "giza-core",
+ "hex",
  "serde",
  "serde_json",
+ "starknet-crypto",
+ "starknet-ff",
  "winter-air",
  "winter-crypto",
  "winter-utils",

@@ -4,12 +4,15 @@ mod tests {
     use std::io::{BufReader, Read};
 
     use winter_air::DefaultEvaluationFrame;
-    use winter_crypto::{hashers::Blake2s_256, Digest, Hasher, RandomCoin};
+    use winter_crypto::{hashers::Blake2s_256, Digest, ElementHasher, Hasher, RandomCoin};
     use winter_utils::{Deserializable, Serializable, SliceReader};
     use winterfell::{Air, AuxTraceRandElements, StarkProof, VerifierChannel, VerifierError};
 
     use giza_air::{ProcessorAir, PublicInputs};
     use giza_core::Felt;
+
+    use starknet_crypto::pedersen_hash;
+    use starknet_ff::FieldElement as Fe;
 
     use blake2::blake2s::blake2s;
 
@@ -37,13 +40,10 @@ mod tests {
     fn draw_felt() -> Result<(), VerifierError> {
         let public_coin_seed = vec![0u8; 32];
         let mut public_coin = RandomCoin::<Felt, Blake2s_256<Felt>>::new(&public_coin_seed);
-        //let seed = Blake2s_256::<Felt>::hash(&public_coin_seed);
-        //let digest = Blake2s_256::<Felt>::merge_with_int(seed, 1);
-        //println!("merge_with_int digest: {:02X?}\n", digest);
         let z = public_coin
             .draw::<Felt>()
             .map_err(|_| VerifierError::RandomCoinError)?;
-        println!("draw_felt: {}\n", z.to_raw());
+        println!("digest: {}", z.to_raw());
 
         Ok(())
     }
@@ -59,7 +59,87 @@ mod tests {
             .as_bytes()
             .try_into()
             .expect("slice with incorrect length");
-        println!("merge_with_int digest: {:02X?}\n", digest);
+        println!("digest: {}", hex::encode(digest));
+    }
+
+    #[test]
+    fn pedersen_chain() {
+        let values = vec![1u8, 1u8].into_iter().map(Fe::from).collect::<Vec<_>>();
+        let len = Fe::from(values.len());
+        let digest = values
+            .iter()
+            .fold(Fe::from(0u8), |hash, item| pedersen_hash(&hash, &item));
+        let digest = pedersen_hash(&digest, &len);
+        println!("digest: {}", hex::encode(digest.to_bytes_be()));
+    }
+
+    // TODO: Refactor, to reuse code in pedersen_chain test
+    fn get_pub_mem_hash() -> Fe {
+        let path = String::from("tests/stark_proofs/fibonacci.bin");
+        let data = BinaryProofData::from_file(&path);
+        let pub_inputs =
+            PublicInputs::read_from(&mut SliceReader::new(&data.input_bytes[..])).unwrap();
+        let len = Fe::from(pub_inputs.mem.1.len());
+        let mut pub_mem_hash = pub_inputs
+            .mem
+            .1
+            .iter()
+            .map(|x| {
+                Fe::from_bytes_be(&{
+                    let mut data = [0; 32];
+                    write_be_bytes(x.unwrap().word().to_raw().0, &mut data);
+                    data
+                })
+                .unwrap()
+            })
+            .fold(Fe::from(0u8), |hash, item| pedersen_hash(&hash, &item));
+        pedersen_hash(&pub_mem_hash, &len)
+    }
+
+    #[test]
+    fn hash_pub_inputs() {
+        let digest = get_pub_mem_hash();
+        println!("digest: {}", hex::encode(digest.to_bytes_be()));
+    }
+
+    #[test]
+    fn seed_with_pub_inputs() {
+        let path = String::from("tests/stark_proofs/fibonacci.bin");
+        let data = BinaryProofData::from_file(&path);
+        let pub_inputs =
+            PublicInputs::read_from(&mut SliceReader::new(&data.input_bytes[..])).unwrap();
+
+        let digest = get_pub_mem_hash();
+        let pub_mem_hash = {
+            let mut bytes = digest.to_bytes_be();
+            bytes.reverse();
+            Felt::from(bytes)
+        };
+
+        let mut data = Vec::new();
+
+        data.push(pub_inputs.init.pc);
+        data.push(pub_inputs.init.ap);
+        data.push(pub_inputs.init.fp);
+
+        data.push(pub_inputs.fin.pc);
+        data.push(pub_inputs.fin.ap);
+        data.push(pub_inputs.fin.fp);
+
+        data.push(pub_inputs.rc_min.into());
+        data.push(pub_inputs.rc_max.into());
+
+        data.push(pub_inputs.mem.0.len().into());
+        data.push(pub_mem_hash);
+
+        data.push(pub_inputs.num_steps.into());
+
+        // TODO: Debug 'hash_elements' -- not in agreement with Cairo blake2s
+        let digest: [u8; 32] = Blake2s_256::hash_elements(&data)
+            .as_bytes()
+            .try_into()
+            .expect("slice with incorrect length");
+        println!("digest: {}", hex::encode(digest));
     }
 
     #[test]
@@ -78,8 +158,7 @@ mod tests {
 
         let mut public_coin_seed = Vec::new();
         pub_inputs.write_into(&mut public_coin_seed);
-
-        println!("seed: {:02X?}", public_coin_seed );
+        println!("seed: {}", hex::encode(&public_coin_seed));
 
         let air = ProcessorAir::new(proof.get_trace_info(), pub_inputs, proof.options().clone());
 
@@ -123,8 +202,14 @@ mod tests {
             .draw::<Felt>()
             .map_err(|_| VerifierError::RandomCoinError)?;
 
-        println!("draw_ood_point_z: {}", z.to_raw());
+        println!("ood_point_z: {}", z.to_raw());
 
         Ok(())
+    }
+
+    fn write_be_bytes(value: [u64; 4], out: &mut [u8; 32]) {
+        for (src, dst) in value.iter().rev().cloned().zip(out.chunks_exact_mut(8)) {
+            dst.copy_from_slice(&src.to_be_bytes());
+        }
     }
 }
