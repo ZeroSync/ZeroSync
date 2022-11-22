@@ -88,16 +88,25 @@ impl Writeable for PublicInputs {
         self.rc_min.write_into(target);
         self.rc_max.write_into(target);
         self.mem.write_into(target);
+        self.mem.0.len().write_into(target);
         self.num_steps.write_into(target);
     }
 }
 
 impl Writeable for (Vec<u64>, Vec<Option<Word>>) {
     fn write_into(&self, target: &mut DynamicMemory) {
+        let mut res = Vec::new();
         for (idx, word) in zip(&self.0, &self.1) {
-            idx.write_into(target);
-            word.unwrap().word().write_into(target);
+            res.push( (idx, word.unwrap().word() ) ); 
         }
+        target.write_array(res);
+    }
+}
+
+impl Writeable for (&u64, Felt){
+    fn write_into(&self, target: &mut DynamicMemory) {
+        self.0.write_into(target);
+        self.1.write_into(target);
     }
 }
 

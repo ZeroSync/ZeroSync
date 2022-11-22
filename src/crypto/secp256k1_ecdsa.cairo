@@ -56,3 +56,5 @@ func verify_ecdsa_secp256k1{range_check_ptr}(
 
     return ();
 }
+
+// TODO: implement DER encoding for ECDSA signatures
