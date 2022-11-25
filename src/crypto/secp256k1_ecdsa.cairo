@@ -122,7 +122,7 @@ func secp256k1_der_read_len{reader: Reader, range_check_ptr, bitwise_ptr: Bitwis
     let lenleft = [bitwise_ptr].x_and_y;
     let bitwise_ptr = bitwise_ptr + BitwiseBuiltin.SIZE;
 
-    let byte = peek_uint8(reader);
+    let byte = peek_uint8();
     // Not the shortest possible length encoding.
     assert_not_zero(byte);
 
@@ -160,7 +160,7 @@ func secp256k1_der_parse_integer{reader: Reader, range_check_ptr, bitwise_ptr: B
 
     let rlen = secp256k1_der_read_len();
     
-    let byte = peek_uint8(reader);
+    let byte = peek_uint8();
     
     let uint16 = peek_uint16(reader);
 
@@ -198,7 +198,7 @@ func secp256k1_der_parse_integer{reader: Reader, range_check_ptr, bitwise_ptr: B
     if (byte == 0) {
         read_uint8();
         // Skip leading zero byte
-        let byte = peek_uint8(reader);
+        let byte = peek_uint8();
         tempvar bitwise_ptr = bitwise_ptr;
         tempvar reader = reader;
         tempvar rlen = rlen - 1;

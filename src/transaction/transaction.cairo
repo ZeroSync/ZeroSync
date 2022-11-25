@@ -70,7 +70,7 @@ func read_transaction{reader: Reader, bitwise_ptr: BitwiseBuiltin*}() -> (
     let version = read_uint32();
 
     // Parse the SegWit flag
-    let is_not_segwit = peek_uint8(reader);
+    let is_not_segwit = peek_uint8();
     if (is_not_segwit == 0) {
         // This is a SegWit transaction
         // Read the 2 bytes of "marker" and "flag"

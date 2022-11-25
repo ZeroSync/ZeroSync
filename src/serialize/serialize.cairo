@@ -247,7 +247,7 @@ func read_hash{reader: Reader, bitwise_ptr: BitwiseBuiltin*}() -> felt* {
 }
 
 // Peek the first byte from a reader without increasing the reader's cursor
-func peek_uint8{bitwise_ptr: BitwiseBuiltin*}(reader: Reader) -> felt {
+func peek_uint8{reader: Reader, bitwise_ptr: BitwiseBuiltin*}() -> felt {
     if (reader.offset == 0) {
         // The Reader's payload is empty, so we read from the head
 
