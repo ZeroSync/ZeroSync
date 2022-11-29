@@ -26,12 +26,16 @@
 
 - [About](#about)
 - [Getting Started](#getting-started)
-  - [Prerequisites](#prerequisites)
+- [Prerequisites](#prerequisites)
+- [Run the Utreexo Bridge Node](#run-the-utreexo-bridge-node)
+- [Run all Unit Tests](#run-all-unit-tests)
+- [Run the Chain Prover](#run-the-chain-prover)
+- [List TODOs](#list-todos)
 - [Roadmap](#roadmap)
 - [Support](#support)
 - [Project assistance](#project-assistance)
 - [Contributing](#contributing)
-- [Authors & contributors](#authors--contributors)
+- [Authors \& contributors](#authors--contributors)
 - [Security](#security)
 - [License](#license)
 - [Acknowledgements](#acknowledgements)
@@ -66,11 +70,13 @@ source ~/cairo_venv/bin/activate
 python src/utreexo/bridge_node.py
 ```
 
-## Run all Tests
 
+## Run all Unit Tests
 ```sh
 protostar test --cairo-path=./src target src
 ```
+
+
 
 ## Run the Chain Prover
 

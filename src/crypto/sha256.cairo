@@ -7,7 +7,9 @@ from starkware.cairo.common.memcpy import memcpy
 from starkware.cairo.common.memset import memset
 from utils.pow2 import pow2
 
-from crypto.sha256.packed_sha256 import (
+from crypto.hash_utils import HASH_FELT_SIZE
+
+from crypto.sha256_packed import (
     BLOCK_SIZE,
     compute_message_schedule,
     sha2_compress,
@@ -16,7 +18,8 @@ from crypto.sha256.packed_sha256 import (
 
 const SHA256_INPUT_CHUNK_SIZE_FELTS = 16;
 const SHA256_INPUT_CHUNK_SIZE_BYTES = 64;
-const SHA256_STATE_SIZE_FELTS = 8;
+// A 256-bit hash is represented as an array of 8 x Uint32
+const SHA256_STATE_SIZE_FELTS = HASH_FELT_SIZE;
 // Each instance consists of 16 words of message, 8 words for the input state and 8 words
 // for the output state.
 const SHA256_INSTANCE_SIZE = SHA256_INPUT_CHUNK_SIZE_FELTS + 2 * SHA256_STATE_SIZE_FELTS;

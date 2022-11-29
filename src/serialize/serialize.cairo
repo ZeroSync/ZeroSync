@@ -271,6 +271,12 @@ func peek_uint8{reader: Reader, bitwise_ptr: BitwiseBuiltin*}() -> felt {
     }
 }
 
+// Peek the next two bytes from a reader without increasing the reader's cursor
+func peek_uint16{bitwise_ptr: BitwiseBuiltin*}(reader: Reader) -> felt {
+    let uint16 = read_uint16{reader = reader}();
+    return uint16;
+}
+
 struct Writer {
     head: felt*,
     offset: felt,
@@ -283,6 +289,7 @@ func init_writer(array: felt*) -> Writer {
 }
 
 // Any unwritten data in the writer's temporary memory is written to the writer.
+// NOTE: Writer should be modified here by using {writer: Writer} syntax!
 func flush_writer(writer: Writer) {
     // Write what's left in our writer
     // Then fill up the uint32 with trailing zeros

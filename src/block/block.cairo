@@ -28,7 +28,7 @@ from transaction.transaction import (
     validate_outputs_loop,
 )
 from block.merkle_tree import compute_merkle_root
-from crypto.sha256d.sha256d import assert_hashes_equal, copy_hash, HASH_FELT_SIZE
+from crypto.hash_utils import assert_hashes_equal, copy_hash, HASH_FELT_SIZE
 
 // The state of the headers chain and the UTXO set
 struct State {
@@ -44,8 +44,7 @@ struct BlockValidationContext {
     transaction_contexts: TransactionValidationContext*,
     prev_utreexo_roots: felt*,
 }
-
-func fetch_transaction_count(block_height) -> (transaction_count: felt) {
+func fetch_transaction_count(block_height) -> felt {
     alloc_locals;
     local transaction_count;
 
@@ -64,7 +63,7 @@ func fetch_transaction_count(block_height) -> (transaction_count: felt) {
 
         ids.transaction_count = block["tx_count"]
     %}
-    return (transaction_count,);
+    return transaction_count;
 }
 
 func read_block_validation_context{
@@ -75,8 +74,8 @@ func read_block_validation_context{
     let header_context = read_block_header_validation_context(prev_state.chain_state);
 
     let block_height = prev_state.chain_state.block_height + 1;
-    let (transaction_count) = fetch_transaction_count(block_height);
-    let (transaction_contexts) = read_transaction_validation_contexts(
+    let transaction_count = fetch_transaction_count(block_height);
+    let transaction_contexts = read_transaction_validation_contexts(
         block_height, transaction_count
     );
 
@@ -88,14 +87,14 @@ func read_block_validation_context{
 
 func read_transaction_validation_contexts{
     range_check_ptr, bitwise_ptr: BitwiseBuiltin*, sha256_ptr: felt*
-}(block_height, transaction_count) -> (contexts: TransactionValidationContext*) {
+}(block_height, transaction_count) -> TransactionValidationContext* {
     alloc_locals;
 
     let (contexts: TransactionValidationContext*) = alloc();
     _read_transaction_validation_contexts_loop(
         contexts, block_height, transaction_count, transaction_count
     );
-    return (contexts,);
+    return contexts;
 }
 
 func _read_transaction_validation_contexts_loop{
@@ -146,7 +145,7 @@ func validate_merkle_root{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, sha256_
     _copy_txids_into_array_loop(context.transaction_contexts, txids, context.transaction_count);
 
     // Compute the Merkle root of the TXIDs
-    let (merkle_root) = compute_merkle_root(txids, context.transaction_count);
+    let merkle_root = compute_merkle_root(txids, context.transaction_count);
 
     // Validate that the computed Merkle root
     // matches the Merkle root in this block's header

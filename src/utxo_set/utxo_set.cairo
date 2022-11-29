@@ -3,7 +3,7 @@ from starkware.cairo.common.cairo_builtins import BitwiseBuiltin, HashBuiltin
 from starkware.cairo.common.math import unsigned_div_rem
 from starkware.cairo.common.hash import hash2
 
-from crypto.sha256d.sha256d import HASH_FELT_SIZE
+from crypto.hash_utils import HASH_FELT_SIZE
 from utils.python_utils import setup_python_defs
 from utreexo.utreexo import utreexo_add, utreexo_delete, fetch_inclusion_proof
 
@@ -13,7 +13,7 @@ func utxo_set_insert{range_check_ptr, hash_ptr: HashBuiltin*, utreexo_roots: fel
     alloc_locals;
 
     let (script_pub_key_len, _) = unsigned_div_rem(script_pub_key_size + 3, 4);
-    let (local hash) = hash_output(txid, vout, amount, script_pub_key, script_pub_key_len);
+    let hash = hash_output(txid, vout, amount, script_pub_key, script_pub_key_len);
 
     %{
         import urllib3
@@ -58,7 +58,7 @@ func utxo_set_extract{hash_ptr: HashBuiltin*, utreexo_roots: felt*}(txid: felt*,
         print('UTXOSET extract:', 'txid', txid, 'vout', ids.vout, 'amount', ids.amount, 'script_pub_key_size', ids.script_pub_key_size)
     %}
 
-    let (prevout_hash) = hash_output(txid, vout, amount, script_pub_key, script_pub_key_len);
+    let prevout_hash = hash_output(txid, vout, amount, script_pub_key, script_pub_key_len);
 
     let (leaf_index, proof, proof_len) = fetch_inclusion_proof(prevout_hash);
 
@@ -70,14 +70,14 @@ func utxo_set_extract{hash_ptr: HashBuiltin*, utreexo_roots: felt*}(txid: felt*,
 
 func hash_output{hash_ptr: HashBuiltin*}(
     txid: felt*, vout, amount, script_pub_key: felt*, script_pub_key_len
-) -> (hash: felt) {
+) -> felt {
     alloc_locals;
-    let (script_pub_key_hash) = hash_chain(script_pub_key, script_pub_key_len);
-    let (txid_hash) = hash_chain(txid, HASH_FELT_SIZE);
+    let script_pub_key_hash = hash_chain(script_pub_key, script_pub_key_len);
+    let txid_hash = hash_chain(txid, HASH_FELT_SIZE);
     let (tmp1) = hash2(amount, script_pub_key_hash);
     let (tmp2) = hash2(vout, tmp1);
     let (hash) = hash2(txid_hash, tmp2);
-    return (hash,);
+    return hash;
 }
 
 // This is a modified version of:
@@ -89,7 +89,7 @@ func hash_output{hash_ptr: HashBuiltin*}(
 // For example, for the 3-element sequence [x, y, z] the hash is:
 //   h(3, h(x, h(y, z)))
 // If data_length = 0, the function does not return (takes more than field prime steps).
-func hash_chain{hash_ptr: HashBuiltin*}(data_ptr: felt*, data_length) -> (hash: felt) {
+func hash_chain{hash_ptr: HashBuiltin*}(data_ptr: felt*, data_length) -> felt {
     struct LoopLocals {
         data_ptr: felt*,
         hash_ptr: HashBuiltin*,
@@ -126,5 +126,5 @@ func hash_chain{hash_ptr: HashBuiltin*}(data_ptr: felt*, data_length) -> (hash: 
 
     // Set the hash_ptr implicit argument and return the result.
     let hash_ptr = next_frame.hash_ptr;
-    return (hash=next_frame.cur_hash);
+    return next_frame.cur_hash;
 }

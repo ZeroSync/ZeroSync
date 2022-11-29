@@ -7,7 +7,7 @@
 
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
-from crypto.sha256d.sha256d import assert_hashes_equal
+from crypto.hash_utils import assert_hashes_equal
 from serialize.serialize import (
     flush_writer,
     init_writer,

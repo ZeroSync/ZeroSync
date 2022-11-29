@@ -4,27 +4,23 @@
 // - Bitcoin Core https://github.com/bitcoin/bitcoin/blob/master/src/consensus/merkle.cpp
 //
 
-from starkware.cairo.common.math import unsigned_div_rem
 from starkware.cairo.common.alloc import alloc
-from crypto.sha256d.sha256d import (
-    sha256d_felt_sized,
-    copy_hash,
-    HASH_SIZE,
-    HASH_FELT_SIZE,
-    assert_hashes_not_equal,
-)
+from starkware.cairo.common.math import unsigned_div_rem
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
+from crypto.hash256 import hash256
+from crypto.hash_utils import copy_hash, assert_hashes_not_equal, HASH_FELT_SIZE
+from serialize.serialize import UINT32_SIZE
 
 // Compute the Merkle root hash of a set of hashes
 // - https://github.com/bitcoin/bitcoin/issues/19598#issuecomment-693212439
 func compute_merkle_root{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, sha256_ptr: felt*}(
     leaves: felt*, leaves_len: felt
-) -> (hash: felt*) {
+) -> felt* {
     alloc_locals;
 
     // The trivial case is a tree with a single leaf
     if (leaves_len == 1) {
-        return (leaves,);
+        return leaves;
     }
 
     // If the number of leaves is odd then duplicate the last leaf
@@ -63,7 +59,7 @@ func _compute_merkle_root_loop{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, sh
     }
 
     // Hash two prev_leaves to get one leave of the next generation
-    let hash = sha256d_felt_sized(prev_leaves, HASH_FELT_SIZE * 2);
+    let hash = hash256(prev_leaves, HASH_FELT_SIZE * UINT32_SIZE * 2);
     copy_hash(hash, next_leaves);
 
     // Continue this loop with the next two prev_leaves

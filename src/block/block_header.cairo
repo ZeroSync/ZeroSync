@@ -27,9 +27,10 @@ from serialize.serialize import (
     init_reader,
     read_bytes,
 )
-from crypto.sha256d.sha256d import sha256d_felt_sized, assert_hashes_equal
+from crypto.hash256 import hash256
+from crypto.hash_utils import assert_hashes_equal
 from utils.pow2 import pow2
-from utils.compute_median import compute_timestamps_median
+from block.compute_median import compute_timestamps_median
 // The size of a block header is 80 bytes
 const BLOCK_HEADER_SIZE = 80;
 // The size of a block header encoded as an array of Uint32 is 20 felts
@@ -172,7 +173,7 @@ func read_block_header_validation_context{
 
     let target = bits_to_target(block_header.bits);
 
-    let block_hash = sha256d_felt_sized(raw_block_header, BLOCK_HEADER_FELT_SIZE);
+    let block_hash = hash256(raw_block_header, BLOCK_HEADER_SIZE);
 
     let ctx = BlockHeaderValidationContext(
         block_header, block_hash, target, prev_chain_state, block_height
@@ -317,7 +318,7 @@ func validate_timestamp{range_check_ptr}(context: BlockHeaderValidationContext) 
     alloc_locals;
 
     let prev_timestamps = context.prev_chain_state.prev_timestamps;
-    let (median_time) = compute_timestamps_median(prev_timestamps);
+    let median_time = compute_timestamps_median(prev_timestamps);
 
     // Compare this block's timestamp to the median time
     with_attr error_message(

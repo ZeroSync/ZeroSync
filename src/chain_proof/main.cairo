@@ -5,12 +5,12 @@ from starkware.cairo.common.cairo_builtins import BitwiseBuiltin, HashBuiltin
 from starkware.cairo.common.serialize import serialize_word
 
 from serialize.serialize import init_reader
-from crypto.sha256d.sha256d import HASH_FELT_SIZE
+from crypto.hash_utils import HASH_FELT_SIZE
 from block.block_header import ChainState
 from block.block import State, validate_and_apply_block, read_block_validation_context
 from utreexo.utreexo import UTREEXO_ROOTS_LEN
 from utils.python_utils import setup_python_defs
-from crypto.sha256.sha256 import finalize_sha256
+from crypto.sha256 import finalize_sha256
 from chain_proof.recurse import recurse
 
 func serialize_chain_state{output_ptr: felt*}(chain_state: ChainState) {
@@ -32,7 +32,7 @@ func serialize_array{output_ptr: felt*}(array: felt*, array_len) {
     return ();
 }
 
-func fetch_block(block_height) -> (block_data: felt*) {
+func fetch_block(block_height) -> felt* {
     let (block_data) = alloc();
 
     %{
@@ -52,7 +52,7 @@ func fetch_block(block_height) -> (block_data: felt*) {
         from_hex(block_hex, ids.block_data)
     %}
 
-    return (block_data,);
+    return block_data;
 }
 
 func main{
@@ -78,7 +78,8 @@ func main{
     local epoch_start_time: felt;
     let (prev_timestamps) = alloc();
     let (prev_utreexo_roots) = alloc();
-    let (program_hash) = alloc();
+    local program_hash: felt;
+    local program_length: felt;
     %{
         ids.block_height = program_input["block_height"] if program_input["block_height"] != -1 else PRIME - 1
         ids.total_work = program_input["total_work"]
@@ -87,7 +88,8 @@ func main{
         ids.epoch_start_time = program_input["epoch_start_time"]
         segments.write_arg(ids.prev_timestamps, program_input["prev_timestamps"])
         segments.write_arg(ids.prev_utreexo_roots, felts_from_hex_strings( program_input["utreexo_roots"] ) )
-        segments.write_arg(ids.program_hash, felts_from_hash( program_input["program_hash"]) )
+        ids.program_hash = int( program_input["program_hash"], 16)
+        ids.program_length = program_input["program_length"]
     %}
 
     let prev_chain_state = ChainState(
@@ -102,14 +104,13 @@ func main{
     }
 
     // Validate the previous chain proof
-    if(next_state.chain_state.block_height != 0){        
-        recurse(program_hash);
-    }
+    recurse(next_state.chain_state.block_height, program_hash, program_length, prev_state);
     
     // Print the next state
     serialize_chain_state(next_state.chain_state);
     serialize_array(next_state.utreexo_roots, UTREEXO_ROOTS_LEN);
-    serialize_array(program_hash, HASH_FELT_SIZE);
+    serialize_word(program_hash);
+    serialize_word(program_length);
 
     // finalize sha256_ptr
     finalize_sha256(sha256_ptr_start, sha256_ptr);

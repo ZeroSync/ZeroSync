@@ -10,8 +10,9 @@ struct DeepComposer {
 
 func deep_composer_new(
     air: AirInstance, query_positions: felt*, z: felt, cc: DeepCompositionCoefficients
-) -> (res: DeepComposer) {
-    return (res=DeepComposer());
+) -> DeepComposer {
+    let res = DeepComposer();
+    return res;
 }
 
 func compose_trace_columns(
@@ -20,24 +21,24 @@ func compose_trace_columns(
     queried_aux_trace_states: Table,
     ood_main_frame: EvaluationFrame,
     ood_aux_frame: EvaluationFrame,
-) -> (res: felt*) {
+) -> felt* {
     // TODO
     let (data: felt*) = alloc();
-    return (res=data);
+    return data;
 }
 
 func compose_constraint_evaluations(
     composer: DeepComposer, queried_evaluations: Table, ood_evaluations: Vec
-) -> (res: felt*) {
+) -> felt* {
     // TODO
     let (data: felt*) = alloc();
-    return (res=data);
+    return data;
 }
 
-func combine_compositions(composer: DeepComposer, t_composition: felt*, c_composition: felt*) -> (
-    res: felt*
-) {
+func combine_compositions(
+    composer: DeepComposer, t_composition: felt*, c_composition: felt*
+) -> felt* {
     // TODO
     let (data: felt*) = alloc();
-    return (res=data);
+    return data;
 }

@@ -64,7 +64,7 @@ def fetch_tx_ins_and_outs(block_height):
 
     tx_ins = []
     tx_outs = []
-    # fetch all tx_in per tx in txids
+    # fetch all tx_in and tx_out per tx in txids
     for txid in txids:
         url = 'https://blockstream.info/api/tx/' + txid
         r = http.request('GET', url)
@@ -85,7 +85,7 @@ def hash_tx_ins(tx_ins, tx_outs):
         # this utxo is generated in the validated block and we should not add
         # it to the utxo set manually
         if tx_vin['prevout'] in tx_outs:
-            tx_outs = [x for x in tx_outs if x != tx_vin['prevout']]
+            tx_outs.remove(tx_vin['prevout'])
             continue
         txid_list = hex_to_felt(little_endian(tx_vin['txid']))
         vout = tx_vin['vout']
@@ -116,4 +116,7 @@ if __name__ == "__main__":
     if block_height < 0:
         print("ERROR: Specify a block height above zero.")
         exit(2)
-    print(generate_utxo_dummys(block_height))
+    
+    dummys = generate_utxo_dummys(block_height)    
+    print(dummys)
+

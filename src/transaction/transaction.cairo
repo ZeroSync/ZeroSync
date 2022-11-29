@@ -8,7 +8,9 @@ from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin, HashBuiltin
 from starkware.cairo.common.math import assert_le
 
-from crypto.sha256d.sha256d import sha256d, HASH_SIZE
+from crypto.hash256 import hash256
+from crypto.hash_utils import HASH_FELT_SIZE
+
 from serialize.serialize import (
     init_reader,
     Reader,
@@ -149,7 +151,7 @@ func read_input{reader: Reader, bitwise_ptr: BitwiseBuiltin*}() -> (
         script_sig,
         sequence
         ),
-        HASH_SIZE +
+        UINT32_SIZE * HASH_FELT_SIZE +
         UINT32_SIZE +
         script_sig_size.byte_size +
         script_sig_size.value +
@@ -247,7 +249,7 @@ func read_transaction_validation_context{
     let transaction_raw = fetch_transaction(block_height, transaction_index);
     let reader = init_reader(transaction_raw);
     let (transaction, byte_size) = read_transaction{reader=reader}();
-    let txid = sha256d(transaction_raw, byte_size);
+    let txid = hash256(transaction_raw, byte_size);
 
     let ctx = TransactionValidationContext(transaction, byte_size, txid);
     return ctx;
@@ -377,7 +379,7 @@ struct TypedWriter {
 }
 
 // - https://developer.bitcoin.org/devguide/transactions.html#signature-hash-types
-// func hash_with_sighash_flag(transaction: Transaction, sighash: felt) -> (hash: felt*):
+// func hash_with_sighash_flag(transaction: Transaction, sighash: felt) -> felt* {
 // TODO: implement hash_with_sighash_flag
 // return ()
-// end
+// }

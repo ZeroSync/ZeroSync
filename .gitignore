@@ -1,6 +1,5 @@
 bin/
-tmp_work/
-conf/zerosync.toml
+target/
 build
 zerosync.egg-info
 .DS_Store

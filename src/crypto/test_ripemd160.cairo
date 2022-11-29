@@ -8,8 +8,7 @@ from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 
 from utils.python_utils import setup_python_defs
-from crypto.ripemd160.ripemd160 import ripemd160
-from crypto.ripemd160.rmd160 import pad_input
+from crypto.ripemd160 import ripemd160, pad_input
 
 // Test RIPEMD160 with "abc" test vector.
 // See: https://homes.esat.kuleuven.be/~bosselae/ripemd160.html
