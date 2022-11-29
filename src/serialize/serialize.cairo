@@ -9,6 +9,7 @@
 // - https://github.com/mimblewimble/grin/blob/master/core/src/ser.rs
 
 from starkware.cairo.common.alloc import alloc
+from starkware.cairo.common.bool import FALSE
 from starkware.cairo.common.math import assert_le
 from starkware.cairo.common.math_cmp import is_le
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
@@ -404,7 +405,7 @@ func write_varint{writer: Writer, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}
     }
 
     let source_is_8_bytes = is_le(BYTE ** 4, source);
-    if (source_is_8_bytes == 1) {
+    if (source_is_8_bytes != FALSE) {
         // This varint has 8 more bytes after the leading byte.
         write_uint8(0xff);
         write_uint64(source);
@@ -412,7 +413,7 @@ func write_varint{writer: Writer, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}
     }
 
     let source_is_4_bytes = is_le(BYTE ** 2, source);
-    if (source_is_4_bytes == 1) {
+    if (source_is_4_bytes != FALSE) {
         // This varint has 4 more bytes after the leading byte.
         write_uint8(0xfe);
         write_uint32(source);
@@ -420,7 +421,7 @@ func write_varint{writer: Writer, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}
     }
 
     let source_is_2_bytes = is_le(BYTE, source);
-    if (source_is_2_bytes == 1) {
+    if (source_is_2_bytes != FALSE) {
         // This varint has 2 more bytes after the leading byte.
         write_uint8(0xfd);
         write_uint16(source);
