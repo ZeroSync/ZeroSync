@@ -193,7 +193,7 @@ func _draw_integers_loop{
     let bitwise_ptr = bitwise_ptr + BitwiseBuiltin.SIZE;
 
     let is_contained = contains(value, elements, index);
-    if (is_contained == 1) {
+    if (is_contained != FALSE) {
         return _draw_integers_loop(n_elements, elements, domain_size, index);
     }
 
