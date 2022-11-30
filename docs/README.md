@@ -104,10 +104,10 @@ Reach out to the maintainer at one of the following places:
 
 ## Project assistance
 
-If you want to say **thank you** or/and support active development of Beerus:
+If you want to say **thank you** or/and support active development of ZeroSync:
 
 - Add a [GitHub Star](https://github.com/ZeroSync/ZeroSync) to the project.
-- Tweet about the Beerus.
+- Tweet about the ZeroSync.
 - Write interesting articles about the project on [Dev.to](https://dev.to/), [Medium](https://medium.com/) or your personal blog.
 
 Together, we can make ZeroSync **better**!
