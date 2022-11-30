@@ -12,7 +12,7 @@ from starkware.cairo.common.hash import HashBuiltin
 from starkware.cairo.common.hash_state import hash_finalize, hash_init, hash_update
 from starkware.cairo.common.math import assert_nn_le, assert_le
 from starkware.cairo.common.math_cmp import is_le
-from starkware.cairo.common.bool import TRUE
+from starkware.cairo.common.bool import TRUE, FALSE
 from starkware.cairo.common.memcpy import memcpy
 from starkware.cairo.common.memset import memset
 from utils.pow2 import pow2
@@ -193,7 +193,7 @@ func _draw_integers_loop{
     let bitwise_ptr = bitwise_ptr + BitwiseBuiltin.SIZE;
 
     let is_contained = contains(value, elements, index);
-    if (is_contained == 1) {
+    if (is_contained != FALSE) {
         return _draw_integers_loop(n_elements, elements, domain_size, index);
     }
 
