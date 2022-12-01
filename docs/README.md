@@ -45,7 +45,7 @@ protostar test --cairo-path=./src tests
 Run some tests with the Rust verifier to derive a detailed ground truth:
 
 ```sh
-cargo +nightly test -- --nocapture
+cargo +nightly test -- --show-output
 ```
 
 
@@ -62,3 +62,6 @@ python3 src/chain_proof/main.py
 ```
 
 
+## Roadmap
+
+The roadmap is available [here](roadmap.md).
