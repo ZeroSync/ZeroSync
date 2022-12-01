@@ -188,13 +188,13 @@ func test_hash_pub_inputs{
         print(
             'pub_mem_hash',
             hex(ids.pub_mem_hash),
-            '\n expected: ...')
+            '\n expected: 05334bb4 ... a78fbcc64')
     %}
     return ();
 }
 
 /// Test public coin seed generation
-@external
+// @external
 func test_public_coin_seed{
     pedersen_ptr: HashBuiltin*,
     range_check_ptr,
