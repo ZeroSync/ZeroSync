@@ -156,7 +156,7 @@ func test_pedersen_chain{
 }
 
 /// Test public input hash
-@external
+//  @external
 func test_hash_pub_inputs{
     range_check_ptr, pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*
 }() {
