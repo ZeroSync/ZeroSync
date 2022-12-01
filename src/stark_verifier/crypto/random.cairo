@@ -88,8 +88,7 @@ func hash_elements{range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuil
     with data {
         blake2s_add_felts(n_elements=n_elements, elements=elements, bigend=1);
     }
-
-    let (res) = blake2s_as_words(data=data, n_bytes=n_elements * 32);
+    let (res) = blake2s_as_words(data=data_start, n_bytes = n_elements * 32);
     return res;
 }
 
