@@ -14,7 +14,7 @@
 <br />
 
 ![GitHub Workflow Status](https://github.com/ZeroSync/ZeroSync/actions/workflows/CI.yml/badge.svg)
-[![Project license](https://img.shields.io/github/license/ZeroSync/ZeroSync.svg)](LICENSE)
+[![Project license](https://img.shields.io/github/license/ZeroSync/ZeroSync.svg)](../LICENSE)
 [![Pull Requests welcome](https://img.shields.io/badge/PRs-welcome-ff69b4.svg?)](https://github.com/ZeroSync/ZeroSync/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
 ![GitHub Repo stars](https://img.shields.io/github/stars/ZeroSync/ZeroSync?style=social)
 [![Twitter Follow](https://img.shields.io/twitter/follow/ZeroSync_?style=social)](https://twitter.com/ZeroSync_)
