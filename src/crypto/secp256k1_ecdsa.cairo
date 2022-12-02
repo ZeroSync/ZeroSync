@@ -34,35 +34,23 @@ func get_ecpoint_from_pubkey{range_check_ptr}(x: Uint256, y: Uint256) -> EcPoint
 // Soundness assumptions:
 // * public_key_pt is on the curve.
 // * All the limbs of public_key_pt.x, public_key_pt.y, msg_hash are in the range [0, 3 * BASE).
-func verify_ecdsa_secp256k1{range_check_ptr}(
-    point_x: Uint256, point_y: Uint256, tx_hash: Uint256, sig_r: Uint256, sig_s: Uint256
-) {
+func verify_ecdsa_secp256k1{range_check_ptr}(pt: EcPoint, z: BigInt3, r: BigInt3, s: BigInt3) {
     alloc_locals;
-
-    let pt: EcPoint = get_ecpoint_from_pubkey(point_x, point_y);
-    let (r: BigInt3) = uint256_to_bigint(sig_r);
-    let (s: BigInt3) = uint256_to_bigint(sig_s);
-    let (z: BigInt3) = uint256_to_bigint(tx_hash);
-    
     with_attr error_message("Signature out of range.") {
         validate_signature_entry(r);
         validate_signature_entry(s);
     }
-
     let (gen_pt: EcPoint) = get_generator_point();
-
     // Compute u1 and u2.
     let (u1: BigInt3) = div_mod_n(z, s);
     let (u2: BigInt3) = div_mod_n(r, s);
-
     // The following assert also implies that res is not the zero point.
     with_attr error_message("Invalid signature.") {
         let (gen_u1: EcPoint) = ec_mul(gen_pt, u1);
         let (pub_u2: EcPoint) = ec_mul(pt, u2);
         let (res) = ec_add(gen_u1, pub_u2);
-        assert res.x = r;
+        assert r = res.x;
     }
-
     return ();
 }
 
@@ -74,7 +62,7 @@ func verify_ecdsa_secp256k1{range_check_ptr}(
 func decode_der_signature{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
     der_signature: felt*
 ) -> (
-    sig_r: Uint256, sig_s: Uint256
+    sig_r: BigInt3, sig_s: BigInt3
 ) {
     alloc_locals;
 
@@ -94,6 +82,7 @@ func decode_der_signature{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
     return (r_sig, s_sig);
 }
 
+// - https://github.com/bitcoin-core/secp256k1/blob/74c34e727bd68d8665e15446e50731006f178aa0/src/ecdsa_impl.h#L49
 func secp256k1_der_read_len{reader: Reader, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() -> felt {
 
     alloc_locals;
@@ -146,9 +135,10 @@ func secp256k1_der_read_len{reader: Reader, range_check_ptr, bitwise_ptr: Bitwis
     return len;
 }
 
+// - https://github.com/bitcoin-core/secp256k1/blob/74c34e727bd68d8665e15446e50731006f178aa0/src/ecdsa_impl.h#L102
 func secp256k1_der_parse_integer{reader: Reader, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
     siglen
-) -> Uint256 {
+) -> BigInt3 {
 
     alloc_locals;
 
@@ -214,7 +204,7 @@ func secp256k1_der_parse_integer{reader: Reader, range_check_ptr, bitwise_ptr: B
     // may return zero instead assert
     let is_rlen_le_32 = is_le(rlen, 32);
     if(is_rlen_le_32 == FALSE) {
-        let zero: Uint256 = Uint256(0, 0);
+        let zero: BigInt3 = BigInt3(0, 0, 0);
         return zero; // overflow
     }
 
@@ -222,16 +212,29 @@ func secp256k1_der_parse_integer{reader: Reader, range_check_ptr, bitwise_ptr: B
     let scalar_b32: felt* = secp256k1_scalar_set_b32(rlen);
 
     // Convert felt* to Uint256
-    let scalar_uint256: Uint256 = Uint256(
+    local scalar_uint256: Uint256 = Uint256(
         scalar_b32[0] + 2**32 * scalar_b32[1] + 2**64 * scalar_b32[2] + 2**96 * scalar_b32[3],
         scalar_b32[4] + 2**32 * scalar_b32[5] + 2**64 * scalar_b32[6] + 2**96 * scalar_b32[7]
     );
 
-    return scalar_uint256;
+    const BASE = 2 ** 86; // starkware.cairo.common.cairo_secp.constants
+    const RC_BOUND = 2 ** 128; // starkware.cairo.common.math_cmp
+
+    // Converts a Uint256 instance into a BigInt3.
+    // Assuming x is a valid Uint256 (its two limbs are below 2 ** 128), the resulting number will have
+    //   limbs in the range [0, BASE).
+    // x: Uint256
+    const D1_HIGH_BOUND = BASE ** 2 / RC_BOUND;
+    const D1_LOW_BOUND = RC_BOUND / BASE;
+    let (d1_low, d0) = unsigned_div_rem(scalar_uint256.low, BASE);
+    let (d2, d1_high) = unsigned_div_rem(scalar_uint256.high, D1_HIGH_BOUND);
+    let d1 = d1_high * D1_LOW_BOUND + d1_low;
+    let res = BigInt3(d0=d0, d1=d1, d2=d2);
+
+    return res; // scalar_uint256
 }
 
-// let res = Uint256(0xfffffffffffffffffffffffefffffc2f, 0xffffffffffffffffffffffffffffffff);
-
+// - https://github.com/bitcoin-core/secp256k1/blob/master/src/scalar_8x32_impl.h#L167
 func secp256k1_scalar_set_b32{reader: Reader, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
     rlen
 ) -> felt* {
@@ -263,69 +266,59 @@ const SECP256K1_N_5 = 0xFFFFFFFF;
 const SECP256K1_N_6 = 0xFFFFFFFF;
 const SECP256K1_N_7 = 0xFFFFFFFF;
 
+
+// - https://github.com/bitcoin-core/secp256k1/blob/master/src/scalar_8x32_impl.h#L77
 func secp256k1_scalar_check_overflow{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
     secp256k1_scalar: felt*
 ) -> felt {
-    let lt_7 = is_le(secp256k1_scalar[7], SECP256K1_N_7 + 1);
-    let lt_6 = is_le(secp256k1_scalar[6], SECP256K1_N_6 + 1);
-    let lt_5 = is_le(secp256k1_scalar[5], SECP256K1_N_5 + 1);
-    let lt_4 = is_le(secp256k1_scalar[4], SECP256K1_N_4 + 1);
-    // no |= (secp256k1_scalar[7] < SECP256K1_N_7);
-    // no |= (secp256k1_scalar[6] < SECP256K1_N_6);
-    // no |= (secp256k1_scalar[5] < SECP256K1_N_5);
-    // no |= (secp256k1_scalar[4] < SECP256K1_N_4);
+    let lt_7 = is_le([secp256k1_scalar + 7], SECP256K1_N_7 + 1);
+    let lt_6 = is_le([secp256k1_scalar + 6], SECP256K1_N_6 + 1);
+    let lt_5 = is_le([secp256k1_scalar + 5], SECP256K1_N_5 + 1);
+    let lt_4 = is_le([secp256k1_scalar + 4], SECP256K1_N_4 + 1);
     if (lt_7 + lt_6 + lt_5 + lt_4 == FALSE) {
         tempvar no = FALSE;
     } else {
         tempvar no = TRUE;
     }
-    let gt_4 = is_le(SECP256K1_N_4, secp256k1_scalar[4] + 1);
-    // yes |= (secp256k1_scalar[4] > SECP256K1_N_4) & ~no;
+    let gt_4 = is_le(SECP256K1_N_4, [secp256k1_scalar + 4] + 1);
     let yes = gt_4 * (TRUE - no);
-    let lt_3 = is_le(secp256k1_scalar[3], SECP256K1_N_3 + 1);
-    // no |= (secp256k1_scalar[3] < SECP256K1_N_3) & ~yes;
+    let lt_3 = is_le([secp256k1_scalar + 3], SECP256K1_N_3 + 1);
     if (no + lt_3 * (TRUE - yes) == FALSE) {
         tempvar no = FALSE;
     } else {
         tempvar no = TRUE;
     }
-    let gt_3 = is_le(SECP256K1_N_3, secp256k1_scalar[3] + 1);
-    // yes |= (secp256k1_scalar[3] > SECP256K1_N_3) & ~no;
+    let gt_3 = is_le(SECP256K1_N_3, [secp256k1_scalar + 3] + 1);
     if (yes + gt_3 * (TRUE - no) == FALSE) {
         tempvar yes = FALSE;
     } else {
         tempvar yes = TRUE;
     }
-    let lt_2 = is_le(secp256k1_scalar[2], SECP256K1_N_2 + 1);
-    // no |= (secp256k1_scalar[2] < SECP256K1_N_2) & ~yes;
+    let lt_2 = is_le([secp256k1_scalar + 2], SECP256K1_N_2 + 1);
     if (no + lt_2 * (TRUE - yes) == FALSE) {
         tempvar no = FALSE;
     } else {
         tempvar no = TRUE;
     }
-    let gt_2 = is_le(SECP256K1_N_2, secp256k1_scalar[2] + 1);
-    // yes |= (secp256k1_scalar[2] > SECP256K1_N_2) & ~no;
+    let gt_2 = is_le(SECP256K1_N_2, [secp256k1_scalar + 2] + 1);
     if (yes + gt_2 * (TRUE - no) == FALSE) {
         tempvar yes = FALSE;
     } else {
         tempvar yes = TRUE;
     }
-    let lt_1 = is_le(secp256k1_scalar[1], SECP256K1_N_1 + 1);
-    // no |= (secp256k1_scalar[1] < SECP256K1_N_1) & ~yes;
+    let lt_1 = is_le([secp256k1_scalar + 1], SECP256K1_N_1 + 1);
     if (no + lt_1 * (TRUE - yes) == FALSE) {
         tempvar no = FALSE;
     } else {
         tempvar no = TRUE;
     }
-    let gt_1 = is_le(SECP256K1_N_1, secp256k1_scalar[1] + 1);
-    // yes |= (secp256k1_scalar[1] > SECP256K1_N_1) & ~no;
+    let gt_1 = is_le(SECP256K1_N_1, [secp256k1_scalar + 1] + 1);
     if (yes + gt_1 * (TRUE - no) == FALSE) {
         tempvar yes = FALSE;
     } else {
         tempvar yes = TRUE;
     }
-    let le_0 = is_le(SECP256K1_N_0, secp256k1_scalar[0]);
-    // yes |= (secp256k1_scalar[0] >= SECP256K1_N_0) & ~no;
+    let le_0 = is_le(SECP256K1_N_0, [secp256k1_scalar + 0]);
     if (yes + le_0 * (TRUE - no) == FALSE) {
         return FALSE;
     } else {
@@ -340,10 +333,14 @@ const SECP256K1_N_C_2 = 0xFFFFFFFF - SECP256K1_N_2;
 const SECP256K1_N_C_3 = 0xFFFFFFFF - SECP256K1_N_3;
 const SECP256K1_N_C_4 = 1;
 
+// - https://github.com/bitcoin-core/secp256k1/blob/master/src/scalar_8x32_impl.h#L95
 func secp256k1_scalar_reduce{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
     secp256k1_in: felt*, overflow
 ) -> felt* {
     assert_le(overflow, 1);
+
+
+
     let (secp256k1_out) = alloc();
     assert bitwise_ptr[0].x = secp256k1_in[0] + overflow * SECP256K1_N_C_0;
     assert bitwise_ptr[0].y = 0xFFFFFFFF;
