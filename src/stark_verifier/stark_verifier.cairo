@@ -57,6 +57,8 @@ from stark_verifier.evaluator import evaluate_constraints
 from stark_verifier.fri.fri_verifier import fri_verifier_new, fri_verify
 from stark_verifier.utils import Vec
 
+from stark_verifier.air.pub_inputs import read_public_inputs
+
 // Verifies that the specified computation was executed correctly against the specified inputs.
 //
 // These subroutines are intended to be as close to a line-by-line transcription of the
