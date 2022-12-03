@@ -341,7 +341,7 @@ dependencies = [
 [[package]]
 name = "giza-air"
 version = "0.1.0"
-source = "git+https://github.com/zerosync/giza#b2a63313fbd9242d71d460b7d259ea05eb10b222"
+source = "git+https://github.com/zerosync/giza?rev=721df3e#721df3e65bb1a7658b0bcd13741bd0fa7c12a310"
 dependencies = [
  "giza-core",
  "serde",
@@ -355,7 +355,7 @@ dependencies = [
 [[package]]
 name = "giza-core"
 version = "0.1.0"
-source = "git+https://github.com/zerosync/giza#b2a63313fbd9242d71d460b7d259ea05eb10b222"
+source = "git+https://github.com/zerosync/giza?rev=721df3e#721df3e65bb1a7658b0bcd13741bd0fa7c12a310"
 dependencies = [
  "ff",
  "hex",

@@ -239,21 +239,21 @@ func seed_with_pub_inputs{
     let (data: felt*) = alloc();
     let data_start = data;
     with data {
-        blake2s_add_felt(num=pub_inputs.init._pc, bigend=1);
-        blake2s_add_felt(num=pub_inputs.init._ap, bigend=1);
-        blake2s_add_felt(num=pub_inputs.init._fp, bigend=1);
+        blake2s_add_felt(num=pub_inputs.init._pc, bigend=0);
+        blake2s_add_felt(num=pub_inputs.init._ap, bigend=0);
+        blake2s_add_felt(num=pub_inputs.init._fp, bigend=0);
 
-        blake2s_add_felt(num=pub_inputs.fin._pc, bigend=1);
-        blake2s_add_felt(num=pub_inputs.fin._ap, bigend=1);
-        blake2s_add_felt(num=pub_inputs.fin._fp, bigend=1);
+        blake2s_add_felt(num=pub_inputs.fin._pc, bigend=0);
+        blake2s_add_felt(num=pub_inputs.fin._ap, bigend=0);
+        blake2s_add_felt(num=pub_inputs.fin._fp, bigend=0);
 
-        blake2s_add_felt(num=pub_inputs.rc_min, bigend=1);
-        blake2s_add_felt(num=pub_inputs.rc_max, bigend=1);
+        blake2s_add_felt(num=pub_inputs.rc_min, bigend=0);
+        blake2s_add_felt(num=pub_inputs.rc_max, bigend=0);
 
-        blake2s_add_felt(num=mem_length, bigend=1);
-        blake2s_add_felt(num=pub_mem_hash, bigend=1);
+        blake2s_add_felt(num=mem_length, bigend=0);
+        blake2s_add_felt(num=pub_mem_hash, bigend=0);
 
-        blake2s_add_felt(num=pub_inputs.num_steps, bigend=1);
+        blake2s_add_felt(num=pub_inputs.num_steps, bigend=0);
     }
 
     let n_bytes = (data - data_start) * 4;
