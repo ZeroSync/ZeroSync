@@ -156,7 +156,7 @@ func test_pedersen_chain{
 }
 
 /// Test public input hash
-@external
+//  @external
 func test_hash_pub_inputs{
     range_check_ptr, pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*
 }() {
@@ -188,13 +188,13 @@ func test_hash_pub_inputs{
         print(
             'pub_mem_hash',
             hex(ids.pub_mem_hash),
-            '\n expected: ...')
+            '\n expected: 05334bb4 ... a78fbcc64')
     %}
     return ();
 }
 
 /// Test public coin seed generation
-@external
+// @external
 func test_public_coin_seed{
     pedersen_ptr: HashBuiltin*,
     range_check_ptr,

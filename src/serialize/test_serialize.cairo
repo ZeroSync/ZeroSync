@@ -33,25 +33,19 @@ from serialize.serialize import (
 func test_read_uint8{bitwise_ptr: BitwiseBuiltin*}() {
     alloc_locals;
 
-    let (array) = alloc();
-    assert array[0] = 0x01020304;
-    assert array[1] = 0x05000000;
+    let reader = init_reader( new (0x01020304, 0x05000000) );
 
-    let reader = init_reader(array);
-
-    let uint8_1 = read_uint8{reader=reader}();
+    with reader {
+        let uint8_1 = read_uint8();
+        let uint8_2 = read_uint8();
+        let uint8_3 = read_uint8();
+        let uint8_4 = read_uint8();
+        let uint8_5 = read_uint8();
+    }
     assert uint8_1 = 0x01;
-
-    let uint8_2 = read_uint8{reader=reader}();
     assert uint8_2 = 0x02;
-
-    let uint8_3 = read_uint8{reader=reader}();
     assert uint8_3 = 0x03;
-
-    let uint8_4 = read_uint8{reader=reader}();
     assert uint8_4 = 0x04;
-
-    let uint8_5 = read_uint8{reader=reader}();
     assert uint8_5 = 0x05;
 
     return ();
@@ -61,12 +55,11 @@ func test_read_uint8{bitwise_ptr: BitwiseBuiltin*}() {
 func test_read_uint16{bitwise_ptr: BitwiseBuiltin*}() {
     alloc_locals;
 
-    let (array) = alloc();
-    assert array[0] = 0x01020304;
+    let reader = init_reader( new (0x01020304) );
 
-    let reader = init_reader(array);
-
-    let uint16 = read_uint16{reader=reader}();
+    with reader {
+        let uint16 = read_uint16();
+    }
     assert uint16 = 0x0201;
 
     return ();
@@ -76,12 +69,11 @@ func test_read_uint16{bitwise_ptr: BitwiseBuiltin*}() {
 func test_read_uint32{bitwise_ptr: BitwiseBuiltin*}() {
     alloc_locals;
 
-    let (array) = alloc();
-    assert array[0] = 0x01020304;
+    let reader = init_reader( new (0x01020304) );
 
-    let reader = init_reader(array);
-
-    let uint32 = read_uint32{reader=reader}();
+    with reader {
+        let uint32 = read_uint32();
+    }
     assert uint32 = 0x04030201;
 
     return ();
@@ -91,13 +83,11 @@ func test_read_uint32{bitwise_ptr: BitwiseBuiltin*}() {
 func test_read_uint64{bitwise_ptr: BitwiseBuiltin*}() {
     alloc_locals;
 
-    let (array) = alloc();
-    assert array[0] = 0x00e40b54;
-    assert array[1] = 0x02000000;
+    let reader = init_reader( new (0x00e40b54, 0x02000000) );
 
-    let reader = init_reader(array);
-
-    let uint64 = read_uint64{reader=reader}();
+    with reader {
+        let uint64 = read_uint64();
+    }
     assert uint64 = 10000000000;
 
     return ();
@@ -107,30 +97,21 @@ func test_read_uint64{bitwise_ptr: BitwiseBuiltin*}() {
 func test_read_varint{bitwise_ptr: BitwiseBuiltin*}() {
     alloc_locals;
 
-    let (array) = alloc();
-    assert array[0] = 0x01fd0102;
-    assert array[1] = 0xfe010203;
-    assert array[2] = 0x04ff0102;
-    assert array[3] = 0x03040506;
-    assert array[4] = 0x07080000;
-
-    let reader = init_reader(array);
-
-    let (varint8, byte_size) = read_varint{reader=reader}();
+    let reader = init_reader( new (0x01fd0102, 0xfe010203, 0x04ff0102, 0x03040506, 0x07080000) );
+    with reader {
+        let (varint8, byte_size_1) = read_varint();
+        let (varint16, byte_size_2) = read_varint();
+        let (varint32, byte_size_3) = read_varint();
+        let (varint64, byte_size_4) = read_varint();
+    }
     assert varint8 = 0x01;
-    assert byte_size = 1;
-
-    let (varint16, byte_size) = read_varint{reader=reader}();
     assert varint16 = 0x0201;
-    assert byte_size = 3;
-
-    let (varint32, byte_size) = read_varint{reader=reader}();
     assert varint32 = 0x04030201;
-    assert byte_size = 5;
-
-    let (varint64, byte_size) = read_varint{reader=reader}();
     assert varint64 = 0x0807060504030201;
-    assert byte_size = 9;
+    assert byte_size_1 = 1;
+    assert byte_size_2 = 3;
+    assert byte_size_3 = 5;
+    assert byte_size_4 = 9;
 
     return ();
 }
@@ -139,18 +120,15 @@ func test_read_varint{bitwise_ptr: BitwiseBuiltin*}() {
 func test_a_series_of_different_reads{bitwise_ptr: BitwiseBuiltin*}() {
     alloc_locals;
 
-    let (array) = alloc();
-    assert array[0] = 0x01020304;
-    assert array[1] = 0x05060708;
-    assert array[2] = 0x090a0b0c;
+    let reader = init_reader( new (0x01020304, 0x05060708, 0x090a0b0c) );
 
-    let reader = init_reader(array);
-
-    let unit8_1 = read_uint8{reader=reader}();
-    let unit8_2 = read_uint8{reader=reader}();
-    let uint32_1 = read_uint32{reader=reader}();
-    let uint32_2 = read_uint32{reader=reader}();
-    let uint16 = read_uint16{reader=reader}();  // read the complete buffer until the last byte
+    with reader {
+        let unit8_1 = read_uint8();
+        let unit8_2 = read_uint8();
+        let uint32_1 = read_uint32();
+        let uint32_2 = read_uint32();
+        let uint16 = read_uint16();  // read the complete buffer until the last byte
+    }
 
     assert unit8_1 = 0x01;
     assert unit8_2 = 0x02;
@@ -165,31 +143,26 @@ func test_a_series_of_different_reads{bitwise_ptr: BitwiseBuiltin*}() {
 func test_read_bytes{bitwise_ptr: BitwiseBuiltin*}() {
     alloc_locals;
 
-    let (array) = alloc();
-    assert array[0] = 0x01020304;
-    assert array[1] = 0x05060708;
-    assert array[2] = 0x090a0b0c;
-    assert array[3] = 0x0d0e0f10;
-    assert array[4] = 0x11121314;
-    assert array[5] = 0x15161718;
+    let reader = init_reader( new (0x01020304, 0x05060708, 0x090a0b0c,
+                                   0x0d0e0f10, 0x11121314, 0x15161718) );
 
-    let reader = init_reader(array);
+    with reader {
+        let bytes3 = read_bytes(3);
+        let bytes5 = read_bytes(5);
+        let bytes6 = read_bytes(6);
+        let bytes7 = read_bytes(7);
+    }
 
-    let bytes3 = read_bytes{reader=reader}(3);
-    let bytes5 = read_bytes{reader=reader}(5);
-    let bytes6 = read_bytes{reader=reader}(6);
-    let bytes7 = read_bytes{reader=reader}(7);
+    assert 0x00030201 = bytes3[0];
 
-    assert bytes3[0] = 0x00030201;
+    assert 0x07060504 = bytes5[0];
+    assert 0x00000008 = bytes5[1];
 
-    assert bytes5[0] = 0x07060504;
-    assert bytes5[1] = 0x00000008;
+    assert 0x0c0b0a09 = bytes6[0];
+    assert 0x00000e0d = bytes6[1];
 
-    assert bytes6[0] = 0x0c0b0a09;
-    assert bytes6[1] = 0x00000e0d;
-
-    assert bytes7[0] = 0x1211100f;
-    assert bytes7[1] = 0x00151413;
+    assert 0x1211100f = bytes7[0];
+    assert 0x00151413 = bytes7[1];
 
     return ();
 }
@@ -198,32 +171,26 @@ func test_read_bytes{bitwise_ptr: BitwiseBuiltin*}() {
 func test_read_bytes_endian{bitwise_ptr: BitwiseBuiltin*}() {
     alloc_locals;
 
-    let (array) = alloc();
-    assert array[0] = 0x01020304;
-    assert array[1] = 0x05060708;
-    assert array[2] = 0x090a0b0c;
-    assert array[3] = 0x0d0e0f10;
-    assert array[4] = 0x11121314;
-    assert array[5] = 0x15161718;
+    let reader = init_reader( new (0x01020304, 0x05060708, 0x090a0b0c,
+                                   0x0d0e0f10, 0x11121314, 0x15161718) );
 
-    let reader = init_reader(array);
+    with reader {
+        let bytes3 = read_bytes_endian(3);
+        let bytes5 = read_bytes_endian(5);
+        let bytes6 = read_bytes_endian(6);
+        let bytes7 = read_bytes_endian(7);
+    }
 
-    let bytes3 = read_bytes_endian{reader=reader}(3);
-    let bytes5 = read_bytes_endian{reader=reader}(5);
-    let bytes6 = read_bytes_endian{reader=reader}(6);
-    let bytes7 = read_bytes_endian{reader=reader}(7);
+    assert 0x01020300 = bytes3[0];
 
-    // assert bytes3[0] = 0x03020100
-    assert bytes3[0] = 0x01020300;
+    assert 0x04050607 = bytes5[0];
+    assert 0x08000000 = bytes5[1];
 
-    assert bytes5[0] = 0x04050607;
-    assert bytes5[1] = 0x08000000;
+    assert 0x090a0b0c = bytes6[0];
+    assert 0x0d0e0000 = bytes6[1];
 
-    assert bytes6[0] = 0x090a0b0c;
-    assert bytes6[1] = 0x0d0e0000;  // 0e0d0000
-
-    assert bytes7[0] = 0x0f101112;
-    assert bytes7[1] = 0x13141500;
+    assert 0x0f101112 = bytes7[0];
+    assert 0x13141500 = bytes7[1];
 
     return ();
 }
@@ -232,33 +199,25 @@ func test_read_bytes_endian{bitwise_ptr: BitwiseBuiltin*}() {
 func test_read_2_4_8_bytes{bitwise_ptr: BitwiseBuiltin*}() {
     alloc_locals;
 
-    let (array) = alloc();
-    assert array[0] = 0x01020304;
-    assert array[1] = 0x050600e4;
-    assert array[2] = 0x0b540200;
-    assert array[3] = 0x00000000;
+    let reader = init_reader( new (0x01020304, 0x050600e4, 0x0b540200, 0x00000000) );
 
-    let reader = init_reader(array);
-
-    let uint16 = read_uint16{reader=reader}();
+    with reader {
+        let uint16 = read_uint16();
+        let uint32 = read_uint32();
+        let uint64 = read_uint64();
+    }
     assert uint16 = 0x0201;
-
-    let uint32 = read_uint32{reader=reader}();
     assert uint32 = 0x06050403;
-
-    let uint64 = read_uint64{reader=reader}();
     assert uint64 = 10000000000;
 
     return ();
 }
 
 @external
-func test_read_overflow_uint32{bitwise_ptr: BitwiseBuiltin*}() {
+func test_read_uint32_overflow{bitwise_ptr: BitwiseBuiltin*}() {
     alloc_locals;
-    let (array) = alloc();
-    assert array[0] = 0x05010203ff;
-
-    let reader = init_reader(array);
+    
+    let reader = init_reader( new (0x05010203ff) );
 
     with reader {
         let uint32 = read_uint32();
@@ -274,14 +233,16 @@ func test_writer{bitwise_ptr: BitwiseBuiltin*}() {
     alloc_locals;
     let (array) = alloc();
     let writer = init_writer(array);
-    write_uint8{writer=writer}(0x01);
-    write_uint32_endian{writer=writer}(0x02030405);
-    write_uint32_endian{writer=writer}(0x06070809);
+    with writer {
+        write_uint8(0x01);
+        write_uint32_endian(0x02030405);
+        write_uint32_endian(0x06070809);
+    }
     flush_writer(writer);
 
-    assert array[0] = 0x01020304;
-    assert array[1] = 0x05060708;
-    assert array[2] = 0x09000000;
+    assert 0x01020304 = array[0];
+    assert 0x05060708 = array[1];
+    assert 0x09000000 = array[2];
     return ();
 }
 
@@ -290,10 +251,13 @@ func test_write_uint8{bitwise_ptr: BitwiseBuiltin*}() {
     alloc_locals;
     let (array) = alloc();
     let writer = init_writer(array);
+    
+    with writer {
+        write_uint8(0x01);
+    }
+    flush_writer(writer);
 
-    write_uint8{writer=writer}(0x01);
-
-    assert array[0] = 0x01;
+    assert 0x01000000 = [array];
 
     return ();
 }
@@ -304,9 +268,11 @@ func test_write_uint16{bitwise_ptr: BitwiseBuiltin*}() {
     let (array) = alloc();
     let writer = init_writer(array);
 
-    write_uint16{writer=writer}(0x0201);
-
-    assert array[0] = 0x0201;
+    with writer {
+        write_uint16(0x0201);
+    }
+    flush_writer(writer);
+    assert 0x01020000 = [array];
 
     return ();
 }
@@ -317,9 +283,12 @@ func test_write_uint32{bitwise_ptr: BitwiseBuiltin*}() {
     let (array) = alloc();
     let writer = init_writer(array);
 
-    write_uint32{writer=writer}(0x04030201);
+    with writer {
+        write_uint32(0x04030201);
+    }
+    // NOTE: this is a special case working without calling `flush_writer`
 
-    assert array[0] = 0x01020304;
+    assert 0x01020304 = [array];
 
     return ();
 }
@@ -330,10 +299,13 @@ func test_write_uint64{bitwise_ptr: BitwiseBuiltin*}() {
     let (array) = alloc();
     let writer = init_writer(array);
 
-    write_uint64{writer=writer}(0x0807060504030201);
+    with writer {
+        write_uint64(0x0807060504030201);
+    }
+    // NOTE: this is a special case working without calling `flush_writer`
 
-    assert array[0] = 0x01020304;
-    assert array[1] = 0x05060708;
+    assert 0x01020304 = array[0];
+    assert 0x05060708 = array[1];
 
     return ();
 }
@@ -344,32 +316,37 @@ func test_write_varint{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     let (array) = alloc();
     let writer = init_writer(array);
 
-    // Write every type of varint.
-    write_varint{writer=writer}(0x01);
-    write_varint{writer=writer}(0x0102);
-    write_varint{writer=writer}(0x01020304);
-    write_varint{writer=writer}(0x0102030405060708);
+    with writer {
+        // Write every type of varint.
+        write_varint(0x01);
+        write_varint(0x0102);
+        write_varint(0x01020304);
+        write_varint(0x0102030405060708);
+        
+        // Write every full varint.
+        write_varint(0xff);
+        write_varint(0xffff);
+        write_varint(0xffffffff);
+        write_varint(0xffffffffffffffff);
+    }
+    flush_writer(writer);
 
-    // Write every full varint.
-    write_varint{writer=writer}(0xff);
-    write_varint{writer=writer}(0xffff);
-    write_varint{writer=writer}(0xffffffff);
-    write_varint{writer=writer}(0xffffffffffffffff);
+    assert 0x01fd0201 = array[0];
+    assert 0xfe040302 = array[1];
+    assert 0x01ff0807 = array[2];
+    assert 0x06050403 = array[3];
+    assert 0x0201fffd = array[4];
 
-    assert array[0] = 0x01fd0201;
-    assert array[1] = 0xfe040302;
-    assert array[2] = 0x01ff0807;
-    assert array[3] = 0x06050403;
-    assert array[4] = 0x0201fffd;
-
-    assert array[5] = 0xfffffeff;
-    assert array[6] = 0xffffffff;
-    assert array[7] = 0xffffffff;
-    assert array[8] = 0xffffffff;
+    assert 0xfffffeff = array[5];
+    assert 0xffffffff = array[6];
+    assert 0xffffffff = array[7];
+    assert 0xffffffff = array[8];
 
     // Try to write varint bigger than 8 bytes
     %{ expect_revert() %}
-    write_varint{writer=writer}(0x010203040506070809);
+    with writer {
+        write_varint(0x010203040506070809);
+    }
 
     return ();
 }
@@ -380,9 +357,12 @@ func test_write_uint32_endian{bitwise_ptr: BitwiseBuiltin*}() {
     let (array) = alloc();
     let writer = init_writer(array);
 
-    write_uint32_endian{writer=writer}(0x01020304);
+    with writer {
+        write_uint32_endian(0x01020304);
+    }
+    flush_writer(writer);
 
-    assert array[0] = 0x01020304;
+    assert 0x01020304 = [array];
 
     return ();
 }
@@ -393,15 +373,17 @@ func test_write_2_4_8_bytes{bitwise_ptr: BitwiseBuiltin*}() {
     let (array) = alloc();
     let writer = init_writer(array);
 
-    write_uint16{writer=writer}(0x0102);
-    write_uint32{writer=writer}(0x01020304);
-    write_uint64{writer=writer}(0x0102030405060708);
+    with writer {
+        write_uint16(0x0102);
+        write_uint32(0x01020304);
+        write_uint64(0x0102030405060708);
+    }
     flush_writer(writer);
 
-    assert array[0] = 0x02010403;
-    assert array[1] = 0x02010807;
-    assert array[2] = 0x06050403;
-    assert array[3] = 0x02010000;
+    assert 0x02010403 = array[0];
+    assert 0x02010807 = array[1];
+    assert 0x06050403 = array[2];
+    assert 0x02010000 = array[3];
 
     return ();
 }
@@ -410,19 +392,13 @@ func test_write_2_4_8_bytes{bitwise_ptr: BitwiseBuiltin*}() {
 func test_write_hash{bitwise_ptr: BitwiseBuiltin*}() {
     alloc_locals;
     let (array) = alloc();
-    let (hash) = alloc();
+    local hash: felt* = new (0x01020304, 0x05060708, 0x090a0b0c, 0x0d0e0f00,
+                             0x01020304, 0x05060708, 0x090a0b0c, 0x0d0e0f00);
     let writer = init_writer(array);
 
-    assert hash[0] = 0x01020304;
-    assert hash[1] = 0x05060708;
-    assert hash[2] = 0x090a0b0c;
-    assert hash[3] = 0x0d0e0f00;
-    assert hash[4] = 0x01020304;
-    assert hash[5] = 0x05060708;
-    assert hash[6] = 0x090a0b0c;
-    assert hash[7] = 0x0d0e0f00;
-
-    write_hash{writer=writer}(hash);
+    with writer {
+        write_hash( hash );
+    }
     assert_hashes_equal(hash, array);
 
     return ();

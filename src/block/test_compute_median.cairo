@@ -1,7 +1,7 @@
 %lang starknet
 
 from starkware.cairo.common.alloc import alloc
-from utils.compute_median import compute_timestamps_median, verify_timestamps_median
+from block.compute_median import compute_timestamps_median, verify_timestamps_median
 
 @external
 func test_compute_timestamps_median{range_check_ptr}() {

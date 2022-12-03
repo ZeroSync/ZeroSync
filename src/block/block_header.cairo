@@ -30,7 +30,7 @@ from serialize.serialize import (
 from crypto.hash256 import hash256
 from crypto.hash_utils import assert_hashes_equal
 from utils.pow2 import pow2
-from utils.compute_median import compute_timestamps_median
+from block.compute_median import compute_timestamps_median
 // The size of a block header is 80 bytes
 const BLOCK_HEADER_SIZE = 80;
 // The size of a block header encoded as an array of Uint32 is 20 felts
