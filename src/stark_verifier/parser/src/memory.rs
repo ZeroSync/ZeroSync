@@ -96,7 +96,7 @@ impl<'a> DynamicMemory<'a> {
         }
     }
 
-    fn alloc(&mut self) -> DynamicMemory {
+    pub fn alloc(&mut self) -> DynamicMemory {
         let segment = self.memories.len();
         self.write_pointer(segment);
         self.memories.push(Vec::<MemoryEntry>::new());

@@ -45,7 +45,17 @@ func merge{range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*}(
     let (data: felt*) = alloc();
 
     memcpy(data, seed, 8);
-    memcpy(data + 8, value, 8);
+    
+    let be_value = data + 8;
+    assert be_value[0] = byteswap32(value[0]);
+    assert be_value[1] = byteswap32(value[1]);
+    assert be_value[2] = byteswap32(value[2]);
+    assert be_value[3] = byteswap32(value[3]);
+    assert be_value[4] = byteswap32(value[4]);
+    assert be_value[5] = byteswap32(value[5]);
+    assert be_value[6] = byteswap32(value[6]);
+    assert be_value[7] = byteswap32(value[7]);
+
     let (digest) = blake2s_as_words(data=data, n_bytes=64);
 
     return digest;

@@ -161,7 +161,8 @@ impl WriteableWith<&ProcessorAir> for Commitments {
                 .collect::<Vec<_>>(),
         );
 
-        ByteDigest(constraint_commitment.as_bytes()).write_into(target);
+        let mut temp_memory = target.alloc();
+        ByteDigest(constraint_commitment.as_bytes()).write_into(&mut temp_memory);
 
         target.write_array(
             fri_commitments
