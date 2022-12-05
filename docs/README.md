@@ -72,6 +72,8 @@ cargo +nightly test -- --show-output
 
 
 ## Run the Chain Prover
+
+Note that you have to build the parser first, as described above.
 ```sh
 source ~/cairo_venv/bin/activate
 python3 src/chain_proof/main.py
