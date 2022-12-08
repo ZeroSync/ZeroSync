@@ -1,1 +1,1 @@
-recursive-include *.cairo
+recursive-include zerosync/** *.cairo
