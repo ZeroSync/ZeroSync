@@ -139,7 +139,10 @@ func perform_verification{
 
     // Draw an out-of-domain point z from the coin.
     let z = draw();
-    %{ print('z', hex(ids.z), 'expected: 44454396 ... fd46ec88') %}
+    %{ 
+        # TODO: Import zerosync_tests and compare value programatically
+        print('z', hex(ids.z), 'expected: 44454396 ... fd46ec88')
+    %}
 
     // 3 ----- OOD consistency check --------------------------------------------------------------
 
@@ -157,88 +160,88 @@ func perform_verification{
         z=z,
     );
 
-    // Reseed the public coin with the OOD frames.
-    reseed_with_ood_frames(
-        ood_main_trace_frame=ood_main_trace_frame, ood_aux_trace_frame=ood_aux_trace_frame
-    );
+    //// Reseed the public coin with the OOD frames.
+    //reseed_with_ood_frames(
+    //    ood_main_trace_frame=ood_main_trace_frame, ood_aux_trace_frame=ood_aux_trace_frame
+    //);
 
-    // Read evaluations of composition polynomial columns sent by the prover, and reduce them into
-    // a single value by computing sum(z^i * value_i), where value_i is the evaluation of the ith
-    // column polynomial at z^m, where m is the total number of column polynomials. Also, reseed
-    // the public coin with the OOD constraint evaluations received from the prover.
-    let ood_constraint_evaluations = read_ood_constraint_evaluations();
-    let ood_constraint_evaluation_2 = reduce_evaluations(evaluations=ood_constraint_evaluations);
-    let value = hash_elements(
-        n_elements=ood_constraint_evaluations.n_elements,
-        elements=ood_constraint_evaluations.elements,
-    );
-    reseed(value=value);
+    //// Read evaluations of composition polynomial columns sent by the prover, and reduce them into
+    //// a single value by computing sum(z^i * value_i), where value_i is the evaluation of the ith
+    //// column polynomial at z^m, where m is the total number of column polynomials. Also, reseed
+    //// the public coin with the OOD constraint evaluations received from the prover.
+    //let ood_constraint_evaluations = read_ood_constraint_evaluations();
+    //let ood_constraint_evaluation_2 = reduce_evaluations(evaluations=ood_constraint_evaluations);
+    //let value = hash_elements(
+    //    n_elements=ood_constraint_evaluations.n_elements,
+    //    elements=ood_constraint_evaluations.elements,
+    //);
+    //reseed(value=value);
 
-    // Finally, make sure the values are the same.
-    with_attr error_message(
-            "Ood constraint evaluations differ. ${ood_constraint_evaluation_1} != ${ood_constraint_evaluation_2}") {
-        assert ood_constraint_evaluation_1 = ood_constraint_evaluation_2;
-    }
+    //// Finally, make sure the values are the same.
+    //with_attr error_message(
+    //        "Ood constraint evaluations differ. ${ood_constraint_evaluation_1} != ${ood_constraint_evaluation_2}") {
+    //    assert ood_constraint_evaluation_1 = ood_constraint_evaluation_2;
+    //}
 
-    // 4 ----- FRI commitments --------------------------------------------------------------------
+    //// 4 ----- FRI commitments --------------------------------------------------------------------
 
-    // Draw coefficients for computing DEEP composition polynomial from the public coin.
-    let deep_coefficients = get_deep_composition_coefficients(air=air);
+    //// Draw coefficients for computing DEEP composition polynomial from the public coin.
+    //let deep_coefficients = get_deep_composition_coefficients(air=air);
 
-    // Instantiates a FRI verifier with the FRI layer commitments read from the channel. From the
-    // verifier's perspective, this is equivalent to executing the commit phase of the FRI protocol.
-    // The verifier uses these commitments to update the public coin and draw random points alpha
-    // from them.
-    let fri_verifier = fri_verifier_new(air=air);
+    //// Instantiates a FRI verifier with the FRI layer commitments read from the channel. From the
+    //// verifier's perspective, this is equivalent to executing the commit phase of the FRI protocol.
+    //// The verifier uses these commitments to update the public coin and draw random points alpha
+    //// from them.
+    //let fri_verifier = fri_verifier_new(air=air);
 
-    // 5 ----- Trace and constraint queries -------------------------------------------------------
+    //// 5 ----- Trace and constraint queries -------------------------------------------------------
 
-    // Read proof-of-work nonce sent by the prover and update the public coin with it.
-    let pow_nonce = read_pow_nonce();
-    reseed_with_int(pow_nonce);
+    //// Read proof-of-work nonce sent by the prover and update the public coin with it.
+    //let pow_nonce = read_pow_nonce();
+    //reseed_with_int(pow_nonce);
 
-    // Make sure the proof-of-work specified by the grinding factor is satisfied.
-    let leading_zeros = get_leading_zeros();
-    // assert_lt(leading_zeros, air.options.grinding_factor);
+    //// Make sure the proof-of-work specified by the grinding factor is satisfied.
+    //let leading_zeros = get_leading_zeros();
+    //// assert_lt(leading_zeros, air.options.grinding_factor);
 
-    // Draw pseudorandom query positions for the LDE domain from the public coin.
-    let (query_positions: felt*) = alloc();
-    draw_integers(
-        n_elements=air.options.num_queries,
-        elements=query_positions,
-        domain_size=air.lde_domain_size,
-    );
+    //// Draw pseudorandom query positions for the LDE domain from the public coin.
+    //let (query_positions: felt*) = alloc();
+    //draw_integers(
+    //    n_elements=air.options.num_queries,
+    //    elements=query_positions,
+    //    domain_size=air.lde_domain_size,
+    //);
 
-    // Read evaluations of trace and constraint composition polynomials at the queried positions.
-    // This also checks that the read values are valid against trace and constraint commitments.
-    let (queried_main_trace_states, queried_aux_trace_states) = read_queried_trace_states(
-        query_positions
-    );
-    let queried_constraint_evaluations = read_constraint_evaluations(query_positions);
+    //// Read evaluations of trace and constraint composition polynomials at the queried positions.
+    //// This also checks that the read values are valid against trace and constraint commitments.
+    //let (queried_main_trace_states, queried_aux_trace_states) = read_queried_trace_states(
+    //    query_positions
+    //);
+    //let queried_constraint_evaluations = read_constraint_evaluations(query_positions);
 
-    // 6 ----- DEEP composition -------------------------------------------------------------------
+    //// 6 ----- DEEP composition -------------------------------------------------------------------
 
-    // Compute evaluations of the DEEP composition polynomial at the queried positions.
-    let composer = deep_composer_new(
-        air=air, query_positions=query_positions, z=z, cc=deep_coefficients
-    );
-    let t_composition = compose_trace_columns(
-        composer,
-        queried_main_trace_states,
-        queried_aux_trace_states,
-        ood_main_trace_frame,
-        ood_aux_trace_frame,
-    );
-    let c_composition = compose_constraint_evaluations(
-        composer, queried_constraint_evaluations, ood_constraint_evaluations
-    );
-    let deep_evaluations = combine_compositions(composer, t_composition, c_composition);
+    //// Compute evaluations of the DEEP composition polynomial at the queried positions.
+    //let composer = deep_composer_new(
+    //    air=air, query_positions=query_positions, z=z, cc=deep_coefficients
+    //);
+    //let t_composition = compose_trace_columns(
+    //    composer,
+    //    queried_main_trace_states,
+    //    queried_aux_trace_states,
+    //    ood_main_trace_frame,
+    //    ood_aux_trace_frame,
+    //);
+    //let c_composition = compose_constraint_evaluations(
+    //    composer, queried_constraint_evaluations, ood_constraint_evaluations
+    //);
+    //let deep_evaluations = combine_compositions(composer, t_composition, c_composition);
 
-    // 7 ----- Verify low-degree proof -------------------------------------------------------------
+    //// 7 ----- Verify low-degree proof -------------------------------------------------------------
 
-    // Make sure that evaluations of the DEEP composition polynomial we computed in the previous
-    // step are in fact evaluations of a polynomial of degree equal to trace polynomial degree.
-    fri_verify(fri_verifier, deep_evaluations, query_positions);
+    //// Make sure that evaluations of the DEEP composition polynomial we computed in the previous
+    //// step are in fact evaluations of a polynomial of degree equal to trace polynomial degree.
+    //fri_verify(fri_verifier, deep_evaluations, query_positions);
 
     return ();
 }

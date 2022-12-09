@@ -39,9 +39,9 @@ struct ParsedCommitments {
 }
 
 struct ParsedOodFrame {
+    evaluations: Vec,
     main_frame: EvaluationFrame,
     aux_frame: EvaluationFrame,
-    evaluations: Vec,
 }
 
 // Definition of a STARK proof

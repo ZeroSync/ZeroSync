@@ -200,7 +200,6 @@ impl WriteableWith<&ProcessorAir> for OodFrame {
 
         ood_main_trace_frame.write_into(target);
         ood_aux_trace_frame.clone().unwrap().write_into(target);
-
         target.write_sized_array(ood_constraint_evaluations);
     }
 }
@@ -251,8 +250,8 @@ impl Writeable for FieldExtension {
 
 impl Writeable for DefaultEvaluationFrame<Felt> {
     fn write_into(&self, target: &mut DynamicMemory) {
-        target.write_sized_array(self.current().to_vec());
-        target.write_sized_array(self.next().to_vec());
+        target.write_array(self.current().to_vec());
+        target.write_array(self.next().to_vec());
     }
 }
 
