@@ -63,6 +63,16 @@ mod tests {
     }
 
     #[test]
+    fn merge() {
+        let mut data = [0; 64];
+        let digest: [u8; 32] = blake2s(32, &[], &data)
+            .as_bytes()
+            .try_into()
+            .expect("slice with incorrect length");
+        println!("digest: {}", hex::encode(digest));
+    }
+
+    #[test]
     fn pedersen_chain() {
         let values = vec![1u8, 1u8].into_iter().map(Fe::from).collect::<Vec<_>>();
         let len = Fe::from(values.len());

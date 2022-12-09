@@ -60,8 +60,7 @@ func read_trace_commitments{channel: Channel}() -> felt* {
 }
 
 func read_constraint_commitment{channel: Channel}() -> felt* {
-    let (__fp__, _) = get_fp_and_pc(); 
-    return &channel.constraint_root;
+    return channel.constraint_root;
 }
 
 func read_ood_trace_frame{channel: Channel}() -> (res1: EvaluationFrame, res2: EvaluationFrame) {

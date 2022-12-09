@@ -24,6 +24,7 @@ from stark_verifier.crypto.random import (
     get_leading_zeros,
     draw,
     merge_with_int,
+    merge,
     seed_with_pub_inputs,
 )
 
@@ -57,6 +58,45 @@ func test_merge_with_int{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     finalize_blake2s(blake2s_ptr_start, blake2s_ptr);  
     return ();
 }
+
+
+@external
+func test_merge{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
+    alloc_locals;
+    let (blake2s_ptr: felt*) = alloc();
+    local blake2s_ptr_start: felt* = blake2s_ptr;
+
+    let (seed) = alloc();
+    assert seed[0] = 0;
+    assert seed[1] = 0;
+    assert seed[2] = 0;
+    assert seed[3] = 0;
+    assert seed[4] = 0;
+    assert seed[5] = 0;
+    assert seed[6] = 0;
+    assert seed[7] = 0;
+    
+    let (value) = alloc();
+    assert value[0] = 0;
+    assert value[1] = 0;
+    assert value[2] = 0;
+    assert value[3] = 0;
+    assert value[4] = 0;
+    assert value[5] = 0;
+    assert value[6] = 0;
+    assert value[7] = 0;
+
+    with blake2s_ptr {
+        let hash = merge(seed, value);
+    }
+
+    %{
+        print('merge:', hex(memory[ids.hash]), '...', hex(memory[ids.hash+7]), 'expected: ae09db7c ... 8ab454a3')
+    %} 
+    finalize_blake2s(blake2s_ptr_start, blake2s_ptr);  
+    return ();
+}
+
 
 @external
 func test_draw{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
@@ -216,8 +256,8 @@ func test_public_coin_seed{
         print(
             'public_coin_seed',
             hex(memory[ids.public_coin_seed]),
-            hex(memory[ids.public_coin_seed + 1]),
-            '\n expected: ...')
+            hex(memory[ids.public_coin_seed + 7]),
+            '\n expected: ac573ab0 ... 09529c47')
     %}
     return ();
 }

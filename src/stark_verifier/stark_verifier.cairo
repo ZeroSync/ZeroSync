@@ -139,7 +139,7 @@ func perform_verification{
 
     // Draw an out-of-domain point z from the coin.
     let z = draw();
-    %{ print('z', hex(ids.z)) %}
+    %{ print('z', hex(ids.z), 'expected: 44454396 ... fd46ec88') %}
 
     // 3 ----- OOD consistency check --------------------------------------------------------------
 
@@ -255,11 +255,11 @@ func process_aux_segments{
     aux_segment_rands: felt*,
     aux_trace_rand_elements: felt*,
 ) {
-    draw_elements(n_elements=[aux_segment_rands], elements=aux_trace_rand_elements);
-    reseed(value=trace_commitments);
     if (trace_commitments_len == 0) {
         return ();
     }
+    draw_elements(n_elements=[aux_segment_rands], elements=aux_trace_rand_elements);
+    reseed(value=trace_commitments);
     process_aux_segments(
         trace_commitments=trace_commitments + STATE_SIZE_FELTS,
         trace_commitments_len=trace_commitments_len - 1,
