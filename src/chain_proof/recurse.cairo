@@ -1,17 +1,18 @@
-from starkware.cairo.common.hash_state import hash_finalize, hash_init, hash_update
 from starkware.cairo.common.alloc import alloc
-from starkware.cairo.common.memcpy import memcpy
-from stark_verifier.air.pub_inputs import PublicInputs, read_public_inputs
-from stark_verifier.air.pub_inputs import read_mem_values
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.hash import HashBuiltin
+from starkware.cairo.common.hash_state import hash_finalize, hash_init, hash_update
+from starkware.cairo.common.memcpy import memcpy
+
+from block.compute_median import TIMESTAMP_COUNT
+from block.block import State, ChainState
+from crypto.hash_utils import HASH_FELT_SIZE
+from utreexo.utreexo import UTREEXO_ROOTS_LEN
+
+from stark_verifier.air.pub_inputs import PublicInputs, read_public_inputs
+from stark_verifier.air.pub_inputs import read_mem_values
 from stark_verifier.air.stark_proof import StarkProof, read_stark_proof
 from stark_verifier.stark_verifier import verify
-from crypto.hash_utils import HASH_FELT_SIZE
-from block.compute_median import TIMESTAMP_COUNT
-from utreexo.utreexo import UTREEXO_ROOTS_LEN
-from block.block import State, ChainState
-
 
 func recurse{pedersen_ptr: HashBuiltin*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
     block_height, expected_program_hash, program_length, prev_state: State) {
@@ -28,7 +29,7 @@ func recurse{pedersen_ptr: HashBuiltin*, range_check_ptr, bitwise_ptr: BitwiseBu
     let (mem_values: felt*) = alloc();
     let mem_length = pub_inputs.fin._pc;
     read_mem_values(
-        mem=&pub_inputs.mem, address=pub_inputs.init._pc, length=mem_length, output=mem_values
+        mem=pub_inputs.mem, address=pub_inputs.init._pc, length=mem_length, output=mem_values
     );
 
     // 2. Compute the program's hash and compare it to the `expected_program_hash` 
@@ -89,7 +90,6 @@ func compute_program_hash{pedersen_ptr: HashBuiltin*}(
     return pub_mem_hash;
 }
 
-
 func parse_public_inputs() -> PublicInputs* {
     %{
         import json
@@ -97,7 +97,7 @@ func parse_public_inputs() -> PublicInputs* {
 
         def parse_public_inputs():
             completed_process = subprocess.run([
-                'src/stark_verifier/parser/target/debug/parser',
+                'bin/stark_parser',
                 'tmp/proof.bin',
                 'public-inputs'],
                 capture_output=True)
@@ -107,7 +107,6 @@ func parse_public_inputs() -> PublicInputs* {
     return read_public_inputs();
 }
 
-
 func parse_proof() -> StarkProof* {
     %{
         import json
@@ -115,7 +114,7 @@ func parse_proof() -> StarkProof* {
 
         def parse_proof():
             completed_process = subprocess.run([
-                'src/stark_verifier/parser/target/debug/parser',
+                'bin/stark_parser',
                 'tmp/proof.bin',
                 'proof'],
                 capture_output=True)
@@ -124,4 +123,3 @@ func parse_proof() -> StarkProof* {
     %}
     return read_stark_proof();
 }
-
