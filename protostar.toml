@@ -3,6 +3,9 @@ protostar-version = "0.7.0"
 lib-path = "src"
 cairo_path = ["src"]
 
-[test]
+[profile.unit.test]
 target = ["src"]
 
+[profile.integration.test]
+target = ["tests"]
+cairo-path = ["src"]
