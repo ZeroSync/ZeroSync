@@ -12,14 +12,14 @@ bin/stark_parser:
 	cp build/parser/debug/parser bin/stark_parser
 
 chain-proof:
-	source ~/cairo_venv/bin/activate; python3 src/chain_proof/main.py
+	python src/chain_proof/main.py
 
 bridge-node:
-	source ~/cairo_venv/bin/activate; python src/utreexo/bridge_node.py
+	python src/utreexo/bridge_node.py
 
 unit-test:
 	@echo "Running unit tests..."
-	protostar test --cairo-path=./src target src
+	protostar -p unit test
 
 integration-test: bin/stark_parser
 	@echo "Running integration tests..."
