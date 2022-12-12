@@ -1,15 +1,13 @@
 from setuptools import setup
 
-# TODO fill missing information
-
 setup(
-    name="zerosync",
-    license="FILL",
-    author="FILL",
-    author_email="FILL",
+    name="ZeroSync",
+    license="MIT",
+    author="ZeroSync Developers",
+    author_email="robin@zerosync.org",
     packages=["zerosync"],
     package_dir={"zerosync": "zerosync"},
     include_package_data=True,
-    url="FILL",
-    keywords="FILL",
+    url="zerosync.org",
+    keywords="Bitcoin, STARK, Cairo",
 )
