@@ -201,7 +201,7 @@ impl WriteableWith<&ProcessorAir> for OodFrame {
         ood_main_trace_frame.write_into(target);
         ood_aux_trace_frame.clone().unwrap().write_into(target);
 
-        target.write_array(ood_constraint_evaluations);
+        target.write_sized_array(ood_constraint_evaluations);
     }
 }
 
