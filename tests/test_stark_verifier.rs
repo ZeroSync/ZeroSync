@@ -152,6 +152,22 @@ mod tests {
         println!("digest: {}", hex::encode(digest));
     }
 
+
+    #[test]
+    fn test_hash_elements() {
+        let mut data = Vec::new();
+
+        data.push(Felt::from( [0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 1u8] ));
+        data.push(Felt::from( [0u8;32] ));
+
+        let digest: [u8; 32] = Blake2s_256::hash_elements(&data)
+            .as_bytes()
+            .try_into()
+            .expect("slice with incorrect length");
+        println!("hash_elements: {}", hex::encode(digest));
+    }
+
+
     #[test]
     fn draw_integers() {
         // TODO

@@ -26,6 +26,7 @@ from stark_verifier.crypto.random import (
     merge_with_int,
     merge,
     seed_with_pub_inputs,
+    hash_elements
 )
 
 
@@ -261,6 +262,36 @@ func test_public_coin_seed{
     %}
     return ();
 }
+
+
+/// Test hash_elements
+@external
+func test_hash_elements{
+    range_check_ptr,
+    bitwise_ptr: BitwiseBuiltin*,
+}() {
+    alloc_locals;
+
+    let (blake2s_ptr: felt*) = alloc();
+    local blake2s_ptr_start: felt* = blake2s_ptr;
+
+    let (elements) = alloc();
+    assert elements[0] = 1;
+    assert elements[1] = 0;
+    let n_elements = 2;
+
+    let elements_hash: felt* = hash_elements{blake2s_ptr=blake2s_ptr}(n_elements, elements);
+    %{ 
+        print(
+            'elements_hash',
+            hex(memory[ids.elements_hash]),
+            hex(memory[ids.elements_hash + 7]),
+            '\nexpected: 70012774 ... 66281d59')
+    %}
+    return ();
+}
+
+
 
 
 //
