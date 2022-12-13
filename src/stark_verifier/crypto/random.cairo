@@ -129,7 +129,29 @@ func reseed_with_int{
 func reseed_with_ood_frames{
     range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*, public_coin: PublicCoin
 }(ood_main_trace_frame: EvaluationFrame, ood_aux_trace_frame: EvaluationFrame) {
-    // TODO
+    alloc_locals;
+
+    let (elements) = alloc();
+    let elements_start = elements;
+    memcpy(elements, ood_main_trace_frame.current, ood_main_trace_frame.current_len);
+    let elements = elements + ood_main_trace_frame.current_len;
+    memcpy(elements, ood_aux_trace_frame.current, ood_aux_trace_frame.current_len);
+    let elements = elements + ood_aux_trace_frame.current_len;
+    let n_elements = elements - elements_start;
+    let elements_hash = hash_elements(n_elements, elements_start);
+    reseed(elements_hash);
+
+
+    let (elements) = alloc();
+    let elements_start = elements;
+    memcpy(elements, ood_main_trace_frame.next, ood_main_trace_frame.next_len);
+    let elements = elements + ood_main_trace_frame.next_len;
+    memcpy(elements, ood_aux_trace_frame.next, ood_aux_trace_frame.next_len);
+    let elements = elements + ood_aux_trace_frame.next_len;
+    let n_elements = elements - elements_start;
+    let elements_hash = hash_elements(n_elements, elements_start);
+    reseed(elements_hash);
+
     return ();
 }
 
