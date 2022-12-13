@@ -7,6 +7,9 @@ mod tests {
     use winter_crypto::{hashers::Blake2s_256, Digest, ElementHasher, Hasher, RandomCoin};
     use winter_utils::{Deserializable, Serializable, SliceReader};
     use winterfell::{Air, AuxTraceRandElements, StarkProof, VerifierChannel, VerifierError};
+    
+    use winterfell::evaluate_constraints;
+    use winter_air::EvaluationFrame;
 
     use giza_air::{ProcessorAir, PublicInputs};
     use giza_core::Felt;
@@ -15,7 +18,8 @@ mod tests {
     use starknet_ff::FieldElement as Fe;
 
     use blake2::blake2s::blake2s;
-
+    use giza_air::MainEvaluationFrame;
+    use giza_air::AuxEvaluationFrame;
     // TODO: Use workspace so we can share code with parser package, and not duplicate here.
     // We can also convert these tests to exported Python-callable functions, that return
     // "ground truth" values for use in Protostar tests.
@@ -152,6 +156,22 @@ mod tests {
         println!("digest: {}", hex::encode(digest));
     }
 
+
+    #[test]
+    fn test_hash_elements() {
+        let mut data = Vec::new();
+
+        data.push(Felt::from( [0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 1u8] ));
+        data.push(Felt::from( [0u8;32] ));
+
+        let digest: [u8; 32] = Blake2s_256::hash_elements(&data)
+            .as_bytes()
+            .try_into()
+            .expect("slice with incorrect length");
+        println!("hash_elements: {}", hex::encode(digest));
+    }
+
+
     #[test]
     fn draw_integers() {
         // TODO
@@ -173,7 +193,7 @@ mod tests {
         let air = ProcessorAir::new(proof.get_trace_info(), pub_inputs, proof.options().clone());
 
         let mut public_coin = RandomCoin::<Felt, Blake2s_256<Felt>>::new(&public_coin_seed);
-        let channel = VerifierChannel::<
+        let mut channel = VerifierChannel::<
             Felt,
             Blake2s_256<Felt>,
             DefaultEvaluationFrame<Felt>,
@@ -196,7 +216,7 @@ mod tests {
         }
 
         // build random coefficients for the composition polynomial
-        let _constraint_coeffs = air
+        let constraint_coeffs = air
             .get_constraint_composition_coefficients::<Felt, Blake2s_256<Felt>>(&mut public_coin)
             .map_err(|_| VerifierError::RandomCoinError)?;
 
@@ -213,6 +233,45 @@ mod tests {
             .map_err(|_| VerifierError::RandomCoinError)?;
 
         println!("ood_point_z: {}", z.to_raw());
+
+
+
+        // 3 ----- OOD consistency check --------------------------------------------------------------
+        // make sure that evaluations obtained by evaluating constraints over the out-of-domain frame
+        // are consistent with the evaluations of composition polynomial columns sent by the prover
+
+        // read the out-of-domain trace frames (the main trace frame and auxiliary trace frame, if
+        // provided) sent by the prover and evaluate constraints over them; also, reseed the public
+        // coin with the OOD frames received from the prover.
+        let (ood_main_trace_frame, ood_aux_trace_frame) = channel.read_ood_trace_frame();
+        // let ood_constraint_evaluation_1 = evaluate_constraints(
+        //     &air,
+        //     constraint_coeffs,
+        //     &ood_main_trace_frame,
+        //     &ood_aux_trace_frame,
+        //     aux_trace_rand_elements,
+        //     z,
+        // );
+
+        if let Some(ref aux_trace_frame) = ood_aux_trace_frame {
+            for i in 0..<ProcessorAir as Air>::Frame::<Felt>::num_rows() {
+                let mut row = ood_main_trace_frame.row(i).to_vec();
+                row.extend_from_slice(aux_trace_frame.row(i));
+                public_coin.reseed(Blake2s_256::hash_elements(&row));
+            }
+        } else {
+            for i in 0..<ProcessorAir as Air>::Frame::<Felt>::num_rows() {
+                public_coin.reseed(Blake2s_256::hash_elements(ood_main_trace_frame.row(i)));
+            }
+        }
+
+
+        // Draw an element to check the state of the coin 
+        // 
+        // let z0 = public_coin
+        // .draw::<Felt>()
+        // .map_err(|_| VerifierError::RandomCoinError)?;
+        // println!("z0: {}", z0.to_raw());
 
         Ok(())
     }
