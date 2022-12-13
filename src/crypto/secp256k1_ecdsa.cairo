@@ -16,7 +16,7 @@ from starkware.cairo.common.cairo_secp.signature import (
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 
 from crypto.hash_utils import copy_hash, HASH_FELT_SIZE
-from serialize.serialize import Reader, init_reader, read_uint8, read_bytes_endian, peek_uint8, peek_uint16
+from serialize.serialize import Reader, init_reader, read_uint8, read_bytes_endian, peek_uint8, peek_uint16, read_uint32_endian
 
 // Verifies a Secp256k1 ECDSA signature.
 // Soundness assumptions:
@@ -43,6 +43,34 @@ func verify_ecdsa_secp256k1{range_check_ptr}(pt: EcPoint, z: BigInt3, r: BigInt3
     return ();
 }
 
+func read_uint64_endian{reader: Reader, bitwise_ptr: BitwiseBuiltin*}() -> felt {
+    alloc_locals;
+    let hi = read_uint32_endian();
+    let lo = read_uint32_endian();
+    return 2**32 * hi + lo;
+}
+
+func read_uint128_endian{reader: Reader, bitwise_ptr: BitwiseBuiltin*}() -> felt {
+    alloc_locals;
+    let hi = read_uint64_endian();
+    let lo = read_uint64_endian();
+    return 2**64 * hi + lo;
+}
+
+func read_uint256_endian{reader: Reader, bitwise_ptr: BitwiseBuiltin*}() -> Uint256 {
+    alloc_locals;
+    let hi = read_uint128_endian();
+    let lo = read_uint128_endian();
+    let uint256 = Uint256(lo, hi);
+    return uint256;
+}
+
+func read_bigint{reader: Reader, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() -> BigInt3 {
+    alloc_locals;
+    let uint256 = read_uint256_endian();
+    let (bigint) = uint256_to_bigint(uint256);
+    return bigint;
+}
 
 // - https://en.bitcoin.it/wiki/Elliptic_Curve_Digital_Signature_Algorithm
 func read_public_key{reader: Reader, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(n_bytes) -> EcPoint {
@@ -53,11 +81,9 @@ func read_public_key{reader: Reader, range_check_ptr, bitwise_ptr: BitwiseBuilti
         with_attr error_message("public_key with 65 bytes need 0x04 prefix") {
             assert 0x04 = prefix;
         }
-        let x = read_bytes_endian(32);
-        let y = read_bytes_endian(32);
-        let (x_as_bigint3) = uint256_to_bigint(Uint256([x+4]*2**96+[x+5]*2**64+[x+6]*2**32+[x+7], [x]*2**96+[x+1]*2**64+[x+2]*2**32+[x+3]));
-        let (y_as_bigint3) = uint256_to_bigint(Uint256([y+4]*2**96+[y+5]*2**64+[y+6]*2**32+[y+7], [y]*2**96+[y+1]*2**64+[y+2]*2**32+[y+3]));
-        let point = EcPoint(x_as_bigint3, y_as_bigint3);
+        let x = read_bigint();
+        let y = read_bigint();
+        let point = EcPoint(x, y);
         return point;
     }
     // implicit y-coord from sign
@@ -67,9 +93,8 @@ func read_public_key{reader: Reader, range_check_ptr, bitwise_ptr: BitwiseBuilti
     with_attr error_message("expected 33 bytes public_key here") {
         assert 0x21 = n_bytes;
     }
-    let x = read_bytes_endian(32);
-    let (x_as_bigint3) = uint256_to_bigint(Uint256([x+4]*2**96+[x+5]*2**64+[x+6]*2**32+[x+7], [x]*2**96+[x+1]*2**64+[x+2]*2**32+[x+3]));
-    let (pt) = get_point_from_x(x_as_bigint3, prefix);
+    let x = read_bigint();
+    let (pt) = get_point_from_x(x, prefix);
     return pt;
 }
 
