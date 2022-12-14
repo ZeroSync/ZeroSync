@@ -28,7 +28,7 @@ func recurse{pedersen_ptr: HashBuiltin*, range_check_ptr, bitwise_ptr: BitwiseBu
     let (mem_values: felt*) = alloc();
     let mem_length = pub_inputs.fin._pc;
     read_mem_values(
-        mem=&pub_inputs.mem, address=pub_inputs.init._pc, length=mem_length, output=mem_values
+        mem=pub_inputs.mem, address=pub_inputs.init._pc, length=mem_length, output=mem_values
     );
 
     // 2. Compute the program's hash and compare it to the `expected_program_hash` 
