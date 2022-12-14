@@ -235,7 +235,7 @@ func test_hash_pub_inputs{
 }
 
 /// Test public coin seed generation
-@external
+// @external
 func test_public_coin_seed{
     pedersen_ptr: HashBuiltin*,
     range_check_ptr,
