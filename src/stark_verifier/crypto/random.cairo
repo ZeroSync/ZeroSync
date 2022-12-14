@@ -96,11 +96,12 @@ func hash_elements{range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuil
     let (data) = alloc();
     let data_start = data;
     with data {
-        blake2s_add_felts(n_elements=n_elements, elements=elements, bigend=1);
+        blake2s_add_felts(n_elements=n_elements, elements=elements, bigend=0);
     }
     let (res) = blake2s_as_words(data=data_start, n_bytes = n_elements * 32);
     return res;
 }
+
 
 // Reseeds the coin with the specified data by setting the new seed to hash(`seed` || `value`).
 // where value is a U256 integer representing a hash digest
@@ -111,6 +112,8 @@ func reseed{
     let public_coin = PublicCoin(seed=digest, counter=0);
     return ();
 }
+
+
 
 // Reseeds the coin with the specified value by setting the new seed to hash(`seed` || `value`)
 // where value is a u64 integer.
@@ -131,6 +134,8 @@ func reseed_with_ood_frames{
 }(ood_main_trace_frame: EvaluationFrame, ood_aux_trace_frame: EvaluationFrame) {
     alloc_locals;
 
+
+
     let (elements) = alloc();
     let elements_start = elements;
     memcpy(elements, ood_main_trace_frame.current, ood_main_trace_frame.current_len);
@@ -139,7 +144,7 @@ func reseed_with_ood_frames{
     let elements = elements + ood_aux_trace_frame.current_len;
     let n_elements = elements - elements_start;
     let elements_hash = hash_elements(n_elements, elements_start);
-    reseed(elements_hash);
+    reseed_endian(elements_hash);
 
 
     let (elements) = alloc();
@@ -150,7 +155,7 @@ func reseed_with_ood_frames{
     let elements = elements + ood_aux_trace_frame.next_len;
     let n_elements = elements - elements_start;
     let elements_hash = hash_elements(n_elements, elements_start);
-    reseed(elements_hash);
+    reseed_endian(elements_hash);
 
     return ();
 }
@@ -325,4 +330,33 @@ func get_leading_zeros{range_check_ptr, public_coin: PublicCoin}() -> felt {
     } else {
         return 64;
     }
+}
+
+
+
+
+// Reseeds the coin with the specified data by setting the new seed to hash(`seed` || `value`).
+// where value is a U256 integer representing a hash digest. Preserves the endianness of value
+func reseed_endian{
+    range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*, public_coin: PublicCoin
+}(value: felt*) {
+    let digest = merge_endian(seed=public_coin.seed, value=value);
+    let public_coin = PublicCoin(seed=digest, counter=0);
+    return ();
+}
+
+// Returns a hash of two digests. This method is intended for use in construction of
+// Merkle trees. Preserves the endianness of value
+func merge_endian{range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*}(
+    seed: felt*, value: felt*
+) -> felt* {
+    alloc_locals;
+    let (data: felt*) = alloc();
+
+    memcpy(data, seed, 8);
+    memcpy(data+8, value, 8);
+   
+    let (digest) = blake2s_as_words(data=data, n_bytes=64);
+
+    return digest;
 }
