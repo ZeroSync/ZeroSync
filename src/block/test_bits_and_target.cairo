@@ -5,11 +5,11 @@
 
 %lang starknet
 
-from block_header import bits_to_target, target_to_bits
+from block.block_header import bits_to_target, target_to_bits
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 
 @external
-func test_general{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
+func test_encode_decode{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     alloc_locals;
     local bits_to_target_tests_count;
     local target_to_bits_tests_count;
