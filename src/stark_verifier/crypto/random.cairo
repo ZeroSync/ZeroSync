@@ -207,6 +207,18 @@ func contains(element: felt, array: felt*, array_len: felt) -> felt {
     return contains(element, array + 1, array_len - 1);
 }
 
+
+// Returns the next pseudo-random field element
+func draw_digest{
+    range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*, public_coin: PublicCoin
+}() -> felt* {
+    alloc_locals;
+    tempvar public_coin = PublicCoin(public_coin.seed, public_coin.counter + 1);
+    let digest = merge_with_int(seed=public_coin.seed, value=public_coin.counter);
+    return digest;
+}
+
+
 func _draw_integers_loop{
     range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*, public_coin: PublicCoin
 }(n_elements: felt, elements: felt*, domain_size: felt, index: felt) {
@@ -219,11 +231,11 @@ func _draw_integers_loop{
     let v_mask = domain_size - 1;
 
     // draw values from PRNG until we get as many unique values as specified by n_elements
-    let element = draw();
+    let element = draw_digest();
 
     // convert to integer and limit the integer to the number of bits which can fit
     // into the specified domain
-    assert [bitwise_ptr].x = element;
+    assert [bitwise_ptr].x = element[0] + element[1] * 2**32;
     assert [bitwise_ptr].y = v_mask;
     let value = [bitwise_ptr].x_and_y;
     let bitwise_ptr = bitwise_ptr + BitwiseBuiltin.SIZE;

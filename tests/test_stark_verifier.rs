@@ -148,7 +148,6 @@ mod tests {
 
         data.push(pub_inputs.num_steps.into());
 
-        // TODO: Debug 'hash_elements' -- not in agreement with Cairo blake2s
         let digest: [u8; 32] = Blake2s_256::hash_elements(&data)
             .as_bytes()
             .try_into()
@@ -173,8 +172,15 @@ mod tests {
 
 
     #[test]
-    fn draw_integers() {
-        // TODO
+    fn draw_integers() -> Result<(), VerifierError>  {
+        let public_coin_seed = vec![0u8; 32];
+        let mut public_coin = RandomCoin::<Felt, Blake2s_256<Felt>>::new(&public_coin_seed);
+        let z = public_coin
+            .draw_integers(20, 64)
+            .map_err(|_| VerifierError::RandomCoinError)?;
+        println!("drawn integers: {:?}", z);
+
+        Ok(())
     }
 
     #[test]

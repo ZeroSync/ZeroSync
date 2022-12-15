@@ -26,7 +26,8 @@ from stark_verifier.crypto.random import (
     merge_with_int,
     merge,
     seed_with_pub_inputs,
-    hash_elements
+    hash_elements,
+    reseed_with_int
 )
 
 
@@ -121,7 +122,7 @@ func test_draw{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
 }
 
 
-// @external
+@external
 func test_draw_integers{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     alloc_locals;
     let (blake2s_ptr: felt*) = alloc();
@@ -132,22 +133,50 @@ func test_draw_integers{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
         let public_coin = random_coin_new(seed, 32);
     }
 
-    let (elements) = alloc();
-    let n_elements = 4;
-    let domain_size = 2 ** 5;
+    let (local elements) = alloc();
+    let n_elements = 20;
+    let domain_size = 64;
 
     with blake2s_ptr, public_coin {
         draw_integers(n_elements, elements, domain_size);
     }
 
     %{
+        expected = [18, 10, 16, 60, 46, 13, 11, 5, 29, 30, 1, 27, 6, 36, 53, 7, 9, 12, 45, 43]
         for i in range(ids.n_elements):
-            assert memory[ids.elements + i] < ids.domain_size
+            assert memory[ids.elements + i] == expected[i]
     %}
 
     finalize_blake2s(blake2s_ptr_start, blake2s_ptr);
     return ();
 }
+
+
+
+@external
+func test_reseed_with_int{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
+    alloc_locals;
+    let (blake2s_ptr: felt*) = alloc();
+    local blake2s_ptr_start: felt* = blake2s_ptr;
+
+    tempvar seed: felt* = new (0, 0, 0, 0, 0, 0, 0, 0);
+    with blake2s_ptr {
+        let public_coin = random_coin_new(seed, 32);
+    }
+
+    with blake2s_ptr, public_coin  {
+        reseed_with_int(20);
+        let element = draw();
+    }
+
+    %{
+        assert hex(ids.element) == '0x6d5244e9586a0c28ef68425f09464a2e197a28d2476d0e86bc368516c63b506'
+    %} 
+
+    finalize_blake2s(blake2s_ptr_start, blake2s_ptr);
+    return ();
+}
+
 
 // TODO: Test for a grinded seed
 @external
