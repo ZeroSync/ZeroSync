@@ -8,11 +8,18 @@ bin/stark_parser:
 	@echo "Build parser..."
 	cd src/stark_verifier/parser; \
 	cargo build --target-dir ../../../build/parser
+	mkdir bin
 	cp build/parser/debug/parser bin/stark_parser
+
+chain-proof:
+	source ~/cairo_venv/bin/activate; python3 src/chain_proof/main.py
+
+bridge-node:
+	source ~/cairo_venv/bin/activate; python src/utreexo/bridge_node.py
 
 unit-test:
 	@echo "Running unit tests..."
-	protostar -p unit test
+	protostar test --cairo-path=./src target src
 
 integration-test: bin/stark_parser
 	@echo "Running integration tests..."

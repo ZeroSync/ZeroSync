@@ -10,7 +10,6 @@
 # source ~/cairo_venv/bin/activate
 
 from http.server import BaseHTTPRequestHandler, HTTPServer
-from urllib.parse import urlparse
 import json
 
 from starkware.cairo.lang.vm.crypto import pedersen_hash
