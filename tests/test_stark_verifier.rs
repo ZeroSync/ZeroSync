@@ -183,6 +183,21 @@ mod tests {
         Ok(())
     }
 
+
+    #[test]
+    fn reseed_with_int() -> Result<(), VerifierError>  {
+        let public_coin_seed = vec![0u8; 32];
+        let mut public_coin = RandomCoin::<Felt, Blake2s_256<Felt>>::new(&public_coin_seed);
+        public_coin.reseed_with_int(20);
+        
+        let z = public_coin
+            .draw::<Felt>()
+            .map_err(|_| VerifierError::RandomCoinError)?;
+        println!("z after reseed_with_int: {}", z.to_raw());
+
+        Ok(())
+    }
+
     #[test]
     fn draw_ood_point_z() -> Result<(), VerifierError> {
         let path = String::from("tests/stark_proofs/fibonacci.bin");
