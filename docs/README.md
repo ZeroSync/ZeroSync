@@ -53,7 +53,7 @@ make integration-test
 ## Run the Chain Prover
 ```sh
 make parser
-python src/chain_proof/main.py
+make chain-proof
 ```
 
 ## List TODOs
