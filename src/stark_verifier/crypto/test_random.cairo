@@ -37,15 +37,7 @@ func test_merge_with_int{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     let (blake2s_ptr: felt*) = alloc();
     local blake2s_ptr_start: felt* = blake2s_ptr;
 
-    let (seed) = alloc();
-    assert seed[0] = 0;
-    assert seed[1] = 0;
-    assert seed[2] = 0;
-    assert seed[3] = 0;
-    assert seed[4] = 0;
-    assert seed[5] = 0;
-    assert seed[6] = 0;
-    assert seed[7] = 0;
+    tempvar seed = new (0, 0, 0, 0, 0, 0, 0, 0);
     
     let value = 1;
 
@@ -68,25 +60,8 @@ func test_merge{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     let (blake2s_ptr: felt*) = alloc();
     local blake2s_ptr_start: felt* = blake2s_ptr;
 
-    let (seed) = alloc();
-    assert seed[0] = 0;
-    assert seed[1] = 0;
-    assert seed[2] = 0;
-    assert seed[3] = 0;
-    assert seed[4] = 0;
-    assert seed[5] = 0;
-    assert seed[6] = 0;
-    assert seed[7] = 0;
-    
-    let (value) = alloc();
-    assert value[0] = 0;
-    assert value[1] = 0;
-    assert value[2] = 0;
-    assert value[3] = 0;
-    assert value[4] = 0;
-    assert value[5] = 0;
-    assert value[6] = 0;
-    assert value[7] = 0;
+    tempvar seed = new (0, 0, 0, 0, 0, 0, 0, 0);
+    tempvar value = new (0, 0, 0, 0, 0, 0, 0, 0);
 
     with blake2s_ptr {
         let hash = merge(seed, value);
@@ -100,7 +75,7 @@ func test_merge{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
 }
 
 
-@external
+// @external
 func test_draw{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     alloc_locals;
     let (blake2s_ptr: felt*) = alloc();
