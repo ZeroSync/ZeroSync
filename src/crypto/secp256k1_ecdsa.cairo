@@ -16,19 +16,7 @@ from starkware.cairo.common.cairo_secp.signature import (
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 
 from crypto.hash_utils import copy_hash, HASH_FELT_SIZE
-from serialize.serialize import Reader, init_reader, read_uint8, read_bytes_endian, peek_uint8, peek_uint16
-
-func get_ecpoint_from_pubkey{range_check_ptr}(x: Uint256, y: Uint256) -> EcPoint {
-    if ((y.low - 2) * (y.low - 3) == 0) {
-        let (x1: BigInt3) = uint256_to_bigint(x);
-        let (point: EcPoint) = get_point_from_x(x1, y.low);
-        return point;
-    }
-    let (x1: BigInt3) = uint256_to_bigint(x);
-    let (y1: BigInt3) = uint256_to_bigint(y);
-    let point = EcPoint(x1, y1);
-    return point;
-}
+from serialize.serialize import Reader, init_reader, read_uint8, read_bytes_endian, peek_uint8, peek_uint16, read_uint256_endian
 
 // Verifies a Secp256k1 ECDSA signature.
 // Soundness assumptions:
@@ -36,6 +24,7 @@ func get_ecpoint_from_pubkey{range_check_ptr}(x: Uint256, y: Uint256) -> EcPoint
 // * All the limbs of public_key_pt.x, public_key_pt.y, msg_hash are in the range [0, 3 * BASE).
 func verify_ecdsa_secp256k1{range_check_ptr}(pt: EcPoint, z: BigInt3, r: BigInt3, s: BigInt3) {
     alloc_locals;
+
     with_attr error_message("Signature out of range.") {
         validate_signature_entry(r);
         validate_signature_entry(s);
@@ -54,32 +43,58 @@ func verify_ecdsa_secp256k1{range_check_ptr}(pt: EcPoint, z: BigInt3, r: BigInt3
     return ();
 }
 
+func read_bigint{reader: Reader, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() -> BigInt3 {
+    alloc_locals;
+    let uint256 = read_uint256_endian();
+    let (bigint) = uint256_to_bigint(uint256);
+    return bigint;
+}
+
+// - https://en.bitcoin.it/wiki/Elliptic_Curve_Digital_Signature_Algorithm
+func read_public_key{reader: Reader, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(n_bytes) -> EcPoint {
+    alloc_locals;
+    let prefix = read_uint8();
+    if (n_bytes == 0x41) {
+        // with explicit y-coord
+        with_attr error_message("public_key with 65 bytes need 0x04 prefix") {
+            assert 0x04 = prefix;
+        }
+        let x = read_bigint();
+        let y = read_bigint();
+        let point = EcPoint(x, y);
+        return point;
+    }
+    // implicit y-coord from sign
+    with_attr error_message("sign of elliptic curve y-coord must be 2 or 3") {
+        assert (prefix - 0x02) * (prefix - 0x03) = 0;
+    }
+    with_attr error_message("expected 33 bytes public_key here") {
+        assert 0x21 = n_bytes;
+    }
+    let x = read_bigint();
+    let (pt) = get_point_from_x(x, prefix);
+    return pt;
+}
+
 // - https://github.com/bitcoin/bitcoin/blob/c06cda3e48e9826043ebc5790a7bb505bfbf368c/src/secp256k1/src/ecdsa_impl.h
 // - https://github.com/bitcoin-core/secp256k1/blob/1e5d50fa93d71d751b95eec6a80f6732879a0071/src/scalar_8x32_impl.h#L95
 
 // TODO: implement DER encoding for ECDSA signatures
 // DER Signatur schwitzt nie.
-func decode_der_signature{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
-    der_signature: felt*
-) -> (
-    sig_r: BigInt3, sig_s: BigInt3
-) {
+func read_der_signature{reader: Reader, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() -> (r_sig: BigInt3, s_sig: BigInt3) {
     alloc_locals;
 
-    let reader = init_reader(der_signature);
+    let byte = read_uint8();
+    // The encoding doesn't start with a constructed sequence (X.690-0207 8.9.1).
+    assert 0x30 = byte;
 
-    with reader {
-        let byte = read_uint8();
-        // The encoding doesn't start with a constructed sequence (X.690-0207 8.9.1).
-        assert 0x30 = byte;
+    let rlen = secp256k1_der_read_len();
 
-        let rlen = secp256k1_der_read_len();
-
-        let r_sig = secp256k1_der_parse_integer(rlen);
-        let s_sig = secp256k1_der_parse_integer(rlen);
-    }
+    let r_sig = secp256k1_der_parse_integer(rlen);
+    let s_sig = secp256k1_der_parse_integer(rlen);
 
     return (r_sig, s_sig);
+
 }
 
 // - https://github.com/bitcoin-core/secp256k1/blob/74c34e727bd68d8665e15446e50731006f178aa0/src/ecdsa_impl.h#L49
@@ -114,8 +129,6 @@ func secp256k1_der_read_len{reader: Reader, range_check_ptr, bitwise_ptr: Bitwis
     let byte = peek_uint8();
     // Not the shortest possible length encoding.
     assert_not_zero(byte);
-
-    %{ print("lenleft", ids.lenleft) %}
 
     tempvar len = 0;
     tempvar reader = reader;

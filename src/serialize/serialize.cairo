@@ -11,6 +11,7 @@
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.math import assert_not_zero, assert_le, assert_le_felt
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
+from starkware.cairo.common.uint256 import Uint256
 
 from utils.endianness import byteswap16, byteswap32
 
@@ -187,7 +188,6 @@ func read_uint16_endian{reader: Reader, bitwise_ptr: BitwiseBuiltin*}() -> felt 
 	return uint16_endian;
 }
 
-
 func read_uint32_endian{reader: Reader, bitwise_ptr: BitwiseBuiltin*}() -> felt {
 	alloc_locals;
 	// Ensure only lowest bits set
@@ -201,6 +201,28 @@ func read_uint32_endian{reader: Reader, bitwise_ptr: BitwiseBuiltin*}() -> felt 
 	let reader = Reader(reader.cur, buf_64 - [bitwise_ptr].x_and_y, reader.ptr + 1);
 	let bitwise_ptr = bitwise_ptr + BitwiseBuiltin.SIZE;
     return uint32_endian;
+}
+
+func read_uint64_endian{reader: Reader, bitwise_ptr: BitwiseBuiltin*}() -> felt {
+    alloc_locals;
+    let hi = read_uint32_endian();
+    let lo = read_uint32_endian();
+    return 2**32 * hi + lo;
+}
+
+func read_uint128_endian{reader: Reader, bitwise_ptr: BitwiseBuiltin*}() -> felt {
+    alloc_locals;
+    let hi = read_uint64_endian();
+    let lo = read_uint64_endian();
+    return 2**64 * hi + lo;
+}
+
+func read_uint256_endian{reader: Reader, bitwise_ptr: BitwiseBuiltin*}() -> Uint256 {
+    alloc_locals;
+    let hi = read_uint128_endian();
+    let lo = read_uint128_endian();
+    let uint256 = Uint256(lo, hi);
+    return uint256;
 }
 
 // Read an array of 32-bit integers from our usual 32-bit reader
