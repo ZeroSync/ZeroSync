@@ -121,7 +121,7 @@ func test_draw{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
 }
 
 
-// @external
+@external
 func test_draw_integers{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     alloc_locals;
     let (blake2s_ptr: felt*) = alloc();
@@ -132,17 +132,18 @@ func test_draw_integers{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
         let public_coin = random_coin_new(seed, 32);
     }
 
-    let (elements) = alloc();
-    let n_elements = 4;
-    let domain_size = 2 ** 5;
+    let (local elements) = alloc();
+    let n_elements = 20;
+    let domain_size = 64;
 
     with blake2s_ptr, public_coin {
         draw_integers(n_elements, elements, domain_size);
     }
 
     %{
+        expected = [18, 10, 16, 60, 46, 13, 11, 5, 29, 30, 1, 27, 6, 36, 53, 7, 9, 12, 45, 43]
         for i in range(ids.n_elements):
-            assert memory[ids.elements + i] < ids.domain_size
+            assert memory[ids.elements + i] == expected[i]
     %}
 
     finalize_blake2s(blake2s_ptr_start, blake2s_ptr);
