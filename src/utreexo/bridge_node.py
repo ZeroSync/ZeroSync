@@ -143,6 +143,15 @@ class RequestHandler(BaseHTTPRequestHandler):
                 {'leaf_index': leaf_index, 'proof': proof}).encode())
             return
 
+        # Note: This is currently only used in benchmarks that start at an
+        #       arbitrary block to get the starting roots after setting
+        #       up the bridge node with the required utxos.
+        # WARNING: This may be removed at any point.
+        if self.path.startswith('/roots'):
+            self.wfile.write(json.dumps([str(node.val) if node != None else "0" for node in root_nodes]).encode())
+            return
+
+
         if self.path.startswith('/reset'):
             print('>>>>>>>>>> RESET >>>>>>>>>>')
             root_nodes = [None] * 27

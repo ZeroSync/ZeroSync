@@ -72,71 +72,81 @@ def felts_to_hex(felts):
 
 # Inserts all required utxos and returns the utreexo roots.
 def setup_bridge_node(block_height):
+    # TODO send a reset here.
     http = urllib3.PoolManager()
     utxo_hashes = generate_utxo_dummys(block_height)
     for utxo_hash in utxo_hashes:
-        url = 'http://localhost:2121/add/' + hex(hash)
+        url = 'http://localhost:2121/add/' + hex(utxo_hash)
         r = http.request('GET', url)
 
-    url = 'http://localhost:2121/add/' + hex_hash
+    url = 'http://localhost:2121/roots'
     r = http.request('GET', url)
+    return json.loads(r.data)
+
 
 
 if __name__ == '__main__':
-    output_dir = 'tmp'
-
-    os.popen(f'mkdir -p {output_dir}')
+    
+    # The first Bitcoin TX ever occured in block 170. The second TX occured in
+    # block 181.
+    block_height = 170000  # TODO Allow input from user.
+    output_dir = 'benchmark_tmp'
+    os.system(f'mkdir -p {output_dir}')
 
     # Run the Cairo compiler
-    os.cwd('../')
-    cmd = f'cairo-compile src/chain_proof/main.cairo --cairo_path src --output utils/{output_dir}/program.json'
-    os.cwd('utils/')
+    # Assume we are in the repository root directory.
+    cmd = f'cairo-compile src/chain_proof/main.cairo --cairo_path src --output {output_dir}/program.json'
 
     print(os.popen(cmd).read())
 
     # Copy genesis state.json into the output directory
     # also read the program_length from program.json
     # and add it to the state.json
-    f = open('../src/chain_proof/state_0.json')
-    genesis_state = json.load(f)
+    f = open('src/chain_proof/state_0.json')
+    initial_state = json.load(f)
 
-    f = open(f'{output_dir}/program.json')
-    program = json.load(f)
-    genesis_state['program_length'] = len(program['data'])
+    # TODO change block_height and other required fields in the initial state to correct values
+    initial_state['block_height'] = block_height - 1
+    initial_state['best_block_hash'] = '000000002a22cfee1f2c846adbd12b3e183d4f97683f85dad08a79780a84bd55'
+    initial_state['utreexo_roots'] = setup_bridge_node(block_height)
+    print("Initial utreexo_nodes: ", initial_state['utreexo_roots'])
+
+    with open(f'{output_dir}/program.json') as f:
+        program = json.load(f)
+        initial_state['program_length'] = len(program['data'])
+
 
     with open(f'{output_dir}/chain_state.json', 'w') as outfile:
-        outfile.write(json.dumps(genesis_state))
+        outfile.write(json.dumps(initial_state))
 
     chain_state_file = f'{output_dir}/chain_state.json'
 
-    # The first Bitcoin TX ever occured in block 170. The second TX occured in
-    # block 181.
-    block_height = 0  # TODO Allow input from user.
 
     # Run the Cairo runner
     cmd = f'cairo-run --program={output_dir}/program.json --layout=all --print_info --print_output --program_input={chain_state_file} --trace_file={output_dir}/trace.bin --memory_file={output_dir}/memory.bin'
 
     # TODO Parse this in a way to see info and program output.
     program_output_string = os.popen(cmd).read()
-    program_output = parse_cairo_output(program_output_string)
+    print(program_output_string)
+    # program_output = parse_cairo_output(program_output_string)
 
     # Parse outputs
-    r = FeltsReader(program_output)
-    chain_state = {
-        'block_height': r.read(),
-        'best_block_hash': felts_to_hash(r.read_n(8)),
-        'total_work': r.read(),
-        'current_target': r.read(),
-        'prev_timestamps': r.read_n(11),
-        'epoch_start_time': r.read(),
-        'utreexo_roots': felts_to_hex(r.read_n(27)),
-        'program_hash': hex(r.read()),
-        'program_length': r.read()
-    }
+   # r = FeltsReader(program_output)
+   # chain_state = {
+   #     'block_height': r.read(),
+   #     'best_block_hash': felts_to_hash(r.read_n(8)),
+   #     'total_work': r.read(),
+   #     'current_target': r.read(),
+   #     'prev_timestamps': r.read_n(11),
+   #     'epoch_start_time': r.read(),
+   #     'utreexo_roots': felts_to_hex(r.read_n(27)),
+   #     'program_hash': hex(r.read()),
+   #     'program_length': r.read()
+   # }
 
-    print('block height:', chain_state['block_height'])
+   # print('block height:', chain_state['block_height'])
 
     # Run Giza prover
-    cmd = f'giza prove --trace={output_dir}/trace.bin --memory={output_dir}/memory.bin --program={output_dir}/program.json --output={output_dir}/proof.bin --num-outputs=50'
-    program_output_string = os.popen(cmd).read()
+    # cmd = f'giza prove --trace={output_dir}/trace.bin --memory={output_dir}/memory.bin --program={output_dir}/program.json --output={output_dir}/proof.bin --num-outputs=50'
+    # program_output_string = os.popen(cmd).read()
     # TODO Get amount of RAM used by giza

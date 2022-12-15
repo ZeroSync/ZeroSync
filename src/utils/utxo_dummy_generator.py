@@ -3,6 +3,7 @@ import json
 import re
 import math
 import sys
+import os
 
 from starkware.cairo.lang.vm.crypto import pedersen_hash
 from starkware.cairo.common.hash_chain import compute_hash_chain
@@ -97,15 +98,26 @@ def hash_tx_ins(tx_ins, tx_outs):
 
 
 def generate_utxo_dummys(block_height):
-    tx_ins, tx_outs = fetch_tx_ins_and_outs(block_height)
-    output_hashes = hash_tx_ins(tx_ins, tx_outs)
-   # code_block = [
-   #     'dummy_utxo_insert{hash_ptr=pedersen_ptr, utreexo_roots=prev_utreexo_roots}(' +
-   #     hex(x) +
-   #     ');\n' for x in output_hashes]
+    # TODO add cache folder to gitignore
+    
+    # Check if the current block exists in the cache directory
+    cache_dir = 'utxo_dummy_cache'
+    os.system(f'mkdir -p {cache_dir}')
 
+    if os.path.isfile(f'{cache_dir}/block_{block_height}.json'):
+        f = open(f'{cache_dir}/block_{block_height}.json','r')
+        output_hashes = json.load(f)
+    else:
+        # Fetch all required utxos
+        tx_ins, tx_outs = fetch_tx_ins_and_outs(block_height)
+        output_hashes = hash_tx_ins(tx_ins, tx_outs)
+
+        # Create new file as cache entry
+        f = open(f'{cache_dir}/block_{block_height}.json','w')
+        json.dump(output_hashes, f)
+    
+    f.close()
     return output_hashes
-
 
 if __name__ == "__main__":
     if len(sys.argv) == 1:
