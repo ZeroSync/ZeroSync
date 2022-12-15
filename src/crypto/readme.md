@@ -11,5 +11,7 @@ A library to prove all hash functions used in [Bitcoin (Script)](https://en.bitc
 - OP_HASH256: The input is hashed two times with SHA-256.
 
 ## Bitcoin Signatures
+Signatures over the curve secp256k1.
 
-STARK proofs for ECDSA and Schnorr signatures over the secp256k1 curve. ECDSA signatures are DER encoded.
+- ECDSA signatures, including DER encoding
+- Schnorr signatures

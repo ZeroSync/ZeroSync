@@ -1,4 +1,26 @@
-# ZeroSync
+<div align="center">
+  <h1>ZeroSync</h1>
+  <br />
+  <a href="#about"><strong>«A STARK proof to sync a Bitcoin full node in an instant»</strong></a>
+  <br />
+  <br />
+  <a href="https://github.com/ZeroSync/ZeroSync/issues/new?assignees=&labels=bug&template=01_BUG_REPORT.md&title=bug%3A+">Report a Bug</a>
+  |
+  <a href="https://github.com/ZeroSync/ZeroSync/issues/new?assignees=&labels=enhancement&template=02_FEATURE_REQUEST.md&title=feat%3A+">Request a Feature</a>
+  | <a href="https://github.com/ZeroSync/ZeroSync/discussions">Ask a Question</a>
+</div>
+
+<div align="center">
+<br />
+
+![GitHub Workflow Status](https://github.com/ZeroSync/ZeroSync/actions/workflows/CI.yml/badge.svg)
+[![Project license](https://img.shields.io/github/license/ZeroSync/ZeroSync.svg)](../LICENSE)
+[![Pull Requests welcome](https://img.shields.io/badge/PRs-welcome-ff69b4.svg?)](https://github.com/ZeroSync/ZeroSync/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
+![GitHub Repo stars](https://img.shields.io/github/stars/ZeroSync/ZeroSync?style=social)
+[![Twitter Follow](https://img.shields.io/twitter/follow/ZeroSync_?style=social)](https://twitter.com/ZeroSync_)
+
+</div>
+
 
 **Don't trust. Verify.** ZeroSync allows to verify Bitcoin's chain state in an instant. No need to download hundreds of gigabytes of blocks. A compact cryptographic proof suffices to validate the entire history of transactions and everyone's current balances. 
 
@@ -45,11 +67,13 @@ protostar test --cairo-path=./src tests
 Run some tests with the Rust verifier to derive a detailed ground truth:
 
 ```sh
-cargo +nightly test -- --nocapture
+cargo +nightly test -- --show-output
 ```
 
 
 ## Run the Chain Prover
+
+Note that you have to build the parser first, as described above.
 ```sh
 source ~/cairo_venv/bin/activate
 python3 src/chain_proof/main.py
@@ -62,3 +86,6 @@ python3 src/chain_proof/main.py
 ```
 
 
+## Roadmap
+
+The roadmap is available [here](roadmap.md).

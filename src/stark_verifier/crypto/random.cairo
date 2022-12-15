@@ -12,7 +12,7 @@ from starkware.cairo.common.hash import HashBuiltin
 from starkware.cairo.common.hash_state import hash_finalize, hash_init, hash_update
 from starkware.cairo.common.math import assert_nn_le, assert_le
 from starkware.cairo.common.math_cmp import is_le
-from starkware.cairo.common.bool import TRUE
+from starkware.cairo.common.bool import TRUE, FALSE
 from starkware.cairo.common.memcpy import memcpy
 from starkware.cairo.common.memset import memset
 from utils.pow2 import pow2
@@ -45,7 +45,17 @@ func merge{range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*}(
     let (data: felt*) = alloc();
 
     memcpy(data, seed, 8);
-    memcpy(data + 8, value, 8);
+    
+    let be_value = data + 8;
+    assert be_value[0] = byteswap32(value[0]);
+    assert be_value[1] = byteswap32(value[1]);
+    assert be_value[2] = byteswap32(value[2]);
+    assert be_value[3] = byteswap32(value[3]);
+    assert be_value[4] = byteswap32(value[4]);
+    assert be_value[5] = byteswap32(value[5]);
+    assert be_value[6] = byteswap32(value[6]);
+    assert be_value[7] = byteswap32(value[7]);
+
     let (digest) = blake2s_as_words(data=data, n_bytes=64);
 
     return digest;
@@ -86,12 +96,12 @@ func hash_elements{range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuil
     let (data) = alloc();
     let data_start = data;
     with data {
-        blake2s_add_felts(n_elements=n_elements, elements=elements, bigend=1);
+        blake2s_add_felts(n_elements=n_elements, elements=elements, bigend=0);
     }
-
-    let (res) = blake2s_as_words(data=data, n_bytes=n_elements * 32);
+    let (res) = blake2s_as_words(data=data_start, n_bytes = n_elements * 32);
     return res;
 }
+
 
 // Reseeds the coin with the specified data by setting the new seed to hash(`seed` || `value`).
 // where value is a U256 integer representing a hash digest
@@ -102,6 +112,8 @@ func reseed{
     let public_coin = PublicCoin(seed=digest, counter=0);
     return ();
 }
+
+
 
 // Reseeds the coin with the specified value by setting the new seed to hash(`seed` || `value`)
 // where value is a u64 integer.
@@ -120,7 +132,31 @@ func reseed_with_int{
 func reseed_with_ood_frames{
     range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*, public_coin: PublicCoin
 }(ood_main_trace_frame: EvaluationFrame, ood_aux_trace_frame: EvaluationFrame) {
-    // TODO
+    alloc_locals;
+
+
+
+    let (elements) = alloc();
+    let elements_start = elements;
+    memcpy(elements, ood_main_trace_frame.current, ood_main_trace_frame.current_len);
+    let elements = elements + ood_main_trace_frame.current_len;
+    memcpy(elements, ood_aux_trace_frame.current, ood_aux_trace_frame.current_len);
+    let elements = elements + ood_aux_trace_frame.current_len;
+    let n_elements = elements - elements_start;
+    let elements_hash = hash_elements(n_elements, elements_start);
+    reseed_endian(elements_hash);
+
+
+    let (elements) = alloc();
+    let elements_start = elements;
+    memcpy(elements, ood_main_trace_frame.next, ood_main_trace_frame.next_len);
+    let elements = elements + ood_main_trace_frame.next_len;
+    memcpy(elements, ood_aux_trace_frame.next, ood_aux_trace_frame.next_len);
+    let elements = elements + ood_aux_trace_frame.next_len;
+    let n_elements = elements - elements_start;
+    let elements_hash = hash_elements(n_elements, elements_start);
+    reseed_endian(elements_hash);
+
     return ();
 }
 
@@ -193,7 +229,7 @@ func _draw_integers_loop{
     let bitwise_ptr = bitwise_ptr + BitwiseBuiltin.SIZE;
 
     let is_contained = contains(value, elements, index);
-    if (is_contained == 1) {
+    if (is_contained != FALSE) {
         return _draw_integers_loop(n_elements, elements, domain_size, index);
     }
 
@@ -221,40 +257,40 @@ func seed_with_pub_inputs{
     alloc_locals;
 
     let (mem_values: felt*) = alloc();
-    // TODO: We need to record `mem_length` in the public inputs, and 
-    // pass it to `read_mem_values` here
     let mem_length = pub_inputs.mem_length;
     read_mem_values(
         mem=pub_inputs.mem,
-        address=0, //pub_inputs.init._pc,
+        address=0,
         length=mem_length,
         output=mem_values
     );
 
     let (hash_state_ptr) = hash_init();
     let (hash_state_ptr) = hash_update{hash_ptr=pedersen_ptr}(
-        hash_state_ptr=hash_state_ptr, data_ptr=mem_values, data_length=mem_length
+        hash_state_ptr=hash_state_ptr,
+        data_ptr=mem_values,
+        data_length=mem_length
     );
     let (pub_mem_hash) = hash_finalize{hash_ptr=pedersen_ptr}(hash_state_ptr=hash_state_ptr);
 
     let (data: felt*) = alloc();
     let data_start = data;
     with data {
-        blake2s_add_felt(num=pub_inputs.init._pc, bigend=1);
-        blake2s_add_felt(num=pub_inputs.init._ap, bigend=1);
-        blake2s_add_felt(num=pub_inputs.init._fp, bigend=1);
+        blake2s_add_felt(num=pub_inputs.init._pc, bigend=0);
+        blake2s_add_felt(num=pub_inputs.init._ap, bigend=0);
+        blake2s_add_felt(num=pub_inputs.init._fp, bigend=0);
 
-        blake2s_add_felt(num=pub_inputs.fin._pc, bigend=1);
-        blake2s_add_felt(num=pub_inputs.fin._ap, bigend=1);
-        blake2s_add_felt(num=pub_inputs.fin._fp, bigend=1);
+        blake2s_add_felt(num=pub_inputs.fin._pc, bigend=0);
+        blake2s_add_felt(num=pub_inputs.fin._ap, bigend=0);
+        blake2s_add_felt(num=pub_inputs.fin._fp, bigend=0);
 
-        blake2s_add_felt(num=pub_inputs.rc_min, bigend=1);
-        blake2s_add_felt(num=pub_inputs.rc_max, bigend=1);
+        blake2s_add_felt(num=pub_inputs.rc_min, bigend=0);
+        blake2s_add_felt(num=pub_inputs.rc_max, bigend=0);
 
-        blake2s_add_felt(num=mem_length, bigend=1);
-        blake2s_add_felt(num=pub_mem_hash, bigend=1);
+        blake2s_add_felt(num=mem_length, bigend=0);
+        blake2s_add_felt(num=pub_mem_hash, bigend=0);
 
-        blake2s_add_felt(num=pub_inputs.num_steps, bigend=1);
+        blake2s_add_felt(num=pub_inputs.num_steps, bigend=0);
     }
 
     let n_bytes = (data - data_start) * 4;
@@ -294,4 +330,33 @@ func get_leading_zeros{range_check_ptr, public_coin: PublicCoin}() -> felt {
     } else {
         return 64;
     }
+}
+
+
+
+
+// Reseeds the coin with the specified data by setting the new seed to hash(`seed` || `value`).
+// where value is a U256 integer representing a hash digest. Preserves the endianness of value
+func reseed_endian{
+    range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*, public_coin: PublicCoin
+}(value: felt*) {
+    let digest = merge_endian(seed=public_coin.seed, value=value);
+    let public_coin = PublicCoin(seed=digest, counter=0);
+    return ();
+}
+
+// Returns a hash of two digests. This method is intended for use in construction of
+// Merkle trees. Preserves the endianness of value
+func merge_endian{range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*}(
+    seed: felt*, value: felt*
+) -> felt* {
+    alloc_locals;
+    let (data: felt*) = alloc();
+
+    memcpy(data, seed, 8);
+    memcpy(data+8, value, 8);
+   
+    let (digest) = blake2s_as_words(data=data, n_bytes=64);
+
+    return digest;
 }

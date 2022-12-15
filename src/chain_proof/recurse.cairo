@@ -8,7 +8,7 @@ from starkware.cairo.common.hash import HashBuiltin
 from stark_verifier.air.stark_proof import StarkProof, read_stark_proof
 from stark_verifier.stark_verifier import verify
 from crypto.hash_utils import HASH_FELT_SIZE
-from utils.compute_median import TIMESTAMP_COUNT
+from block.compute_median import TIMESTAMP_COUNT
 from utreexo.utreexo import UTREEXO_ROOTS_LEN
 from block.block import State, ChainState
 
@@ -28,7 +28,7 @@ func recurse{pedersen_ptr: HashBuiltin*, range_check_ptr, bitwise_ptr: BitwiseBu
     let (mem_values: felt*) = alloc();
     let mem_length = pub_inputs.fin._pc;
     read_mem_values(
-        mem=&pub_inputs.mem, address=pub_inputs.init._pc, length=mem_length, output=mem_values
+        mem=pub_inputs.mem, address=pub_inputs.init._pc, length=mem_length, output=mem_values
     );
 
     // 2. Compute the program's hash and compare it to the `expected_program_hash` 

@@ -97,13 +97,13 @@ impl Writeable for (Vec<u64>, Vec<Option<Word>>) {
     fn write_into(&self, target: &mut DynamicMemory) {
         let mut res = Vec::new();
         for (idx, word) in zip(&self.0, &self.1) {
-            res.push( (idx, word.unwrap().word() ) ); 
+            res.push((idx, word.unwrap().word()));
         }
         target.write_array(res);
     }
 }
 
-impl Writeable for (&u64, Felt){
+impl Writeable for (&u64, Felt) {
     fn write_into(&self, target: &mut DynamicMemory) {
         self.0.write_into(target);
         self.1.write_into(target);
@@ -161,7 +161,8 @@ impl WriteableWith<&ProcessorAir> for Commitments {
                 .collect::<Vec<_>>(),
         );
 
-        ByteDigest(constraint_commitment.as_bytes()).write_into(target);
+        let mut temp_memory = target.alloc();
+        ByteDigest(constraint_commitment.as_bytes()).write_into(&mut temp_memory);
 
         target.write_array(
             fri_commitments
@@ -200,7 +201,7 @@ impl WriteableWith<&ProcessorAir> for OodFrame {
         ood_main_trace_frame.write_into(target);
         ood_aux_trace_frame.clone().unwrap().write_into(target);
 
-        target.write_array(ood_constraint_evaluations);
+        target.write_sized_array(ood_constraint_evaluations);
     }
 }
 
@@ -268,13 +269,10 @@ impl Writeable for Table<Felt> {
 impl Writeable for Felt {
     fn write_into(&self, target: &mut DynamicMemory) {
         let mut hex_string = "0x".to_owned();
-        // TODO: Why do we not have to_be_bytes implemented?
-        for byte in self.to_raw().to_le_bytes() {
-            hex_string += format!("{:02x?}", byte)
-                .chars()
-                .rev()
-                .collect::<String>()
-                .as_str();
+        for chunk in self.to_raw().0.iter().rev() {
+            for byte in chunk.to_be_bytes() {
+                hex_string += format!("{:02x?}", byte).as_str();
+            }
         }
         target.write_hex_value(hex_string);
     }

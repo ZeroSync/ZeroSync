@@ -42,7 +42,7 @@ struct ConstraintCompositionCoefficients {
 
 struct TraceCoefficients {
     n_values: felt,
-    values: felt,
+    values: felt*,
 }
 
 // Coefficients used in construction of DEEP composition polynomial
@@ -139,9 +139,16 @@ func set_trace_coefficients{
     if (n_vec == 0) {
         return ();
     }
-    draw_elements(n_elements=n_coefficients, elements=coefficients);
+    // Create a new TraceCoefficients object
+    let (values) = alloc();
+    assert coefficients[0] = TraceCoefficients(n_coefficients, values);
+    
+    // Fill it with random elements
+    draw_elements(n_elements=n_coefficients, elements=values);
+
+    // Recurse
     set_trace_coefficients(
-        n_vec=n_vec - 1, n_coefficients=n_coefficients, coefficients=coefficients
+        n_vec=n_vec - 1, n_coefficients=n_coefficients, coefficients=&coefficients[1]
     );
     return ();
 }
