@@ -10,7 +10,8 @@
   | <a href="https://github.com/ZeroSync/ZeroSync/discussions">Ask a Question</a>
 </div>
 <div align="center">
-<br />
+<br/>
+
 ![GitHub Workflow Status](https://github.com/ZeroSync/ZeroSync/actions/workflows/CI.yml/badge.svg)
 [![Project license](https://img.shields.io/github/license/ZeroSync/ZeroSync.svg)](../LICENSE)
 [![Pull Requests welcome](https://img.shields.io/badge/PRs-welcome-ff69b4.svg?)](https://github.com/ZeroSync/ZeroSync/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
@@ -36,7 +37,7 @@ WARNING: THIS CODE IS STILL FULL OF CRITICAL SECURITY BUGS!
 The Utreexo bridge node is required to pass the tests for block verification. It provides the inclusion proofs for the coins spent in a block.
 
 ```sh
-python src/utreexo/bridge_node.py
+make bridge-node
 ```
 
 ## Run all Unit Tests
