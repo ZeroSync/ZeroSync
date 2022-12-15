@@ -104,7 +104,7 @@ func main{
     }
 
     // Validate the previous chain proof
-    recurse(next_state.chain_state.block_height, program_hash, program_length, prev_state);
+    // recurse(next_state.chain_state.block_height, program_hash, program_length, prev_state);
 
     // Print the next state
     serialize_chain_state(next_state.chain_state);
