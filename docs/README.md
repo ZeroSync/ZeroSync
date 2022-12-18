@@ -17,6 +17,7 @@
 [![Pull Requests welcome](https://img.shields.io/badge/PRs-welcome-ff69b4.svg?)](https://github.com/ZeroSync/ZeroSync/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
 ![GitHub Repo stars](https://img.shields.io/github/stars/ZeroSync/ZeroSync?style=social)
 [![Twitter Follow](https://img.shields.io/twitter/follow/ZeroSync_?style=social)](https://twitter.com/ZeroSync_)
+
 </div>
 
 **Don't trust. Verify.** ZeroSync allows to verify Bitcoin's chain state in an instant. No need to download hundreds of gigabytes of blocks. A compact cryptographic proof suffices to validate the entire history of transactions and everyone's current balances. 
@@ -33,24 +34,26 @@ WARNING: THIS CODE IS STILL FULL OF CRITICAL SECURITY BUGS!
 - [Protostar](https://docs.swmansion.com/protostar/docs/tutorials/installation) (Automated testing)
 - [Giza](https://github.com/zerosync/giza) (Required for prover. Not necessary for development and testing)
 
-## Run the Utreexo Bridge Node
+## Run the Utreexo bridge node
 The Utreexo bridge node is required to pass the tests for block verification. It provides the inclusion proofs for the coins spent in a block.
 
 ```sh
 make bridge-node
 ```
 
-## Run all Unit Tests
+## Run all unit tests
 ```sh
+make rust-test-lib
 make unit-test
 ```
 
-## Run all Integration Tests
+## Run all integration tests
 ```sh
+make rust-test-lib
 make integration-test
 ```
 
-## Run the Chain Prover
+## Run the chain prover
 ```sh
 make parser
 make chain-proof
