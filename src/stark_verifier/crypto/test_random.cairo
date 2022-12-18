@@ -30,7 +30,6 @@ from stark_verifier.crypto.random import (
     reseed_with_int
 )
 
-
 @external
 func test_merge_with_int{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     alloc_locals;
@@ -46,13 +45,16 @@ func test_merge_with_int{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     }
 
     %{
-        print('merge_with_int:', hex(memory[ids.hash]), '...', hex(memory[ids.hash+7]))
-        print('expected:', '4C C6 5F A0 ... 7A 71 F7 B3')
+        from src.utils.hex_utils import get_hex
+        from zerosync_tests import *
+        a = get_hex(memory, ids.hash)
+        b = merge_with_int()
+        print("test_merge_with_int", a, b)
+        assert a == b
     %} 
     finalize_blake2s(blake2s_ptr_start, blake2s_ptr);  
     return ();
 }
-
 
 @external
 func test_merge{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
@@ -68,14 +70,18 @@ func test_merge{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     }
 
     %{
-        print('merge:', hex(memory[ids.hash]), '...', hex(memory[ids.hash+7]), 'expected: ae09db7c ... 8ab454a3')
+        from src.utils.hex_utils import get_hex
+        from zerosync_tests import *
+        a = get_hex(memory, ids.hash)
+        b = merge()
+        print("test_merge", a, b)
+        assert a == b
     %} 
     finalize_blake2s(blake2s_ptr_start, blake2s_ptr);  
     return ();
 }
 
-
-// @external
+@external
 func test_draw{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     alloc_locals;
     let (blake2s_ptr: felt*) = alloc();
@@ -89,13 +95,17 @@ func test_draw{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     with blake2s_ptr, public_coin {
         let element = draw();
     }
+    
     %{
-        print('expected: 6c b9 a1 f2 ... 58 29 f7 39')
+        from zerosync_tests import *
+        a = hex(ids.element)
+        b = draw_felt()
+        print("test_draw", a, b)
+        assert a == b
     %} 
     finalize_blake2s(blake2s_ptr_start, blake2s_ptr);  
     return ();
 }
-
 
 @external
 func test_draw_integers{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
@@ -121,7 +131,6 @@ func test_draw_integers{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
         for i in range(ids.n_elements):
             assert memory[ids.elements + i] == expected[i]
     %}
-
     finalize_blake2s(blake2s_ptr_start, blake2s_ptr);
     return ();
 }
@@ -191,12 +200,14 @@ func test_pedersen_chain{
         data_length=length
     );
     let (out) = hash_finalize{hash_ptr=pedersen_ptr}(hash_state_ptr=hash_state_ptr);
-    %{ 
-        print(
-            'pedersen_hash',
-            hex(ids.out),
-            '\n expected: ...')
-    %}
+    %{
+        from src.utils.hex_utils import get_hex
+        from zerosync_tests import *
+        a = get_hex(memory, ids.out)
+        b = pedersen_chain()
+        print("test_pedersen_chain", a, b)
+        assert a == b
+    %} 
     return ();
 }
 
@@ -228,13 +239,16 @@ func test_hash_pub_inputs{
         data_ptr=mem_values,
         data_length=mem_length
     );
+
     let (pub_mem_hash) = hash_finalize{hash_ptr=pedersen_ptr}(hash_state_ptr=hash_state_ptr);
-    %{ 
-        print(
-            'pub_mem_hash',
-            hex(ids.pub_mem_hash),
-            '\n expected: 05334bb4 ... a78fbcc64')
-    %}
+    %{
+        from src.utils.hex_utils import get_hex
+        from zerosync_tests import *
+        a = get_hex(memory, ids.pub_mem_hash)
+        b = hash_pub_inputs()
+        print("test_hash_pub_inputs", a, b)
+        assert a == b
+    %} 
     return ();
 }
 
@@ -257,13 +271,14 @@ func test_public_coin_seed{
     let pub_inputs: PublicInputs* = read_public_inputs();
 
     let public_coin_seed: felt* = seed_with_pub_inputs{blake2s_ptr=blake2s_ptr}(pub_inputs);
-    %{ 
-        print(
-            'public_coin_seed',
-            hex(memory[ids.public_coin_seed]),
-            hex(memory[ids.public_coin_seed + 7]),
-            '\n expected: ac573ab0 ... 09529c47')
-    %}
+    %{
+        from src.utils.hex_utils import get_hex
+        from zerosync_tests import *
+        a = get_hex(memory, ids.public_coin_seed)
+        b = seed_with_pub_inputs()
+        print("test_public_coin_seed", a, b)
+        assert a == b
+    %} 
     return ();
 }
 
