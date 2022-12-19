@@ -55,12 +55,12 @@ rust-test-lib: RUST_TEST_LIB
 
 unit-test:
 	@echo "Running unit tests..."
-	protostar -p unit test
+	PYTHONPATH=$$(python -c "import site; print(site.getsitepackages()[0])"):$$PYTHONPATH protostar -p unit test
 
 
 integration-test: STARK_PARSER
 	@echo "Running integration tests..."
-	protostar -p integration test
+	PYTHONPATH=$$(python -c "import site; print(site.getsitepackages()[0])"):$$PYTHONPATH protostar -p integration test
 
 clean:
 	rm -rf build
