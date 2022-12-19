@@ -98,7 +98,7 @@ func test_draw{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     
     %{
         from zerosync_tests import *
-        a = hex(ids.element)
+        a = hex(ids.element)[2:]
         b = draw_felt()
         print("test_draw", a, b)
         assert a == b
@@ -203,7 +203,7 @@ func test_pedersen_chain{
     %{
         from src.utils.hex_utils import get_hex
         from zerosync_tests import *
-        a = get_hex(memory, ids.out)
+        a = hex(ids.out)[2:].zfill(64)
         b = pedersen_chain()
         print("test_pedersen_chain", a, b)
         assert a == b
