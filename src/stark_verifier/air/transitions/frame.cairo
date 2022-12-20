@@ -1,3 +1,6 @@
+from starkware.cairo.common.alloc import alloc
+from starkware.cairo.common.memcpy import memcpy
+
 // Main constraint identifiers
 const INST = 16;
 const DST_ADDR = 17;
@@ -70,12 +73,13 @@ func evaluate_transition(
     ood_main_trace_frame: EvaluationFrame, 
     t_evaluations1: felt*,
 ) {
-
-    evaluate_instr_constraints(ood_main_trace_frame, t_evaluations1);
-    evaluate_operand_constraints(ood_main_trace_frame, t_evaluations1);
-    evaluate_register_constraints(ood_main_trace_frame, t_evaluations1);
-    evaluate_opcode_constraints(ood_main_trace_frame, t_evaluations1);
-    // enforce_selector(ood_main_trace_frame, t_evaluations1);
+    alloc_locals;
+    let (tmp_evaluations) = alloc();
+    evaluate_instr_constraints(ood_main_trace_frame, tmp_evaluations);
+    evaluate_operand_constraints(ood_main_trace_frame, tmp_evaluations);
+    evaluate_register_constraints(ood_main_trace_frame, tmp_evaluations);
+    evaluate_opcode_constraints(ood_main_trace_frame, tmp_evaluations);
+    enforce_selector(ood_main_trace_frame, tmp_evaluations, t_evaluations1);
 
     return ();
 }
@@ -229,8 +233,6 @@ func evaluate_register_constraints(
 }
 
 
-
-
 func evaluate_opcode_constraints(
     ood_main_trace_frame: EvaluationFrame, 
     t_evaluations1: felt*
@@ -259,6 +261,38 @@ func evaluate_opcode_constraints(
     assert t_evaluations1[CALL_1] = curr_f_opc_call * (curr_dst - curr_fp);
     assert t_evaluations1[CALL_2] = curr_f_opc_call * (curr_op0 - (curr_pc + curr_inst_size));
     assert t_evaluations1[ASSERT_EQ] = curr_f_opc_aeq * (curr_dst - curr_res);
+
+    return ();
+}
+
+func enforce_selector(
+    ood_main_trace_frame: EvaluationFrame, 
+    t_evaluations1: felt*,
+    result: felt*
+) {
+    memcpy(result, t_evaluations1, 16);
+    let curr = ood_main_trace_frame.current;
+    
+    // Unrolled the for loop from 16 to 30:
+    let factor = curr[0 + SELECTOR_TRACE_OFFSET];
+    assert result[16] = t_evaluations1[16] * factor;
+    assert result[17] = t_evaluations1[17] * factor;
+    assert result[18] = t_evaluations1[18] * factor;
+    assert result[19] = t_evaluations1[19] * factor;
+
+    assert result[20] = t_evaluations1[20] * factor;
+    assert result[21] = t_evaluations1[21] * factor;
+    assert result[22] = t_evaluations1[22] * factor;
+    assert result[23] = t_evaluations1[23] * factor;
+
+    assert result[24] = t_evaluations1[24] * factor;
+    assert result[25] = t_evaluations1[25] * factor;
+    assert result[26] = t_evaluations1[26] * factor;
+    assert result[27] = t_evaluations1[27] * factor;
+
+    assert result[28] = t_evaluations1[28] * factor;
+    assert result[29] = t_evaluations1[29] * factor;
+    assert result[30] = t_evaluations1[30] * factor;
 
     return ();
 }
