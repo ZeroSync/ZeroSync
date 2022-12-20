@@ -72,10 +72,10 @@ func evaluate_transition(
 ) {
 
     evaluate_instr_constraints(ood_main_trace_frame, t_evaluations1);
-    // evaluate_operand_constraints(ood_main_trace_frame);
+    evaluate_operand_constraints(ood_main_trace_frame, t_evaluations1);
     evaluate_register_constraints(ood_main_trace_frame, t_evaluations1);
-    // evaluate_opcode_constraints(ood_main_trace_frame);
-    // enforce_selector(ood_main_trace_frame);
+    // evaluate_opcode_constraints(ood_main_trace_frame, t_evaluations1);
+    // enforce_selector(ood_main_trace_frame, t_evaluations1);
 
     return ();
 }
@@ -139,6 +139,41 @@ func evaluate_instr_constraints(
         b48 * a - curr_inst;
     return();
 }
+
+
+func evaluate_operand_constraints(
+    ood_main_trace_frame: EvaluationFrame, 
+    t_evaluations1: felt*
+) {
+    let curr = ood_main_trace_frame.current;
+
+    let curr_ap = curr[0 + MEM_P_TRACE_OFFSET];
+    let curr_fp = curr[1 + MEM_P_TRACE_OFFSET];
+    let curr_pc = curr[0 + MEM_A_TRACE_OFFSET];
+
+    let curr_f_dst_fp = curr[0 + POS_FLAGS];
+    let curr_off_dst = bias(curr[0 + OFF_X_TRACE_OFFSET]);
+    let curr_dst_addr = curr[1 + MEM_A_TRACE_OFFSET];
+    let curr_f_op0_fp = curr[1 + POS_FLAGS];
+    let curr_off_op0 = bias(curr[1 + OFF_X_TRACE_OFFSET]);
+    let curr_op0_addr = curr[2 + MEM_A_TRACE_OFFSET];
+    let curr_f_op1_val = curr[2 + POS_FLAGS];
+    let curr_f_op1_ap = curr[4 + POS_FLAGS];
+    let curr_f_op1_fp = curr[3 + POS_FLAGS];
+    let curr_op0 = curr[2 + MEM_V_TRACE_OFFSET];
+    let curr_off_op1 = bias(curr[2 + OFF_X_TRACE_OFFSET]);
+    let curr_op1_addr = curr[3 + MEM_A_TRACE_OFFSET];
+
+    assert t_evaluations1[DST_ADDR] = curr_f_dst_fp * curr_fp + (1 - curr_f_dst_fp) * curr_ap + curr_off_dst - curr_dst_addr;
+    assert t_evaluations1[OP0_ADDR] = curr_f_op0_fp * curr_fp + (1 - curr_f_op0_fp) * curr_ap + curr_off_op0 - curr_op0_addr;
+    assert t_evaluations1[OP1_ADDR] = curr_f_op1_val * curr_pc + 
+        curr_f_op1_ap * curr_ap + 
+        curr_f_op1_fp * curr_fp + 
+        (1 - curr_f_op1_val - curr_f_op1_ap - curr_f_op1_fp) * curr_op0 + 
+        curr_off_op1 - curr_op1_addr;
+    return ();
+}
+
 
 func evaluate_register_constraints(
     ood_main_trace_frame: EvaluationFrame, 
