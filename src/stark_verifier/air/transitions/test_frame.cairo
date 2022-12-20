@@ -16,8 +16,8 @@ func test_evaluate_transition() {
 
     let (current) = alloc();
     let (next) = alloc();
-    memset(current, 0, 62);
-    memset(next, 0, 62);
+    memset(current, 0, 64);
+    memset(next, 0, 64);
 
     let (t_evaluations) = alloc();
     let frame = EvaluationFrame(0, current, 0, next);

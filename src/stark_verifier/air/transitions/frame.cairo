@@ -74,7 +74,7 @@ func evaluate_transition(
     evaluate_instr_constraints(ood_main_trace_frame, t_evaluations1);
     evaluate_operand_constraints(ood_main_trace_frame, t_evaluations1);
     evaluate_register_constraints(ood_main_trace_frame, t_evaluations1);
-    // evaluate_opcode_constraints(ood_main_trace_frame, t_evaluations1);
+    evaluate_opcode_constraints(ood_main_trace_frame, t_evaluations1);
     // enforce_selector(ood_main_trace_frame, t_evaluations1);
 
     return ();
@@ -179,38 +179,41 @@ func evaluate_register_constraints(
     ood_main_trace_frame: EvaluationFrame, 
     t_evaluations1: felt*
 ) {
+    let curr = ood_main_trace_frame.current;
+    let next = ood_main_trace_frame.next;
+
     // ap constraints
-    let curr_ap = ood_main_trace_frame.current[0 + MEM_P_TRACE_OFFSET];
-    let curr_f_ap_add = ood_main_trace_frame.current[10 + POS_FLAGS];
-    let curr_res = ood_main_trace_frame.current[0 + RES_TRACE_OFFSET];
-    let curr_f_ap_one = ood_main_trace_frame.current[11 + POS_FLAGS];
-    let curr_f_opc_call = ood_main_trace_frame.current[12 + POS_FLAGS];
-    let next_ap = ood_main_trace_frame.next[0 + MEM_P_TRACE_OFFSET];
+    let curr_ap = curr[0 + MEM_P_TRACE_OFFSET];
+    let curr_f_ap_add = curr[10 + POS_FLAGS];
+    let curr_res = curr[0 + RES_TRACE_OFFSET];
+    let curr_f_ap_one = curr[11 + POS_FLAGS];
+    let curr_f_opc_call = curr[12 + POS_FLAGS];
+    let next_ap = next[0 + MEM_P_TRACE_OFFSET];
     let next_ap_constraint = curr_ap + curr_f_ap_add * curr_res + curr_f_ap_one + curr_f_opc_call * 2 - next_ap;
     assert t_evaluations1[NEXT_AP] = next_ap_constraint;
 
     // fp constraints
-    let curr_f_opc_ret = ood_main_trace_frame.current[13 + POS_FLAGS];
-    let curr_dst = ood_main_trace_frame.current[1 + MEM_V_TRACE_OFFSET];
-    let curr_fp = ood_main_trace_frame.current[1 + MEM_P_TRACE_OFFSET];
-    let next_fp = ood_main_trace_frame.next[1 + MEM_P_TRACE_OFFSET];
+    let curr_f_opc_ret = curr[13 + POS_FLAGS];
+    let curr_dst = curr[1 + MEM_V_TRACE_OFFSET];
+    let curr_fp = curr[1 + MEM_P_TRACE_OFFSET];
+    let next_fp = next[1 + MEM_P_TRACE_OFFSET];
     let next_fp_constraint = curr_f_opc_ret * curr_dst + curr_f_opc_call * (curr_ap + 2) + (1 - curr_f_opc_ret - curr_f_opc_call) * curr_fp - next_fp;
     assert t_evaluations1[NEXT_FP] = next_fp_constraint;
 
     // pc constraint 1
-    let curr_t1 = ood_main_trace_frame.current[1 + DERIVED_TRACE_OFFSET];
-    let curr_f_pc_jnz = ood_main_trace_frame.current[9 + POS_FLAGS];
-    let curr_inst_size = ood_main_trace_frame.current[2 + POS_FLAGS] + 1;
-    let next_pc = ood_main_trace_frame.next[0 + MEM_A_TRACE_OFFSET];
-    let curr_pc = ood_main_trace_frame.current[0 + MEM_A_TRACE_OFFSET];
+    let curr_t1 = curr[1 + DERIVED_TRACE_OFFSET];
+    let curr_f_pc_jnz = curr[9 + POS_FLAGS];
+    let curr_inst_size = curr[2 + POS_FLAGS] + 1;
+    let next_pc = next[0 + MEM_A_TRACE_OFFSET];
+    let curr_pc = curr[0 + MEM_A_TRACE_OFFSET];
     let next_pc_constraint1 = (curr_t1 - curr_f_pc_jnz) * (next_pc - (curr_pc + curr_inst_size));
     assert t_evaluations1[NEXT_PC_1] = next_pc_constraint1;
 
     // pc constraint 2
-    let curr_t0 = ood_main_trace_frame.current[0 + DERIVED_TRACE_OFFSET];
-    let curr_op1 = ood_main_trace_frame.current[3 + MEM_V_TRACE_OFFSET];
-    let curr_f_pc_abs = ood_main_trace_frame.current[7 + POS_FLAGS];
-    let curr_f_pc_rel = ood_main_trace_frame.current[8 + POS_FLAGS];
+    let curr_t0 = curr[0 + DERIVED_TRACE_OFFSET];
+    let curr_op1 = curr[3 + MEM_V_TRACE_OFFSET];
+    let curr_f_pc_abs = curr[7 + POS_FLAGS];
+    let curr_f_pc_rel = curr[8 + POS_FLAGS];
     let next_pc_constraint2 = curr_t0 * (next_pc - (curr_pc + curr_op1)) + 
                                   (1 - curr_f_pc_jnz) * next_pc - 
                                   ((1 - curr_f_pc_abs - curr_f_pc_rel - curr_f_pc_jnz) * (curr_pc + curr_inst_size) + 
@@ -226,6 +229,39 @@ func evaluate_register_constraints(
 }
 
 
+
+
+func evaluate_opcode_constraints(
+    ood_main_trace_frame: EvaluationFrame, 
+    t_evaluations1: felt*
+) {
+    let curr = ood_main_trace_frame.current;
+
+    let curr_mul = curr[2 + DERIVED_TRACE_OFFSET];
+    let curr_op0 = curr[2 + MEM_V_TRACE_OFFSET];
+    let curr_op1 = curr[3 + MEM_V_TRACE_OFFSET];
+    let curr_f_res_add = curr[5 + POS_FLAGS];
+    let curr_f_res_mul = curr[6 + POS_FLAGS];
+    let curr_f_pc_jnz = curr[9 + POS_FLAGS];
+    let curr_res = curr[0 + RES_TRACE_OFFSET];
+    let curr_f_opc_call = curr[12 + POS_FLAGS];
+    let curr_dst = curr[1 + MEM_V_TRACE_OFFSET];
+    let curr_fp = curr[1 + MEM_P_TRACE_OFFSET];
+    let curr_pc = curr[0 + MEM_A_TRACE_OFFSET];
+    let curr_inst_size = curr[2 + POS_FLAGS] + 1;
+    let curr_f_opc_aeq = curr[14 + POS_FLAGS];
+
+    assert t_evaluations1[MUL_1] = curr_mul - (curr_op0 * curr_op1);
+    assert t_evaluations1[MUL_2] = curr_f_res_add * (curr_op0 + curr_op1) + 
+        curr_f_res_mul * curr_mul + 
+        (1 - curr_f_res_add - curr_f_res_mul - curr_f_pc_jnz) * curr_op1 - 
+        (1 - curr_f_pc_jnz) * curr_res;
+    assert t_evaluations1[CALL_1] = curr_f_opc_call * (curr_dst - curr_fp);
+    assert t_evaluations1[CALL_2] = curr_f_opc_call * (curr_op0 - (curr_pc + curr_inst_size));
+    assert t_evaluations1[ASSERT_EQ] = curr_f_opc_aeq * (curr_dst - curr_res);
+
+    return ();
+}
 
 
 func evaluate_aux_transition(
