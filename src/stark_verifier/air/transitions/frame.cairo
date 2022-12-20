@@ -41,6 +41,7 @@ const ASSERT_EQ = 30;
 //  A                B C  D    E    F   G
 // ├xxxxxxxxxxxxxxxx|x|xx|xxxx|xxxx|xxx|xxx┤
 //
+
 const FLAG_TRACE_OFFSET = 0;
 const RES_TRACE_OFFSET = 16;
 const MEM_P_TRACE_OFFSET = 17;
@@ -51,6 +52,12 @@ const DERIVED_TRACE_OFFSET = 30;
 const SELECTOR_TRACE_OFFSET = 33;
 const POS_FLAGS = 48;
 
+
+const NUM_FLAGS = 16;
+
+func bias(offset) -> felt{
+    return offset - 2**15;
+}
 
 struct EvaluationFrame {
     current_len: felt,
@@ -63,48 +70,113 @@ func evaluate_transition(
     ood_main_trace_frame: EvaluationFrame, 
     t_evaluations1: felt*,
 ) {
+
+    evaluate_instr_constraints(ood_main_trace_frame, t_evaluations1);
+    // evaluate_operand_constraints(ood_main_trace_frame);
     evaluate_register_constraints(ood_main_trace_frame, t_evaluations1);
+    // evaluate_opcode_constraints(ood_main_trace_frame);
+    // enforce_selector(ood_main_trace_frame);
+
     return ();
 }
 
+func evaluate_instr_constraints(
+    ood_main_trace_frame: EvaluationFrame, 
+    t_evaluations1: felt*
+){
+    let curr = ood_main_trace_frame.current;
+    
+    // Bit constraints
+    assert t_evaluations1[0] = curr[0] * (curr[0] - 1);
+    assert t_evaluations1[1] = curr[1] * (curr[1] - 1);
+    assert t_evaluations1[2] = curr[2] * (curr[2] - 1);
+    assert t_evaluations1[3] = curr[3] * (curr[3] - 1);
+
+    assert t_evaluations1[4] = curr[4] * (curr[4] - 1);
+    assert t_evaluations1[5] = curr[5] * (curr[5] - 1);
+    assert t_evaluations1[6] = curr[6] * (curr[6] - 1);
+    assert t_evaluations1[7] = curr[7] * (curr[7] - 1);
+    
+    assert t_evaluations1[8] = curr[8] * (curr[8] - 1);
+    assert t_evaluations1[9] = curr[9] * (curr[9] - 1);
+    assert t_evaluations1[10] = curr[10] * (curr[10] - 1);
+    assert t_evaluations1[11] = curr[11] * (curr[11] - 1);
+
+    assert t_evaluations1[12] = curr[12] * (curr[12] - 1);
+    assert t_evaluations1[13] = curr[13] * (curr[13] - 1);
+    assert t_evaluations1[14] = curr[14] * (curr[14] - 1);
+    assert t_evaluations1[15] = curr[15];
+
+    // Instruction unpacking
+    let b15 = 2**15;
+    let b16 = 2**16;
+    let b32 = 2**32;
+    let b48 = 2**48;
+    
+    let a = curr[0] +
+     2**1 * curr[1] +
+     2**2 * curr[2] +
+     2**3 * curr[3] +
+     2**4 * curr[4] +
+     2**5 * curr[5] +
+     2**6 * curr[6] +
+     2**7 * curr[7] +
+     2**8 * curr[8] +
+     2**9 * curr[9] +
+     2**10 * curr[10] +
+     2**11 * curr[11] +
+     2**12 * curr[12] +
+     2**13 * curr[13] +
+     2**14 * curr[14];
+
+    let curr_off_dst = bias(curr[0 + OFF_X_TRACE_OFFSET ]);
+    let curr_off_op0 = bias(curr[1 + OFF_X_TRACE_OFFSET ]);
+    let curr_off_op1 = bias(curr[2 + OFF_X_TRACE_OFFSET ]);
+    let curr_inst = curr[0 + MEM_V_TRACE_OFFSET];
+    assert t_evaluations1[INST] = (curr_off_dst + b15) + 
+        b16 * (curr_off_op0 + b15) + 
+        b32 * (curr_off_op1 + b15) + 
+        b48 * a - curr_inst;
+    return();
+}
 
 func evaluate_register_constraints(
     ood_main_trace_frame: EvaluationFrame, 
     t_evaluations1: felt*
 ) {
     // ap constraints
-    tempvar curr_ap = ood_main_trace_frame.current[0 + MEM_P_TRACE_OFFSET];
-    tempvar curr_f_ap_add = ood_main_trace_frame.current[10 + POS_FLAGS];
-    tempvar curr_res = ood_main_trace_frame.current[0 + RES_TRACE_OFFSET];
-    tempvar curr_f_ap_one = ood_main_trace_frame.current[11 + POS_FLAGS];
-    tempvar curr_f_opc_call = ood_main_trace_frame.current[12 + POS_FLAGS];
-    tempvar next_ap = ood_main_trace_frame.next[0 + MEM_P_TRACE_OFFSET];
-    tempvar next_ap_constraint = curr_ap + curr_f_ap_add * curr_res + curr_f_ap_one + curr_f_opc_call * 2 - next_ap;
+    let curr_ap = ood_main_trace_frame.current[0 + MEM_P_TRACE_OFFSET];
+    let curr_f_ap_add = ood_main_trace_frame.current[10 + POS_FLAGS];
+    let curr_res = ood_main_trace_frame.current[0 + RES_TRACE_OFFSET];
+    let curr_f_ap_one = ood_main_trace_frame.current[11 + POS_FLAGS];
+    let curr_f_opc_call = ood_main_trace_frame.current[12 + POS_FLAGS];
+    let next_ap = ood_main_trace_frame.next[0 + MEM_P_TRACE_OFFSET];
+    let next_ap_constraint = curr_ap + curr_f_ap_add * curr_res + curr_f_ap_one + curr_f_opc_call * 2 - next_ap;
     assert t_evaluations1[NEXT_AP] = next_ap_constraint;
 
     // fp constraints
-    tempvar curr_f_opc_ret = ood_main_trace_frame.current[13 + POS_FLAGS];
-    tempvar curr_dst = ood_main_trace_frame.current[1 + MEM_V_TRACE_OFFSET];
-    tempvar curr_fp = ood_main_trace_frame.current[1 + MEM_P_TRACE_OFFSET];
-    tempvar next_fp = ood_main_trace_frame.next[1 + MEM_P_TRACE_OFFSET];
-    tempvar next_fp_constraint = curr_f_opc_ret * curr_dst + curr_f_opc_call * (curr_ap + 2) + (1 - curr_f_opc_ret - curr_f_opc_call) * curr_fp - next_fp;
+    let curr_f_opc_ret = ood_main_trace_frame.current[13 + POS_FLAGS];
+    let curr_dst = ood_main_trace_frame.current[1 + MEM_V_TRACE_OFFSET];
+    let curr_fp = ood_main_trace_frame.current[1 + MEM_P_TRACE_OFFSET];
+    let next_fp = ood_main_trace_frame.next[1 + MEM_P_TRACE_OFFSET];
+    let next_fp_constraint = curr_f_opc_ret * curr_dst + curr_f_opc_call * (curr_ap + 2) + (1 - curr_f_opc_ret - curr_f_opc_call) * curr_fp - next_fp;
     assert t_evaluations1[NEXT_FP] = next_fp_constraint;
 
     // pc constraint 1
-    tempvar curr_t1 = ood_main_trace_frame.current[1 + DERIVED_TRACE_OFFSET];
-    tempvar curr_f_pc_jnz = ood_main_trace_frame.current[9 + POS_FLAGS];
-    tempvar curr_inst_size = ood_main_trace_frame.current[2 + POS_FLAGS] + 1;
-    tempvar next_pc = ood_main_trace_frame.next[0 + MEM_A_TRACE_OFFSET];
-    tempvar curr_pc = ood_main_trace_frame.current[0 + MEM_A_TRACE_OFFSET];
-    tempvar next_pc_constraint1 = (curr_t1 - curr_f_pc_jnz) * (next_pc - (curr_pc + curr_inst_size));
+    let curr_t1 = ood_main_trace_frame.current[1 + DERIVED_TRACE_OFFSET];
+    let curr_f_pc_jnz = ood_main_trace_frame.current[9 + POS_FLAGS];
+    let curr_inst_size = ood_main_trace_frame.current[2 + POS_FLAGS] + 1;
+    let next_pc = ood_main_trace_frame.next[0 + MEM_A_TRACE_OFFSET];
+    let curr_pc = ood_main_trace_frame.current[0 + MEM_A_TRACE_OFFSET];
+    let next_pc_constraint1 = (curr_t1 - curr_f_pc_jnz) * (next_pc - (curr_pc + curr_inst_size));
     assert t_evaluations1[NEXT_PC_1] = next_pc_constraint1;
 
     // pc constraint 2
-    tempvar curr_t0 = ood_main_trace_frame.current[0 + DERIVED_TRACE_OFFSET];
-    tempvar curr_op1 = ood_main_trace_frame.current[3 + MEM_V_TRACE_OFFSET];
-    tempvar curr_f_pc_abs = ood_main_trace_frame.current[7 + POS_FLAGS];
-    tempvar curr_f_pc_rel = ood_main_trace_frame.current[8 + POS_FLAGS];
-    tempvar next_pc_constraint2 = curr_t0 * (next_pc - (curr_pc + curr_op1)) + 
+    let curr_t0 = ood_main_trace_frame.current[0 + DERIVED_TRACE_OFFSET];
+    let curr_op1 = ood_main_trace_frame.current[3 + MEM_V_TRACE_OFFSET];
+    let curr_f_pc_abs = ood_main_trace_frame.current[7 + POS_FLAGS];
+    let curr_f_pc_rel = ood_main_trace_frame.current[8 + POS_FLAGS];
+    let next_pc_constraint2 = curr_t0 * (next_pc - (curr_pc + curr_op1)) + 
                                   (1 - curr_f_pc_jnz) * next_pc - 
                                   ((1 - curr_f_pc_abs - curr_f_pc_rel - curr_f_pc_jnz) * (curr_pc + curr_inst_size) + 
                                   curr_f_pc_abs * curr_res + 
@@ -117,6 +189,7 @@ func evaluate_register_constraints(
 
     return ();
 }
+
 
 
 
