@@ -43,7 +43,6 @@ const DERIVED_TRACE_OFFSET = 30;
 const SELECTOR_TRACE_OFFSET = 33;
 const POS_FLAGS = 48;
 
-
 const NUM_FLAGS = 16;
 
 func bias(offset) -> felt{
@@ -132,7 +131,6 @@ func evaluate_instr_constraints(
     return();
 }
 
-
 func evaluate_operand_constraints(
     ood_main_trace_frame: EvaluationFrame, 
     t_evaluations1: felt*
@@ -165,7 +163,6 @@ func evaluate_operand_constraints(
         curr_off_op1 - curr_op1_addr;
     return ();
 }
-
 
 func evaluate_register_constraints(
     ood_main_trace_frame: EvaluationFrame, 
@@ -219,7 +216,6 @@ func evaluate_register_constraints(
 
     return ();
 }
-
 
 func evaluate_opcode_constraints(
     ood_main_trace_frame: EvaluationFrame, 
@@ -282,9 +278,10 @@ func enforce_selector(
     assert result[29] = t_evaluations1[29] * factor;
     assert result[30] = t_evaluations1[30] * factor;
 
+    memcpy(result, t_evaluations1, 17);
+
     return ();
 }
-
 
 func evaluate_aux_transition(
     ood_main_trace_frame: EvaluationFrame, 
