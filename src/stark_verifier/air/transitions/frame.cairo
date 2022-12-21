@@ -38,12 +38,34 @@ const RES_TRACE_OFFSET = 16;
 const MEM_P_TRACE_OFFSET = 17;
 const MEM_A_TRACE_OFFSET = 19;
 const MEM_V_TRACE_OFFSET = 23;
-const OFF_X_TRACE_OFFSET = 27;
 const DERIVED_TRACE_OFFSET = 30;
 const SELECTOR_TRACE_OFFSET = 33;
 const POS_FLAGS = 48;
 
 const NUM_FLAGS = 16;
+
+
+
+const A_M_PRIME_OFFSET = 0;
+const A_M_PRIME_WIDTH = 4;
+
+const V_M_PRIME_OFFSET = 4;
+const V_M_PRIME_WIDTH = 4;
+
+const P_M_OFFSET = 8;
+const P_M_WIDTH = 4;
+
+const MEM_A_TRACE_WIDTH = 4;
+const MEM_V_TRACE_WIDTH = 4;
+
+const A_RC_PRIME_OFFSET = 12;
+const A_RC_PRIME_WIDTH = 3;
+
+const OFF_X_TRACE_OFFSET = 27;
+const OFF_X_TRACE_WIDTH = 3;
+
+
+
 
 func bias(offset) -> felt{
     return offset - 2**15;
@@ -289,9 +311,143 @@ func evaluate_aux_transition(
     aux_trace_rand_elements: felt*,
     t_evaluations2: felt*,
 ) {
-    // TODO
+    evaluate_memory_constraints(ood_main_trace_frame, ood_aux_trace_frame, aux_trace_rand_elements, t_evaluations2);
+    evaluate_range_check_constraints(ood_main_trace_frame, ood_aux_trace_frame, aux_trace_rand_elements, t_evaluations2);
     return ();
 }
+
+
+
+func get_virtual(frame: EvaluationFrame, index, offset, width){
+    alloc_locals;
+    local is_index_ge_width;
+
+    // Width always equals 3 or 4
+    if(width == 4){
+        assert is_index_ge_width = index * (index-1) * (index-2) * (index-3);
+    } else {
+        assert is_index_ge_width = index * (index-1) * (index-2);
+    }
+
+    if( is_index_ge_width != 0 ){
+        // 0 <= index < width
+        return frame.current[offset + index];
+    } else {
+        // width <= index < width * 2
+        return frame.next[offset + index - width];
+    }
+}
+
+func evaluate_memory_constraints(
+    main_frame: EvaluationFrame, 
+    aux_frame: EvaluationFrame, 
+    aux_rand_elements: felt*,
+    t_evaluations2: felt*,
+){
+    let curr = main_frame.current;
+
+    let random_elements = aux_rand_elements;
+    let z = random_elements[0];
+    let alpha = random_elements[1];
+
+    /// 1. Continuity constraint
+
+    // Unroll the for loop for i in [0..4] and n in [0..4]
+    let aux_a_m_prime_0 = get_virtual(aux_frame, 0, A_M_PRIME_OFFSET, A_M_PRIME_WIDTH);
+    let aux_a_m_prime_1 = get_virtual(aux_frame, 1, A_M_PRIME_OFFSET, A_M_PRIME_WIDTH);
+    let aux_a_m_prime_2 = get_virtual(aux_frame, 2, A_M_PRIME_OFFSET, A_M_PRIME_WIDTH);
+    let aux_a_m_prime_3 = get_virtual(aux_frame, 3, A_M_PRIME_OFFSET, A_M_PRIME_WIDTH);
+    let aux_a_m_prime_4 = get_virtual(aux_frame, 4, A_M_PRIME_OFFSET, A_M_PRIME_WIDTH);
+    assert t_evaluations2[0] = (aux_a_m_prime_1 - aux_a_m_prime_0) * (aux_a_m_prime_1 - aux_a_m_prime_0 - 1);
+    assert t_evaluations2[1] = (aux_a_m_prime_2 - aux_a_m_prime_1) * (aux_a_m_prime_2 - aux_a_m_prime_1 - 1);
+    assert t_evaluations2[2] = (aux_a_m_prime_3 - aux_a_m_prime_2) * (aux_a_m_prime_3 - aux_a_m_prime_2 - 1);
+    assert t_evaluations2[3] = (aux_a_m_prime_4 - aux_a_m_prime_3) * (aux_a_m_prime_4 - aux_a_m_prime_3 - 1);
+
+
+    /// 2. Single-valued constraint
+
+    // Unroll the for loop for i in [0..4] and n in [4..8]
+    let aux_v_m_prime_0 = get_virtual(aux_frame, 0, V_M_PRIME_OFFSET, V_M_PRIME_WIDTH);
+    let aux_v_m_prime_1 = get_virtual(aux_frame, 1, V_M_PRIME_OFFSET, V_M_PRIME_WIDTH);
+    let aux_v_m_prime_2 = get_virtual(aux_frame, 2, V_M_PRIME_OFFSET, V_M_PRIME_WIDTH);
+    let aux_v_m_prime_3 = get_virtual(aux_frame, 3, V_M_PRIME_OFFSET, V_M_PRIME_WIDTH);
+    let aux_v_m_prime_4 = get_virtual(aux_frame, 4, V_M_PRIME_OFFSET, V_M_PRIME_WIDTH);
+    assert t_evaluations2[4] = (aux_v_m_prime_1 - aux_v_m_prime_0) * (aux_a_m_prime_1 - aux_a_m_prime_0 - 1);
+    assert t_evaluations2[5] = (aux_v_m_prime_2 - aux_v_m_prime_1) * (aux_a_m_prime_2 - aux_a_m_prime_1 - 1);
+    assert t_evaluations2[6] = (aux_v_m_prime_3 - aux_v_m_prime_2) * (aux_a_m_prime_3 - aux_a_m_prime_2 - 1);
+    assert t_evaluations2[7] = (aux_v_m_prime_4 - aux_v_m_prime_3) * (aux_a_m_prime_4 - aux_a_m_prime_3 - 1);
+
+
+    /// 3. Cumulative product step
+
+    // Unroll the for loop for i in [0..4] and n in [8..12]
+    let aux_p_m_0 = get_virtual(aux_frame, 0, P_M_OFFSET, P_M_WIDTH);
+    let aux_p_m_1 = get_virtual(aux_frame, 1, P_M_OFFSET, P_M_WIDTH);
+    let aux_p_m_2 = get_virtual(aux_frame, 2, P_M_OFFSET, P_M_WIDTH);
+    let aux_p_m_3 = get_virtual(aux_frame, 3, P_M_OFFSET, P_M_WIDTH);
+    let aux_p_m_4 = get_virtual(aux_frame, 4, P_M_OFFSET, P_M_WIDTH);
+
+    let a_m_1 = get_virtual(main_frame, 1, MEM_A_TRACE_OFFSET, MEM_A_TRACE_WIDTH);
+    let a_m_2 = get_virtual(main_frame, 2, MEM_A_TRACE_OFFSET, MEM_A_TRACE_WIDTH);
+    let a_m_3 = get_virtual(main_frame, 3, MEM_A_TRACE_OFFSET, MEM_A_TRACE_WIDTH);
+    let a_m_4 = get_virtual(main_frame, 4, MEM_A_TRACE_OFFSET, MEM_A_TRACE_WIDTH);
+
+    let v_m_1 = get_virtual(main_frame, 1, MEM_V_TRACE_OFFSET, MEM_V_TRACE_WIDTH);
+    let v_m_2 = get_virtual(main_frame, 2, MEM_V_TRACE_OFFSET, MEM_V_TRACE_WIDTH);
+    let v_m_3 = get_virtual(main_frame, 3, MEM_V_TRACE_OFFSET, MEM_V_TRACE_WIDTH);
+    let v_m_4 = get_virtual(main_frame, 4, MEM_V_TRACE_OFFSET, MEM_V_TRACE_WIDTH);
+
+    assert t_evaluations2[8]  = (z - (aux_a_m_prime_1 + alpha * aux_v_m_prime_1)) * aux_p_m_1 - (z - (a_m_1 + alpha * v_m_1)) * aux_p_m_0;
+    assert t_evaluations2[9]  = (z - (aux_a_m_prime_2 + alpha * aux_v_m_prime_2)) * aux_p_m_2 - (z - (a_m_2 + alpha * v_m_2)) * aux_p_m_1;
+    assert t_evaluations2[10] = (z - (aux_a_m_prime_3 + alpha * aux_v_m_prime_3)) * aux_p_m_3 - (z - (a_m_3 + alpha * v_m_3)) * aux_p_m_2;
+    assert t_evaluations2[11] = (z - (aux_a_m_prime_4 + alpha * aux_v_m_prime_4)) * aux_p_m_4 - (z - (a_m_4 + alpha * v_m_4)) * aux_p_m_3;
+
+    return ();
+}
+
+
+
+func evaluate_range_check_constraints(
+    main_frame: EvaluationFrame, 
+    aux_frame: EvaluationFrame, 
+    aux_rand_elements: felt*,
+    t_evaluations2: felt*,
+){
+    let curr = main_frame.current;
+
+    let random_elements = aux_rand_elements;
+    let z = random_elements[0];
+
+    /// 1. Continuity constraint
+    // Unroll the for loop for i in [0..3] and n in [12..15]
+    let aux_a_rc_prime_0 = get_virtual(aux_frame, 0, A_RC_PRIME_OFFSET, A_RC_PRIME_WIDTH);
+    let aux_a_rc_prime_1 = get_virtual(aux_frame, 1, A_RC_PRIME_OFFSET, A_RC_PRIME_WIDTH);
+    let aux_a_rc_prime_2 = get_virtual(aux_frame, 2, A_RC_PRIME_OFFSET, A_RC_PRIME_WIDTH);
+    let aux_a_rc_prime_3 = get_virtual(aux_frame, 3, A_RC_PRIME_OFFSET, A_RC_PRIME_WIDTH);
+    assert t_evaluations2[12] = (aux_a_rc_prime_1 - aux_a_rc_prime_0) * (aux_a_rc_prime_1 - aux_a_rc_prime_0 - 1);
+    assert t_evaluations2[13] = (aux_a_rc_prime_2 - aux_a_rc_prime_1) * (aux_a_rc_prime_2 - aux_a_rc_prime_1 - 1);
+    assert t_evaluations2[14] = (aux_a_rc_prime_3 - aux_a_rc_prime_2) * (aux_a_rc_prime_3 - aux_a_rc_prime_2 - 1);
+    
+
+    /// 2. Cumulative product step
+    // Unroll the for loop for i in [0..3] and n in [15..18]
+    let aux_p_rc_0 = get_virtual(aux_frame, 0, OFF_X_TRACE_OFFSET, OFF_X_TRACE_WIDTH);
+    let aux_p_rc_1 = get_virtual(aux_frame, 1, OFF_X_TRACE_OFFSET, OFF_X_TRACE_WIDTH);
+    let aux_p_rc_2 = get_virtual(aux_frame, 2, OFF_X_TRACE_OFFSET, OFF_X_TRACE_WIDTH);
+    let aux_p_rc_3 = get_virtual(aux_frame, 3, OFF_X_TRACE_OFFSET, OFF_X_TRACE_WIDTH);
+
+    let curr_a_rc_1 = get_virtual(main_frame, 1, OFF_X_TRACE_OFFSET, OFF_X_TRACE_WIDTH);
+    let curr_a_rc_2 = get_virtual(main_frame, 2, OFF_X_TRACE_OFFSET, OFF_X_TRACE_WIDTH);
+    let curr_a_rc_3 = get_virtual(main_frame, 3, OFF_X_TRACE_OFFSET, OFF_X_TRACE_WIDTH);
+
+    assert t_evaluations2[15] = (z - aux_a_rc_prime_1) * aux_p_rc_1 - (z - curr_a_rc_1) * aux_p_rc_0;
+    assert t_evaluations2[16] = (z - aux_a_rc_prime_2) * aux_p_rc_2 - (z - curr_a_rc_2) * aux_p_rc_1;
+    assert t_evaluations2[17] = (z - aux_a_rc_prime_3) * aux_p_rc_3 - (z - curr_a_rc_3) * aux_p_rc_2;
+    
+    return ();
+}
+
+
 
 func combine_evaluations(
     t_evaluations1: felt*,
