@@ -18,7 +18,6 @@ const CALL_1 = 28;
 const CALL_2 = 29;
 const ASSERT_EQ = 30;
 
-
 // MAIN TRACE LAYOUT
 // -----------------------------------------------------------------------------------------
 //  A.  flags   (16) : Decoded instruction flags
@@ -32,7 +31,6 @@ const ASSERT_EQ = 30;
 //  A                B C  D    E    F   G
 // ├xxxxxxxxxxxxxxxx|x|xx|xxxx|xxxx|xxx|xxx┤
 
-
 const FLAG_TRACE_OFFSET = 0;
 const RES_TRACE_OFFSET = 16;
 const MEM_P_TRACE_OFFSET = 17;
@@ -43,8 +41,6 @@ const SELECTOR_TRACE_OFFSET = 33;
 const POS_FLAGS = 48;
 
 const NUM_FLAGS = 16;
-
-
 
 const A_M_PRIME_OFFSET = 0;
 const A_M_PRIME_WIDTH = 4;
@@ -63,9 +59,6 @@ const A_RC_PRIME_WIDTH = 3;
 
 const OFF_X_TRACE_OFFSET = 27;
 const OFF_X_TRACE_WIDTH = 3;
-
-
-
 
 func bias(offset) -> felt{
     return offset - 2**15;
@@ -316,8 +309,6 @@ func evaluate_aux_transition(
     return ();
 }
 
-
-
 func get_virtual(frame: EvaluationFrame, index, offset, width){
     alloc_locals;
     local is_index_ge_width;
@@ -405,8 +396,6 @@ func evaluate_memory_constraints(
     return ();
 }
 
-
-
 func evaluate_range_check_constraints(
     main_frame: EvaluationFrame, 
     aux_frame: EvaluationFrame, 
@@ -444,16 +433,5 @@ func evaluate_range_check_constraints(
     assert t_evaluations2[16] = (z - aux_a_rc_prime_2) * aux_p_rc_2 - (z - curr_a_rc_2) * aux_p_rc_1;
     assert t_evaluations2[17] = (z - aux_a_rc_prime_3) * aux_p_rc_3 - (z - curr_a_rc_3) * aux_p_rc_2;
     
-    return ();
-}
-
-
-
-func combine_evaluations(
-    t_evaluations1: felt*,
-    t_evaluations2: felt*,
-    z: felt,
-) {
-    // TODO
     return ();
 }
