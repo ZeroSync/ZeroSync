@@ -6,6 +6,7 @@ use winter_air::DefaultEvaluationFrame;
 use winter_crypto::{hashers::Blake2s_256, Digest, ElementHasher, RandomCoin};
 use winter_utils::{Deserializable, Serializable, SliceReader};
 use winterfell::{Air, AuxTraceRandElements, StarkProof, VerifierChannel, VerifierError};
+// use winterfell::evaluate_constraints;
 
 use giza_air::{ProcessorAir, PublicInputs};
 use giza_core::Felt;
@@ -268,5 +269,12 @@ fn zerosync_tests(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(hash_pub_inputs, m)?)?;
     m.add_function(wrap_pyfunction!(seed_with_pub_inputs, m)?)?;
     m.add_function(wrap_pyfunction!(draw_ood_point_z, m)?)?;
+    Ok(())
+}
+
+
+fn evaluate_constraints () -> PyResult<()>{
+    
+
     Ok(())
 }

@@ -293,7 +293,7 @@ func enforce_selector(
     assert result[29] = t_evaluations1[29] * factor;
     assert result[30] = t_evaluations1[30] * factor;
 
-    memcpy(result, t_evaluations1, 17);
+    memcpy(result, t_evaluations1, 16);
 
     return ();
 }
@@ -309,7 +309,7 @@ func evaluate_aux_transition(
     return ();
 }
 
-func get_virtual(frame: EvaluationFrame, index, offset, width){
+func get_virtual(frame: EvaluationFrame, index, offset, width) -> felt{
     alloc_locals;
     local is_index_ge_width;
 
@@ -319,8 +319,7 @@ func get_virtual(frame: EvaluationFrame, index, offset, width){
     } else {
         assert is_index_ge_width = index * (index-1) * (index-2);
     }
-
-    if( is_index_ge_width != 0 ){
+    if( is_index_ge_width == 0 ){
         // 0 <= index < width
         return frame.current[offset + index];
     } else {
@@ -335,6 +334,7 @@ func evaluate_memory_constraints(
     aux_rand_elements: felt*,
     t_evaluations2: felt*,
 ){
+    alloc_locals;
     let curr = main_frame.current;
 
     let random_elements = aux_rand_elements;
@@ -402,6 +402,7 @@ func evaluate_range_check_constraints(
     aux_rand_elements: felt*,
     t_evaluations2: felt*,
 ){
+    alloc_locals;
     let curr = main_frame.current;
 
     let random_elements = aux_rand_elements;
