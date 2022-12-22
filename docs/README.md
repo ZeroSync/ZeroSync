@@ -29,7 +29,7 @@ This is an early stage project. Expect frequent breaking changes. [Here is the p
 WARNING: THIS CODE IS STILL FULL OF CRITICAL SECURITY BUGS!
 
 ## Requirements
-- Python 3.9
+- Python 3.9 (Activate enviroment: `source ~/cairo_venv/bin/activate`)
 - Cairo. [Installation Guide](https://www.cairo-lang.org/docs/quickstart.html) (Programming language for provable programs)
 - [Protostar](https://docs.swmansion.com/protostar/docs/tutorials/installation) (Automated testing)
 - [Giza](https://github.com/zerosync/giza) (Required for prover. Not necessary for development and testing)
@@ -38,25 +38,25 @@ WARNING: THIS CODE IS STILL FULL OF CRITICAL SECURITY BUGS!
 The Utreexo bridge node is required to pass the tests for block verification. It provides the inclusion proofs for the coins spent in a block.
 
 ```sh
-make bridge-node
+make bridge_node
 ```
 
 ## Run all unit tests
 ```sh
-make rust-test-lib
-make unit-test
+make rust_test_lib
+make unit_test
 ```
 
 ## Run all integration tests
 ```sh
-make rust-test-lib
-make integration-test
+make rust_test_lib
+make integration_test
 ```
 
 ## Run the chain prover
 ```sh
 make parser
-make chain-proof
+make chain_proof
 ```
 
 ## List TODOs
