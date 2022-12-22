@@ -8,8 +8,8 @@ authors:
     given-names: Lukas
   - family-names: Gillet
     given-names: Max   
-  - family-names: Tino
-    given-names: Steffens 
+  - family-names: Steffens
+    given-names: Tino 
 title: "ZeroSync - STARK proofs for Bitcoin"
 version: 0.0.1
 date-released: 2022-12-15
