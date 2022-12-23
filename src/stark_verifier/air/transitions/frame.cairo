@@ -57,6 +57,9 @@ const MEM_V_TRACE_WIDTH = 4;
 const A_RC_PRIME_OFFSET = 12;
 const A_RC_PRIME_WIDTH = 3;
 
+const P_RC_OFFSET = 15;
+const P_RC_WIDTH = 3;
+
 const OFF_X_TRACE_OFFSET = 27;
 const OFF_X_TRACE_WIDTH = 3;
 
@@ -421,10 +424,10 @@ func evaluate_range_check_constraints(
 
     /// 2. Cumulative product step
     // Unroll the for loop for i in [0..3] and n in [15..18]
-    let aux_p_rc_0 = get_virtual(aux_frame, 0, OFF_X_TRACE_OFFSET, OFF_X_TRACE_WIDTH);
-    let aux_p_rc_1 = get_virtual(aux_frame, 1, OFF_X_TRACE_OFFSET, OFF_X_TRACE_WIDTH);
-    let aux_p_rc_2 = get_virtual(aux_frame, 2, OFF_X_TRACE_OFFSET, OFF_X_TRACE_WIDTH);
-    let aux_p_rc_3 = get_virtual(aux_frame, 3, OFF_X_TRACE_OFFSET, OFF_X_TRACE_WIDTH);
+    let aux_p_rc_0 = get_virtual(aux_frame, 0, P_RC_OFFSET, P_RC_WIDTH);
+    let aux_p_rc_1 = get_virtual(aux_frame, 1, P_RC_OFFSET, P_RC_WIDTH);
+    let aux_p_rc_2 = get_virtual(aux_frame, 2, P_RC_OFFSET, P_RC_WIDTH);
+    let aux_p_rc_3 = get_virtual(aux_frame, 3, P_RC_OFFSET, P_RC_WIDTH);
 
     let curr_a_rc_1 = get_virtual(main_frame, 1, OFF_X_TRACE_OFFSET, OFF_X_TRACE_WIDTH);
     let curr_a_rc_2 = get_virtual(main_frame, 2, OFF_X_TRACE_OFFSET, OFF_X_TRACE_WIDTH);

@@ -14,9 +14,12 @@ CAIRO_PROGRAM:
 
 STARK_PARSER:
 	@echo "Building STARK proof parser..."
+	rm -f build/parser/debug/parser
 	cd src/stark_verifier/parser; \
 	cargo build --target-dir ../../../build/parser
+	cd ../../..
 	mkdir -p bin
+	rm -f bin/stark_parser
 	cp build/parser/debug/parser bin/stark_parser
 
 RUST_TEST_LIB:
