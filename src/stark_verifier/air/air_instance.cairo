@@ -70,7 +70,7 @@ func air_instance_new(proof: StarkProof*, options: ProofOptions) -> AirInstance 
         num_aux_segments=3,
         options=options,
         context=proof.context,
-        num_transition_constraints=20,
+        num_transition_constraints=30,
         num_assertions=4,
         ce_blowup_factor=4,
         eval_frame_size=2,
