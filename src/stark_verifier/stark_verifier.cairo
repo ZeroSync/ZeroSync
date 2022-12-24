@@ -160,22 +160,22 @@ func perform_verification{
         z=z,
     );
 
-    //// Reseed the public coin with the OOD frames.
-    //reseed_with_ood_frames(
-    //    ood_main_trace_frame=ood_main_trace_frame, ood_aux_trace_frame=ood_aux_trace_frame
-    //);
+    // Reseed the public coin with the OOD frames.
+    reseed_with_ood_frames(
+       ood_main_trace_frame=ood_main_trace_frame, ood_aux_trace_frame=ood_aux_trace_frame
+    );
 
-    //// Read evaluations of composition polynomial columns sent by the prover, and reduce them into
-    //// a single value by computing sum(z^i * value_i), where value_i is the evaluation of the ith
-    //// column polynomial at z^m, where m is the total number of column polynomials. Also, reseed
-    //// the public coin with the OOD constraint evaluations received from the prover.
-    //let ood_constraint_evaluations = read_ood_constraint_evaluations();
-    //let ood_constraint_evaluation_2 = reduce_evaluations(evaluations=ood_constraint_evaluations);
-    //let value = hash_elements(
-    //    n_elements=ood_constraint_evaluations.n_elements,
-    //    elements=ood_constraint_evaluations.elements,
-    //);
-    //reseed(value=value);
+    // Read evaluations of composition polynomial columns sent by the prover, and reduce them into
+    // a single value by computing sum(z^i * value_i), where value_i is the evaluation of the ith
+    // column polynomial at z^m, where m is the total number of column polynomials. Also, reseed
+    // the public coin with the OOD constraint evaluations received from the prover.
+    let ood_constraint_evaluations = read_ood_constraint_evaluations();
+    let ood_constraint_evaluation_2 = reduce_evaluations(evaluations=ood_constraint_evaluations);
+    let value = hash_elements(
+       n_elements=ood_constraint_evaluations.n_elements,
+       elements=ood_constraint_evaluations.elements,
+    );
+    reseed(value=value);
 
     //// Finally, make sure the values are the same.
     //with_attr error_message(

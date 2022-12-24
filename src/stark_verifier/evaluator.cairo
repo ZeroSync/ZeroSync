@@ -121,7 +121,39 @@ func combine_evaluations{
     let sum = sum + (constraint_coeffs.transition_a[29] + constraint_coeffs.transition_b[29] * xp) * t_evaluations1[29];
     let sum = sum + (constraint_coeffs.transition_a[30] + constraint_coeffs.transition_b[30] * xp) * t_evaluations1[30];
 
-    // TODO: Merge evaluations for auxiliary constraints
+
+
+    // Merge evaluations for auxiliary constraints
+    let evaluation_degree = composition_degree - 2 * air.context.trace_length;
+    let degree_adjustment = target_degree - evaluation_degree;
+    let (xp) = pow(x, degree_adjustment);
+    
+
+    // Merge evaluations for auxiliary constraints
+    let evaluation_degree = composition_degree - 2 * air.context.trace_length;
+    let degree_adjustment = target_degree - evaluation_degree;
+    let (xp) = pow(x, degree_adjustment);
+    
+    let sum = sum + (constraint_coeffs.transition_a[31] + constraint_coeffs.transition_b[31] * xp) * t_evaluations2[0];
+    let sum = sum + (constraint_coeffs.transition_a[32] + constraint_coeffs.transition_b[32] * xp) * t_evaluations2[1];
+    let sum = sum + (constraint_coeffs.transition_a[33] + constraint_coeffs.transition_b[33] * xp) * t_evaluations2[2];
+    let sum = sum + (constraint_coeffs.transition_a[34] + constraint_coeffs.transition_b[34] * xp) * t_evaluations2[3];
+    let sum = sum + (constraint_coeffs.transition_a[35] + constraint_coeffs.transition_b[35] * xp) * t_evaluations2[4];
+    let sum = sum + (constraint_coeffs.transition_a[36] + constraint_coeffs.transition_b[36] * xp) * t_evaluations2[5];
+    let sum = sum + (constraint_coeffs.transition_a[37] + constraint_coeffs.transition_b[37] * xp) * t_evaluations2[6];
+    let sum = sum + (constraint_coeffs.transition_a[38] + constraint_coeffs.transition_b[38] * xp) * t_evaluations2[7];
+    let sum = sum + (constraint_coeffs.transition_a[39] + constraint_coeffs.transition_b[39] * xp) * t_evaluations2[8];
+    let sum = sum + (constraint_coeffs.transition_a[40] + constraint_coeffs.transition_b[40] * xp) * t_evaluations2[9];
+    let sum = sum + (constraint_coeffs.transition_a[41] + constraint_coeffs.transition_b[41] * xp) * t_evaluations2[10];
+    let sum = sum + (constraint_coeffs.transition_a[42] + constraint_coeffs.transition_b[42] * xp) * t_evaluations2[11];
+    let sum = sum + (constraint_coeffs.transition_a[43] + constraint_coeffs.transition_b[43] * xp) * t_evaluations2[12];
+    let sum = sum + (constraint_coeffs.transition_a[44] + constraint_coeffs.transition_b[44] * xp) * t_evaluations2[13];
+    let sum = sum + (constraint_coeffs.transition_a[45] + constraint_coeffs.transition_b[45] * xp) * t_evaluations2[14];
+    let sum = sum + (constraint_coeffs.transition_a[46] + constraint_coeffs.transition_b[46] * xp) * t_evaluations2[15];
+    let sum = sum + (constraint_coeffs.transition_a[47] + constraint_coeffs.transition_b[47] * xp) * t_evaluations2[16];
+    let sum = sum + (constraint_coeffs.transition_a[48] + constraint_coeffs.transition_b[48] * xp) * t_evaluations2[17];
+
+
 
     // Divide by divisor evaluation. We can do this once at the end of merging because 
     // the divisor is identical for all constraints
