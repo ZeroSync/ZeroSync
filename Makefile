@@ -60,10 +60,9 @@ unit_test:
 	@echo "Running unit tests..."
 	PYTHONPATH=$$(python -c "import site; print(site.getsitepackages()[0])"):$$PYTHONPATH protostar -p unit test
 
-
 integration_test: STARK_PARSER
 	@echo "Running integration tests..."
-	PYTHONPATH=$$(python -c "import site; print(site.getsitepackages()[0])"):$$PYTHONPATH protostar -p integration test
+	PYTHONPATH=$$(echo pwd)/tests:$$(python -c "import site; print(site.getsitepackages()[0])"):$$PYTHONPATH protostar -p integration test
 
 clean:
 	rm -rf build

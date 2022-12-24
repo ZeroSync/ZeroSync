@@ -1,5 +1,6 @@
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
+from starkware.cairo.common.pow import pow
 
 from stark_verifier.crypto.random import (
     PublicCoin,
@@ -11,7 +12,12 @@ from stark_verifier.crypto.random import (
     reseed_with_int,
     seed_with_pub_inputs,
 )
-from stark_verifier.air.stark_proof import Context, ProofOptions, StarkProof
+from stark_verifier.air.pub_inputs import PublicInputs
+from stark_verifier.air.stark_proof import ProofContext, ProofOptions, StarkProof
+
+// 2-adic root of unity for field with modulus $2^{251} + 17 \cdot 2^{192} + 1$
+const TWO_ADICITY = 192; 
+const G = 145784604816374866144131285430889962727208297722245411306711449302875041684;
 
 struct AirInstance {
     // Layout
@@ -22,12 +28,15 @@ struct AirInstance {
     num_aux_segments: felt,
     // Context
     options: ProofOptions,
-    context: Context,
+    context: ProofContext,
     num_transition_constraints: felt,
     num_assertions: felt,
     ce_blowup_factor: felt,
     eval_frame_size: felt,
-    lde_domain_size: felt,
+    trace_domain_generator: felt,
+    lde_domain_generator: felt,
+    // Public input
+    pub_inputs: PublicInputs*,
 }
 
 // Coefficients used in construction of constraint composition polynomial
@@ -55,10 +64,23 @@ struct DeepCompositionCoefficients {
     degree: (felt, felt),
 }
 
-func air_instance_new(proof: StarkProof*, options: ProofOptions) -> AirInstance {
+func air_instance_new{
+    range_check_ptr
+}(
+    proof: StarkProof*,
+    pub_inputs: PublicInputs*,
+    options: ProofOptions
+) -> AirInstance {
     alloc_locals;
     let (aux_segment_widths: felt*) = alloc();
     let (aux_segment_rands: felt*) = alloc();
+
+    let (power) = pow(2, TWO_ADICITY - proof.context.log_trace_length);
+    let (trace_domain_generator) = pow(G, proof.context.log_trace_length);
+
+    let log_lde_domain_size = options.log_blowup_factor + proof.context.log_trace_length;
+    let (power) = pow(2, TWO_ADICITY - log_lde_domain_size);
+    let (lde_domain_generator) = pow(G, power);
 
     // TODO: Use correct values for Cairo AIR. Make configurable for other
     // VMs and custom AIRs
@@ -71,10 +93,12 @@ func air_instance_new(proof: StarkProof*, options: ProofOptions) -> AirInstance 
         options=options,
         context=proof.context,
         num_transition_constraints=48,
-        num_assertions=4,
+        num_assertions=5,
         ce_blowup_factor=4,
         eval_frame_size=2,
-        lde_domain_size=options.blowup_factor * proof.context.trace_length,
+        trace_domain_generator=trace_domain_generator,
+        lde_domain_generator=lde_domain_generator,
+        pub_inputs=pub_inputs,
     );
     return res;
 }

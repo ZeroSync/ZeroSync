@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::io::{BufReader, Read};
 use std::iter::zip;
+use winter_math::log2;
 use winter_utils::{Deserializable, SliceReader};
 use winterfell::{FieldExtension, HashFunction, StarkProof};
 
@@ -130,7 +131,8 @@ impl WriteableWith<&ProcessorAir> for StarkProof {
 impl Writeable for Context {
     fn write_into(&self, target: &mut DynamicMemory) {
         self.trace_layout().write_into(target);
-        self.trace_length().write_into(target); // Do not serialize as a power of two
+        self.trace_length().write_into(target);
+        log2(self.trace_length()).write_into(target);
 
         self.get_trace_info().meta().len().write_into(target);
         target.write_array(self.get_trace_info().meta().to_vec());
@@ -189,15 +191,15 @@ impl WriteableWith<&ProcessorAir> for OodFrame {
         let main_trace_width = air.trace_layout().main_trace_width();
         let aux_trace_width = air.trace_layout().aux_trace_width();
         let (ood_main_trace_frame, ood_aux_trace_frame, ood_constraint_evaluations) = self
-        .clone()
-        .parse::<Felt, DefaultEvaluationFrame<Felt>, DefaultEvaluationFrame<Felt>>(
-            main_trace_width,
-            aux_trace_width,
-            air.eval_frame_size::<Felt>(),
-            air.ce_blowup_factor(),
-        )
-        .unwrap();
-        
+            .clone()
+            .parse::<Felt, DefaultEvaluationFrame<Felt>, DefaultEvaluationFrame<Felt>>(
+                main_trace_width,
+                aux_trace_width,
+                air.eval_frame_size::<Felt>(),
+                air.ce_blowup_factor(),
+            )
+            .unwrap();
+
         ood_main_trace_frame.write_into(target);
         ood_aux_trace_frame.unwrap().write_into(target);
         target.write_sized_array(ood_constraint_evaluations);
@@ -225,6 +227,7 @@ impl Writeable for ProofOptions {
     fn write_into(&self, target: &mut DynamicMemory) {
         self.num_queries().write_into(target);
         self.blowup_factor().write_into(target);
+        log2(self.blowup_factor()).write_into(target);
         self.grinding_factor().write_into(target);
 
         self.hash_fn().write_into(target);

@@ -17,7 +17,6 @@ from stark_verifier.air.air_instance import (
 )
 from stark_verifier.air.pub_inputs import PublicInputs
 from stark_verifier.air.stark_proof import (
-    Context,
     TraceLayout,
     ProofOptions,
     StarkProof,
@@ -80,7 +79,7 @@ func verify{range_check_ptr, pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBui
     let public_coin_seed: felt* = seed_with_pub_inputs{blake2s_ptr=blake2s_ptr}(pub_inputs);
 
     // Create an AIR instance for the computation specified in the proof.
-    let air = air_instance_new(proof, proof.context.options);
+    let air = air_instance_new(proof, pub_inputs, proof.context.options);
 
     // Create a public coin and channel struct
     with blake2s_ptr {
@@ -154,7 +153,7 @@ func perform_verification{
     // Evaluate constraints over the OOD frames.
     let ood_constraint_evaluation_1 = evaluate_constraints(
         air=air,
-        constraint_coeffs=constraint_coeffs,
+        coeffs=constraint_coeffs,
         ood_main_trace_frame=ood_main_trace_frame,
         ood_aux_trace_frame=ood_aux_trace_frame,
         aux_trace_rand_elements=aux_trace_rand_elements,
@@ -279,8 +278,13 @@ func process_aux_segments{
 }
 
 func reduce_evaluations{
-        range_check_ptr
-    }(evaluations: felt*, evaluations_len, z, index) -> felt {
+    range_check_ptr
+}(
+    evaluations: felt*,
+    evaluations_len,
+    z,
+    index
+) -> felt {
     if (evaluations_len == 0){
         return 0;
     }
