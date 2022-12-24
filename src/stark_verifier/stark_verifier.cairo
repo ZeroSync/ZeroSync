@@ -7,6 +7,7 @@ from starkware.cairo.common.hash import HashBuiltin
 from starkware.cairo.common.math import assert_lt
 from starkware.cairo.common.registers import get_fp_and_pc
 from starkware.cairo.common.uint256 import Uint256
+from starkware.cairo.common.pow import pow
 
 from stark_verifier.air.air_instance import (
     AirInstance,
@@ -170,7 +171,12 @@ func perform_verification{
     // column polynomial at z^m, where m is the total number of column polynomials. Also, reseed
     // the public coin with the OOD constraint evaluations received from the prover.
     let ood_constraint_evaluations = read_ood_constraint_evaluations();
-    let ood_constraint_evaluation_2 = reduce_evaluations(evaluations=ood_constraint_evaluations);
+    let ood_constraint_evaluation_2 = reduce_evaluations(
+        evaluations=ood_constraint_evaluations.elements, 
+        evaluations_len=ood_constraint_evaluations.n_elements, 
+        z=z,
+        index=0
+    );
     let value = hash_elements(
        n_elements=ood_constraint_evaluations.n_elements,
        elements=ood_constraint_evaluations.elements,
@@ -272,7 +278,14 @@ func process_aux_segments{
     return ();
 }
 
-func reduce_evaluations(evaluations: Vec) -> felt {
-    // TODO
-    return 0;
+func reduce_evaluations{
+        range_check_ptr
+    }(evaluations: felt*, evaluations_len, z, index) -> felt {
+    if (evaluations_len == 0){
+        return 0;
+    }
+    alloc_locals;
+    let acc = reduce_evaluations(evaluations + 1, evaluations_len - 1, z, index + 1);
+    let (pow_z) = pow(z, index);
+    return acc + pow_z * [evaluations];
 }
