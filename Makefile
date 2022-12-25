@@ -4,13 +4,13 @@ BIN_DIR = ./bin
 BUILD_DIR = ./build
 ARCH = $(shell uname -p)
 
+CAIRO_FILES = $(shell find src -type f -iname "*.cairo" -and -not -iname "test_*.cairo")
 CAIRO_PROGRAM = $(BUILD_DIR)/zerosync_compiled.json
 STARK_PARSER = $(BIN_DIR)/stark_parser
 RUST_HINT_LIB = $(BIN_DIR)/libzerosync_hints.dylib
 
 CAIRO_PROGRAM:
-	find src -type f \( -iname "*.cairo" -and -not -iname "test_*.cairo" \) \
-		-exec cairo-compile {} --cairo_path src > build/zerosync_compiled.json \;
+	cairo-compile ${CAIRO_FILES} --cairo_path src > ${CAIRO_PROGRAM};
 
 STARK_PARSER:
 	@echo "Building STARK proof parser..."
@@ -72,8 +72,7 @@ package:
 	set -f; \
 	cd package_build; \
 	mv src zerosync; \
-	CAIRO_FILES=$$(find zerosync -type f \( -iname '*.cairo' -and -not -iname 'test_*.cairo' \)); \
-	for FILE in $$CAIRO_FILES; do \
+	for FILE in ${CAIRO_FILES}; do \
 		echo $$FILE;\
 		IMPORTS=$$(grep -Po '(?<=from (?!starkware|zerosync))(.+?)(?=import)' $$FILE | tr '.' '/'); \
 		echo $$IMPORTS; \

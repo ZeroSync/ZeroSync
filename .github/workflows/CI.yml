@@ -51,6 +51,10 @@ jobs:
           git clone https://github.com/ZeroSync/giza.git
           cd giza
           cargo install --path cli
+      - name: Compile Cairo files 
+        run: |
+          make clean
+          make cairo-compile
       - name: Run Unit Tests
         run: source cairo_venv/bin/activate; make unit_test
       # - name: Run Integration Tests
