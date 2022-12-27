@@ -93,7 +93,7 @@ func air_instance_new{
         options=options,
         context=proof.context,
         num_transition_constraints=48,
-        num_assertions=5,
+        num_assertions=6,
         ce_blowup_factor=4,
         eval_frame_size=2,
         trace_domain_generator=trace_domain_generator,
