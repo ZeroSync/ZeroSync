@@ -1,7 +1,8 @@
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.pow import pow
 from stark_verifier.air.air_instance import AirInstance, ConstraintCompositionCoefficients
-from stark_verifier.air.pub_inputs import PublicInputs
+from stark_verifier.air.pub_inputs import PublicInputs, MemEntry
+
 from stark_verifier.air.transitions.frame import (
     EvaluationFrame,
     evaluate_transition,
@@ -218,8 +219,31 @@ func combine_evaluations{
     return sum;
 }
 
-func reduce_pub_mem(pub_inputs: PublicInputs*, rand_elements: felt*) -> felt {
-    // TODO
-    return 1;
+func reduce_pub_mem{
+        range_check_ptr
+    }(pub_inputs: PublicInputs*, aux_rand_elements: felt*) -> felt {
+    alloc_locals;
+    let rand_elements = aux_rand_elements;
+    let mem = pub_inputs.mem;
+
+    let z = rand_elements[0];
+    let alpha = rand_elements[1];
+
+    let (num) = pow(z, pub_inputs.mem_length);
+    let den = _reduce_pub_mem(z, alpha, mem, pub_inputs.mem_length);
+    return num / den;
 }
 
+
+func _reduce_pub_mem(
+    z, alpha, mem: MemEntry*, mem_length
+)-> felt {
+    if (mem_length == 0){
+        return 1;
+    }
+    let a = [mem].address;
+    let v = [mem].value;
+    let tmp1 = z - (a + alpha * v);
+    let tmp2 = _reduce_pub_mem(z, alpha, mem + MemEntry.SIZE, mem_length - 1);
+    return tmp1 * tmp2;
+}

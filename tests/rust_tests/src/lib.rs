@@ -2,11 +2,11 @@ use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::io::{BufReader, Read};
 
-use winter_air::DefaultEvaluationFrame;
 use winter_crypto::{hashers::Blake2s_256, Digest, ElementHasher, RandomCoin};
 use winter_utils::{Deserializable, Serializable, SliceReader};
 use winterfell::{Air, AuxTraceRandElements, StarkProof, VerifierChannel, VerifierError};
-// use winterfell::evaluate_constraints;
+use winterfell::evaluate_constraints;
+use giza_air::{MainEvaluationFrame, AuxEvaluationFrame};
 
 use giza_air::{ProcessorAir, PublicInputs};
 use giza_core::Felt;
@@ -207,8 +207,8 @@ fn draw_ood_point_z() -> Result<String, WinterVerifierError> {
     let channel = VerifierChannel::<
         Felt,
         Blake2s_256<Felt>,
-        DefaultEvaluationFrame<Felt>,
-        DefaultEvaluationFrame<Felt>,
+        MainEvaluationFrame<Felt>,
+        AuxEvaluationFrame<Felt>,
     >::new(&air, proof)?;
 
     let trace_commitments = channel.read_trace_commitments();
@@ -253,6 +253,84 @@ fn write_be_bytes(value: [u64; 4], out: &mut [u8; 32]) {
     }
 }
 
+#[pyfunction]
+fn constraint_evaluation() -> Result<String, WinterVerifierError> {
+    let path = String::from("tests/stark_proofs/fibonacci.bin");
+
+    let data = BinaryProofData::from_file(&path);
+    let proof = StarkProof::from_bytes(&data.proof_bytes).unwrap();
+    let pub_inputs = PublicInputs::read_from(&mut SliceReader::new(&data.input_bytes[..])).unwrap();
+
+    let mut public_coin_seed = Vec::new();
+    pub_inputs.write_into(&mut public_coin_seed);
+
+    let air = ProcessorAir::new(proof.get_trace_info(), pub_inputs, proof.options().clone());
+
+    let mut public_coin = RandomCoin::<Felt, Blake2s_256<Felt>>::new(&public_coin_seed);
+    let mut channel = VerifierChannel::<
+        Felt,
+        Blake2s_256<Felt>,
+        MainEvaluationFrame<Felt>,
+        AuxEvaluationFrame<Felt>,
+    >::new(&air, proof)?;
+
+    let trace_commitments = channel.read_trace_commitments();
+
+    // reseed the coin with the commitment to the main trace segment
+    public_coin.reseed(trace_commitments[0]);
+
+    // process auxiliary trace segments (if any), to build a set of random elements for each segment
+    let mut aux_trace_rand_elements = AuxTraceRandElements::<Felt>::new();
+    for (i, commitment) in trace_commitments.iter().skip(1).enumerate() {
+        let rand_elements = air
+            .get_aux_trace_segment_random_elements(i, &mut public_coin)
+            .map_err(|_| VerifierError::RandomCoinError)?;
+        aux_trace_rand_elements.add_segment_elements(rand_elements);
+        public_coin.reseed(*commitment);
+    }
+
+    // build random coefficients for the composition polynomial
+    let constraint_coeffs = air
+        .get_constraint_composition_coefficients::<Felt, Blake2s_256<Felt>>(&mut public_coin)
+        .map_err(|_| VerifierError::RandomCoinError)?;
+
+    // 2 ----- constraint commitment --------------------------------------------------------------
+    // read the commitment to evaluations of the constraint composition polynomial over the LDE
+    // domain sent by the prover, use it to update the public coin, and draw an out-of-domain point
+    // z from the coin; in the interactive version of the protocol, the verifier sends this point z
+    // to the prover, and the prover evaluates trace and constraint composition polynomials at z,
+    // and sends the results back to the verifier.
+    let constraint_commitment = channel.read_constraint_commitment();
+    public_coin.reseed(constraint_commitment);
+    let z = public_coin
+        .draw::<Felt>()
+        .map_err(|_| VerifierError::RandomCoinError)?;
+
+
+    // 3 ----- OOD consistency check --------------------------------------------------------------
+    // make sure that evaluations obtained by evaluating constraints over the out-of-domain frame
+    // are consistent with the evaluations of composition polynomial columns sent by the prover
+
+    // read the out-of-domain trace frames (the main trace frame and auxiliary trace frame, if
+    // provided) sent by the prover and evaluate constraints over them; also, reseed the public
+    // coin with the OOD frames received from the prover.
+    let (ood_main_trace_frame, ood_aux_trace_frame) = channel.read_ood_trace_frame();
+    let ood_constraint_evaluation_1 = evaluate_constraints(
+        &air,
+        constraint_coeffs,
+        &ood_main_trace_frame,
+        &ood_aux_trace_frame,
+        aux_trace_rand_elements,
+        z,
+    );
+
+    let hex_string = ood_constraint_evaluation_1.to_raw().to_string();
+
+    Ok(hex_string)
+}
+
+
+
 /// A Python module implemented in Rust. The name of this function must match
 /// the `lib.name` setting in the `Cargo.toml`, else Python will not be able to
 /// import the module.
@@ -269,12 +347,7 @@ fn zerosync_tests(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(hash_pub_inputs, m)?)?;
     m.add_function(wrap_pyfunction!(seed_with_pub_inputs, m)?)?;
     m.add_function(wrap_pyfunction!(draw_ood_point_z, m)?)?;
-    Ok(())
-}
 
-
-fn evaluate_constraints () -> PyResult<()>{
-    
-
+    m.add_function(wrap_pyfunction!(constraint_evaluation, m)?)?;
     Ok(())
 }
