@@ -1,7 +1,7 @@
 import struct
 import os
 import json
-from utxo_dummy_generator import generate_utxo_dummys
+from utxo_dummy_generator import generate_utxo_dummys, fetch_block
 import urllib3
 
 P = 2**251 + 17 * 2**192 + 1
@@ -72,24 +72,31 @@ def felts_to_hex(felts):
 
 # Inserts all required utxos and returns the utreexo roots.
 def setup_bridge_node(block_height):
-    # TODO send a reset here.
     http = urllib3.PoolManager()
+    
+    # Send a reset.
+    url = 'http://localhost:2121/reset'
+    _ = http.request('GET', url)
+
+    # Fetch all required utxo hashes.
     utxo_hashes = generate_utxo_dummys(block_height)
+
+    # Fill bridge node with utxos.
     for utxo_hash in utxo_hashes:
         url = 'http://localhost:2121/add/' + hex(utxo_hash)
         r = http.request('GET', url)
-
+    
+    # Get the final list of roots
     url = 'http://localhost:2121/roots'
     r = http.request('GET', url)
     return json.loads(r.data)
-
 
 
 if __name__ == '__main__':
     
     # The first Bitcoin TX ever occured in block 170. The second TX occured in
     # block 181.
-    block_height = 170000  # TODO Allow input from user.
+    block_height = 170000 # TODO Allow input from user.
     output_dir = 'benchmark_tmp'
     os.system(f'mkdir -p {output_dir}')
 
@@ -105,11 +112,13 @@ if __name__ == '__main__':
     f = open('src/chain_proof/state_0.json')
     initial_state = json.load(f)
 
-    # TODO change block_height and other required fields in the initial state to correct values
+    # Fetch the next block.
+    block = fetch_block(block_height)
+
     initial_state['block_height'] = block_height - 1
-    initial_state['best_block_hash'] = '000000002a22cfee1f2c846adbd12b3e183d4f97683f85dad08a79780a84bd55'
+    initial_state['best_block_hash'] = block['previousblockhash']
     initial_state['utreexo_roots'] = setup_bridge_node(block_height)
-    print("Initial utreexo_nodes: ", initial_state['utreexo_roots'])
+    initial_state['current_target'] = block['bits']
 
     with open(f'{output_dir}/program.json') as f:
         program = json.load(f)
@@ -121,7 +130,7 @@ if __name__ == '__main__':
 
     chain_state_file = f'{output_dir}/chain_state.json'
 
-
+    # TODO measure the time here (and ram?)
     # Run the Cairo runner
     cmd = f'cairo-run --program={output_dir}/program.json --layout=all --print_info --print_output --program_input={chain_state_file} --trace_file={output_dir}/trace.bin --memory_file={output_dir}/memory.bin'
 

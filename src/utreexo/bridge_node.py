@@ -148,7 +148,7 @@ class RequestHandler(BaseHTTPRequestHandler):
         #       up the bridge node with the required utxos.
         # WARNING: This may be removed at any point.
         if self.path.startswith('/roots'):
-            self.wfile.write(json.dumps([str(node.val) if node != None else "0" for node in root_nodes]).encode())
+            self.wfile.write(json.dumps([hex(node.val) if node != None else "0" for node in root_nodes]).encode())
             return
 
 
