@@ -10,11 +10,9 @@
 # source ~/cairo_venv/bin/activate
 
 from http.server import BaseHTTPRequestHandler, HTTPServer
-from urllib.parse import urlparse
 import json
 
 from starkware.cairo.lang.vm.crypto import pedersen_hash
-
 
 # The array of trees in the forest
 # [T_1, T_2, T_4, T_8, ... ]
@@ -23,8 +21,9 @@ root_nodes = [None] * 27
 # The set of leaf nodes in the forest
 leaf_nodes = dict()
 
-
 # A node of the Utreexo forest
+
+
 class Node:
     def __init__(self, key, left=None, right=None):
         self.val = key
@@ -54,7 +53,6 @@ def utreexo_add(leaf):
     while r is not None:
         n = parent_node(r, n)
         root_nodes[h] = None
-
         h = h + 1
         r = root_nodes[h]
 
@@ -126,10 +124,8 @@ class RequestHandler(BaseHTTPRequestHandler):
             print('add', hash_hex)
             vout_hash = int(hash_hex, 16)
             utreexo_add(vout_hash)
-
             print('roots:', list(map(lambda node: hex(node.val).replace(
                 '0x', '') if node is not None else 0, root_nodes)))
-
             self.wfile.write(json.dumps({'status': 'success'}).encode())
             return
 
@@ -148,9 +144,9 @@ class RequestHandler(BaseHTTPRequestHandler):
         #       up the bridge node with the required utxos.
         # WARNING: This may be removed at any point.
         if self.path.startswith('/roots'):
-            self.wfile.write(json.dumps([hex(node.val) if node != None else "0" for node in root_nodes]).encode())
+            self.wfile.write(json.dumps(
+                [hex(node.val) if node is not None else "0" for node in root_nodes]).encode())
             return
-
 
         if self.path.startswith('/reset'):
             print('>>>>>>>>>> RESET >>>>>>>>>>')

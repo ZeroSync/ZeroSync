@@ -1,0 +1,16 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+  - family-names:  Linus
+    given-names: Robin
+    email: hello@zerosync.org
+  - family-names: George
+    given-names: Lukas
+  - family-names: Gillet
+    given-names: Max   
+  - family-names: Steffens
+    given-names: Tino 
+title: "ZeroSync - STARK proofs for Bitcoin"
+version: 0.0.1
+date-released: 2022-12-15
+url: https://github.com/ZeroSync/ZeroSync

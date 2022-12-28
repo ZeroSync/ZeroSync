@@ -16,7 +16,7 @@ from starkware.cairo.common.cairo_secp.signature import (
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 
 from crypto.hash_utils import copy_hash, HASH_FELT_SIZE
-from serialize.serialize import Reader, init_reader, read_uint8, read_bytes_endian, peek_uint8, peek_uint16, read_uint32_endian
+from serialize.serialize import Reader, init_reader, read_uint8, read_bytes_endian, peek_uint8, peek_uint16, read_uint256_endian
 
 // Verifies a Secp256k1 ECDSA signature.
 // Soundness assumptions:
@@ -41,28 +41,6 @@ func verify_ecdsa_secp256k1{range_check_ptr}(pt: EcPoint, z: BigInt3, r: BigInt3
         assert r = res.x;
     }
     return ();
-}
-
-func read_uint64_endian{reader: Reader, bitwise_ptr: BitwiseBuiltin*}() -> felt {
-    alloc_locals;
-    let hi = read_uint32_endian();
-    let lo = read_uint32_endian();
-    return 2**32 * hi + lo;
-}
-
-func read_uint128_endian{reader: Reader, bitwise_ptr: BitwiseBuiltin*}() -> felt {
-    alloc_locals;
-    let hi = read_uint64_endian();
-    let lo = read_uint64_endian();
-    return 2**64 * hi + lo;
-}
-
-func read_uint256_endian{reader: Reader, bitwise_ptr: BitwiseBuiltin*}() -> Uint256 {
-    alloc_locals;
-    let hi = read_uint128_endian();
-    let lo = read_uint128_endian();
-    let uint256 = Uint256(lo, hi);
-    return uint256;
 }
 
 func read_bigint{reader: Reader, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() -> BigInt3 {
