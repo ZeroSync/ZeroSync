@@ -1,8 +1,10 @@
 import struct
+import sys
 import os
 import json
 from utxo_dummy_generator import generate_utxo_dummys, fetch_block
 import urllib3
+import time
 
 P = 2**251 + 17 * 2**192 + 1
 
@@ -73,7 +75,7 @@ def felts_to_hex(felts):
 # Inserts all required utxos and returns the utreexo roots.
 def setup_bridge_node(block_height):
     http = urllib3.PoolManager()
-    
+
     # Send a reset.
     url = 'http://localhost:2121/reset'
     _ = http.request('GET', url)
@@ -85,7 +87,7 @@ def setup_bridge_node(block_height):
     for utxo_hash in utxo_hashes:
         url = 'http://localhost:2121/add/' + hex(utxo_hash)
         r = http.request('GET', url)
-    
+
     # Get the final list of roots
     url = 'http://localhost:2121/roots'
     r = http.request('GET', url)
@@ -93,19 +95,25 @@ def setup_bridge_node(block_height):
 
 
 if __name__ == '__main__':
-    
+
     # The first Bitcoin TX ever occured in block 170. The second TX occured in
     # block 181.
-    block_height = 170000 # TODO Allow input from user.
+
+    if len(sys.argv) < 2:
+        print(
+            f'Wrong number of arguments.\nUsage: python {sys.argv[0]} BLOCK_HEIGHT')
+        exit(1)
+    block_height = int(sys.argv[1])
     output_dir = 'benchmark_tmp'
     os.system(f'mkdir -p {output_dir}')
 
+    print('Compiling the Cairo program...')
     # Run the Cairo compiler
     # Assume we are in the repository root directory.
     cmd = f'cairo-compile src/chain_proof/main.cairo --cairo_path src --output {output_dir}/program.json'
-
     print(os.popen(cmd).read())
-
+    print('Done.')
+    print('Fetching utxos and setting up brige node and initial state...')
     # Copy genesis state.json into the output directory
     # also read the program_length from program.json
     # and add it to the state.json
@@ -124,19 +132,22 @@ if __name__ == '__main__':
         program = json.load(f)
         initial_state['program_length'] = len(program['data'])
 
-
     with open(f'{output_dir}/chain_state.json', 'w') as outfile:
         outfile.write(json.dumps(initial_state))
 
     chain_state_file = f'{output_dir}/chain_state.json'
+    print('Done.')
 
-    # TODO measure the time here (and ram?)
+    print('Next up is the cairo runner.')
     # Run the Cairo runner
     cmd = f'cairo-run --program={output_dir}/program.json --layout=all --print_info --print_output --program_input={chain_state_file} --trace_file={output_dir}/trace.bin --memory_file={output_dir}/memory.bin'
 
-    # TODO Parse this in a way to see info and program output.
+    start_time = time.clock_gettime(time.CLOCK_REALTIME)
     program_output_string = os.popen(cmd).read()
+    total_time = time.clock_gettime(time.CLOCK_REALTIME) - start_time
+    # TODO Parse this in a way to see info and program output.
     print(program_output_string)
+    print(f'The runner took {total_time / 60} minutes.')
     # program_output = parse_cairo_output(program_output_string)
 
     # Parse outputs
