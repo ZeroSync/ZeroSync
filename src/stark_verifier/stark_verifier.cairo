@@ -117,7 +117,7 @@ func perform_verification{
 
     // Process auxiliary trace segments to build a set of random elements for each segment,
     // and to reseed the coin.
-    let (aux_trace_rand_elements: felt*) = alloc();
+    let (aux_trace_rand_elements: felt**) = alloc();
     process_aux_segments(
         trace_commitments=trace_commitments + STATE_SIZE_FELTS,
         trace_commitments_len=air.context.trace_layout.num_aux_segments,
@@ -261,18 +261,20 @@ func process_aux_segments{
     trace_commitments: felt*,
     trace_commitments_len: felt,
     aux_segment_rands: felt*,
-    aux_trace_rand_elements: felt*,
+    aux_trace_rand_elements: felt**,
 ) {
     if (trace_commitments_len == 0) {
         return ();
     }
-    draw_elements(n_elements=[aux_segment_rands], elements=aux_trace_rand_elements);
+    let (elements) = alloc();
+    assert [aux_trace_rand_elements] = elements;
+    draw_elements(n_elements=[aux_segment_rands], elements=elements);
     reseed(value=trace_commitments);
     process_aux_segments(
         trace_commitments=trace_commitments + STATE_SIZE_FELTS,
         trace_commitments_len=trace_commitments_len - 1,
         aux_segment_rands=aux_segment_rands + 1,
-        aux_trace_rand_elements=aux_trace_rand_elements + [aux_segment_rands],
+        aux_trace_rand_elements=aux_trace_rand_elements + 1,
     );
     return ();
 }

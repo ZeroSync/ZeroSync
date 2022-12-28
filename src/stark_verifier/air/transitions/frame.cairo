@@ -38,7 +38,7 @@ const MEM_A_TRACE_OFFSET = 19;
 const MEM_V_TRACE_OFFSET = 23;
 const DERIVED_TRACE_OFFSET = 30;
 const SELECTOR_TRACE_OFFSET = 33;
-const POS_FLAGS = 48;
+const POS_FLAGS = 0;
 
 const NUM_FLAGS = 16;
 
@@ -304,7 +304,7 @@ func enforce_selector(
 func evaluate_aux_transition(
     ood_main_trace_frame: EvaluationFrame, 
     ood_aux_trace_frame: EvaluationFrame, 
-    aux_trace_rand_elements: felt*,
+    aux_trace_rand_elements: felt**,
     t_evaluations2: felt*,
 ) {
     evaluate_memory_constraints(ood_main_trace_frame, ood_aux_trace_frame, aux_trace_rand_elements, t_evaluations2);
@@ -334,13 +334,13 @@ func get_virtual(frame: EvaluationFrame, index, offset, width) -> felt{
 func evaluate_memory_constraints(
     main_frame: EvaluationFrame, 
     aux_frame: EvaluationFrame, 
-    aux_rand_elements: felt*,
+    aux_rand_elements: felt**,
     t_evaluations2: felt*,
 ){
     alloc_locals;
     let curr = main_frame.current;
 
-    let random_elements = aux_rand_elements;
+    let random_elements = aux_rand_elements[0];
     let z = random_elements[0];
     let alpha = random_elements[1];
 
@@ -402,14 +402,14 @@ func evaluate_memory_constraints(
 func evaluate_range_check_constraints(
     main_frame: EvaluationFrame, 
     aux_frame: EvaluationFrame, 
-    aux_rand_elements: felt*,
+    aux_rand_elements: felt**,
     t_evaluations2: felt*,
 ){
     alloc_locals;
     let curr = main_frame.current;
 
-    let random_elements = aux_rand_elements;
-    let z = random_elements[0];
+    let random_elements = aux_rand_elements[1];
+    let z = random_elements[0]; 
 
     /// 1. Continuity constraint
     // Unroll the for loop for i in [0..3] and n in [12..15]

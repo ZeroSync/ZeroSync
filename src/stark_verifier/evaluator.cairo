@@ -30,7 +30,7 @@ func evaluate_constraints{
     coeffs: ConstraintCompositionCoefficients,
     ood_main_trace_frame: EvaluationFrame,
     ood_aux_trace_frame: EvaluationFrame,
-    aux_trace_rand_elements: felt*,
+    aux_trace_rand_elements: felt**,
     z: felt,
 ) -> felt {
     alloc_locals;
@@ -221,9 +221,9 @@ func combine_evaluations{
 
 func reduce_pub_mem{
         range_check_ptr
-    }(pub_inputs: PublicInputs*, aux_rand_elements: felt*) -> felt {
+    }(pub_inputs: PublicInputs*, aux_rand_elements: felt**) -> felt {
     alloc_locals;
-    let rand_elements = aux_rand_elements;
+    let rand_elements = aux_rand_elements[0];
     let mem = pub_inputs.mem;
 
     let z = rand_elements[0];
