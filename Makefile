@@ -6,7 +6,7 @@ ARCH = $(shell uname -p)
 
 CAIRO_PROGRAM = $(BUILD_DIR)/zerosync_compiled.json
 STARK_PARSER = $(BIN_DIR)/stark_parser
-RUST_TEST_LIB = $(BIN_DIR)/libzerosync_tests.dylib
+RUST_HINT_LIB = $(BIN_DIR)/libzerosync_hints.dylib
 
 CAIRO_PROGRAM:
 	find src -type f \( -iname "*.cairo" -and -not -iname "test_*.cairo" \) \
@@ -15,25 +15,21 @@ CAIRO_PROGRAM:
 STARK_PARSER:
 	@echo "Building STARK proof parser..."
 	rm -f build/parser/debug/parser
-	cd src/stark_verifier/parser; \
-	cargo build --target-dir ../../../build/parser
-	cd ../../..
+	cargo build
 	mkdir -p bin
 	rm -f bin/stark_parser
-	cp build/parser/debug/parser bin/stark_parser
-
-RUST_TEST_LIB:
-	@echo "Building Rust testing library..."
-	cd tests/rust_tests; \
+	cp target/debug/parser bin/stark_parser
+RUST_HINT_LIB:
+	cd hints; \
 	maturin develop
-	cp tests/rust_tests/target/debug/libzerosync_tests.dylib bin/libzerosync_tests.dylib
+	cp hints/target/debug/libzerosync_hints.dylib bin/libzerosync_hints.dylib
 ifeq ($(ARCH), arm)
 	# On Apple Silicon (ARM), replace the installed site-package binary with one targeting x86_64.
 	# This is required due to a lack of ARM support in Protostar.
-	cd tests/rust_tests; \
+	cd hints; \
 	maturin build --target x86_64-apple-darwin
-	cp tests/rust_tests/target/x86_64-apple-darwin/debug/libzerosync_tests.dylib \
-	   $$(python -c "import site; print(site.getsitepackages()[0])")/zerosync_tests/zerosync_tests.cpython-39-darwin.so
+	cp hints/target/x86_64-apple-darwin/debug/libzerosync_hints.dylib \
+	   $$(python -c "import site; print(site.getsitepackages()[0])")/zerosync_hints/zerosync_hints.cpython-39-darwin.so
 endif
 
 chain_proof:
@@ -53,8 +49,8 @@ format_cairo_check:
 	@echo "Checking format of cairo files..."
 	cairo-format src/**/*.cairo -c
 
-rust_test_lib: RUST_TEST_LIB
-	@echo "Building Rust testing library..."
+rust_hint_lib: RUST_HINT_LIB
+	@echo "Building Rust hint library..."
 
 unit_test:
 	@echo "Running unit tests..."
