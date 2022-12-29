@@ -1,3 +1,8 @@
+//
+// To run only this test suite use:
+// protostar test --cairo-path=./src target tests/unit/crypto/*_secp256k1_ecdsa*
+// 
+
 %lang starknet
 
 from starkware.cairo.common.uint256 import Uint256
@@ -10,7 +15,7 @@ from crypto.secp256k1_ecdsa import verify_ecdsa_secp256k1, read_public_key, read
 
 from utils.python_utils import setup_python_defs
 
-from serialize.serialize import Reader, init_reader
+from utils.serialize import Reader, init_reader
 
 @external
 func test_ecsda_secp256k1{range_check_ptr}() {

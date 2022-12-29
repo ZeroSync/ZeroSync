@@ -37,7 +37,7 @@ chain-proof:
 	python src/chain_proof/main.py
 
 bridge-node:
-	python src/utreexo/bridge_node.py
+	python src/utxo_set/bridge_node.py
 
 cairo-compile: CAIRO_PROGRAM
 	@echo "Compiling cairo files..."

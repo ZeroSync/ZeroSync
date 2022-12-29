@@ -1,6 +1,6 @@
 //
 // To run only this test suite use:
-// protostar test --cairo-path=./src target **/*_serialize*
+// protostar test --cairo-path=./src target tests/unit/*_serialize*
 //
 
 %lang starknet
@@ -8,7 +8,7 @@
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from crypto.hash_utils import assert_hashes_equal
-from serialize.serialize import (
+from utils.serialize import (
     flush_writer,
     init_writer,
     write_uint8,

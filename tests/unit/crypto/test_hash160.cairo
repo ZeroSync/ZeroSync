@@ -1,3 +1,7 @@
+//
+// To run only this test suite use:
+// protostar test --cairo-path=./src target tests/unit/crypto/*_hash160*
+//
 %lang starknet
 
 from starkware.cairo.common.alloc import alloc

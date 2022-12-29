@@ -11,7 +11,7 @@ from starkware.cairo.common.math import assert_le
 from crypto.hash256 import hash256
 from crypto.hash_utils import HASH_FELT_SIZE
 
-from serialize.serialize import (
+from utils.serialize import (
     init_reader,
     Reader,
     read_uint8,

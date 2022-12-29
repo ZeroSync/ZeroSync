@@ -1,7 +1,7 @@
 //
 // To run only this test suite use:
-// protostar test --cairo-path=./src target src/**/*_ripemd160*
-//
+// protostar test --cairo-path=./src target tests/unit/crypto/*_ripemd160*
+// 
 %lang starknet
 
 from starkware.cairo.common.alloc import alloc

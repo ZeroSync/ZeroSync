@@ -1,6 +1,6 @@
 //
 // To run only this test suite use:
-// protostar test --cairo-path=./src target src/block/*_block.cairo
+// protostar test --cairo-path=./src target tests/unit/block/*_block.cairo
 //
 // Note that you have to run the bridge node to make all these tests pass
 //
@@ -15,9 +15,9 @@ from utils.python_utils import setup_python_defs
 from crypto.sha256 import finalize_sha256
 from transaction.transaction import TransactionValidationContext
 from block.block_header import ChainState
-from utreexo.utreexo import utreexo_init, utreexo_add
-from serialize.serialize import init_reader
-from block.utxo_dummies.utils import dummy_utxo_insert_block_number, reset_bridge_node
+from utxo_set.utreexo import utreexo_init, utreexo_add
+from utils.serialize import init_reader
+from tests.unit.block.utxo_dummies.utils import dummy_utxo_insert_block_number, reset_bridge_node
 from block.block import (
     BlockValidationContext,
     State,

@@ -7,7 +7,7 @@ from starkware.cairo.common.memcpy import memcpy
 from block.compute_median import TIMESTAMP_COUNT
 from block.block import State, ChainState
 from crypto.hash_utils import HASH_FELT_SIZE
-from utreexo.utreexo import UTREEXO_ROOTS_LEN
+from utxo_set.utreexo import UTREEXO_ROOTS_LEN
 
 from stark_verifier.air.pub_inputs import PublicInputs, read_public_inputs
 from stark_verifier.air.pub_inputs import read_mem_values

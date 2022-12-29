@@ -3,7 +3,7 @@
 
 //
 // To run only this test suite use:
-// protostar test --cairo-path=./src target src/block/test_merkle_tree.cairo
+// protostar test --cairo-path=./src target tests/unit/block/test_merkle_tree.cairo
 //
 %lang starknet
 

@@ -1,7 +1,7 @@
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin, HashBuiltin
 
-from utreexo.utreexo import utreexo_init, utreexo_add
+from utxo_set.utreexo import utreexo_init, utreexo_add
 
 // Insert elements into the UTXO set to consume them in a block test
 func dummy_utxo_insert{hash_ptr: HashBuiltin*, utreexo_roots: felt*}(hash) {
@@ -37,7 +37,7 @@ func dummy_utxo_insert_block_number{hash_ptr: HashBuiltin*, utreexo_roots: felt*
     %{
         import json
         import os
-        path = os.getcwd() + "/src/block/utxo_dummies/block_" + str(ids.block_number) + ".json"
+        path = os.getcwd() + "/tests/unit/block/utxo_dummies/block_" + str(ids.block_number) + ".json"
         file = open(path, 'r')
         utxo_hashes = json.load(file)
         segments.write_arg(ids.hashes, utxo_hashes)

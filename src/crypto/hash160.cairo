@@ -1,7 +1,7 @@
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.alloc import alloc
 
-from serialize.serialize import byte_size_to_felt_size, UINT32_SIZE
+from utils.serialize import byte_size_to_felt_size, UINT32_SIZE
 from crypto.ripemd160 import ripemd160
 from crypto.sha256 import compute_sha256
 

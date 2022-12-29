@@ -1,13 +1,13 @@
 //
 // To run only this test suite use:
-// protostar test  --cairo-path=./src target src/**/*_utreexo*
+// protostar test --cairo-path=./src target tests/unit/*_utreexo*
 //
 %lang starknet
 
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 
-from utreexo.utreexo import utreexo_add, utreexo_delete, utreexo_init
+from utxo_set.utreexo import utreexo_add, utreexo_delete, utreexo_init
 
 @external
 func test_utreexo_basics{range_check_ptr, pedersen_ptr: HashBuiltin*}() {

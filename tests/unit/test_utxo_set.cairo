@@ -1,6 +1,6 @@
 //
 // To run only this test suite use:
-// protostar test  --cairo-path=./src target src/**/*_utxo_set*
+// protostar test --cairo-path=./src target tests/unit/*_utxo_set*
 //
 %lang starknet
 
@@ -8,9 +8,9 @@ from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin, HashBuiltin
 from utils.python_utils import setup_python_defs
 
-from utreexo.utreexo import utreexo_init
+from utxo_set.utreexo import utreexo_init
 from utxo_set.utxo_set import utxo_set_insert, utxo_set_extract
-from block.utxo_dummies.utils import reset_bridge_node
+from tests.unit.block.utxo_dummies.utils import reset_bridge_node
 
 // https://blockstream.info/tx/a4bc0a85369d04454ec7e006ece017f21549fdfe7df128d61f9f107479bfdf7e
 @external

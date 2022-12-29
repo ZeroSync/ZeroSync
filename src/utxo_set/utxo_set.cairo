@@ -5,7 +5,7 @@ from starkware.cairo.common.hash import hash2
 
 from crypto.hash_utils import HASH_FELT_SIZE
 from utils.python_utils import setup_python_defs
-from utreexo.utreexo import utreexo_add, utreexo_delete, fetch_inclusion_proof
+from utxo_set.utreexo import utreexo_add, utreexo_delete, fetch_inclusion_proof
 
 func utxo_set_insert{range_check_ptr, hash_ptr: HashBuiltin*, utreexo_roots: felt*}(
     txid: felt*, vout, amount, script_pub_key: felt*, script_pub_key_size

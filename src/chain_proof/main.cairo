@@ -4,11 +4,11 @@ from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin, HashBuiltin
 from starkware.cairo.common.serialize import serialize_word
 
-from serialize.serialize import init_reader
+from utils.serialize import init_reader
 from crypto.hash_utils import HASH_FELT_SIZE
 from block.block_header import ChainState
 from block.block import State, validate_and_apply_block, read_block_validation_context
-from utreexo.utreexo import UTREEXO_ROOTS_LEN
+from utxo_set.utreexo import UTREEXO_ROOTS_LEN
 from utils.python_utils import setup_python_defs
 from crypto.sha256 import finalize_sha256
 from chain_proof.recurse import recurse

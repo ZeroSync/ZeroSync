@@ -13,7 +13,7 @@ from starkware.cairo.common.math import assert_le, unsigned_div_rem
 from starkware.cairo.common.memset import memset
 from utils.pow2 import pow2
 
-from serialize.serialize import Reader, Writer, read_varint
+from utils.serialize import Reader, Writer, read_varint
 from block.block_header import (
     BlockHeaderValidationContext,
     ChainState,
