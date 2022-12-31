@@ -23,7 +23,7 @@ func test_evaluate_constraints() {
     %{
         from zerosync_hints import *
         # TODO: Implement 'load_constraint_evaluation_args' in zerosync_hints crate
-        segments.write_arg(ids.arguments.address_, load_constraint_evaluation_args);
+        segments.write_arg(ids.arguments.address_, load_constraint_evaluation_args)
     %}
 
     let ood_constraint_evaluation = evaluate_constraints(

@@ -1,6 +1,6 @@
 //
 // To run only this test suite use:
-// protostar test --cairo-path=./src target src/stark_verifier/crypto/test_random.cairo
+// protostar test --cairo-path=./src target tests/unit/stark_verifier/test_random.cairo
 //
 
 %lang starknet
@@ -209,14 +209,14 @@ func test_pedersen_chain{
 }
 
 /// Test public input hash
-//  @external
+ @external
 func test_hash_pub_inputs{
     range_check_ptr, pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*
 }() {
     alloc_locals;
 
     %{ 
-        from tests.utils import parse_public_inputs
+        from tests.integration.utils import parse_public_inputs
         json_data = parse_public_inputs('fibonacci')
     %}
     let pub_inputs: PublicInputs* = read_public_inputs();
@@ -241,8 +241,8 @@ func test_hash_pub_inputs{
     %{
         from src.utils.hex_utils import get_hex
         from zerosync_hints import *
-        a = get_hex(memory, ids.pub_mem_hash)
-        b = hash_pub_inputs()
+        a = ids.pub_mem_hash
+        b = int(hash_pub_inputs(), 16)
         print("test_hash_pub_inputs", a, b)
         assert a == b
     %} 
@@ -250,7 +250,7 @@ func test_hash_pub_inputs{
 }
 
 /// Test public coin seed generation
-// @external
+@external
 func test_public_coin_seed{
     pedersen_ptr: HashBuiltin*,
     range_check_ptr,
@@ -262,7 +262,7 @@ func test_public_coin_seed{
     local blake2s_ptr_start: felt* = blake2s_ptr;
 
     %{ 
-        from tests.utils import parse_public_inputs
+        from tests.integration.utils import parse_public_inputs
         json_data = parse_public_inputs('fibonacci')
     %}
     let pub_inputs: PublicInputs* = read_public_inputs();
@@ -305,46 +305,3 @@ func test_hash_elements{
     %}
     return ();
 }
-
-//
-// Tests for Blake2s
-//
-
-// @external
-// func test_blake2s_abc{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
-//     alloc_locals;
-//     let (blake2s_ptr: felt*) = alloc();
-//     local blake2s_ptr_start: felt* = blake2s_ptr;
-
-//     let (bytes) = alloc();
-//     assert bytes[0] = 'cba'; // little endian order
-
-//     with blake2s_ptr {
-//         let hash: felt* = blake2s_as_words(bytes, 3);
-//     }
-
-//     // https://datatracker.ietf.org/doc/html/draft-saarinen-blake2-06
-//     %{
-//         print('hash', hex(memory[ids.hash]), 'expected: 50 8C 5E 8C ... 86 67 59 82')
-//     %} 
-//     finalize_blake2s(blake2s_ptr_start, blake2s_ptr);  
-//     return ();
-// }
-
-// @external
-// func test_blake2s_empty{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
-//     alloc_locals;
-//     let (blake2s_ptr: felt*) = alloc();
-//     local blake2s_ptr_start: felt* = blake2s_ptr;
-
-//     let (bytes) = alloc();
-    
-//     with blake2s_ptr {
-//         let hash: felt* = blake2s_as_words(bytes, 0);
-//     }
-//     %{
-//         print('hash', hex(memory[ids.hash]), 'should be 69217A30')
-//     %} 
-//     finalize_blake2s(blake2s_ptr_start, blake2s_ptr);  
-//     return ();
-// }

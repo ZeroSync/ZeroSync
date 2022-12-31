@@ -1,6 +1,6 @@
 //
 // To run only this test suite use:
-// protostar test --cairo-path=./src target src/stark_verifier/air/transitions/test_frame.cairo
+// protostar test --cairo-path=./src target tests/unit/stark_verifier/test_frame.cairo
 //
 
 %lang starknet

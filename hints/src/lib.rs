@@ -133,7 +133,7 @@ fn pedersen_chain() -> Result<String, PyErr> {
 
 // TODO: Refactor, to reuse code in pedersen_chain test
 fn get_pub_mem_hash() -> Fe {
-    let path = String::from("tests/stark_proofs/fibonacci.bin");
+    let path = String::from("tests/integration/stark_proofs/fibonacci.bin");
     let data = BinaryProofData::from_file(&path);
     let pub_inputs = PublicInputs::read_from(&mut SliceReader::new(&data.input_bytes[..])).unwrap();
     let len = Fe::from(pub_inputs.mem.1.len());
@@ -162,7 +162,7 @@ fn hash_pub_inputs() -> Result<String, PyErr> {
 
 #[pyfunction]
 fn seed_with_pub_inputs() -> Result<String, PyErr> {
-    let path = String::from("tests/stark_proofs/fibonacci.bin");
+    let path = String::from("tests/integration/stark_proofs/fibonacci.bin");
     let data = BinaryProofData::from_file(&path);
     let pub_inputs = PublicInputs::read_from(&mut SliceReader::new(&data.input_bytes[..])).unwrap();
 
@@ -196,7 +196,7 @@ fn seed_with_pub_inputs() -> Result<String, PyErr> {
 
 #[pyfunction]
 fn evaluation_data<'a>() -> Result<HashMap<&'a str, String>, WinterVerifierError> {
-    let path = String::from("tests/stark_proofs/fibonacci.bin");
+    let path = String::from("tests/integration/stark_proofs/fibonacci.bin");
 
     let data = BinaryProofData::from_file(&path);
     let proof = StarkProof::from_bytes(&data.proof_bytes).unwrap();
