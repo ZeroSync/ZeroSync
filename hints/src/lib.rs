@@ -1,12 +1,17 @@
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufReader, Read};
 
-use winter_air::DefaultEvaluationFrame;
+use winter_air::EvaluationFrame;
 use winter_crypto::{hashers::Blake2s_256, Digest, ElementHasher, RandomCoin};
+use winter_math::FieldElement;
 use winter_utils::{Deserializable, Serializable, SliceReader};
-use winterfell::{Air, AuxTraceRandElements, StarkProof, VerifierChannel, VerifierError};
+use winterfell::{
+    evaluate_constraints, Air, AuxTraceRandElements, StarkProof, VerifierChannel, VerifierError,
+};
 
+use giza_air::{AuxEvaluationFrame, MainEvaluationFrame};
 use giza_air::{ProcessorAir, PublicInputs};
 use giza_core::Felt;
 
@@ -190,7 +195,7 @@ fn seed_with_pub_inputs() -> Result<String, PyErr> {
 }
 
 #[pyfunction]
-fn draw_ood_point_z() -> Result<String, WinterVerifierError> {
+fn evaluation_data<'a>() -> Result<HashMap<&'a str, String>, WinterVerifierError> {
     let path = String::from("tests/stark_proofs/fibonacci.bin");
 
     let data = BinaryProofData::from_file(&path);
@@ -203,11 +208,11 @@ fn draw_ood_point_z() -> Result<String, WinterVerifierError> {
     let air = ProcessorAir::new(proof.get_trace_info(), pub_inputs, proof.options().clone());
 
     let mut public_coin = RandomCoin::<Felt, Blake2s_256<Felt>>::new(&public_coin_seed);
-    let channel = VerifierChannel::<
+    let mut channel = VerifierChannel::<
         Felt,
         Blake2s_256<Felt>,
-        DefaultEvaluationFrame<Felt>,
-        DefaultEvaluationFrame<Felt>,
+        MainEvaluationFrame<Felt>,
+        AuxEvaluationFrame<Felt>,
     >::new(&air, proof)?;
 
     let trace_commitments = channel.read_trace_commitments();
@@ -226,7 +231,7 @@ fn draw_ood_point_z() -> Result<String, WinterVerifierError> {
     }
 
     // build random coefficients for the composition polynomial
-    let _constraint_coeffs = air
+    let constraint_coeffs = air
         .get_constraint_composition_coefficients::<Felt, Blake2s_256<Felt>>(&mut public_coin)
         .map_err(|_| VerifierError::RandomCoinError)?;
 
@@ -242,21 +247,104 @@ fn draw_ood_point_z() -> Result<String, WinterVerifierError> {
         .draw::<Felt>()
         .map_err(|_| VerifierError::RandomCoinError)?;
 
-    let hex_string = z.to_raw().to_string();
-    Ok(hex_string)
-}
+    // 3 ----- OOD consistency check --------------------------------------------------------------
+    // make sure that evaluations obtained by evaluating constraints over the out-of-domain frame
+    // are consistent with the evaluations of composition polynomial columns sent by the prover
 
-fn write_be_bytes(value: [u64; 4], out: &mut [u8; 32]) {
-    for (src, dst) in value.iter().rev().cloned().zip(out.chunks_exact_mut(8)) {
-        dst.copy_from_slice(&src.to_be_bytes());
+    // read the out-of-domain trace frames (the main trace frame and auxiliary trace frame, if
+    // provided) sent by the prover and evaluate constraints over them; also, reseed the public
+    // coin with the OOD frames received from the prover.
+    let (ood_main_trace_frame, ood_aux_trace_frame) = channel.read_ood_trace_frame();
+    let ood_constraint_evaluation_1 = evaluate_constraints(
+        &air,
+        constraint_coeffs.clone(),
+        &ood_main_trace_frame,
+        &ood_aux_trace_frame,
+        aux_trace_rand_elements.clone(),
+        z,
+    );
+
+    // Constraint evaluations
+    let t_constraints = air.get_transition_constraints(&constraint_coeffs.transition);
+    let mut t_evaluations1 = Felt::zeroed_vector(t_constraints.num_main_constraints());
+    let mut t_evaluations2 = Felt::zeroed_vector(t_constraints.num_aux_constraints());
+    air.evaluate_transition(&ood_main_trace_frame, &[], &mut t_evaluations1);
+    air.evaluate_aux_transition(
+        &ood_main_trace_frame,
+        &ood_aux_trace_frame.as_ref().unwrap(),
+        &[],
+        &aux_trace_rand_elements,
+        &mut t_evaluations2,
+    );
+
+    // Boundary constraint evaluations
+    let b_constraints =
+        air.get_boundary_constraints(&aux_trace_rand_elements, &constraint_coeffs.boundary);
+    let mut degree_adjustment = b_constraints.main_constraints()[0].degree_adjustment();
+    let mut xp = z.exp(degree_adjustment.into());
+    let mut b_constraints_main_result = Felt::ZERO;
+    let mut b_constraints_aux_result = Felt::ZERO;
+    for group in b_constraints.main_constraints().iter() {
+        if group.degree_adjustment() != degree_adjustment {
+            degree_adjustment = group.degree_adjustment();
+            xp = z.exp(degree_adjustment.into());
+        }
+        b_constraints_main_result += group.evaluate_at(ood_main_trace_frame.row(0), z, xp);
     }
+    for group in b_constraints.aux_constraints().iter() {
+        if group.degree_adjustment() != degree_adjustment {
+            degree_adjustment = group.degree_adjustment();
+            xp = z.exp(degree_adjustment.into());
+        }
+        b_constraints_aux_result +=
+            group.evaluate_at(ood_aux_trace_frame.as_ref().unwrap().row(0), z, xp);
+    }
+
+    // Evaluation data
+    let mut data = HashMap::new();
+    data.insert("z", z.to_raw().to_string());
+    data.insert(
+        "ood_constraint_evaluation",
+        ood_constraint_evaluation_1.to_raw().to_string(),
+    );
+    data.insert(
+        "t_evaluations1",
+        t_evaluations1
+            .iter()
+            .map(|x| x.to_raw().to_string())
+            .collect(),
+    );
+    data.insert(
+        "t_evaluations2",
+        t_evaluations2
+            .iter()
+            .map(|x| x.to_raw().to_string())
+            .collect(),
+    );
+    data.insert(
+        "combine_evaluations_result",
+        t_constraints
+            .combine_evaluations::<Felt>(&t_evaluations1, &t_evaluations2, z)
+            .to_raw()
+            .to_string(),
+    );
+    data.insert(
+        "b_constraints_main_result",
+        b_constraints_main_result.to_raw().to_string(),
+    );
+    data.insert(
+        "b_constraints_aux_result",
+        b_constraints_aux_result.to_raw().to_string(),
+    );
+
+    Ok(data)
 }
 
 /// A Python module implemented in Rust. The name of this function must match
 /// the `lib.name` setting in the `Cargo.toml`, else Python will not be able to
 /// import the module.
 #[pymodule]
-fn zerosync_tests(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
+fn zerosync_hints(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
     // Random coin
     m.add_function(wrap_pyfunction!(merge, m)?)?;
     m.add_function(wrap_pyfunction!(merge_with_int, m)?)?;
@@ -267,6 +355,13 @@ fn zerosync_tests(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(pedersen_chain, m)?)?;
     m.add_function(wrap_pyfunction!(hash_pub_inputs, m)?)?;
     m.add_function(wrap_pyfunction!(seed_with_pub_inputs, m)?)?;
-    m.add_function(wrap_pyfunction!(draw_ood_point_z, m)?)?;
+    // Evaluation
+    m.add_function(wrap_pyfunction!(evaluation_data, m)?)?;
     Ok(())
+}
+
+fn write_be_bytes(value: [u64; 4], out: &mut [u8; 32]) {
+    for (src, dst) in value.iter().rev().cloned().zip(out.chunks_exact_mut(8)) {
+        dst.copy_from_slice(&src.to_be_bytes());
+    }
 }

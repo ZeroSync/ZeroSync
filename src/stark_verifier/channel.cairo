@@ -42,7 +42,11 @@ func channel_new{bitwise_ptr: BitwiseBuiltin*}(air: AirInstance, proof: StarkPro
     tempvar ood_trace_frame = TraceOodFrame(
         main_frame=proof.ood_frame.main_frame,
         aux_frame=proof.ood_frame.aux_frame,
-        );
+    );
+
+    %{
+        print("n_elements", ids.ood_constraint_evaluations.n_elements)
+    %}
 
     tempvar channel = Channel(
         trace_roots=trace_roots,

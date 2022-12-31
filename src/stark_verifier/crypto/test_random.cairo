@@ -46,7 +46,7 @@ func test_merge_with_int{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
 
     %{
         from src.utils.hex_utils import get_hex
-        from zerosync_tests import *
+        from zerosync_hints import *
         a = get_hex(memory, ids.hash)
         b = merge_with_int()
         print("test_merge_with_int", a, b)
@@ -71,7 +71,7 @@ func test_merge{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
 
     %{
         from src.utils.hex_utils import get_hex
-        from zerosync_tests import *
+        from zerosync_hints import *
         a = get_hex(memory, ids.hash)
         b = merge()
         print("test_merge", a, b)
@@ -97,7 +97,7 @@ func test_draw{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     }
     
     %{
-        from zerosync_tests import *
+        from zerosync_hints import *
         a = hex(ids.element)[2:]
         b = draw_felt()
         print("test_draw", a, b)
@@ -135,8 +135,6 @@ func test_draw_integers{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     return ();
 }
 
-
-
 @external
 func test_reseed_with_int{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     alloc_locals;
@@ -160,7 +158,6 @@ func test_reseed_with_int{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     finalize_blake2s(blake2s_ptr_start, blake2s_ptr);
     return ();
 }
-
 
 // TODO: Test for a grinded seed
 @external
@@ -202,7 +199,7 @@ func test_pedersen_chain{
     let (out) = hash_finalize{hash_ptr=pedersen_ptr}(hash_state_ptr=hash_state_ptr);
     %{
         from src.utils.hex_utils import get_hex
-        from zerosync_tests import *
+        from zerosync_hints import *
         a = hex(ids.out)[2:].zfill(64)
         b = pedersen_chain()
         print("test_pedersen_chain", a, b)
@@ -243,7 +240,7 @@ func test_hash_pub_inputs{
     let (pub_mem_hash) = hash_finalize{hash_ptr=pedersen_ptr}(hash_state_ptr=hash_state_ptr);
     %{
         from src.utils.hex_utils import get_hex
-        from zerosync_tests import *
+        from zerosync_hints import *
         a = get_hex(memory, ids.pub_mem_hash)
         b = hash_pub_inputs()
         print("test_hash_pub_inputs", a, b)
@@ -273,7 +270,7 @@ func test_public_coin_seed{
     let public_coin_seed: felt* = seed_with_pub_inputs{blake2s_ptr=blake2s_ptr}(pub_inputs);
     %{
         from src.utils.hex_utils import get_hex
-        from zerosync_tests import *
+        from zerosync_hints import *
         a = get_hex(memory, ids.public_coin_seed)
         b = seed_with_pub_inputs()
         print("test_public_coin_seed", a, b)
@@ -281,7 +278,6 @@ func test_public_coin_seed{
     %} 
     return ();
 }
-
 
 /// Test hash_elements
 @external
@@ -309,9 +305,6 @@ func test_hash_elements{
     %}
     return ();
 }
-
-
-
 
 //
 // Tests for Blake2s

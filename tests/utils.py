@@ -30,7 +30,7 @@ def giza_prove(program_name):
 
 def parse_proof(program_name):
     completed_process = subprocess.run([
-        'src/stark_verifier/parser/target/debug/parser',
+        'bin/stark_parser',
         f'tests/stark_proofs/{program_name}.bin',
         'proof'],
         capture_output=True)
@@ -38,7 +38,7 @@ def parse_proof(program_name):
 
 def parse_public_inputs(program_name):
     completed_process = subprocess.run([
-        'src/stark_verifier/parser/target/debug/parser',
+        'bin/stark_parser',
         f'tests/stark_proofs/{program_name}.bin',
         'public-inputs'],
         capture_output=True)

@@ -15,6 +15,7 @@ struct TraceLayout {
 struct ProofOptions {
     num_queries: felt,
     blowup_factor: felt,
+    log_blowup_factor: felt,
     grinding_factor: felt,
     hash_fn: felt,
     field_extension: felt,
@@ -22,9 +23,10 @@ struct ProofOptions {
     fri_max_remainder_size: felt,  // stored as power of 2
 }
 
-struct Context {
+struct ProofContext {
     trace_layout: TraceLayout,
     trace_length: felt,
+    log_trace_length: felt,
     trace_meta_len: felt,
     trace_meta: felt*,
     field_modulus_bytes_len: felt,
@@ -51,7 +53,7 @@ struct ParsedOodFrame {
 //
 struct StarkProof {
     // Basic metadata about the execution of the computation described by this proof.
-    context: Context,
+    context: ProofContext,
     // Commitments made by the prover during the commit phase of the protocol.
     commitments: ParsedCommitments,
     // Trace evaluation frames and out-of-domain constraint evaluations

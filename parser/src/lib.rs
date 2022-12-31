@@ -4,74 +4,30 @@ use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::io::{BufReader, Read};
 use std::iter::zip;
-use winter_utils::{Deserializable, SliceReader};
-use winterfell::{FieldExtension, HashFunction, StarkProof};
+use winter_math::log2;
 
 use winter_air::proof::{Commitments, Context, OodFrame};
 use winter_air::DefaultEvaluationFrame;
 use winter_air::{ProofOptions, Table, TraceLayout};
 use winter_crypto::{hashers::Blake2s_256, Digest};
-use winterfell::Air;
 
-use giza_air::{ProcessorAir, PublicInputs};
+pub use winterfell::Air;
+pub use winterfell::{FieldExtension, HashFunction, StarkProof};
+
+pub use giza_air::{ProcessorAir, PublicInputs};
 use giza_core::{Felt, RegisterState, Word};
 
-use clap::{Parser, Subcommand};
-
-mod memory;
-use memory::{DynamicMemory, MemoryEntry, Writeable, WriteableWith};
-
-#[derive(Parser)]
-#[command(name = "parser")]
-#[command(about = "A parser for reencoding STARK proofs", long_about = None)]
-struct Cli {
-    path: String,
-    #[command(subcommand)]
-    command: Commands,
-}
-
-#[derive(Subcommand)]
-enum Commands {
-    Proof,
-    PublicInputs,
-}
-
-fn main() {
-    let cli = Cli::parse();
-
-    // Load the proof and its public inputs from file
-    let data = BinaryProofData::from_file(&cli.path);
-    let proof = StarkProof::from_bytes(&data.proof_bytes).unwrap();
-    let pub_inputs = PublicInputs::read_from(&mut SliceReader::new(&data.input_bytes[..])).unwrap();
-
-    // Serialize to Cairo-compatible memory
-    let mut memories = Vec::<Vec<MemoryEntry>>::new();
-    let mut dynamic_memory = DynamicMemory::new(&mut memories);
-    match &cli.command {
-        Commands::Proof => {
-            let air =
-                ProcessorAir::new(proof.get_trace_info(), pub_inputs, proof.options().clone());
-            proof.write_into(&mut dynamic_memory, &air);
-        }
-        Commands::PublicInputs => {
-            pub_inputs.write_into(&mut dynamic_memory);
-        }
-    }
-
-    // Serialize to JSON and print to stdout
-    let memory = dynamic_memory.assemble();
-    let json_arr = serde_json::to_string(&memory).unwrap();
-    println!("{}", json_arr);
-}
+pub mod memory;
+use memory::{DynamicMemory, Writeable, WriteableWith};
 
 #[derive(Serialize, Deserialize)]
-struct BinaryProofData {
-    input_bytes: Vec<u8>,
-    proof_bytes: Vec<u8>,
+pub struct BinaryProofData {
+    pub input_bytes: Vec<u8>,
+    pub proof_bytes: Vec<u8>,
 }
 
 impl BinaryProofData {
-    fn from_file(file_path: &String) -> BinaryProofData {
+    pub fn from_file(file_path: &String) -> BinaryProofData {
         let file = File::open(file_path).unwrap();
         let mut data = Vec::new();
         BufReader::new(file)
@@ -130,7 +86,8 @@ impl WriteableWith<&ProcessorAir> for StarkProof {
 impl Writeable for Context {
     fn write_into(&self, target: &mut DynamicMemory) {
         self.trace_layout().write_into(target);
-        self.trace_length().write_into(target); // Do not serialize as a power of two
+        self.trace_length().write_into(target);
+        log2(self.trace_length()).write_into(target);
 
         self.get_trace_info().meta().len().write_into(target);
         target.write_array(self.get_trace_info().meta().to_vec());
@@ -199,8 +156,7 @@ impl WriteableWith<&ProcessorAir> for OodFrame {
             .unwrap();
 
         ood_main_trace_frame.write_into(target);
-        ood_aux_trace_frame.clone().unwrap().write_into(target);
-
+        ood_aux_trace_frame.unwrap().write_into(target);
         target.write_sized_array(ood_constraint_evaluations);
     }
 }
@@ -226,6 +182,7 @@ impl Writeable for ProofOptions {
     fn write_into(&self, target: &mut DynamicMemory) {
         self.num_queries().write_into(target);
         self.blowup_factor().write_into(target);
+        log2(self.blowup_factor()).write_into(target);
         self.grinding_factor().write_into(target);
 
         self.hash_fn().write_into(target);

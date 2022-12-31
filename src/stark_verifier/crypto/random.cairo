@@ -19,7 +19,6 @@ from utils.pow2 import pow2
 from utils.endianness import byteswap32
 
 from stark_verifier.air.pub_inputs import MemEntry, PublicInputs, read_mem_values
-from stark_verifier.air.stark_proof import Context
 from stark_verifier.air.transitions.frame import EvaluationFrame
 
 
