@@ -20,8 +20,8 @@ STARK_PARSER:
 	cp target/debug/zerosync_parser ../bin/stark_parser
 RUST_HINT_LIB:
 	cd hints; \
-	maturin develop
-	cp hints/target/debug/libzerosync_hints.dylib bin/libzerosync_hints.dylib
+	maturin develop; \
+	cp target/debug/libzerosync_hints.dylib ../bin/libzerosync_hints.dylib | true
 ifeq ($(ARCH), arm)
 	# On Apple Silicon (ARM), replace the installed site-package binary with one targeting x86_64.
 	# This is required due to a lack of ARM support in Protostar.

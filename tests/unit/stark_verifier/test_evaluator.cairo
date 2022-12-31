@@ -14,7 +14,7 @@ struct ConstraintEvaluationArguments {
     z: felt,
 }
 
-@external
+// @external
 func test_evaluate_constraints() {
     alloc_locals;
 

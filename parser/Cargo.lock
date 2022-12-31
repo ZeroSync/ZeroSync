@@ -553,24 +553,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9b7820b9daea5457c9f21c69448905d723fbd21136ccf521748f23fd49e723ee"
 
 [[package]]
-name = "parser"
-version = "0.1.0"
-dependencies = [
- "bincode",
- "clap",
- "giza-air",
- "giza-core",
- "serde",
- "serde_json",
- "winter-air",
- "winter-crypto",
- "winter-fri",
- "winter-math",
- "winter-utils",
- "winter-verifier",
-]
-
-[[package]]
 name = "paste"
 version = "1.0.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1077,4 +1059,22 @@ dependencies = [
  "quote",
  "syn",
  "synstructure",
+]
+
+[[package]]
+name = "zerosync_parser"
+version = "0.1.0"
+dependencies = [
+ "bincode",
+ "clap",
+ "giza-air",
+ "giza-core",
+ "serde",
+ "serde_json",
+ "winter-air",
+ "winter-crypto",
+ "winter-fri",
+ "winter-math",
+ "winter-utils",
+ "winter-verifier",
 ]
