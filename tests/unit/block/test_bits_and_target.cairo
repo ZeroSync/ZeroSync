@@ -1,6 +1,6 @@
 //
 // To run only this test suite use:
-// protostar test  --cairo-path=./src target src/block/*_bits_and_target*
+// protostar test  --cairo-path=./src target tests/unit/block/*_bits_and_target*
 //
 
 %lang starknet
@@ -16,7 +16,7 @@ func test_encode_decode{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     %{
         # Read JSON file
         import json
-        io = open('src/block/test_bits_and_target.json')
+        io = open('tests/unit/block/test_bits_and_target.json')
         io_json = json.load(io)
 
         ids.bits_to_target_tests_count = len(io_json["bits_to_target"])
@@ -44,7 +44,7 @@ func _bits_to_target_tests{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(test_i
     %{
         # Read JSON file
         import json
-        io = open('src/block/test_bits_and_target.json')
+        io = open('tests/unit/block/test_bits_and_target.json')
         io_json = json.load(io)
 
         current_io = io_json["bits_to_target"][ids.test_index - 1]
@@ -74,7 +74,7 @@ func _target_to_bits_tests{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(test_i
     %{
         # Read JSON file
         import json
-        io = open('src/block/test_bits_and_target.json')
+        io = open('tests/unit/block/test_bits_and_target.json')
         io_json = json.load(io)
 
         current_io = io_json["target_to_bits"][ids.test_index - 1]

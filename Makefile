@@ -14,10 +14,8 @@ CAIRO_PROGRAM:
 
 STARK_PARSER:
 	@echo "Building STARK proof parser..."
-	rm -f build/parser/debug/parser
 	cargo build
 	mkdir -p bin
-	rm -f bin/stark_parser
 	cp target/debug/parser bin/stark_parser
 RUST_HINT_LIB:
 	cd hints; \
@@ -93,5 +91,3 @@ package:
 		done; \
 	done; \
 	python3 -m build
-
-

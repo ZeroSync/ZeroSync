@@ -1,6 +1,6 @@
 //
 // To run only this test suite use:
-// protostar test --cairo-path=./src target src/**/*_sha256.cairo
+// protostar test --cairo-path=./src target tests/unit/crypto/*_sha256.cairo
 //
 // Test vectors: https://www.di-mgt.com.au/sha_testvectors.html
 //               https://github.com/bitcoin/bitcoin/blob/master/src/test/crypto_tests.cpp

@@ -43,13 +43,13 @@ make bridge_node
 
 ## Run all unit tests
 ```sh
-make rust_test_lib
+make rust_hint_lib
 make unit_test
 ```
 
 ## Run all integration tests
 ```sh
-make rust_test_lib
+make rust_hint_lib
 make integration_test
 ```
 

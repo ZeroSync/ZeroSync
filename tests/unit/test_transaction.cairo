@@ -1,12 +1,12 @@
 //
 // To run only this test suite use:
-// protostar test  --cairo-path=./src target src/**/*_transaction*
+// protostar test --cairo-path=./src target tests/unit/*_transaction*
 //
 
 %lang starknet
 
 from starkware.cairo.common.alloc import alloc
-from serialize.serialize import init_reader, init_writer, flush_writer, read_uint8
+from utils.serialize import init_reader, init_writer, flush_writer, read_uint8
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.memcpy import memcpy
 from crypto.hash_utils import assert_hashes_equal

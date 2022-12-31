@@ -18,7 +18,7 @@ from starkware.cairo.common.uint256 import (
     uint256_mul,
     uint256_unsigned_div_rem,
 )
-from serialize.serialize import (
+from utils.serialize import (
     Reader,
     read_uint32,
     read_hash,

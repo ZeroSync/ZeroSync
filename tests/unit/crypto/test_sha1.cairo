@@ -1,6 +1,6 @@
 //
 // To run only this test suite use:
-// protostar test --cairo-path=./src target src/**/*_sha1*
+// protostar test --cairo-path=./src target tests/unit/crypto/*_sha1*
 //
 %lang starknet
 

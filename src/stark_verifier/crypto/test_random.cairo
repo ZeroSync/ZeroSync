@@ -135,8 +135,6 @@ func test_draw_integers{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     return ();
 }
 
-
-
 @external
 func test_reseed_with_int{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     alloc_locals;
@@ -160,7 +158,6 @@ func test_reseed_with_int{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     finalize_blake2s(blake2s_ptr_start, blake2s_ptr);
     return ();
 }
-
 
 // TODO: Test for a grinded seed
 @external
@@ -282,7 +279,6 @@ func test_public_coin_seed{
     return ();
 }
 
-
 /// Test hash_elements
 @external
 func test_hash_elements{
@@ -309,9 +305,6 @@ func test_hash_elements{
     %}
     return ();
 }
-
-
-
 
 //
 // Tests for Blake2s
