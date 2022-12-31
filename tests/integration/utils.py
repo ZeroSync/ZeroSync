@@ -37,6 +37,7 @@ def parse_proof(program_name):
     return json.loads(completed_process.stdout)
 
 def parse_public_inputs(program_name):
+    pwd = subprocess.run(['pwd'],capture_output=True).stdout[:-1]
     completed_process = subprocess.run([
         'bin/stark_parser',
         f'tests/integration/stark_proofs/{program_name}.bin',

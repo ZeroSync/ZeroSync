@@ -31,6 +31,16 @@ from stark_verifier.crypto.random import (
 )
 
 @external
+func __setup__() {
+    %{
+        from tests.integration.utils import setup
+        path = ("tests/integration/cairo_programs/", "fibonacci")
+        setup(path)
+    %}
+    return ();
+}
+
+@external
 func test_merge_with_int{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     alloc_locals;
     let (blake2s_ptr: felt*) = alloc();
