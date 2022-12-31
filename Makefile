@@ -14,9 +14,10 @@ CAIRO_PROGRAM:
 
 STARK_PARSER:
 	@echo "Building STARK proof parser..."
-	cargo build
-	mkdir -p bin
-	cp target/debug/parser bin/stark_parser
+	cd parser; \
+	cargo build; \
+	mkdir -p ../bin; \
+	cp target/debug/zerosync_parser ../bin/stark_parser
 RUST_HINT_LIB:
 	cd hints; \
 	maturin develop
@@ -34,7 +35,7 @@ chain_proof:
 	python src/chain_proof/main.py
 
 bridge_node:
-	python src/utreexo/bridge_node.py
+	python src/utxo_set/bridge_node.py
 
 cairo_compile: CAIRO_PROGRAM
 	@echo "Compiling cairo files..."
