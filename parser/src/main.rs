@@ -1,6 +1,6 @@
 use winter_utils::{Deserializable, SliceReader};
 use zerosync_parser::{
-    memory::{DynamicMemory, MemoryEntry, Writeable, WriteableWith},
+    memory::{ Writeable, WriteableWith},
     Air, BinaryProofData, ProcessorAir, PublicInputs, StarkProof,
 };
 
@@ -30,21 +30,16 @@ fn main() {
     let pub_inputs = PublicInputs::read_from(&mut SliceReader::new(&data.input_bytes[..])).unwrap();
 
     // Serialize to Cairo-compatible memory
-    let mut memories = Vec::<Vec<MemoryEntry>>::new();
-    let mut dynamic_memory = DynamicMemory::new(&mut memories);
-    match &cli.command {
+    let json_arr = match &cli.command {
         Commands::Proof => {
             let air =
                 ProcessorAir::new(proof.get_trace_info(), pub_inputs, proof.options().clone());
-            proof.write_into(&mut dynamic_memory, &air);
+            proof.to_cairo_memory(&air)
         }
         Commands::PublicInputs => {
-            pub_inputs.write_into(&mut dynamic_memory);
+            pub_inputs.to_cairo_memory()
         }
-    }
+    };
 
-    // Serialize to JSON and print to stdout
-    let memory = dynamic_memory.assemble();
-    let json_arr = serde_json::to_string(&memory).unwrap();
     println!("{}", json_arr);
 }

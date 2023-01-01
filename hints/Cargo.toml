@@ -26,5 +26,6 @@ giza_core = { package = "giza-core", git = "https://github.com/zerosync/giza", r
 blake2 = { package = "blake2-rfc", version = "0.2"}
 starknet_crypto = { package = "starknet-crypto", git = "https://github.com/xJonathanLEI/starknet-rs" }
 starknet_ff = { package = "starknet-ff", git = "https://github.com/xJonathanLEI/starknet-rs" }
+zerosync_parser = { path = "../parser" }
 
 [workspace]

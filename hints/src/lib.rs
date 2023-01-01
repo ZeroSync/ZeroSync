@@ -8,11 +8,10 @@ use winter_crypto::{hashers::Blake2s_256, Digest, ElementHasher, RandomCoin};
 use winter_math::FieldElement;
 use winter_utils::{Deserializable, Serializable, SliceReader};
 use winterfell::{
-    evaluate_constraints, Air, AuxTraceRandElements, StarkProof, VerifierChannel, VerifierError,
+    evaluate_constraints, AuxTraceRandElements, VerifierChannel, VerifierError,
 };
 
 use giza_air::{AuxEvaluationFrame, MainEvaluationFrame};
-use giza_air::{ProcessorAir, PublicInputs};
 use giza_core::Felt;
 
 use starknet_crypto::pedersen_hash;
@@ -22,6 +21,11 @@ use blake2::blake2s::blake2s;
 
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
+
+use zerosync_parser::{
+    memory::{Writeable, WriteableWith},
+    Air, BinaryProofData, ProcessorAir, PublicInputs, StarkProof,
+};
 
 struct WinterVerifierError(VerifierError);
 
@@ -34,23 +38,6 @@ impl From<WinterVerifierError> for PyErr {
 impl From<VerifierError> for WinterVerifierError {
     fn from(other: VerifierError) -> Self {
         Self(other)
-    }
-}
-
-#[derive(Serialize, Deserialize)]
-struct BinaryProofData {
-    input_bytes: Vec<u8>,
-    proof_bytes: Vec<u8>,
-}
-
-impl BinaryProofData {
-    fn from_file(file_path: &String) -> BinaryProofData {
-        let file = File::open(file_path).unwrap();
-        let mut data = Vec::new();
-        BufReader::new(file)
-            .read_to_end(&mut data)
-            .expect("Unable to read data");
-        bincode::deserialize(&data).unwrap()
     }
 }
 
@@ -203,7 +190,7 @@ fn evaluation_data<'a>() -> Result<HashMap<&'a str, String>, WinterVerifierError
     let pub_inputs = PublicInputs::read_from(&mut SliceReader::new(&data.input_bytes[..])).unwrap();
 
     let mut public_coin_seed = Vec::new();
-    pub_inputs.write_into(&mut public_coin_seed);
+    Serializable::write_into(&pub_inputs, &mut public_coin_seed);
 
     let air = ProcessorAir::new(proof.get_trace_info(), pub_inputs, proof.options().clone());
 
