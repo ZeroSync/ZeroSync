@@ -55,7 +55,7 @@ make integration_test
 
 ## Run the chain prover
 ```sh
-make parser
+make STARK_PARSER
 make chain_proof
 ```
 

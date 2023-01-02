@@ -21,8 +21,8 @@ winter_air = { package = "winter-air", git = "https://github.com/zerosync/winter
 winter_math = { package = "winter-math", git = "https://github.com/zerosync/winterfell", version = "0.4", default-features = false }
 winter_utils = { package = "winter-utils", git = "https://github.com/zerosync/winterfell", version = "0.4", default-features = false }
 winter_crypto = { package = "winter-crypto", git = "https://github.com/zerosync/winterfell", version = "0.4", default-features = false }
-giza_air = { package = "giza-air", git = "https://github.com/zerosync/giza", rev = "721df3e", version = "0.1", default-features = false  }
-giza_core = { package = "giza-core", git = "https://github.com/zerosync/giza", rev = "721df3e", version = "0.1", default-features = false }
+giza_air = { package = "giza-air", git = "https://github.com/zerosync/giza", version = "0.1", default-features = false  }
+giza_core = { package = "giza-core", git = "https://github.com/zerosync/giza", version = "0.1", default-features = false }
 blake2 = { package = "blake2-rfc", version = "0.2"}
 starknet_crypto = { package = "starknet-crypto", git = "https://github.com/xJonathanLEI/starknet-rs" }
 starknet_ff = { package = "starknet-ff", git = "https://github.com/xJonathanLEI/starknet-rs" }

@@ -13,6 +13,7 @@ use winter_crypto::{hashers::Blake2s_256, Digest};
 
 pub use winterfell::Air;
 pub use winterfell::{FieldExtension, HashFunction, StarkProof};
+pub use winterfell::AirContext;
 
 pub use giza_air::{ProcessorAir, PublicInputs};
 use giza_core::{Felt, RegisterState, Word};
@@ -253,3 +254,46 @@ impl Writeable for [u8; 32] {
         target.write_array(uint32_array);
     }
 }
+
+pub struct ProcessorAirParams<'a>{
+    pub proof: &'a StarkProof,
+    pub public_inputs: &'a PublicInputs
+}
+
+impl WriteableWith<ProcessorAirParams<'_>> for ProcessorAir{
+    fn write_into(&self, target: &mut DynamicMemory, params: ProcessorAirParams) {
+        // Layout
+        self.trace_layout().main_trace_width().write_into(target); // Todo: is this "main_segment_width" ?
+        self.trace_layout().aux_trace_width().write_into(target);
+        
+        let mut aux_segment_widths = vec!();
+        let mut aux_segment_rands = vec!();
+        for segment_idx in 0..self.trace_layout().num_aux_segments(){
+            aux_segment_widths.push(
+                self.trace_layout().get_aux_segment_width(segment_idx));
+            aux_segment_rands.push(
+                self.trace_layout().get_aux_segment_rand_elements(segment_idx));
+        }
+        target.write_array(aux_segment_widths);
+        target.write_array(aux_segment_rands);
+        self.trace_layout().num_aux_segments().write_into(target);
+
+        // Context
+        self.options().write_into(target);
+        params.proof.context.write_into(target);
+
+        let num_transition_constraints = 48_u32;
+        num_transition_constraints.write_into(target);
+        self.get_assertions().len().write_into(target);
+
+        self.ce_blowup_factor().write_into(target);
+        self.eval_frame_size::<Felt>().write_into(target);
+
+        self.trace_domain_generator().write_into(target);
+        self.lde_blowup_factor().write_into(target);
+
+
+        params.public_inputs.write_into(target);
+    }
+}
+

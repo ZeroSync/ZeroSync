@@ -34,7 +34,7 @@ def parse_proof(program_name):
         f'tests/integration/stark_proofs/{program_name}.bin',
         'proof'],
         capture_output=True)
-    return json.loads(completed_process.stdout)
+    return completed_process.stdout
 
 def parse_public_inputs(program_name):
     pwd = subprocess.run(['pwd'],capture_output=True).stdout[:-1]
@@ -43,7 +43,7 @@ def parse_public_inputs(program_name):
         f'tests/integration/stark_proofs/{program_name}.bin',
         'public-inputs'],
         capture_output=True)
-    return json.loads(completed_process.stdout)
+    return completed_process.stdout
 
 def setup(path):
     cairo_compile(path)

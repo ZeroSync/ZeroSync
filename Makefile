@@ -55,6 +55,10 @@ unit_test:
 	@echo "Running unit tests..."
 	PYTHONPATH=$$(python -c "import site; print(site.getsitepackages()[0])"):$$PYTHONPATH protostar -p unit test
 
+test:
+	@echo "Running test $(TEST_PATH)..."
+	PYTHONPATH=$$(python -c "import site; print(site.getsitepackages()[0])"):$$PYTHONPATH protostar test --cairo-path=./src target tests/unit/$(TEST_PATH)
+
 integration_test: STARK_PARSER
 	@echo "Running integration tests..."
 	PYTHONPATH=$$(echo pwd)/tests:$$(python -c "import site; print(site.getsitepackages()[0])"):$$PYTHONPATH protostar -p integration test

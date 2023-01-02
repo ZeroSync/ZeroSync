@@ -65,13 +65,8 @@ struct StarkProof {
 func read_stark_proof() -> StarkProof* {
     let (proof_ptr: StarkProof*) = alloc();
     %{
-        # Note the following:
-        # - Addresses are stored as `Relocatable` values in the Cairo VM.
-        # - The "+" operator is overloaded to perform pointer arithmetics.
-        # - Felts are hex encoded starting with "0x". The virtual addresses are encoded as decimals.
-        addr = ids.proof_ptr.address_
-        my_memory = [(int(x, 16) if x.startswith('0x') else addr + int(x)) for x in json_data]
-        segments.write_arg(addr, my_memory)
+        from src.stark_verifier.utils import write_into_memory
+        write_into_memory(ids.proof_ptr, json_data, segments)
     %}
     return proof_ptr;
 }

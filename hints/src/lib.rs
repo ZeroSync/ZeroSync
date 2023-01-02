@@ -23,9 +23,10 @@ use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 
 use zerosync_parser::{
-    memory::{Writeable, WriteableWith},
-    Air, BinaryProofData, ProcessorAir, PublicInputs, StarkProof,
+    Air, BinaryProofData, ProcessorAir, ProcessorAirParams, PublicInputs, StarkProof
 };
+
+use zerosync_parser::memory::WriteableWith;
 
 struct WinterVerifierError(VerifierError);
 
@@ -192,7 +193,7 @@ fn evaluation_data<'a>() -> Result<HashMap<&'a str, String>, WinterVerifierError
     let mut public_coin_seed = Vec::new();
     Serializable::write_into(&pub_inputs, &mut public_coin_seed);
 
-    let air = ProcessorAir::new(proof.get_trace_info(), pub_inputs, proof.options().clone());
+    let air = ProcessorAir::new(proof.get_trace_info(), pub_inputs.clone(), proof.options().clone());
 
     let mut public_coin = RandomCoin::<Felt, Blake2s_256<Felt>>::new(&public_coin_seed);
     let mut channel = VerifierChannel::<
@@ -200,7 +201,7 @@ fn evaluation_data<'a>() -> Result<HashMap<&'a str, String>, WinterVerifierError
         Blake2s_256<Felt>,
         MainEvaluationFrame<Felt>,
         AuxEvaluationFrame<Felt>,
-    >::new(&air, proof)?;
+    >::new(&air, proof.clone())?;
 
     let trace_commitments = channel.read_trace_commitments();
 
@@ -322,6 +323,9 @@ fn evaluation_data<'a>() -> Result<HashMap<&'a str, String>, WinterVerifierError
     data.insert(
         "b_constraints_aux_result",
         b_constraints_aux_result.to_raw().to_string(),
+    );
+    data.insert(
+        "air", air.to_cairo_memory(ProcessorAirParams{proof:&proof, public_inputs:&pub_inputs})
     );
 
     Ok(data)
