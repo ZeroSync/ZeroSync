@@ -6,14 +6,15 @@ use std::io::{BufReader, Read};
 use std::iter::zip;
 use winter_math::log2;
 
-use winter_air::proof::{Commitments, Context, OodFrame};
+use winter_air::proof::{Commitments, Context, OodFrame, Queries};
 use winter_air::DefaultEvaluationFrame;
 use winter_air::{ProofOptions, Table, TraceLayout};
 use winter_crypto::{hashers::Blake2s_256, Digest};
 
 pub use winterfell::Air;
-pub use winterfell::{FieldExtension, HashFunction, StarkProof};
 pub use winterfell::AirContext;
+use winterfell::{ConstraintQueries, TraceQueries};
+pub use winterfell::{FieldExtension, HashFunction, StarkProof};
 
 pub use giza_air::{ProcessorAir, PublicInputs};
 use giza_core::{Felt, RegisterState, Word};
@@ -81,6 +82,8 @@ impl WriteableWith<&ProcessorAir> for StarkProof {
         self.commitments.write_into(target, air);
         self.ood_frame.write_into(target, air);
         self.pow_nonce.write_into(target);
+        self.trace_queries.write_into(target, air);
+        self.constraint_queries.write_into(target, air);
     }
 }
 
@@ -131,17 +134,6 @@ impl WriteableWith<&ProcessorAir> for Commitments {
     }
 }
 
-struct ByteDigest<const N: usize>([u8; N]);
-
-impl Writeable for ByteDigest<32> {
-    fn write_into(&self, target: &mut DynamicMemory) {
-        for chunk in self.0.array_chunks::<4>() {
-            let int = u32::from_be_bytes(*chunk);
-            int.write_into(target);
-        }
-    }
-}
-
 impl WriteableWith<&ProcessorAir> for OodFrame {
     fn write_into(&self, target: &mut DynamicMemory, air: &ProcessorAir) {
         let main_trace_width = air.trace_layout().main_trace_width();
@@ -159,6 +151,34 @@ impl WriteableWith<&ProcessorAir> for OodFrame {
         ood_main_trace_frame.write_into(target);
         ood_aux_trace_frame.unwrap().write_into(target);
         target.write_sized_array(ood_constraint_evaluations);
+    }
+}
+
+impl WriteableWith<&ProcessorAir> for Vec<Queries> {
+    fn write_into(&self, target: &mut DynamicMemory, air: &ProcessorAir) {
+        let trace_queries =
+            TraceQueries::<Felt, Blake2s_256<Felt>>::new(self.clone(), air).unwrap();
+        trace_queries.main_states.write_into(target);
+        trace_queries.aux_states.unwrap().write_into(target);
+    }
+}
+
+impl WriteableWith<&ProcessorAir> for Queries {
+    fn write_into(&self, target: &mut DynamicMemory, air: &ProcessorAir) {
+        let constraint_queries =
+            ConstraintQueries::<Felt, Blake2s_256<Felt>>::new(self.clone(), air).unwrap();
+        constraint_queries.evaluations.write_into(target);
+    }
+}
+
+struct ByteDigest<const N: usize>([u8; N]);
+
+impl Writeable for ByteDigest<32> {
+    fn write_into(&self, target: &mut DynamicMemory) {
+        for chunk in self.0.array_chunks::<4>() {
+            let int = u32::from_be_bytes(*chunk);
+            int.write_into(target);
+        }
     }
 }
 
@@ -216,11 +236,9 @@ impl Writeable for DefaultEvaluationFrame<Felt> {
 
 impl Writeable for Table<Felt> {
     fn write_into(&self, target: &mut DynamicMemory) {
-        for i in 0..self.num_rows() {
-            // a trace segment column or a constraint evaluation column
-            let column = self.get_row(i);
-            target.write_array(column.to_vec());
-        }
+        self.num_rows().write_into(target);
+        self.num_columns().write_into(target);
+        target.write_array(self.data().to_vec());
     }
 }
 
@@ -255,24 +273,25 @@ impl Writeable for [u8; 32] {
     }
 }
 
-pub struct ProcessorAirParams<'a>{
+pub struct ProcessorAirParams<'a> {
     pub proof: &'a StarkProof,
-    pub public_inputs: &'a PublicInputs
+    pub public_inputs: &'a PublicInputs,
 }
 
-impl WriteableWith<ProcessorAirParams<'_>> for ProcessorAir{
+impl WriteableWith<ProcessorAirParams<'_>> for ProcessorAir {
     fn write_into(&self, target: &mut DynamicMemory, params: ProcessorAirParams) {
         // Layout
         self.trace_layout().main_trace_width().write_into(target); // Todo: is this "main_segment_width" ?
         self.trace_layout().aux_trace_width().write_into(target);
-        
-        let mut aux_segment_widths = vec!();
-        let mut aux_segment_rands = vec!();
-        for segment_idx in 0..self.trace_layout().num_aux_segments(){
-            aux_segment_widths.push(
-                self.trace_layout().get_aux_segment_width(segment_idx));
+
+        let mut aux_segment_widths = vec![];
+        let mut aux_segment_rands = vec![];
+        for segment_idx in 0..self.trace_layout().num_aux_segments() {
+            aux_segment_widths.push(self.trace_layout().get_aux_segment_width(segment_idx));
             aux_segment_rands.push(
-                self.trace_layout().get_aux_segment_rand_elements(segment_idx));
+                self.trace_layout()
+                    .get_aux_segment_rand_elements(segment_idx),
+            );
         }
         target.write_array(aux_segment_widths);
         target.write_array(aux_segment_rands);
@@ -292,8 +311,6 @@ impl WriteableWith<ProcessorAirParams<'_>> for ProcessorAir{
         self.trace_domain_generator().write_into(target);
         self.lde_blowup_factor().write_into(target);
 
-
         params.public_inputs.write_into(target);
     }
 }
-
