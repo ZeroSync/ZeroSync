@@ -285,6 +285,7 @@ fn evaluation_data<'a>() -> Result<HashMap<&'a str, String>, WinterVerifierError
             group.evaluate_at(ood_aux_trace_frame.as_ref().unwrap().row(0), z, xp);
     }
 
+
     // Evaluation data
     let mut data = HashMap::new();
     data.insert("z", z.to_raw().to_string());
@@ -296,8 +297,7 @@ fn evaluation_data<'a>() -> Result<HashMap<&'a str, String>, WinterVerifierError
         "t_evaluations1",
         t_evaluations1
             .iter()
-            .map(|x| x.to_raw().to_string())
-            .collect()
+            .fold(String::new(), |a, x| a + ", " + &x.to_raw().to_string())
     );
     data.insert(
         "t_evaluations2",

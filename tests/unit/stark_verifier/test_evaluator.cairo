@@ -8,9 +8,44 @@
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.memset import memset
 
-from stark_verifier.air.transitions.frame import EvaluationFrame, evaluate_transition
+from stark_verifier.air.transitions.frame import EvaluationFrame, evaluate_transition, evaluate_aux_transition
 from stark_verifier.air.air_instance import AirInstance, ConstraintCompositionCoefficients
 from stark_verifier.evaluator import evaluate_constraints
+
+
+@external
+func test_evaluate_transition{
+    range_check_ptr
+}() {
+    alloc_locals;
+
+    // Initialize arguments
+    let (ood_main_trace_frame_ptr: EvaluationFrame*) = alloc();
+    %{
+        from zerosync_hints import *
+        from src.stark_verifier.utils import write_into_memory
+        data = evaluation_data()
+        write_into_memory(ids.ood_main_trace_frame_ptr, data['ood_main_trace_frame'], segments)
+    %}
+
+    let (local t_evaluations1) = alloc(); 
+    evaluate_transition(
+        ood_main_trace_frame=[ood_main_trace_frame_ptr],
+        t_evaluations1 = t_evaluations1
+    );
+
+    %{
+        b = data['t_evaluations1'].split(', ')[1:]
+        i = 0
+        print('test_evaluate_transition')
+        for elemB in b:
+            elemA = hex(memory[ids.t_evaluations1 + i])[2:]
+            assert int(elemA, 16) == int(elemB, 16), f"at index {i}: {elemA} != {elemB}"
+            i += 1
+    %}
+
+    return ();
+}
 
 
 
