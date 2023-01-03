@@ -37,9 +37,49 @@ func test_evaluate_transition{
     %{
         b = data['t_evaluations1'].split(', ')[1:]
         i = 0
-        print('test_evaluate_transition')
         for elemB in b:
             elemA = hex(memory[ids.t_evaluations1 + i])[2:]
+            assert int(elemA, 16) == int(elemB, 16), f"at index {i}: {elemA} != {elemB}"
+            i += 1
+    %}
+
+    return ();
+}
+
+
+
+@external
+func test_evaluate_aux_transition{
+    range_check_ptr
+}() {
+    alloc_locals;
+
+    // Initialize arguments
+    let (ood_main_trace_frame_ptr: EvaluationFrame*) = alloc();
+    let (ood_aux_trace_frame_ptr: EvaluationFrame*) = alloc();
+    let (aux_trace_rand_elements: felt**) = alloc();
+    %{
+        from zerosync_hints import *
+        from src.stark_verifier.utils import write_into_memory
+        data = evaluation_data()
+        write_into_memory(ids.ood_main_trace_frame_ptr, data['ood_main_trace_frame'], segments)
+        write_into_memory(ids.ood_aux_trace_frame_ptr, data['ood_aux_trace_frame'], segments)
+        write_into_memory(ids.aux_trace_rand_elements, data['aux_trace_rand_elements'], segments)
+    %}
+
+    let (local t_evaluations2: felt*) = alloc();
+    evaluate_aux_transition(
+        [ood_main_trace_frame_ptr],
+        [ood_aux_trace_frame_ptr], 
+        aux_trace_rand_elements,
+        t_evaluations2,
+    );
+
+    %{
+        b = data['t_evaluations2'].split(', ')[1:]
+        i = 0
+        for elemB in b:
+            elemA = hex(memory[ids.t_evaluations2 + i])[2:]
             assert int(elemA, 16) == int(elemB, 16), f"at index {i}: {elemA} != {elemB}"
             i += 1
     %}

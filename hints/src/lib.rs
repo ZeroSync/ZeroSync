@@ -303,8 +303,7 @@ fn evaluation_data<'a>() -> Result<HashMap<&'a str, String>, WinterVerifierError
         "t_evaluations2",
         t_evaluations2
             .iter()
-            .map(|x| x.to_raw().to_string())
-            .collect()
+            .fold(String::new(), |a, x| a + ", " + &x.to_raw().to_string())
     );
     data.insert(
         "combine_evaluations_result",
