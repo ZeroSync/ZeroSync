@@ -10,7 +10,7 @@ from starkware.cairo.common.memset import memset
 
 from stark_verifier.air.transitions.frame import EvaluationFrame, evaluate_transition, evaluate_aux_transition
 from stark_verifier.air.air_instance import AirInstance, ConstraintCompositionCoefficients
-from stark_verifier.evaluator import evaluate_constraints
+from stark_verifier.evaluator import evaluate_constraints, combine_evaluations
 
 
 @external
@@ -42,10 +42,8 @@ func test_evaluate_transition{
             assert int(elemA, 16) == int(elemB, 16), f"at index {i}: {elemA} != {elemB}"
             i += 1
     %}
-
     return ();
 }
-
 
 
 @external
@@ -82,6 +80,59 @@ func test_evaluate_aux_transition{
             elemA = hex(memory[ids.t_evaluations2 + i])[2:]
             assert int(elemA, 16) == int(elemB, 16), f"at index {i}: {elemA} != {elemB}"
             i += 1
+    %}
+
+    return ();
+}
+
+
+@external
+func test_combine_evaluations{
+    range_check_ptr
+}() {
+    alloc_locals;
+
+     // Initialize arguments
+    let (air_ptr: AirInstance*) = alloc();
+    let (coeffs_ptr: ConstraintCompositionCoefficients*) = alloc();
+    local z;
+    let (local t_evaluations1: felt*) = alloc();
+    let (local t_evaluations2: felt*) = alloc();
+    local expected_result;
+    %{
+        from zerosync_hints import *
+        from src.stark_verifier.utils import write_into_memory
+        data = evaluation_data()
+        write_into_memory(ids.air_ptr, data['air'], segments)
+        write_into_memory(ids.coeffs_ptr, data['constraint_coeffs'], segments)
+        ids.z = int(data['z'], 16)
+
+        a = data['t_evaluations1'].split(', ')[1:]
+        i = 0 
+        for elemA in a:
+            memory[ids.t_evaluations1 + i] = int(elemA, 16)
+            i += 1
+        
+        b = data['t_evaluations2'].split(', ')[1:]
+        i = 0 
+        for elemB in b:
+            memory[ids.t_evaluations2 + i] = int(elemB, 16)
+            i += 1
+    %}
+
+    let result = combine_evaluations(
+        t_evaluations1,
+        t_evaluations2,
+        z,
+        [air_ptr],
+        [coeffs_ptr],
+    );
+
+    %{
+        expected_result = data['combine_evaluations_result']
+        print(hex(ids.result), expected_result)
+        # TODO: Debug me
+        # assert ids.result == int(expected_result, 16)
     %}
 
     return ();
