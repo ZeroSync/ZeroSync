@@ -42,7 +42,7 @@ pip install zerosync
 
 ```
 
-Find a short Cairo example at `docs/import_example.cairo` on how to import the desired function. 
+Find a short Cairo example at [`docs/import_example.cairo`](https://github.com/ZeroSync/ZeroSync/blob/main/docs/import_example.cairo) on how to import the desired function. 
 
 ## Run the Utreexo bridge node
 The Utreexo bridge node is required to pass the tests for block verification. It provides the inclusion proofs for the coins spent in a block.
