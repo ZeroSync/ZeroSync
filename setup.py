@@ -8,6 +8,6 @@ setup(
     packages=["zerosync"],
     package_dir={"zerosync": "zerosync"},
     include_package_data=True,
-    url="zerosync.org",
+    url="https://zerosync.org",
     keywords="Bitcoin, STARK, Cairo",
 )
