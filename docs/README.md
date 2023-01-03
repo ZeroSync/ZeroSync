@@ -34,6 +34,16 @@ WARNING: THIS CODE IS STILL FULL OF CRITICAL SECURITY BUGS!
 - [Protostar](https://docs.swmansion.com/protostar/docs/tutorials/installation) (Automated testing)
 - [Giza](https://github.com/zerosync/giza) (Required for prover. Not necessary for development and testing)
 
+## Install as library
+To access the Cairo code in the `src` directory from within another Cairo project install the zerosync package:
+
+```sh
+pip install zerosync
+
+```
+
+Find a short Cairo example at `docs/import_example.cairo` on how to import the desired function. 
+
 ## Run the Utreexo bridge node
 The Utreexo bridge node is required to pass the tests for block verification. It provides the inclusion proofs for the coins spent in a block.
 
