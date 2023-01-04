@@ -125,14 +125,13 @@ func test_combine_evaluations{
         t_evaluations2,
         z,
         [air_ptr],
-        [coeffs_ptr],
+        [coeffs_ptr]
     );
 
     %{
         expected_result = data['combine_evaluations_result']
-        print(hex(ids.result), expected_result)
-        # TODO: Debug me
-        # assert ids.result == int(expected_result, 16)
+        # print('test_combine_evaluations', hex(ids.result), expected_result)
+        assert ids.result == int(expected_result, 16)
     %}
 
     return ();
