@@ -10,7 +10,7 @@ from starkware.cairo.common.memset import memset
 
 from stark_verifier.air.transitions.frame import EvaluationFrame, evaluate_transition, evaluate_aux_transition
 from stark_verifier.air.air_instance import AirInstance, ConstraintCompositionCoefficients
-from stark_verifier.evaluator import evaluate_constraints, combine_evaluations
+from stark_verifier.evaluator import evaluate_constraints, combine_evaluations, reduce_pub_mem
 
 
 @external
@@ -137,6 +137,39 @@ func test_combine_evaluations{
     return ();
 }
 
+
+
+@external
+func test_reduce_pub_mem{
+    range_check_ptr
+}() {
+    alloc_locals;
+
+    // Initialize arguments
+    let (air_ptr: AirInstance*) = alloc();
+    let (aux_trace_rand_elements: felt**) = alloc();
+    local z;
+    %{
+        from zerosync_hints import *
+        from src.stark_verifier.utils import write_into_memory
+        data = evaluation_data()
+        write_into_memory(ids.air_ptr, data['air'], segments)
+        write_into_memory(ids.aux_trace_rand_elements, data['aux_trace_rand_elements'], segments)
+    %}
+
+    let reduced_pub_mem = reduce_pub_mem(
+        pub_inputs=[air_ptr].pub_inputs,
+        aux_rand_elements=aux_trace_rand_elements
+    );
+
+    %{
+        a = hex(ids.reduced_pub_mem)[2:]
+        b = data['reduced_pub_mem']
+        assert int(a, 16) == int(b, 16), f"{a} != {b}"
+    %}
+
+    return ();
+}
 
 
 @external
