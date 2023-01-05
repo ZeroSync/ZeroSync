@@ -267,15 +267,15 @@ fn evaluation_data<'a>() -> Result<HashMap<&'a str, String>, WinterVerifierError
     let last_step = air.context().trace_len() - 1;
     let random_elements = aux_trace_rand_elements.get_segment_elements(0);
     let mem = pub_inputs.clone().mem;
-    let z = random_elements[0];
+    let z0 = random_elements[0];
     let alpha = random_elements[1];
-    let num = z.exp((mem.0.len() as u64).into());
+    let num = z0.exp((mem.0.len() as u64).into());
 
     let den = mem
         .0
         .iter()
         .zip(&mem.1)
-        .map(|(a, v)| z - (Felt::from(*a as u64) + alpha * Felt::from(v.unwrap().word())))
+        .map(|(a, v)| z0 - (Felt::from(*a as u64) + alpha * Felt::from(v.unwrap().word())))
         .reduce(|a, b| a * b)
         .unwrap();
 

@@ -104,10 +104,8 @@ func evaluate_constraints{
     let sum_n = b_evaluations1[3] * (coeffs.boundary_a[2] + coeffs.boundary_b[2] * xp) +
                 b_evaluations1[1] * (coeffs.boundary_a[3] + coeffs.boundary_b[3] * xp);
     // Merge group sums
-    let main_evaluation = sum_1 / z_1 + sum_n / z_n; // this is a random number
+    let main_evaluation = sum_1 / z_1 + sum_n / z_n;
     let result = result + main_evaluation;
-    
-    %{ assert ids.main_evaluation == int(data["b_constraints_main_result"], 16) %}
 
     // Aux constraints
     let sum_1 = b_evaluations2[1] * (coeffs.boundary_a[4] + coeffs.boundary_b[4] * xp);
@@ -116,8 +114,6 @@ func evaluate_constraints{
     // Merge group sums
     let aux_evaluation = sum_1 / z_1 + sum_m / z_m;
     let result = result + aux_evaluation;
-
-    %{ assert ids.aux_evaluation == int(data["b_constraints_aux_result"], 16) %}
     
     return result;
 }

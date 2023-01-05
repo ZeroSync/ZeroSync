@@ -197,7 +197,7 @@ func test_evaluate_constraints{
         ids.z = int(data['z'], 16)
     %}
 
-    let ood_constraint_evaluation = evaluate_constraints(
+    let evaluated_constraints = evaluate_constraints(
         air=[air_ptr],
         coeffs=[coeffs_ptr],
         ood_main_trace_frame=[ood_main_trace_frame_ptr],
@@ -207,11 +207,10 @@ func test_evaluate_constraints{
     );
 
     %{
-        a = hex(ids.ood_constraint_evaluation)[2:]
+        a = hex(ids.evaluated_constraints)[2:]
         b = data['ood_constraint_evaluation']
         print('test_evaluate_constraints', a, b)
-        # TODO: Debug me
-        # assert a == b
+        assert int(a, 16) == int(b, 16), f"{a} != {b}"
     %}
 
     return ();
