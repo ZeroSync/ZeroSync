@@ -11,6 +11,7 @@ from starkware.cairo.common.memset import memset
 from stark_verifier.air.transitions.frame import EvaluationFrame, evaluate_transition, evaluate_aux_transition
 from stark_verifier.air.air_instance import AirInstance, ConstraintCompositionCoefficients
 from stark_verifier.evaluator import evaluate_constraints, combine_evaluations, reduce_pub_mem
+from stark_verifier.stark_verifier import reduce_evaluations
 
 
 @external
@@ -197,7 +198,7 @@ func test_evaluate_constraints{
         ids.z = int(data['z'], 16)
     %}
 
-    let evaluated_constraints = evaluate_constraints(
+    let ood_constraint_evaluation_1 = evaluate_constraints(
         air=[air_ptr],
         coeffs=[coeffs_ptr],
         ood_main_trace_frame=[ood_main_trace_frame_ptr],
@@ -207,9 +208,50 @@ func test_evaluate_constraints{
     );
 
     %{
-        a = hex(ids.evaluated_constraints)[2:]
+        a = hex(ids.ood_constraint_evaluation_1)[2:]
         b = data['ood_constraint_evaluation']
-        print('test_evaluate_constraints', a, b)
+        assert int(a, 16) == int(b, 16), f"{a} != {b}"
+    %}
+
+    return ();
+}
+
+
+@external
+func test_reduce_evaluations{
+    range_check_ptr
+}() {
+    alloc_locals;
+
+    // Initialize arguments
+    let (evaluations: felt*) = alloc();
+    local evaluations_len; 
+    local z;
+    %{
+        from zerosync_hints import *
+        data = evaluation_data()
+
+        b = data['ood_constraint_evaluations'].split(', ')[1:]
+        i = 0
+        for elemB in b:
+            memory[ids.evaluations + i] = int(elemB, 16)
+            i += 1
+        
+        ids.evaluations_len = len(b)
+        ids.z = int(data['z'], 16)
+    %}
+
+    let ood_constraint_evaluation_2 = reduce_evaluations(
+        evaluations=evaluations,
+        evaluations_len=evaluations_len,
+        z=z,
+        index=0
+    );
+
+    %{
+        a = hex(ids.ood_constraint_evaluation_2)[2:]
+        b = data['ood_constraint_evaluation']
+        print('test_reduce_evaluations', a, b)
         assert int(a, 16) == int(b, 16), f"{a} != {b}"
     %}
 

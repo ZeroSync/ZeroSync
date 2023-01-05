@@ -139,10 +139,6 @@ func perform_verification{
 
     // Draw an out-of-domain point z from the coin.
     let z = draw();
-    %{ 
-        # TODO: Import zerosync_tests and compare value programatically
-        print('z', hex(ids.z), 'expected: 44454396 ... fd46ec88')
-    %}
 
     // 3 ----- OOD consistency check --------------------------------------------------------------
 
@@ -182,11 +178,11 @@ func perform_verification{
     );
     reseed(value=value);
 
-    //// Finally, make sure the values are the same.
-    //with_attr error_message(
-    //        "Ood constraint evaluations differ. ${ood_constraint_evaluation_1} != ${ood_constraint_evaluation_2}") {
-    //    assert ood_constraint_evaluation_1 = ood_constraint_evaluation_2;
-    //}
+    // Finally, make sure the values are the same.
+    with_attr error_message(
+           "Ood constraint evaluations differ. ${ood_constraint_evaluation_1} != ${ood_constraint_evaluation_2}") {
+       assert ood_constraint_evaluation_1 = ood_constraint_evaluation_2;
+    }
 
     //// 4 ----- FRI commitments --------------------------------------------------------------------
 

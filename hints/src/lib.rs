@@ -305,6 +305,7 @@ fn evaluation_data<'a>() -> Result<HashMap<&'a str, String>, WinterVerifierError
             group.evaluate_at(ood_aux_trace_frame.as_ref().unwrap().row(0), z, xp);
     }
 
+    let ood_constraint_evaluations = channel.read_ood_constraint_evaluations();
 
     // Evaluation data
     let mut data = HashMap::new();
@@ -322,6 +323,12 @@ fn evaluation_data<'a>() -> Result<HashMap<&'a str, String>, WinterVerifierError
     data.insert(
         "t_evaluations2",
         t_evaluations2
+            .iter()
+            .fold(String::new(), |a, x| a + ", " + &x.to_raw().to_string())
+    );
+    data.insert(
+        "ood_constraint_evaluations",
+        ood_constraint_evaluations
             .iter()
             .fold(String::new(), |a, x| a + ", " + &x.to_raw().to_string())
     );
