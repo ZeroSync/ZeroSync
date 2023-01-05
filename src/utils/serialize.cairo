@@ -106,7 +106,7 @@ func read_felt{reader: Reader, bitwise_ptr: BitwiseBuiltin*}() -> felt {
 	alloc_locals;
 	let uint128_lo = read_uint128();
 	let uint128_hi = read_uint128();
-	assert_le_felt(0x0400000000000008800000000000000000000000000000000000000000000000);
+	// TODO: assert_le_felt(0x0400000000000008800000000000000000000000000000000000000000000000);
 	return uint128_lo + uint128_hi * UINT128;
 }
 

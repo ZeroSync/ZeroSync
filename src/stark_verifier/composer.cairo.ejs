@@ -68,19 +68,34 @@ func compose_trace_columns(
 
     // Compose columns of the main segment
     // TODO: Don't hardcode the number of query and columns
-    let (result: felt*) = alloc();
-    <% for (var i=0; i<54; i++) { %>
-    let x = composer.x_coordinates[<%= i %>];
-    let sum = 0;
-        <% for (var j=0; j<49; j++) { %>
-    let sum = sum + (
-        ((curr[<%= i %>] - ood_main_frame.current[<%= j %>]) / (x - z_curr)) * cc_trace_curr[<%= j %>] +
-        ((next[<%= i %>] - ood_main_frame.next[<%= j %>]) / (x - z_next)) * cc_trace_next[<%= j %>]
-    );
-        <% } %>
-    assert result[<%= i %>] = sum;
-    <% } %>
 
+    let (result: felt*) = alloc();
+
+    tempvar n = 54;
+    tempvar curr_ptr = curr;
+    tempvar next_ptr = next;
+    tempvar x_coord_ptr = composer.x_coordinates;
+    tempvar result_ptr = result;
+    loop:
+
+        tempvar sum_curr = 0;
+        tempvar sum_next = 0;
+        <% for (var j=0; j<49; j++) { %>
+        tempvar sum_curr = sum_curr + ([curr_ptr] - ood_main_frame.current[<%= j %>]) * cc_trace_curr[<%= j %>];
+        tempvar sum_next = sum_next + ([next_ptr] - ood_main_frame.next[<%= j %>]) * cc_trace_next[<%= j %>];
+        <% } %>
+        tempvar x = [x_coord_ptr];
+        tempvar sum = sum_curr / (x - z_curr) + sum_next / (x - z_next);
+        assert [result_ptr] = sum;
+
+        tempvar n = n - 1;
+        tempvar curr_ptr = curr_ptr + 1;
+        tempvar next_ptr = next_ptr + 1;
+        tempvar x_coord_ptr = x_coord_ptr + 1;
+        tempvar result_ptr = result_ptr + 1;
+    jmp loop if n != 0;
+    
+    
     // TODO: Compose columns of the aux segments
 
     let (data: felt*) = alloc();
