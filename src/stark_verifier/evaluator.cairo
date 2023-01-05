@@ -90,28 +90,31 @@ func evaluate_constraints{
 
     // Divisor evaluation for last step
     let g = air.trace_domain_generator;
-    let (g_n) = pow(g, air.context.trace_length - 1);
+    let (g_n) = pow(g, air.pub_inputs.num_steps - 1);
     let z_n = z - g_n;
+
+    let (g_m) = pow(g, air.context.trace_length - 1);
+    let z_m = z - g_m;
 
     // Sum all constraint group evaluations
     
     // Main constraints
     let sum_1 = b_evaluations1[2] * (coeffs.boundary_a[0] + coeffs.boundary_b[0] * xp) +
                 b_evaluations1[0] * (coeffs.boundary_a[1] + coeffs.boundary_b[1] * xp);
-    let sum_x = b_evaluations1[3] * (coeffs.boundary_a[2] + coeffs.boundary_b[2] * xp) +
+    let sum_n = b_evaluations1[3] * (coeffs.boundary_a[2] + coeffs.boundary_b[2] * xp) +
                 b_evaluations1[1] * (coeffs.boundary_a[3] + coeffs.boundary_b[3] * xp);
     // Merge group sums
-    let main_evaluation = sum_1 / z_1 + sum_x / 0x06aacf43286d9054d9fc507e012c9d59037d01e9360c0875217ad3b0879866ba; // this is a random number
+    let main_evaluation = sum_1 / z_1 + sum_n / z_n; // this is a random number
     let result = result + main_evaluation;
     
     %{ assert ids.main_evaluation == int(data["b_constraints_main_result"], 16) %}
 
     // Aux constraints
     let sum_1 = b_evaluations2[1] * (coeffs.boundary_a[4] + coeffs.boundary_b[4] * xp);
-    let sum_n = b_evaluations2[0] * (coeffs.boundary_a[5] + coeffs.boundary_b[5] * xp) +
+    let sum_m = b_evaluations2[0] * (coeffs.boundary_a[5] + coeffs.boundary_b[5] * xp) +
                 b_evaluations2[2] * (coeffs.boundary_a[6] + coeffs.boundary_b[6] * xp);
     // Merge group sums
-    let aux_evaluation = sum_1 / z_1 + sum_n / z_n;
+    let aux_evaluation = sum_1 / z_1 + sum_m / z_m;
     let result = result + aux_evaluation;
 
     %{ assert ids.aux_evaluation == int(data["b_constraints_aux_result"], 16) %}
