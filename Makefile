@@ -39,6 +39,7 @@ stark_parser: $(STARK_PARSER)
 
 cairo_compile:
 	@echo "Compiling cairo files..."
+	find src -type f \( -iname "*.ejs" \) -exec sh -c 'ejs {} > $$(dirname {})/$$(basename {} .ejs)' \;
 	find src -type f \( -iname "*.cairo" -and -not -iname "test_*.cairo" \) \
 		-exec cairo-compile {} --cairo_path src > build/zerosync_compiled.json \;
 

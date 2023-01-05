@@ -1,0 +1,104 @@
+from starkware.cairo.common.alloc import alloc
+from starkware.cairo.common.pow import pow
+
+from stark_verifier.air.air_instance import AirInstance, DeepCompositionCoefficients
+from stark_verifier.air.transitions.frame import EvaluationFrame
+from stark_verifier.channel import Table
+from stark_verifier.utils import Vec
+
+struct DeepComposer {
+    cc: DeepCompositionCoefficients,
+    x_coordinates: felt*,
+    z_curr: felt,
+    z_next: felt,
+}
+
+func deep_composer_new{
+    range_check_ptr
+}(
+    air: AirInstance,
+    query_positions: felt*,
+    z: felt,
+    cc: DeepCompositionCoefficients,
+) -> DeepComposer {
+    alloc_locals;
+    
+    let g = air.trace_domain_generator;
+    let g_lde = air.lde_domain_generator;
+    let domain_offset = 3;
+
+    // TODO: Don't hardcode the number of query positions here
+    let (x_coordinates: felt*) = alloc();
+    <% for (var i=0; i<54; i++) { %>
+    let (x) = pow(g_lde, query_positions[<%= i %>]);
+    let x = x * domain_offset;
+    assert x_coordinates[<%= i %>] = x;
+    <% } %>
+
+    let z_curr = z;
+    let z_next = z * g;
+
+    let res = DeepComposer(
+        cc,
+        x_coordinates,
+        z_curr,
+        z_next,
+    );
+    return res;
+}
+
+func compose_trace_columns(
+    composer: DeepComposer,
+    queried_main_trace_states: Table,
+    queried_aux_trace_states: Table,
+    ood_main_frame: EvaluationFrame,
+    ood_aux_frame: EvaluationFrame,
+) -> felt* {
+
+    let n_cols = queried_main_trace_states.n_cols;
+    let curr = queried_main_trace_states.elements;
+    let next = (queried_main_trace_states.elements + n_cols);
+
+    // Trace coefficient rows
+    let cc_trace_curr = composer.cc.trace.values;
+    let cc_trace_next = composer.cc.trace.values + n_cols;
+
+    let z_curr = composer.z_curr;
+    let z_next = composer.z_next;
+
+    // Compose columns of the main segment
+    // TODO: Don't hardcode the number of query and columns
+    let (result: felt*) = alloc();
+    <% for (var i=0; i<54; i++) { %>
+    let x = composer.x_coordinates[<%= i %>];
+    let sum = 0;
+        <% for (var j=0; j<49; j++) { %>
+    let sum = sum + (
+        ((curr[<%= i %>] - ood_main_frame.current[<%= j %>]) / (x - z_curr)) * cc_trace_curr[<%= j %>] +
+        ((next[<%= i %>] - ood_main_frame.next[<%= j %>]) / (x - z_next)) * cc_trace_next[<%= j %>]
+    );
+        <% } %>
+    assert result[<%= i %>] = sum;
+    <% } %>
+
+    // TODO: Compose columns of the aux segments
+
+    let (data: felt*) = alloc();
+    return data;
+}
+
+func compose_constraint_evaluations(
+    composer: DeepComposer, queried_evaluations: Table, ood_evaluations: Vec
+) -> felt* {
+    // TODO
+    let (data: felt*) = alloc();
+    return data;
+}
+
+func combine_compositions(
+    composer: DeepComposer, t_composition: felt*, c_composition: felt*
+) -> felt* {
+    // TODO
+    let (data: felt*) = alloc();
+    return data;
+}
