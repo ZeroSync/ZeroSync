@@ -36,7 +36,7 @@ Implement witness verification and complete the full chain proof.
 	- SegWit: p2wpkh, p2wsh
 	- Taproot: p2tr; key path & script path spend
 - 👷‍♂️ Crypto
-	- ECDSA, Schnorr
+	- Schnorr, ✓ ECDSA
 	- ✓ SHA256, ✓ HASH256, ✓ SHA1, ✓ RIPEMD160, ✓ HASH160
 - 👷‍♂️ Chain verifier
 	- ✓ Demo the chain verifier in [a simple website](https://zerosync.org)
