@@ -55,11 +55,10 @@ func compose_trace_columns(
     ood_aux_frame: EvaluationFrame,
 ) -> felt* {
 
-    let n_cols = queried_main_trace_states.n_cols;
-    let curr = queried_main_trace_states.elements;
-    let next = (queried_main_trace_states.elements + n_cols);
+    let (result: felt*) = alloc();
 
-    // Trace coefficient rows
+    // Main trace coefficient rows
+    let n_cols = queried_main_trace_states.n_cols;
     let cc_trace_curr = composer.cc.trace.values;
     let cc_trace_next = composer.cc.trace.values + n_cols;
 
@@ -68,19 +67,17 @@ func compose_trace_columns(
 
     // Compose columns of the main segment
     // TODO: Don't hardcode the number of query and columns
-
-    let (result: felt*) = alloc();
-
     tempvar n = 54;
+    let curr = queried_main_trace_states.elements;
+    let next = (queried_main_trace_states.elements + n_cols);
     tempvar curr_ptr = curr;
     tempvar next_ptr = next;
     tempvar x_coord_ptr = composer.x_coordinates;
     tempvar result_ptr = result;
-    loop:
-
+    loop_main:
         tempvar sum_curr = 0;
         tempvar sum_next = 0;
-        <% for (var j=0; j<49; j++) { %>
+        <% for (var j=0; j<33; j++) { %>
         tempvar sum_curr = sum_curr + ([curr_ptr] - ood_main_frame.current[<%= j %>]) * cc_trace_curr[<%= j %>];
         tempvar sum_next = sum_next + ([next_ptr] - ood_main_frame.next[<%= j %>]) * cc_trace_next[<%= j %>];
         <% } %>
@@ -93,10 +90,37 @@ func compose_trace_columns(
         tempvar next_ptr = next_ptr + 1;
         tempvar x_coord_ptr = x_coord_ptr + 1;
         tempvar result_ptr = result_ptr + 1;
-    jmp loop if n != 0;
+    jmp loop_main if n != 0;
     
-    
-    // TODO: Compose columns of the aux segments
+    // Aux trace coefficient rows
+    let n_cols = queried_aux_trace_states.n_cols;
+    let cc_trace_curr = cc_trace_next;
+    let cc_trace_next = cc_trace_next + n_cols;
+
+    // Compose columns of the aux segments
+    let curr = queried_aux_trace_states.elements;
+    let next = (queried_aux_trace_states.elements + n_cols);
+    tempvar curr_ptr = curr;
+    tempvar next_ptr = next;
+    tempvar x_coord_ptr = composer.x_coordinates;
+    tempvar result_ptr = result;
+    loop_aux:
+        tempvar sum_curr = 0;
+        tempvar sum_next = 0;
+        <% for (var j=33; j<51; j++) { %>
+        tempvar sum_curr = sum_curr + ([curr_ptr] - ood_aux_frame.current[<%= j %>]) * cc_trace_curr[<%= j %>];
+        tempvar sum_next = sum_next + ([next_ptr] - ood_aux_frame.next[<%= j %>]) * cc_trace_next[<%= j %>];
+        <% } %>
+        tempvar x = [x_coord_ptr];
+        tempvar sum = sum_curr / (x - z_curr) + sum_next / (x - z_next);
+        assert [result_ptr] = sum;
+
+        tempvar n = n - 1;
+        tempvar curr_ptr = curr_ptr + 1;
+        tempvar next_ptr = next_ptr + 1;
+        tempvar x_coord_ptr = x_coord_ptr + 1;
+        tempvar result_ptr = result_ptr + 1;
+    jmp loop_aux if n != 0;
 
     let (data: felt*) = alloc();
     return data;

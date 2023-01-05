@@ -267,11 +267,10 @@ func compose_trace_columns(
     ood_aux_frame: EvaluationFrame,
 ) -> felt* {
 
-    let n_cols = queried_main_trace_states.n_cols;
-    let curr = queried_main_trace_states.elements;
-    let next = (queried_main_trace_states.elements + n_cols);
+    let (result: felt*) = alloc();
 
-    // Trace coefficient rows
+    // Main trace coefficient rows
+    let n_cols = queried_main_trace_states.n_cols;
     let cc_trace_curr = composer.cc.trace.values;
     let cc_trace_next = composer.cc.trace.values + n_cols;
 
@@ -280,16 +279,14 @@ func compose_trace_columns(
 
     // Compose columns of the main segment
     // TODO: Don't hardcode the number of query and columns
-
-    let (result: felt*) = alloc();
-
     tempvar n = 54;
+    let curr = queried_main_trace_states.elements;
+    let next = (queried_main_trace_states.elements + n_cols);
     tempvar curr_ptr = curr;
     tempvar next_ptr = next;
     tempvar x_coord_ptr = composer.x_coordinates;
     tempvar result_ptr = result;
-    loop:
-
+    loop_main:
         tempvar sum_curr = 0;
         tempvar sum_next = 0;
         
@@ -392,53 +389,86 @@ func compose_trace_columns(
         tempvar sum_curr = sum_curr + ([curr_ptr] - ood_main_frame.current[32]) * cc_trace_curr[32];
         tempvar sum_next = sum_next + ([next_ptr] - ood_main_frame.next[32]) * cc_trace_next[32];
         
-        tempvar sum_curr = sum_curr + ([curr_ptr] - ood_main_frame.current[33]) * cc_trace_curr[33];
-        tempvar sum_next = sum_next + ([next_ptr] - ood_main_frame.next[33]) * cc_trace_next[33];
+        tempvar x = [x_coord_ptr];
+        tempvar sum = sum_curr / (x - z_curr) + sum_next / (x - z_next);
+        assert [result_ptr] = sum;
+
+        tempvar n = n - 1;
+        tempvar curr_ptr = curr_ptr + 1;
+        tempvar next_ptr = next_ptr + 1;
+        tempvar x_coord_ptr = x_coord_ptr + 1;
+        tempvar result_ptr = result_ptr + 1;
+    jmp loop_main if n != 0;
+    
+    // Aux trace coefficient rows
+    let n_cols = queried_aux_trace_states.n_cols;
+    let cc_trace_curr = cc_trace_next;
+    let cc_trace_next = cc_trace_next + n_cols;
+
+    // Compose columns of the aux segments
+    let curr = queried_aux_trace_states.elements;
+    let next = (queried_aux_trace_states.elements + n_cols);
+    tempvar curr_ptr = curr;
+    tempvar next_ptr = next;
+    tempvar x_coord_ptr = composer.x_coordinates;
+    tempvar result_ptr = result;
+    loop_aux:
+        tempvar sum_curr = 0;
+        tempvar sum_next = 0;
         
-        tempvar sum_curr = sum_curr + ([curr_ptr] - ood_main_frame.current[34]) * cc_trace_curr[34];
-        tempvar sum_next = sum_next + ([next_ptr] - ood_main_frame.next[34]) * cc_trace_next[34];
+        tempvar sum_curr = sum_curr + ([curr_ptr] - ood_aux_frame.current[33]) * cc_trace_curr[33];
+        tempvar sum_next = sum_next + ([next_ptr] - ood_aux_frame.next[33]) * cc_trace_next[33];
         
-        tempvar sum_curr = sum_curr + ([curr_ptr] - ood_main_frame.current[35]) * cc_trace_curr[35];
-        tempvar sum_next = sum_next + ([next_ptr] - ood_main_frame.next[35]) * cc_trace_next[35];
+        tempvar sum_curr = sum_curr + ([curr_ptr] - ood_aux_frame.current[34]) * cc_trace_curr[34];
+        tempvar sum_next = sum_next + ([next_ptr] - ood_aux_frame.next[34]) * cc_trace_next[34];
         
-        tempvar sum_curr = sum_curr + ([curr_ptr] - ood_main_frame.current[36]) * cc_trace_curr[36];
-        tempvar sum_next = sum_next + ([next_ptr] - ood_main_frame.next[36]) * cc_trace_next[36];
+        tempvar sum_curr = sum_curr + ([curr_ptr] - ood_aux_frame.current[35]) * cc_trace_curr[35];
+        tempvar sum_next = sum_next + ([next_ptr] - ood_aux_frame.next[35]) * cc_trace_next[35];
         
-        tempvar sum_curr = sum_curr + ([curr_ptr] - ood_main_frame.current[37]) * cc_trace_curr[37];
-        tempvar sum_next = sum_next + ([next_ptr] - ood_main_frame.next[37]) * cc_trace_next[37];
+        tempvar sum_curr = sum_curr + ([curr_ptr] - ood_aux_frame.current[36]) * cc_trace_curr[36];
+        tempvar sum_next = sum_next + ([next_ptr] - ood_aux_frame.next[36]) * cc_trace_next[36];
         
-        tempvar sum_curr = sum_curr + ([curr_ptr] - ood_main_frame.current[38]) * cc_trace_curr[38];
-        tempvar sum_next = sum_next + ([next_ptr] - ood_main_frame.next[38]) * cc_trace_next[38];
+        tempvar sum_curr = sum_curr + ([curr_ptr] - ood_aux_frame.current[37]) * cc_trace_curr[37];
+        tempvar sum_next = sum_next + ([next_ptr] - ood_aux_frame.next[37]) * cc_trace_next[37];
         
-        tempvar sum_curr = sum_curr + ([curr_ptr] - ood_main_frame.current[39]) * cc_trace_curr[39];
-        tempvar sum_next = sum_next + ([next_ptr] - ood_main_frame.next[39]) * cc_trace_next[39];
+        tempvar sum_curr = sum_curr + ([curr_ptr] - ood_aux_frame.current[38]) * cc_trace_curr[38];
+        tempvar sum_next = sum_next + ([next_ptr] - ood_aux_frame.next[38]) * cc_trace_next[38];
         
-        tempvar sum_curr = sum_curr + ([curr_ptr] - ood_main_frame.current[40]) * cc_trace_curr[40];
-        tempvar sum_next = sum_next + ([next_ptr] - ood_main_frame.next[40]) * cc_trace_next[40];
+        tempvar sum_curr = sum_curr + ([curr_ptr] - ood_aux_frame.current[39]) * cc_trace_curr[39];
+        tempvar sum_next = sum_next + ([next_ptr] - ood_aux_frame.next[39]) * cc_trace_next[39];
         
-        tempvar sum_curr = sum_curr + ([curr_ptr] - ood_main_frame.current[41]) * cc_trace_curr[41];
-        tempvar sum_next = sum_next + ([next_ptr] - ood_main_frame.next[41]) * cc_trace_next[41];
+        tempvar sum_curr = sum_curr + ([curr_ptr] - ood_aux_frame.current[40]) * cc_trace_curr[40];
+        tempvar sum_next = sum_next + ([next_ptr] - ood_aux_frame.next[40]) * cc_trace_next[40];
         
-        tempvar sum_curr = sum_curr + ([curr_ptr] - ood_main_frame.current[42]) * cc_trace_curr[42];
-        tempvar sum_next = sum_next + ([next_ptr] - ood_main_frame.next[42]) * cc_trace_next[42];
+        tempvar sum_curr = sum_curr + ([curr_ptr] - ood_aux_frame.current[41]) * cc_trace_curr[41];
+        tempvar sum_next = sum_next + ([next_ptr] - ood_aux_frame.next[41]) * cc_trace_next[41];
         
-        tempvar sum_curr = sum_curr + ([curr_ptr] - ood_main_frame.current[43]) * cc_trace_curr[43];
-        tempvar sum_next = sum_next + ([next_ptr] - ood_main_frame.next[43]) * cc_trace_next[43];
+        tempvar sum_curr = sum_curr + ([curr_ptr] - ood_aux_frame.current[42]) * cc_trace_curr[42];
+        tempvar sum_next = sum_next + ([next_ptr] - ood_aux_frame.next[42]) * cc_trace_next[42];
         
-        tempvar sum_curr = sum_curr + ([curr_ptr] - ood_main_frame.current[44]) * cc_trace_curr[44];
-        tempvar sum_next = sum_next + ([next_ptr] - ood_main_frame.next[44]) * cc_trace_next[44];
+        tempvar sum_curr = sum_curr + ([curr_ptr] - ood_aux_frame.current[43]) * cc_trace_curr[43];
+        tempvar sum_next = sum_next + ([next_ptr] - ood_aux_frame.next[43]) * cc_trace_next[43];
         
-        tempvar sum_curr = sum_curr + ([curr_ptr] - ood_main_frame.current[45]) * cc_trace_curr[45];
-        tempvar sum_next = sum_next + ([next_ptr] - ood_main_frame.next[45]) * cc_trace_next[45];
+        tempvar sum_curr = sum_curr + ([curr_ptr] - ood_aux_frame.current[44]) * cc_trace_curr[44];
+        tempvar sum_next = sum_next + ([next_ptr] - ood_aux_frame.next[44]) * cc_trace_next[44];
         
-        tempvar sum_curr = sum_curr + ([curr_ptr] - ood_main_frame.current[46]) * cc_trace_curr[46];
-        tempvar sum_next = sum_next + ([next_ptr] - ood_main_frame.next[46]) * cc_trace_next[46];
+        tempvar sum_curr = sum_curr + ([curr_ptr] - ood_aux_frame.current[45]) * cc_trace_curr[45];
+        tempvar sum_next = sum_next + ([next_ptr] - ood_aux_frame.next[45]) * cc_trace_next[45];
         
-        tempvar sum_curr = sum_curr + ([curr_ptr] - ood_main_frame.current[47]) * cc_trace_curr[47];
-        tempvar sum_next = sum_next + ([next_ptr] - ood_main_frame.next[47]) * cc_trace_next[47];
+        tempvar sum_curr = sum_curr + ([curr_ptr] - ood_aux_frame.current[46]) * cc_trace_curr[46];
+        tempvar sum_next = sum_next + ([next_ptr] - ood_aux_frame.next[46]) * cc_trace_next[46];
         
-        tempvar sum_curr = sum_curr + ([curr_ptr] - ood_main_frame.current[48]) * cc_trace_curr[48];
-        tempvar sum_next = sum_next + ([next_ptr] - ood_main_frame.next[48]) * cc_trace_next[48];
+        tempvar sum_curr = sum_curr + ([curr_ptr] - ood_aux_frame.current[47]) * cc_trace_curr[47];
+        tempvar sum_next = sum_next + ([next_ptr] - ood_aux_frame.next[47]) * cc_trace_next[47];
+        
+        tempvar sum_curr = sum_curr + ([curr_ptr] - ood_aux_frame.current[48]) * cc_trace_curr[48];
+        tempvar sum_next = sum_next + ([next_ptr] - ood_aux_frame.next[48]) * cc_trace_next[48];
+        
+        tempvar sum_curr = sum_curr + ([curr_ptr] - ood_aux_frame.current[49]) * cc_trace_curr[49];
+        tempvar sum_next = sum_next + ([next_ptr] - ood_aux_frame.next[49]) * cc_trace_next[49];
+        
+        tempvar sum_curr = sum_curr + ([curr_ptr] - ood_aux_frame.current[50]) * cc_trace_curr[50];
+        tempvar sum_next = sum_next + ([next_ptr] - ood_aux_frame.next[50]) * cc_trace_next[50];
         
         tempvar x = [x_coord_ptr];
         tempvar sum = sum_curr / (x - z_curr) + sum_next / (x - z_next);
@@ -449,10 +479,7 @@ func compose_trace_columns(
         tempvar next_ptr = next_ptr + 1;
         tempvar x_coord_ptr = x_coord_ptr + 1;
         tempvar result_ptr = result_ptr + 1;
-    jmp loop if n != 0;
-    
-    
-    // TODO: Compose columns of the aux segments
+    jmp loop_aux if n != 0;
 
     let (data: felt*) = alloc();
     return data;
