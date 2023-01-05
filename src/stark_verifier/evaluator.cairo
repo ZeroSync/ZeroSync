@@ -94,26 +94,28 @@ func evaluate_constraints{
     let z_n = z - g_n;
 
     // Sum all constraint group evaluations
-    let sum1 = 0;
-    let sum2 = 0;
-
+    
     // Main constraints
-    let sum1 = sum1 + (coeffs.boundary_a[0] + coeffs.boundary_b[0] * xp) * b_evaluations1[0];
-    let sum1 = sum1 + (coeffs.boundary_a[2] + coeffs.boundary_b[2] * xp) * b_evaluations1[2];
-    let sum2 = sum2 + (coeffs.boundary_a[1] + coeffs.boundary_b[1] * xp) * b_evaluations1[1];
-    let sum2 = sum2 + (coeffs.boundary_a[3] + coeffs.boundary_b[3] * xp) * b_evaluations1[3];
+    let sum_1 = b_evaluations1[2] * (coeffs.boundary_a[0] + coeffs.boundary_b[0] * xp) +
+                b_evaluations1[0] * (coeffs.boundary_a[1] + coeffs.boundary_b[1] * xp);
+    let sum_x = b_evaluations1[3] * (coeffs.boundary_a[2] + coeffs.boundary_b[2] * xp) +
+                b_evaluations1[1] * (coeffs.boundary_a[3] + coeffs.boundary_b[3] * xp);
+    // Merge group sums
+    let main_evaluation = sum_1 / z_1 + sum_x / 0x06aacf43286d9054d9fc507e012c9d59037d01e9360c0875217ad3b0879866ba; // this is a random number
+    let result = result + main_evaluation;
+    
+    %{ assert ids.main_evaluation == int(data["b_constraints_main_result"], 16) %}
 
     // Aux constraints
-    let sum1 = sum1 + (coeffs.boundary_a[5] + coeffs.boundary_b[5] * xp) * b_evaluations2[1];
-    let sum2 = sum2 + (coeffs.boundary_a[4] + coeffs.boundary_b[4] * xp) * b_evaluations2[0];
-    let sum2 = sum2 + (coeffs.boundary_a[6] + coeffs.boundary_b[6] * xp) * b_evaluations2[2];
-
+    let sum_1 = b_evaluations2[1] * (coeffs.boundary_a[4] + coeffs.boundary_b[4] * xp);
+    let sum_n = b_evaluations2[0] * (coeffs.boundary_a[5] + coeffs.boundary_b[5] * xp) +
+                b_evaluations2[2] * (coeffs.boundary_a[6] + coeffs.boundary_b[6] * xp);
     // Merge group sums
-    let sum1 = sum1 / z_1;
-    let sum2 = sum2 / z_n;
-    let sum = sum1 + sum2;
+    let aux_evaluation = sum_1 / z_1 + sum_n / z_n;
+    let result = result + aux_evaluation;
+
+    %{ assert ids.aux_evaluation == int(data["b_constraints_aux_result"], 16) %}
     
-    let result = result + sum; 
     return result;
 }
 
@@ -224,27 +226,28 @@ func reduce_pub_mem{
         range_check_ptr
     }(pub_inputs: PublicInputs*, aux_rand_elements: felt**) -> felt {
     alloc_locals;
-    let rand_elements = aux_rand_elements[0];
-    let mem = pub_inputs.mem;
 
-    let z = rand_elements[0];
-    let alpha = rand_elements[1];
+    let rand_element_z     = aux_rand_elements[0][0];
+    let rand_element_alpha = aux_rand_elements[0][1];
 
-    let (num) = pow(z, pub_inputs.mem_length);
-    let den = _reduce_pub_mem(z, alpha, mem, pub_inputs.mem_length);
-    return num / den;
-}
-
-
-func _reduce_pub_mem(
-    z, alpha, mem: MemEntry*, mem_length
-)-> felt {
-    if (mem_length == 0){
+    if (pub_inputs.mem_length == 0) {
         return 1;
     }
-    let a = [mem].address;
-    let v = [mem].value;
-    let tmp1 = z - (a + alpha * v);
-    let tmp2 = _reduce_pub_mem(z, alpha, mem + MemEntry.SIZE, mem_length - 1);
-    return tmp1 * tmp2;
+
+    let (num) = pow(rand_element_z, pub_inputs.mem_length);
+
+    local range_check_ptr = range_check_ptr;
+
+    tempvar res = num;
+    tempvar mem_ptr = pub_inputs.mem;
+    tempvar mem_len = pub_inputs.mem_length;
+    loop:
+        let expr = rand_element_z  -  ( [mem_ptr].address +
+                   rand_element_alpha * [mem_ptr].value );
+        tempvar res = res / expr;
+        tempvar mem_ptr = mem_ptr + MemEntry.SIZE;
+        tempvar mem_len = mem_len - 1;
+    jmp loop if mem_len != 0;
+
+    return res;
 }
