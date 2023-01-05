@@ -110,8 +110,7 @@ func test_draw{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
         from zerosync_hints import *
         a = hex(ids.element)[2:]
         b = draw_felt()
-        print("test_draw", a, b)
-        assert a == b
+        assert int(a, 16) == int(b, 16), f"{a} != {b}"
     %} 
     finalize_blake2s(blake2s_ptr_start, blake2s_ptr);  
     return ();

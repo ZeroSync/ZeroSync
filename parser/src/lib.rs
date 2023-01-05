@@ -7,15 +7,18 @@ use std::iter::zip;
 use winter_math::log2;
 
 use winter_air::proof::{Commitments, Context, OodFrame};
-use winter_air::DefaultEvaluationFrame;
-use winter_air::{ProofOptions, Table, TraceLayout};
+use winter_air::{DefaultEvaluationFrame};
+use winter_air::{ProofOptions, Table, TraceLayout, ConstraintCompositionCoefficients};
 use winter_crypto::{hashers::Blake2s_256, Digest};
+use winter_air::EvaluationFrame;
+use winterfell::AuxTraceRandElements;
 
 pub use winterfell::Air;
 pub use winterfell::{FieldExtension, HashFunction, StarkProof};
 pub use winterfell::AirContext;
 
-pub use giza_air::{ProcessorAir, PublicInputs};
+
+pub use giza_air::{ProcessorAir, PublicInputs, MainEvaluationFrame, AuxEvaluationFrame};
 use giza_core::{Felt, RegisterState, Word};
 
 pub mod memory;
@@ -214,6 +217,21 @@ impl Writeable for DefaultEvaluationFrame<Felt> {
     }
 }
 
+
+impl Writeable for MainEvaluationFrame<Felt> {
+    fn write_into(&self, target: &mut DynamicMemory) {
+        target.write_sized_array(self.to_table().get_row(0).to_vec());
+        target.write_sized_array(self.to_table().get_row(1).to_vec());
+    }
+}
+
+impl Writeable for AuxEvaluationFrame<Felt> {
+    fn write_into(&self, target: &mut DynamicMemory) {
+        target.write_sized_array(self.to_table().get_row(0).to_vec());
+        target.write_sized_array(self.to_table().get_row(1).to_vec());
+    }
+}
+
 impl Writeable for Table<Felt> {
     fn write_into(&self, target: &mut DynamicMemory) {
         for i in 0..self.num_rows() {
@@ -292,8 +310,42 @@ impl WriteableWith<ProcessorAirParams<'_>> for ProcessorAir{
         self.trace_domain_generator().write_into(target);
         self.lde_blowup_factor().write_into(target);
 
-
-        params.public_inputs.write_into(target);
+        // pub_inputs is a pointer to a PublicInput
+        let mut child_target = target.alloc();
+        params.public_inputs.write_into(&mut child_target);
     }
 }
 
+
+
+impl Writeable for ConstraintCompositionCoefficients<Felt>{
+    fn write_into(&self, target: &mut DynamicMemory) {
+        let mut transition_a = Vec::new();
+        let mut transition_b = Vec::new();
+        for elem in self.transition.iter().cloned(){
+            transition_a.push(elem.0);
+            transition_b.push(elem.1);
+        }
+        target.write_array(transition_a);
+        target.write_array(transition_b);
+
+
+        let mut boundary_a = Vec::new();
+        let mut boundary_b = Vec::new();
+        for elem in self.boundary.iter().cloned(){
+            boundary_a.push(elem.0);
+            boundary_b.push(elem.1);
+        }
+        target.write_array(boundary_a);
+        target.write_array(boundary_b);
+    }
+}
+
+impl Writeable for AuxTraceRandElements<Felt>{
+    fn write_into(&self, target: &mut DynamicMemory) {
+        // let mut child_target = target.alloc();
+        for elems in self.0.iter().cloned(){
+            target.write_array(elems);
+        }
+    }
+}

@@ -1,7 +1,10 @@
 import json
 
 def write_into_memory(ptr, json_data, segments):
-    addr = ptr.address_
+    addr = ptr
+    if hasattr(ptr, 'address_'):
+        addr = ptr.address_
+        
     my_array = json.loads(json_data)
     # Note the following:
     # - Addresses are stored as `Relocatable` values in the Cairo VM.
