@@ -4,9 +4,7 @@ use winter_air::EvaluationFrame;
 use winter_crypto::{hashers::Blake2s_256, Digest, ElementHasher, RandomCoin};
 use winter_math::FieldElement;
 use winter_utils::{Deserializable, Serializable, SliceReader};
-use winterfell::{
-    evaluate_constraints, AuxTraceRandElements, VerifierChannel, VerifierError,
-};
+use winterfell::{evaluate_constraints, AuxTraceRandElements, VerifierChannel, VerifierError};
 
 use giza_air::{AuxEvaluationFrame, MainEvaluationFrame};
 use giza_core::Felt;
@@ -20,10 +18,10 @@ use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 
 use zerosync_parser::{
-    Air, BinaryProofData, ProcessorAir, ProcessorAirParams, PublicInputs, StarkProof
+    Air, BinaryProofData, ProcessorAir, ProcessorAirParams, PublicInputs, StarkProof,
 };
 
-use zerosync_parser::memory::{WriteableWith, Writeable};
+use zerosync_parser::memory::{Writeable, WriteableWith};
 
 struct WinterVerifierError(VerifierError);
 
@@ -190,7 +188,11 @@ fn evaluation_data<'a>() -> Result<HashMap<&'a str, String>, WinterVerifierError
     let mut public_coin_seed = Vec::new();
     Serializable::write_into(&pub_inputs, &mut public_coin_seed);
 
-    let air = ProcessorAir::new(proof.get_trace_info(), pub_inputs.clone(), proof.options().clone());
+    let air = ProcessorAir::new(
+        proof.get_trace_info(),
+        pub_inputs.clone(),
+        proof.options().clone(),
+    );
 
     let mut public_coin = RandomCoin::<Felt, Blake2s_256<Felt>>::new(&public_coin_seed);
     let mut channel = VerifierChannel::<
@@ -261,7 +263,7 @@ fn evaluation_data<'a>() -> Result<HashMap<&'a str, String>, WinterVerifierError
         &aux_trace_rand_elements,
         &mut t_evaluations2,
     );
-    
+
     // reduce_pub_mem
     //
     let last_step = air.context().trace_len() - 1;
@@ -280,7 +282,6 @@ fn evaluation_data<'a>() -> Result<HashMap<&'a str, String>, WinterVerifierError
         .unwrap();
 
     let reduced_pub_mem = num / den;
-
 
     // Boundary constraint evaluations
     let b_constraints =
@@ -305,62 +306,62 @@ fn evaluation_data<'a>() -> Result<HashMap<&'a str, String>, WinterVerifierError
             group.evaluate_at(ood_aux_trace_frame.as_ref().unwrap().row(0), z, xp);
     }
 
-
     // Evaluation data
     let mut data = HashMap::new();
     data.insert("z", z.to_raw().to_string());
     data.insert(
         "ood_constraint_evaluation",
-        ood_constraint_evaluation_1.to_raw().to_string()
+        ood_constraint_evaluation_1.to_raw().to_string(),
     );
     data.insert(
         "t_evaluations1",
         t_evaluations1
             .iter()
-            .fold(String::new(), |a, x| a + ", " + &x.to_raw().to_string())
+            .fold(String::new(), |a, x| a + ", " + &x.to_raw().to_string()),
     );
     data.insert(
         "t_evaluations2",
         t_evaluations2
             .iter()
-            .fold(String::new(), |a, x| a + ", " + &x.to_raw().to_string())
+            .fold(String::new(), |a, x| a + ", " + &x.to_raw().to_string()),
     );
     data.insert(
         "combine_evaluations_result",
         t_constraints
             .combine_evaluations::<Felt>(&t_evaluations1, &t_evaluations2, z)
             .to_raw()
-            .to_string()
+            .to_string(),
     );
     data.insert(
         "b_constraints_main_result",
-        b_constraints_main_result.to_raw().to_string()
+        b_constraints_main_result.to_raw().to_string(),
     );
     data.insert(
         "b_constraints_aux_result",
-        b_constraints_aux_result.to_raw().to_string()
+        b_constraints_aux_result.to_raw().to_string(),
     );
     data.insert(
-        "air", air.to_cairo_memory(ProcessorAirParams{proof:&proof, public_inputs:&pub_inputs})
+        "air",
+        air.to_cairo_memory(ProcessorAirParams {
+            proof: &proof,
+            public_inputs: &pub_inputs,
+        }),
+    );
+    data.insert("constraint_coeffs", constraint_coeffs.to_cairo_memory());
+    data.insert(
+        "ood_main_trace_frame",
+        ood_main_trace_frame.to_cairo_memory(),
     );
     data.insert(
-        "constraint_coeffs", constraint_coeffs.to_cairo_memory()
+        "ood_aux_trace_frame",
+        ood_aux_trace_frame.unwrap().to_cairo_memory(),
     );
     data.insert(
-        "ood_main_trace_frame", ood_main_trace_frame.to_cairo_memory()
+        "aux_trace_rand_elements",
+        aux_trace_rand_elements.to_cairo_memory(),
     );
-    data.insert(
-        "ood_aux_trace_frame", ood_aux_trace_frame.unwrap().to_cairo_memory()
-    );
-    data.insert(
-        "aux_trace_rand_elements", aux_trace_rand_elements.to_cairo_memory()
-    );
-    data.insert(
-        "z", z.to_raw().to_string()
-    );
-    data.insert(
-        "reduced_pub_mem", reduced_pub_mem.to_raw().to_string()
-    );
+    data.insert("z", z.to_raw().to_string());
+    data.insert("reduced_pub_mem", reduced_pub_mem.to_raw().to_string());
     Ok(data)
 }
 

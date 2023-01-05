@@ -126,7 +126,7 @@ impl<'a> DynamicMemory<'a> {
 pub trait Writeable: Sized {
     fn write_into(&self, target: &mut DynamicMemory);
 
-    fn to_cairo_memory(&self)-> String {
+    fn to_cairo_memory(&self) -> String {
         let mut memories = Vec::<Vec<MemoryEntry>>::new();
         let mut dynamic_memory = DynamicMemory::new(&mut memories);
         self.write_into(&mut dynamic_memory);
@@ -139,7 +139,7 @@ pub trait Writeable: Sized {
 pub trait WriteableWith<Parameters> {
     fn write_into(&self, target: &mut DynamicMemory, params: Parameters);
 
-    fn to_cairo_memory(&self, params: Parameters)-> String {
+    fn to_cairo_memory(&self, params: Parameters) -> String {
         let mut memories = Vec::<Vec<MemoryEntry>>::new();
         let mut dynamic_memory = DynamicMemory::new(&mut memories);
         self.write_into(&mut dynamic_memory, params);
@@ -178,5 +178,3 @@ impl Writeable for usize {
         target.write_value(*self as u64)
     }
 }
-
-
