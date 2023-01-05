@@ -405,7 +405,7 @@ dependencies = [
 [[package]]
 name = "giza-air"
 version = "0.1.0"
-source = "git+https://github.com/zerosync/giza#610817a264b5f6676e5828d30744b791077cba19"
+source = "git+https://github.com/zerosync/giza#7971261140d7e2f71abe703df204090e3f478bb3"
 dependencies = [
  "giza-core",
  "serde",
@@ -419,7 +419,7 @@ dependencies = [
 [[package]]
 name = "giza-core"
 version = "0.1.0"
-source = "git+https://github.com/zerosync/giza#610817a264b5f6676e5828d30744b791077cba19"
+source = "git+https://github.com/zerosync/giza#7971261140d7e2f71abe703df204090e3f478bb3"
 dependencies = [
  "ff",
  "hex",
@@ -1105,7 +1105,7 @@ checksum = "f40009d85759725a34da6d89a94e63d7bdc50a862acf0dbc7c8e488f1edcb6f5"
 [[package]]
 name = "winter-air"
 version = "0.4.0"
-source = "git+https://github.com/zerosync/winterfell#92c0caf5eb6a7a6ce30ee0917e00c6b5a7ece4d2"
+source = "git+https://github.com/zerosync/winterfell#e7e442094c1f2fc756d9b9f4501fa946d86f6eb5"
 dependencies = [
  "winter-crypto",
  "winter-fri",
@@ -1116,7 +1116,7 @@ dependencies = [
 [[package]]
 name = "winter-crypto"
 version = "0.4.0"
-source = "git+https://github.com/zerosync/winterfell#92c0caf5eb6a7a6ce30ee0917e00c6b5a7ece4d2"
+source = "git+https://github.com/zerosync/winterfell#e7e442094c1f2fc756d9b9f4501fa946d86f6eb5"
 dependencies = [
  "blake2-rfc",
  "blake3",
@@ -1128,7 +1128,7 @@ dependencies = [
 [[package]]
 name = "winter-fri"
 version = "0.4.0"
-source = "git+https://github.com/zerosync/winterfell#92c0caf5eb6a7a6ce30ee0917e00c6b5a7ece4d2"
+source = "git+https://github.com/zerosync/winterfell#e7e442094c1f2fc756d9b9f4501fa946d86f6eb5"
 dependencies = [
  "winter-crypto",
  "winter-math",
@@ -1138,7 +1138,7 @@ dependencies = [
 [[package]]
 name = "winter-math"
 version = "0.4.0"
-source = "git+https://github.com/zerosync/winterfell#92c0caf5eb6a7a6ce30ee0917e00c6b5a7ece4d2"
+source = "git+https://github.com/zerosync/winterfell#e7e442094c1f2fc756d9b9f4501fa946d86f6eb5"
 dependencies = [
  "winter-utils",
 ]
@@ -1146,12 +1146,12 @@ dependencies = [
 [[package]]
 name = "winter-utils"
 version = "0.4.0"
-source = "git+https://github.com/zerosync/winterfell#92c0caf5eb6a7a6ce30ee0917e00c6b5a7ece4d2"
+source = "git+https://github.com/zerosync/winterfell#e7e442094c1f2fc756d9b9f4501fa946d86f6eb5"
 
 [[package]]
 name = "winter-verifier"
 version = "0.4.0"
-source = "git+https://github.com/zerosync/winterfell#92c0caf5eb6a7a6ce30ee0917e00c6b5a7ece4d2"
+source = "git+https://github.com/zerosync/winterfell#e7e442094c1f2fc756d9b9f4501fa946d86f6eb5"
 dependencies = [
  "winter-air",
  "winter-crypto",

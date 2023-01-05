@@ -143,14 +143,15 @@ func combine_evaluations{
     // Sum all constraint evaluations
     let sum = 0;
 
+
     // Merge evaluations for degree 1 constraints
-    let evaluation_degree = composition_degree - air.context.trace_length;
+    let evaluation_degree = (air.context.trace_length - 1);
     let degree_adjustment = target_degree - evaluation_degree;
     let (xp) = pow(x, degree_adjustment);
     let sum = sum + (coeffs.transition_a[15] + coeffs.transition_b[15] * xp) * t_evaluations1[15];
-
+    
     // Merge evaluations for degree 2 constraints
-    let evaluation_degree = composition_degree - 2 * air.context.trace_length;
+    let evaluation_degree = 2 * (air.context.trace_length - 1);
     let degree_adjustment = target_degree - evaluation_degree;
     let (xp) = pow(x, degree_adjustment);
     let sum = sum + (coeffs.transition_a[0] + coeffs.transition_b[0] * xp) * t_evaluations1[0];
@@ -170,7 +171,7 @@ func combine_evaluations{
     let sum = sum + (coeffs.transition_a[14] + coeffs.transition_b[14] * xp) * t_evaluations1[14];
 
     // Merge evaluations for degree 4 constraints
-    let evaluation_degree = composition_degree - 4 * air.context.trace_length;
+    let evaluation_degree = 4 * (air.context.trace_length - 1);
     let degree_adjustment = target_degree - evaluation_degree;
     let (xp) = pow(x, degree_adjustment);
     let sum = sum + (coeffs.transition_a[16] + coeffs.transition_b[16] * xp) * t_evaluations1[16];
@@ -190,7 +191,7 @@ func combine_evaluations{
     let sum = sum + (coeffs.transition_a[30] + coeffs.transition_b[30] * xp) * t_evaluations1[30];
 
     // Merge evaluations for degree 2 auxiliary constraints
-    let evaluation_degree = composition_degree - 2 * air.context.trace_length;
+    let evaluation_degree = 2 * (air.context.trace_length-1);
     let degree_adjustment = target_degree - evaluation_degree;
     let (xp) = pow(x, degree_adjustment);
     let sum = sum + (coeffs.transition_a[31] + coeffs.transition_b[31] * xp) * t_evaluations2[0];

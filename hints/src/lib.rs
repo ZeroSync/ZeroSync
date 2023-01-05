@@ -1,7 +1,4 @@
-use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::fs::File;
-use std::io::{BufReader, Read};
 
 use winter_air::EvaluationFrame;
 use winter_crypto::{hashers::Blake2s_256, Digest, ElementHasher, RandomCoin};
@@ -26,7 +23,7 @@ use zerosync_parser::{
     Air, BinaryProofData, ProcessorAir, ProcessorAirParams, PublicInputs, StarkProof
 };
 
-use zerosync_parser::memory::WriteableWith;
+use zerosync_parser::memory::{WriteableWith, Writeable};
 
 struct WinterVerifierError(VerifierError);
 
@@ -264,6 +261,26 @@ fn evaluation_data<'a>() -> Result<HashMap<&'a str, String>, WinterVerifierError
         &aux_trace_rand_elements,
         &mut t_evaluations2,
     );
+    
+    // reduce_pub_mem
+    //
+    let last_step = air.context().trace_len() - 1;
+    let random_elements = aux_trace_rand_elements.get_segment_elements(0);
+    let mem = pub_inputs.clone().mem;
+    let z = random_elements[0];
+    let alpha = random_elements[1];
+    let num = z.exp((mem.0.len() as u64).into());
+
+    let den = mem
+        .0
+        .iter()
+        .zip(&mem.1)
+        .map(|(a, v)| z - (Felt::from(*a as u64) + alpha * Felt::from(v.unwrap().word())))
+        .reduce(|a, b| a * b)
+        .unwrap();
+
+    let reduced_pub_mem = num / den;
+
 
     // Boundary constraint evaluations
     let b_constraints =
@@ -288,50 +305,66 @@ fn evaluation_data<'a>() -> Result<HashMap<&'a str, String>, WinterVerifierError
             group.evaluate_at(ood_aux_trace_frame.as_ref().unwrap().row(0), z, xp);
     }
 
+
     // Evaluation data
     let mut data = HashMap::new();
     data.insert("z", z.to_raw().to_string());
     data.insert(
         "ood_constraint_evaluation",
-        ood_constraint_evaluation_1.to_raw().to_string(),
+        ood_constraint_evaluation_1.to_raw().to_string()
     );
     data.insert(
         "t_evaluations1",
         t_evaluations1
             .iter()
-            .map(|x| x.to_raw().to_string())
-            .collect(),
+            .fold(String::new(), |a, x| a + ", " + &x.to_raw().to_string())
     );
     data.insert(
         "t_evaluations2",
         t_evaluations2
             .iter()
-            .map(|x| x.to_raw().to_string())
-            .collect(),
+            .fold(String::new(), |a, x| a + ", " + &x.to_raw().to_string())
     );
     data.insert(
         "combine_evaluations_result",
         t_constraints
             .combine_evaluations::<Felt>(&t_evaluations1, &t_evaluations2, z)
             .to_raw()
-            .to_string(),
+            .to_string()
     );
     data.insert(
         "b_constraints_main_result",
-        b_constraints_main_result.to_raw().to_string(),
+        b_constraints_main_result.to_raw().to_string()
     );
     data.insert(
         "b_constraints_aux_result",
-        b_constraints_aux_result.to_raw().to_string(),
+        b_constraints_aux_result.to_raw().to_string()
     );
     data.insert(
         "air", air.to_cairo_memory(ProcessorAirParams{proof:&proof, public_inputs:&pub_inputs})
     );
-
+    data.insert(
+        "constraint_coeffs", constraint_coeffs.to_cairo_memory()
+    );
+    data.insert(
+        "ood_main_trace_frame", ood_main_trace_frame.to_cairo_memory()
+    );
+    data.insert(
+        "ood_aux_trace_frame", ood_aux_trace_frame.unwrap().to_cairo_memory()
+    );
+    data.insert(
+        "aux_trace_rand_elements", aux_trace_rand_elements.to_cairo_memory()
+    );
+    data.insert(
+        "z", z.to_raw().to_string()
+    );
+    data.insert(
+        "reduced_pub_mem", reduced_pub_mem.to_raw().to_string()
+    );
     Ok(data)
 }
 
-/// A Python module implemented in Rust. The name of this function must match
+/// A Python module implemented in Rust. The name of this function must ßmatch
 /// the `lib.name` setting in the `Cargo.toml`, else Python will not be able to
 /// import the module.
 #[pymodule]
