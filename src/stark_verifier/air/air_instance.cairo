@@ -77,6 +77,8 @@ func air_instance_new{
 
     let (power) = pow(2, TWO_ADICITY - proof.context.log_trace_length);
     let (trace_domain_generator) = pow(G, proof.context.log_trace_length);
+    // TODO: Fix me properly. This is just a quick fix
+    let trace_domain_generator = 27902509089891984638895139203459090191082442476177253201387137074461340175; 
 
     let log_lde_domain_size = options.log_blowup_factor + proof.context.log_trace_length;
     let (power) = pow(2, TWO_ADICITY - log_lde_domain_size);

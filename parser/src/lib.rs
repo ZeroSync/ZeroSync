@@ -92,7 +92,7 @@ impl Writeable for Context {
     fn write_into(&self, target: &mut DynamicMemory) {
         self.trace_layout().write_into(target);
         self.trace_length().write_into(target);
-        log2(self.trace_length()).write_into(target);
+        log2(self.get_trace_info().length()).write_into(target);
 
         self.get_trace_info().meta().len().write_into(target);
         target.write_array(self.get_trace_info().meta().to_vec());

@@ -11,8 +11,11 @@ from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 
 from stark_verifier.air.air_instance import get_constraint_composition_coefficients, ConstraintCompositionCoefficients
 from stark_verifier.crypto.random import PublicCoin
-from stark_verifier.air.air_instance import AirInstance
+from stark_verifier.air.air_instance import AirInstance, air_instance_new
 from utils.endianness import byteswap32
+
+from stark_verifier.air.stark_proof import read_stark_proof, StarkProof
+from stark_verifier.air.pub_inputs import read_public_inputs, PublicInputs
 
 @external
 func test_get_constraint_composition_coefficients{
@@ -78,6 +81,55 @@ func test_get_constraint_composition_coefficients{
             assert a == b, f"at index {i}: {hex(a)} != {hex(b)}"
 
             i += 1
+    %}
+    return ();
+}
+
+
+
+@external
+func test_air_instance_new{
+    range_check_ptr
+}() {
+    alloc_locals;
+
+    // Initialize arguments
+    let (air_ptr: AirInstance*) = alloc();
+    let (coin_ptr: PublicCoin*) = alloc();
+    let (local coeffs_expected: ConstraintCompositionCoefficients*) = alloc();
+    %{
+        from zerosync_hints import *
+        from src.stark_verifier.utils import write_into_memory
+        data = evaluation_data()
+        write_into_memory(ids.air_ptr, data['air'], segments)
+    %}
+
+    %{ 
+        from tests.integration.utils import parse_proof
+        json_data = parse_proof('fibonacci')
+    %}
+    let proof: StarkProof* = read_stark_proof();
+
+    
+    %{ 
+        from tests.integration.utils import parse_public_inputs
+        json_data = parse_public_inputs('fibonacci')
+    %}
+    let pub_inputs: PublicInputs* = read_public_inputs();
+    
+    local air_expected:AirInstance = [air_ptr];
+    let air = air_instance_new(proof, pub_inputs, proof.context.options);
+
+    %{ 
+        assert ids.air_expected.main_segment_width == ids.air.main_segment_width
+        assert ids.air_expected.aux_trace_width == ids.air.aux_trace_width
+        assert ids.air_expected.num_aux_segments == ids.air.num_aux_segments
+        assert ids.air_expected.num_transition_constraints == ids.air.num_transition_constraints
+        assert ids.air_expected.num_assertions == ids.air.num_assertions
+        assert ids.air_expected.ce_blowup_factor == ids.air.ce_blowup_factor
+        assert ids.air_expected.eval_frame_size == ids.air.eval_frame_size
+        assert ids.air_expected.trace_domain_generator == ids.air.trace_domain_generator
+        assert ids.air_expected.lde_domain_generator == ids.air.lde_domain_generator
     %}
     return ();
 }
