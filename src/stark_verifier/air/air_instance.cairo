@@ -82,18 +82,17 @@ func air_instance_new{
     let (power) = pow(2, TWO_ADICITY - log_lde_domain_size);
     let (lde_domain_generator) = pow(G, power);
 
-    // TODO: Use correct values for Cairo AIR. Make configurable for other
-    // VMs and custom AIRs
+    // TODO: Make configurable for other VMs and custom AIRs
     let res = AirInstance(
-        main_segment_width=30,
-        aux_trace_width=2,
+        main_segment_width=34,
+        aux_trace_width=18,
         aux_segment_widths=aux_segment_widths,
         aux_segment_rands=aux_segment_rands,
-        num_aux_segments=3,
+        num_aux_segments=2,
         options=options,
         context=proof.context,
-        num_transition_constraints=48,
-        num_assertions=6,
+        num_transition_constraints=49,
+        num_assertions=7,
         ce_blowup_factor=4,
         eval_frame_size=2,
         trace_domain_generator=trace_domain_generator,
@@ -111,14 +110,14 @@ func get_constraint_composition_coefficients{
 
     let (t_coefficients_a: felt*) = alloc();
     let (t_coefficients_b: felt*) = alloc();
-    tempvar num_constraints = air.num_transition_constraints;
+    let num_constraints = air.num_transition_constraints;
     draw_pairs(
         n_pairs=num_constraints, coefficients_a=t_coefficients_a, coefficients_b=t_coefficients_b
     );
 
     let (b_coefficients_a: felt*) = alloc();
     let (b_coefficients_b: felt*) = alloc();
-    tempvar num_assertions = air.num_assertions;
+    let num_assertions = air.num_assertions;
     draw_pairs(
         n_pairs=num_assertions, coefficients_a=b_coefficients_a, coefficients_b=b_coefficients_b
     );
@@ -182,13 +181,15 @@ func set_trace_coefficients{
 func draw_pairs{
     range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*, public_coin: PublicCoin
 }(n_pairs: felt, coefficients_a: felt*, coefficients_b: felt*) {
-    let (num1, num2) = draw_pair();
-    coefficients_a[0] = num1;
-    coefficients_b[0] = num2;
-
+    
     if (n_pairs == 0) {
         return ();
     }
+    
+    let (num1, num2) = draw_pair();
+    assert coefficients_a[0] = num1;
+    assert coefficients_b[0] = num2;
+
     return draw_pairs(
         n_pairs=n_pairs - 1, coefficients_a=coefficients_a + 1, coefficients_b=coefficients_b + 1
     );
