@@ -349,3 +349,12 @@ impl Writeable for AuxTraceRandElements<Felt>{
         }
     }
 }
+
+
+
+impl Writeable for RandomCoin<Felt, Blake2s_256<Felt>>{
+    fn write_into(&self, target: &mut DynamicMemory) {
+        self.seed.as_bytes().write_into(target);
+        self.counter.write_into(target);
+    }
+}

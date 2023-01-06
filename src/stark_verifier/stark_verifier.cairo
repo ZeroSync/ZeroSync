@@ -14,6 +14,7 @@ from stark_verifier.air.air_instance import (
     air_instance_new,
     get_constraint_composition_coefficients,
     get_deep_composition_coefficients,
+    ConstraintCompositionCoefficients
 )
 from stark_verifier.air.pub_inputs import PublicInputs
 from stark_verifier.air.stark_proof import (
@@ -124,6 +125,7 @@ func perform_verification{
         aux_segment_rands=air.context.trace_layout.aux_segment_rands,
         aux_trace_rand_elements=aux_trace_rand_elements,
     );
+
 
     // Build random coefficients for the composition polynomial
     let constraint_coeffs = get_constraint_composition_coefficients(air=air);

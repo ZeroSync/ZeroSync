@@ -216,6 +216,7 @@ fn evaluation_data<'a>() -> Result<HashMap<&'a str, String>, WinterVerifierError
     }
 
     // build random coefficients for the composition polynomial
+    let constraint_coeffs_coin = public_coin.to_cairo_memory();
     let constraint_coeffs = air
         .get_constraint_composition_coefficients::<Felt, Blake2s_256<Felt>>(&mut public_coin)
         .map_err(|_| VerifierError::RandomCoinError)?;
@@ -352,6 +353,9 @@ fn evaluation_data<'a>() -> Result<HashMap<&'a str, String>, WinterVerifierError
     );
     data.insert(
         "constraint_coeffs", constraint_coeffs.to_cairo_memory()
+    );
+    data.insert(
+        "constraint_coeffs_coin", constraint_coeffs_coin
     );
     data.insert(
         "ood_main_trace_frame", ood_main_trace_frame.to_cairo_memory()
