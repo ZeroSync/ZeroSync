@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::io::{BufReader, Read};
 use std::iter::zip;
+use winter_crypto::RandomCoin;
 use winter_math::log2;
 
 use winter_air::proof::{Commitments, Context, OodFrame, Queries};
@@ -90,7 +91,7 @@ impl Writeable for Context {
     fn write_into(&self, target: &mut DynamicMemory) {
         self.trace_layout().write_into(target);
         self.trace_length().write_into(target);
-        log2(self.trace_length()).write_into(target);
+        log2(self.get_trace_info().length()).write_into(target);
 
         self.get_trace_info().meta().len().write_into(target);
         target.write_array(self.get_trace_info().meta().to_vec());
@@ -99,6 +100,8 @@ impl Writeable for Context {
         target.write_array(self.field_modulus_bytes().to_vec());
 
         self.options().write_into(target);
+
+        self.lde_domain_size().write_into(target);
     }
 }
 
@@ -294,7 +297,7 @@ pub struct ProcessorAirParams<'a> {
 impl WriteableWith<ProcessorAirParams<'_>> for ProcessorAir {
     fn write_into(&self, target: &mut DynamicMemory, params: ProcessorAirParams) {
         // Layout
-        self.trace_layout().main_trace_width().write_into(target); // Todo: is this "main_segment_width" ?
+        self.trace_layout().main_trace_width().write_into(target);
         self.trace_layout().aux_trace_width().write_into(target);
 
         let mut aux_segment_widths = vec![];
@@ -314,15 +317,16 @@ impl WriteableWith<ProcessorAirParams<'_>> for ProcessorAir {
         self.options().write_into(target);
         params.proof.context.write_into(target);
 
-        let num_transition_constraints = 48_u32;
-        num_transition_constraints.write_into(target);
-        self.get_assertions().len().write_into(target);
+        self.context()
+            .num_transition_constraints()
+            .write_into(target);
+        self.context().num_assertions().write_into(target);
 
         self.ce_blowup_factor().write_into(target);
         self.eval_frame_size::<Felt>().write_into(target);
 
         self.trace_domain_generator().write_into(target);
-        self.lde_blowup_factor().write_into(target);
+        self.lde_domain_generator().write_into(target);
 
         // pub_inputs is a pointer to a PublicInput
         let mut child_target = target.alloc();
@@ -358,5 +362,12 @@ impl Writeable for AuxTraceRandElements<Felt> {
         for elems in self.0.iter().cloned() {
             target.write_array(elems);
         }
+    }
+}
+
+impl Writeable for RandomCoin<Felt, Blake2s_256<Felt>> {
+    fn write_into(&self, target: &mut DynamicMemory) {
+        self.seed.as_bytes().write_into(target);
+        self.counter.write_into(target);
     }
 }
