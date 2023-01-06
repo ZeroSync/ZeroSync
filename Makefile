@@ -4,6 +4,7 @@ BIN_DIR = ./bin
 BUILD_DIR = ./build
 ARCH = $(shell uname -p)
 
+CAIRO_FILES = $(shell find src -type f -iname "*.cairo" -and -not -iname "test_*.cairo")
 CAIRO_PROGRAM = $(BUILD_DIR)/zerosync_compiled.json
 STARK_PARSER = $(BIN_DIR)/stark_parser
 RUST_HINT_LIB = $(BIN_DIR)/libzerosync_hints.dylib
@@ -38,10 +39,20 @@ stark_parser: $(STARK_PARSER)
 	@echo "Building STARK proof parser..."
 
 cairo_compile:
-	@echo "Compiling cairo files..."
-	find src -type f \( -iname "*.ejs" \) -exec sh -c 'ejs {} > $$(dirname {})/$$(basename {} .ejs)' \;
-	find src -type f \( -iname "*.cairo" -and -not -iname "test_*.cairo" \) \
+	@echo "Compiling Cairo programs into a single output file..."
+	@find src -type f \( -iname "*.ejs" \) -exec sh -c 'ejs {} > $$(dirname {})/$$(basename {} .ejs)' \;
+	@find src -type f \( -iname "*.cairo" \) \
 		-exec cairo-compile {} --cairo_path src > build/zerosync_compiled.json \;
+
+cairo_compile_programs:
+	@echo "Compiling Cairo programs into separate programs files..."
+	@find src -type f \( -iname "*.ejs" \) -exec sh -c 'ejs {} > $$(dirname {})/$$(basename {} .ejs)' \;
+	@find src -type d | sed 's/src/build/g' | xargs mkdir -p
+	@for file in ${CAIRO_FILES}; do \
+		target=$$(echo "$${file%.cairo}_compiled.json" | sed 's/src/build/g'); \
+		echo $$target...; \
+		cairo-compile $$file --cairo_path src --output $$target || exit 1; \
+	done
 
 format_cairo:
 	@echo "Formatting cairo files..."
@@ -84,8 +95,7 @@ package:
 	set -f; \
 	cd package_build; \
 	mv src zerosync; \
-	CAIRO_FILES=$$(find zerosync -type f \( -iname '*.cairo' -and -not -iname 'test_*.cairo' \)); \
-	for FILE in $$CAIRO_FILES; do \
+	for FILE in ${CAIRO_FILES}; do \
 		echo $$FILE;\
 		IMPORTS=$$(grep -Po '(?<=from (?!starkware|zerosync))(.+?)(?=import)' $$FILE | tr '.' '/'); \
 		echo $$IMPORTS; \
