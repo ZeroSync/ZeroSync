@@ -159,8 +159,15 @@ if __name__ == '__main__':
     print('Done.')
 
     print('Next up is the cairo runner.')
-    # Run the Cairo runner
-    cmd = f'cairo-run --program={output_dir}/program.json --layout=all --print_info --print_output --program_input={chain_state_file} --trace_file={output_dir}/trace.bin --memory_file={output_dir}/memory.bin --profile_output={output_dir}/profile.pb.gz'
+
+    # Change the runner command here if you need the pprof trace
+    # Note: Using --profile_output significantly increases the time spent in
+    # the runner
+    # Run the Cairo runner (without pprof trace)
+    cmd = f'cairo-run --program={output_dir}/program.json --layout=all --print_info --print_output --program_input={chain_state_file} --trace_file={output_dir}/trace.bin --memory_file={output_dir}/memory.bin'
+
+    # Run the Cairo runner (with pprof trace)
+    # cmd = f'cairo-run --program={output_dir}/program.json --layout=all --print_info --print_output --program_input={chain_state_file} --trace_file={output_dir}/trace.bin --memory_file={output_dir}/memory.bin --profile_output={output_dir}/profile.pb.gz'
 
     start_time = time.clock_gettime(time.CLOCK_REALTIME)
     program_output_string = os.popen(cmd).read()

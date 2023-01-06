@@ -63,6 +63,12 @@ integration_test: STARK_PARSER
 	@echo "Running integration tests..."
 	PYTHONPATH=$$(echo pwd)/tests:$$(python -c "import site; print(site.getsitepackages()[0])"):$$PYTHONPATH protostar -p integration test
 
+
+# To call benchmark block with a differnet block use: make BLOCK=12345 benchmark_block
+BLOCK := 100000
+benchmark_block:
+	python src/utils/benchmark_block.py $(BLOCK)
+
 clean:
 	rm -rf build
 	mkdir build
