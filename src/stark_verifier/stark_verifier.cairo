@@ -217,28 +217,28 @@ func perform_verification{
 
     // Read evaluations of trace and constraint composition polynomials at the queried positions.
     // This also checks that the read values are valid against trace and constraint commitments.
-    // let (queried_main_trace_states, queried_aux_trace_states) = read_queried_trace_states(
-    //    query_positions
-    // );
-    // let queried_constraint_evaluations = read_constraint_evaluations(query_positions);
+    let (queried_main_trace_states, queried_aux_trace_states) = read_queried_trace_states(
+       query_positions
+    );
+    let queried_constraint_evaluations = read_constraint_evaluations(query_positions);
 
-    //// 6 ----- DEEP composition -------------------------------------------------------------------
+    // 6 ----- DEEP composition -------------------------------------------------------------------
 
-    //// Compute evaluations of the DEEP composition polynomial at the queried positions.
-    //let composer = deep_composer_new(
-    //    air=air, query_positions=query_positions, z=z, cc=deep_coefficients
-    //);
-    //let t_composition = compose_trace_columns(
-    //    composer,
-    //    queried_main_trace_states,
-    //    queried_aux_trace_states,
-    //    ood_main_trace_frame,
-    //    ood_aux_trace_frame,
-    //);
-    //let c_composition = compose_constraint_evaluations(
-    //    composer, queried_constraint_evaluations, ood_constraint_evaluations
-    //);
-    //let deep_evaluations = combine_compositions(composer, t_composition, c_composition);
+    // Compute evaluations of the DEEP composition polynomial at the queried positions.
+    let composer = deep_composer_new(
+        air=air, query_positions=query_positions, z=z, cc=deep_coefficients
+    );
+    let t_composition = compose_trace_columns(
+        composer,
+        queried_main_trace_states,
+        queried_aux_trace_states,
+        ood_main_trace_frame,
+        ood_aux_trace_frame,
+    );
+    let c_composition = compose_constraint_evaluations(
+        composer, queried_constraint_evaluations, ood_constraint_evaluations
+    );
+    let deep_evaluations = combine_compositions(composer, t_composition, c_composition);
 
     //// 7 ----- Verify low-degree proof -------------------------------------------------------------
 
