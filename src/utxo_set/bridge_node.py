@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 
 # Utreexo Bridge Node
-# 
+#
 # The Utreexo bridge node serves inclusion proofs to the STARK prover.
-# The algorithms for `utreexo_add` and `utreexo_delete` are 
+# The algorithms for `utreexo_add` and `utreexo_delete` are
 # described in [the Utreexo paper](https://eprint.iacr.org/2019/611.pdf).
 #
-# Note that you have to run this in the python environment 
+# Note that you have to run this in the python environment
 # source ~/cairo_venv/bin/activate
 
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -16,12 +16,14 @@ from starkware.cairo.lang.vm.crypto import pedersen_hash
 
 # The array of trees in the forest
 # [T_1, T_2, T_4, T_8, ... ]
-root_nodes = [ None ] * 27
+root_nodes = [None] * 27
 
 # The set of leaf nodes in the forest
 leaf_nodes = dict()
 
 # A node of the Utreexo forest
+
+
 class Node:
     def __init__(self, key, left=None, right=None):
         self.val = key
@@ -43,12 +45,12 @@ def parent_node(root1, root2):
 def utreexo_add(leaf):
     if leaf in leaf_nodes:
         raise Exception('Leaf exists already')
-    
+
     n = Node(leaf)
     leaf_nodes[leaf] = n
     h = 0
     r = root_nodes[h]
-    while r != None:
+    while r is not None:
         n = parent_node(r, n)
         root_nodes[h] = None
         h = h + 1
@@ -68,10 +70,10 @@ def utreexo_delete(leaf):
     n = None
     h = 0
     while h < len(proof):
-        p = proof[h] # Iterate over each proof element
-        if n != None:
+        p = proof[h]  # Iterate over each proof element
+        if n is not None:
             n = parent_node(p, n)
-        elif root_nodes[h] == None:
+        elif root_nodes[h] is None:
             p.parent = None
             root_nodes[h] = p
         else:
@@ -80,26 +82,26 @@ def utreexo_delete(leaf):
         h = h + 1
 
     # TODO: is this check necessary at all?
-    if n != None:
-       n.parent = None 
+    if n is not None:
+        n.parent = None
 
     root_nodes[h] = n
 
     proof = list(map(lambda node: hex(node.val), proof))
-    return proof, leaf_index 
+    return proof, leaf_index
 
 
 # Compute a node's inclusion proof
 def inclusion_proof(node):
-    if node.parent == None:
+    if node.parent is None:
         return [], 0
-    
+
     parent = node.parent
     path, leaf_index = inclusion_proof(parent)
 
     if node == parent.left:
         path.insert(0, parent.right)
-        leaf_index = leaf_index * 2 
+        leaf_index = leaf_index * 2
     else:
         path.insert(0, parent.left)
         leaf_index = leaf_index * 2 + 1
@@ -107,38 +109,48 @@ def inclusion_proof(node):
     return path, leaf_index
 
 
-
 # The server handling the GET requests
 # TODO: get rid of this hack
 class RequestHandler(BaseHTTPRequestHandler):
-    
+
     def do_GET(self):
         self.send_response(200)
         self.end_headers()
-        
+
         global root_nodes, leaf_nodes
 
         if self.path.startswith('/add'):
-            hash_hex = self.path.replace('/add/','')
+            hash_hex = self.path.replace('/add/', '')
             print('add', hash_hex)
             vout_hash = int(hash_hex, 16)
             utreexo_add(vout_hash)
-            print('roots:', list(map(lambda node: hex(node.val).replace('0x','') if node != None else 0, root_nodes)) )
+            print('roots:', list(map(lambda node: hex(node.val).replace(
+                '0x', '') if node is not None else 0, root_nodes)))
             self.wfile.write(json.dumps({'status': 'success'}).encode())
             return
 
         if self.path.startswith('/delete'):
-            hash_hex = self.path.replace('/delete/','')
+            hash_hex = self.path.replace('/delete/', '')
             print('delete', hash_hex)
             vout_hash = int(hash_hex, 16)
             proof, leaf_index = utreexo_delete(vout_hash)
             print(proof, leaf_index)
-            self.wfile.write(json.dumps({'leaf_index': leaf_index, 'proof': proof }).encode())
-            return 
+            self.wfile.write(json.dumps(
+                {'leaf_index': leaf_index, 'proof': proof}).encode())
+            return
+
+        # Note: This is currently only used in benchmarks that start at an
+        #       arbitrary block to get the starting roots after setting
+        #       up the bridge node with the required utxos.
+        # WARNING: This may be removed at any point.
+        if self.path.startswith('/roots'):
+            self.wfile.write(json.dumps(
+                [hex(node.val) if node is not None else "0" for node in root_nodes]).encode())
+            return
 
         if self.path.startswith('/reset'):
             print('>>>>>>>>>> RESET >>>>>>>>>>')
-            root_nodes = [ None ] * 27
+            root_nodes = [None] * 27
             leaf_nodes = dict()
             return
 
