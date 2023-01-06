@@ -162,9 +162,36 @@ func compose_constraint_evaluations{
 }
 
 func combine_compositions(
-    composer: DeepComposer, t_composition: felt*, c_composition: felt*
+    composer: DeepComposer,
+    t_composition: felt*,
+    c_composition: felt*
 ) -> felt* {
-    // TODO
-    let (data: felt*) = alloc();
-    return data;
+
+    let (result: felt*) = alloc();
+    tempvar result_ptr = result;
+
+    tempvar cc_degree_0 = composer.cc.degree[0];
+    tempvar cc_degree_1 = composer.cc.degree[1];
+    
+    // TODO: Don't hardcode number of queries
+    tempvar n = 54;
+    tempvar t_ptr = t_composition;
+    tempvar c_ptr = c_composition;
+    tempvar x_coord_ptr = composer.x_coordinates;
+    loop:
+        tempvar x = [x_coord_ptr];
+        tempvar t = [t_ptr];
+        tempvar c = [c_ptr];
+        tempvar composition = t + c;
+        tempvar composition = composition * (cc_degree_0 + x * cc_degree_1);
+        assert [result_ptr] = composition;
+
+        tempvar n = n - 1;
+        tempvar t_ptr = t_ptr + 1;
+        tempvar c_ptr = c_ptr + 1;
+        tempvar x_coord_ptr = x_coord_ptr + 1;
+        tempvar result_ptr = result_ptr + 1;
+    jmp loop if n != 0;
+
+    return result;
 }
