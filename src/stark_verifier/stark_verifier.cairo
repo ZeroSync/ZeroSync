@@ -186,41 +186,41 @@ func perform_verification{
        assert ood_constraint_evaluation_1 = ood_constraint_evaluation_2;
     }
 
-    //// 4 ----- FRI commitments --------------------------------------------------------------------
+    // 4 ----- FRI commitments --------------------------------------------------------------------
 
-    //// Draw coefficients for computing DEEP composition polynomial from the public coin.
-    //let deep_coefficients = get_deep_composition_coefficients(air=air);
+    // Draw coefficients for computing DEEP composition polynomial from the public coin.
+    let deep_coefficients = get_deep_composition_coefficients(air=air);
 
-    //// Instantiates a FRI verifier with the FRI layer commitments read from the channel. From the
-    //// verifier's perspective, this is equivalent to executing the commit phase of the FRI protocol.
-    //// The verifier uses these commitments to update the public coin and draw random points alpha
-    //// from them.
-    //let fri_verifier = fri_verifier_new(air=air);
+    // Instantiates a FRI verifier with the FRI layer commitments read from the channel. From the
+    // verifier's perspective, this is equivalent to executing the commit phase of the FRI protocol.
+    // The verifier uses these commitments to update the public coin and draw random points alpha
+    // from them.
+    let fri_verifier = fri_verifier_new(air=air);
 
-    //// 5 ----- Trace and constraint queries -------------------------------------------------------
+    // 5 ----- Trace and constraint queries -------------------------------------------------------
 
-    //// Read proof-of-work nonce sent by the prover and update the public coin with it.
-    //let pow_nonce = read_pow_nonce();
-    //reseed_with_int(pow_nonce);
+    // Read proof-of-work nonce sent by the prover and update the public coin with it.
+    let pow_nonce = read_pow_nonce();
+    reseed_with_int(pow_nonce);
 
-    //// Make sure the proof-of-work specified by the grinding factor is satisfied.
-    //let leading_zeros = get_leading_zeros();
-    //// assert_lt(leading_zeros, air.options.grinding_factor);
+    // Make sure the proof-of-work specified by the grinding factor is satisfied.
+    let leading_zeros = get_leading_zeros();
+    assert_lt(leading_zeros, air.options.grinding_factor);
 
-    //// Draw pseudorandom query positions for the LDE domain from the public coin.
-    //let (query_positions: felt*) = alloc();
-    //draw_integers(
-    //    n_elements=air.options.num_queries,
-    //    elements=query_positions,
-    //    domain_size=air.lde_domain_size,
-    //);
+    // Draw pseudorandom query positions for the LDE domain from the public coin.
+    let (query_positions: felt*) = alloc();
+    draw_integers(
+       n_elements=air.options.num_queries,
+       elements=query_positions,
+       domain_size=air.context.lde_domain_size,
+    );
 
-    //// Read evaluations of trace and constraint composition polynomials at the queried positions.
-    //// This also checks that the read values are valid against trace and constraint commitments.
-    //let (queried_main_trace_states, queried_aux_trace_states) = read_queried_trace_states(
+    // Read evaluations of trace and constraint composition polynomials at the queried positions.
+    // This also checks that the read values are valid against trace and constraint commitments.
+    // let (queried_main_trace_states, queried_aux_trace_states) = read_queried_trace_states(
     //    query_positions
-    //);
-    //let queried_constraint_evaluations = read_constraint_evaluations(query_positions);
+    // );
+    // let queried_constraint_evaluations = read_constraint_evaluations(query_positions);
 
     //// 6 ----- DEEP composition -------------------------------------------------------------------
 

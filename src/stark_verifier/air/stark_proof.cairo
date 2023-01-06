@@ -32,6 +32,7 @@ struct ProofContext {
     field_modulus_bytes_len: felt,
     field_modulus_bytes: felt*,
     options: ProofOptions,
+    lde_domain_size: felt,
 }
 
 struct ParsedCommitments {

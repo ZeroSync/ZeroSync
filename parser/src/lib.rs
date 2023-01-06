@@ -101,6 +101,8 @@ impl Writeable for Context {
         target.write_array(self.field_modulus_bytes().to_vec());
 
         self.options().write_into(target);
+
+        self.lde_domain_size().write_into(target);
     }
 }
 
