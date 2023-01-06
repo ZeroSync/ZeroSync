@@ -2,8 +2,14 @@ from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.registers import get_fp_and_pc
 
-from stark_verifier.air.stark_proof import ParsedOodFrame, StarkProof
+from stark_verifier.air.stark_proof import (
+    ConstraintQueries,
+    ParsedOodFrame,
+    StarkProof,
+    TraceQueries,
+)
 from stark_verifier.air.air_instance import AirInstance
+from stark_verifier.air.table import Table
 from stark_verifier.air.transitions.frame import EvaluationFrame
 from stark_verifier.utils import Vec
 
@@ -24,11 +30,10 @@ struct Channel {
     ood_constraint_evaluations: Vec,
     // Query PoW nonce
     pow_nonce: felt,
-}
-
-struct Table {
-    data: felt*,
-    row_width: felt,
+    // Queried trace states
+    trace_queries: TraceQueries*,
+    // Queried constraint evaluations
+    constraint_queries: ConstraintQueries*,
 }
 
 func channel_new{bitwise_ptr: BitwiseBuiltin*}(air: AirInstance, proof: StarkProof*) -> Channel {
@@ -44,10 +49,6 @@ func channel_new{bitwise_ptr: BitwiseBuiltin*}(air: AirInstance, proof: StarkPro
         aux_frame=proof.ood_frame.aux_frame,
     );
 
-    %{
-        print("n_elements", ids.ood_constraint_evaluations.n_elements)
-    %}
-
     tempvar channel = Channel(
         trace_roots=trace_roots,
         constraint_root=constraint_root,
@@ -55,7 +56,9 @@ func channel_new{bitwise_ptr: BitwiseBuiltin*}(air: AirInstance, proof: StarkPro
         ood_trace_frame=ood_trace_frame,
         ood_constraint_evaluations=ood_constraint_evaluations,
         pow_nonce=proof.pow_nonce,
-        );
+        trace_queries=&proof.trace_queries,
+        constraint_queries=&proof.constraint_queries,
+    );
     return channel;
 }
 
@@ -82,24 +85,11 @@ func read_pow_nonce{channel: Channel}() -> felt {
 func read_queried_trace_states{channel: Channel}(positions: felt*) -> (
     main_states: Table, aux_states: Table
 ) {
-    alloc_locals;
-    local trace_queries: felt*;
-    local paths: felt*;
-    local main_states: Table;
-    local aux_states: Table;
-    %{ # TODO: Load trace queries and proof paths %}
     // TODO: Authenticate proof paths
-
-    return (main_states, aux_states);
+    return (channel.trace_queries.main_states, channel.trace_queries.aux_states);
 }
 
 func read_constraint_evaluations{channel: Channel}(positions: felt*) -> Table {
-    alloc_locals;
-    local constraint_queries: felt*;
-    local paths: felt*;
-    local evaluations: Table;
-    %{ # TODO: Load constraint queries and proof paths %}
     // TODO: Authenticate proof paths
-
-    return evaluations;
+    return channel.constraint_queries.evaluations;
 }

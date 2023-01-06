@@ -1,4 +1,4 @@
-.PHONY: test package
+.PHONY: test package 
 
 BIN_DIR = ./bin
 BUILD_DIR = ./build
@@ -9,22 +9,14 @@ CAIRO_PROGRAM = $(BUILD_DIR)/zerosync_compiled.json
 STARK_PARSER = $(BIN_DIR)/stark_parser
 RUST_HINT_LIB = $(BIN_DIR)/libzerosync_hints.dylib
 
-CAIRO_PROGRAMS:
-	@echo "Compiling Cairo files..."
-	@find src -type d | sed 's/src/build/g' | xargs mkdir -p
-	@for file in ${CAIRO_FILES}; do \
-		target=$$(echo "$${file%.cairo}_compiled.json" | sed 's/src/build/g'); \
-		echo $$target...; \
-		cairo-compile $$file --cairo_path src --output $$target || exit 1; \
-	done
+# TODO: Create a recipe for $(CAIRO_PROGRAM) listing all prerequisites
 
-STARK_PARSER:
-	@echo "Building STARK proof parser..."
-	cd parser; \
-	cargo build; \
-	mkdir -p ../bin; \
-	cp target/debug/zerosync_parser ../bin/stark_parser
-RUST_HINT_LIB:
+$(STARK_PARSER): $(addprefix parser/src/,lib.rs main.rs memory.rs)
+	cargo build;
+	mkdir -p bin;
+	cp target/debug/zerosync_parser bin/stark_parser
+
+$(RUST_HINT_LIB): hints/src/lib.rs
 	cd hints; \
 	maturin develop; \
 	cp target/debug/libzerosync_hints.dylib ../bin/libzerosync_hints.dylib | true
@@ -43,8 +35,24 @@ chain_proof:
 bridge_node:
 	python src/utxo_set/bridge_node.py
 
-cairo-compile: clean
-	$(MAKE) CAIRO_PROGRAMS
+stark_parser: $(STARK_PARSER)
+	@echo "Building STARK proof parser..."
+
+cairo_compile:
+	@echo "Compiling Cairo programs into a single output file..."
+	@find src -type f \( -iname "*.ejs" \) -exec sh -c 'ejs {} > $$(dirname {})/$$(basename {} .ejs)' \;
+	@find src -type f \( -iname "*.cairo" \) \
+		-exec cairo-compile {} --cairo_path src > build/zerosync_compiled.json \;
+
+cairo_compile_programs:
+	@echo "Compiling Cairo programs into separate programs files..."
+	@find src -type f \( -iname "*.ejs" \) -exec sh -c 'ejs {} > $$(dirname {})/$$(basename {} .ejs)' \;
+	@find src -type d | sed 's/src/build/g' | xargs mkdir -p
+	@for file in ${CAIRO_FILES}; do \
+		target=$$(echo "$${file%.cairo}_compiled.json" | sed 's/src/build/g'); \
+		echo $$target...; \
+		cairo-compile $$file --cairo_path src --output $$target || exit 1; \
+	done
 
 format_cairo:
 	@echo "Formatting cairo files..."
@@ -54,21 +62,20 @@ format_cairo_check:
 	@echo "Checking format of cairo files..."
 	cairo-format src/**/*.cairo -c
 
-rust_hint_lib: RUST_HINT_LIB
+rust_hint_lib: $(RUST_HINT_LIB)
 	@echo "Building Rust hint library..."
 
 unit_test:
 	@echo "Running unit tests..."
 	PYTHONPATH=$$(python -c "import site; print(site.getsitepackages()[0])"):$$PYTHONPATH protostar -p unit test
 
-test:
-	@echo "Running test $(TEST_PATH)..."
-	PYTHONPATH=$$(python -c "import site; print(site.getsitepackages()[0])"):$$PYTHONPATH protostar test --cairo-path=./src target tests/unit/$(TEST_PATH)
-
-integration_test: STARK_PARSER
+integration_test: $(STARK_PARSER)
 	@echo "Running integration tests..."
 	PYTHONPATH=$$(echo pwd)/tests:$$(python -c "import site; print(site.getsitepackages()[0])"):$$PYTHONPATH protostar -p integration test
 
+test:
+	@echo "Running test $(TEST_PATH)..."
+	PYTHONPATH=$$(python -c "import site; print(site.getsitepackages()[0])"):$$PYTHONPATH protostar test --cairo-path=./src target tests/unit/$(TEST_PATH)
 
 # To call benchmark block with a differnet block use: make BLOCK=12345 benchmark_block
 BLOCK := 100000

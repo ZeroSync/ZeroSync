@@ -1,6 +1,6 @@
 use winter_utils::{Deserializable, SliceReader};
 use zerosync_parser::{
-    memory::{ Writeable, WriteableWith},
+    memory::{Writeable, WriteableWith},
     Air, BinaryProofData, ProcessorAir, PublicInputs, StarkProof,
 };
 
@@ -36,9 +36,7 @@ fn main() {
                 ProcessorAir::new(proof.get_trace_info(), pub_inputs, proof.options().clone());
             proof.to_cairo_memory(&air)
         }
-        Commands::PublicInputs => {
-            pub_inputs.to_cairo_memory()
-        }
+        Commands::PublicInputs => pub_inputs.to_cairo_memory(),
     };
 
     println!("{}", json_arr);

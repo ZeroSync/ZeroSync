@@ -33,6 +33,7 @@ WARNING: THIS CODE IS STILL FULL OF CRITICAL SECURITY BUGS!
 - Cairo. [Installation Guide](https://www.cairo-lang.org/docs/quickstart.html) (Programming language for provable programs)
 - [Protostar](https://docs.swmansion.com/protostar/docs/tutorials/installation) (Automated testing)
 - [Giza](https://github.com/zerosync/giza) (Required for prover. Not necessary for development and testing)
+- [EJS](https://ejs.co/) (Required for compiling)
 
 ## Install as library
 To access the Cairo code in the `src` directory from within another Cairo project install the zerosync package:
@@ -53,19 +54,16 @@ make bridge_node
 
 ## Run all unit tests
 ```sh
-make rust_hint_lib
 make unit_test
 ```
 
 ## Run all integration tests
 ```sh
-make rust_hint_lib
 make integration_test
 ```
 
 ## Run the chain prover
 ```sh
-make STARK_PARSER
 make chain_proof
 ```
 

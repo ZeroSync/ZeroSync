@@ -48,7 +48,7 @@ jobs:
         run: |
           source cairo_venv/bin/activate
           make clean
-          make cairo-compile
+          make cairo_compile_programs
       - name: Check formatting
         run: |
           source cairo_venv/bin/activate
