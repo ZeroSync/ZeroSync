@@ -10,10 +10,11 @@ permissions:
   contents: read
 
 env:
-  PROTOSTAR_VERSION: 0.9.0
+  PROTOSTAR_VERSION: 0.9.1
 
 jobs:
   build:
+    timeout-minutes: 30
     name: Build and test
     runs-on: ubuntu-latest
     steps:
@@ -24,40 +25,50 @@ jobs:
           override: true
           components: rustfmt, clippy
       - uses: actions/checkout@v3
-      - name: Python3 Build
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.9"
-      - name: Create Python Environment 
-        run: |
-            python3.9 -m venv cairo_venv
-            source cairo_venv/bin/activate
-      - name: Install libgmp3-dev
-        run: sudo apt install -y libgmp3-dev
-      - name: Install test dependencies
-        run: pip install ecdsa fastecdsa sympy cairo-lang maturin
-      - name: Run utreexo bridge node
-        run: python src/utxo_set/bridge_node.py &
-      - name: Install Protostar
-        run: |
-          curl -L https://raw.githubusercontent.com/software-mansion/protostar/master/install.sh | bash -s -- -v $PROTOSTAR_VERSION
-          sudo ln -s ~/.protostar/dist/protostar/protostar /usr/local/bin/protostar
-      - name: Build Rust Libs
-        run: | 
-          make STARK_PARSER
-          source cairo_venv/bin/activate; make rust_hint_lib
       - name: Install Giza
         run: |
           git clone https://github.com/ZeroSync/giza.git
           cd giza
           cargo install --path cli
+      - name: Install libgmp-dev
+        run: sudo apt install libgmp-dev
+      - name: Python3 Build
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.9
+      - name: Create Python Environment 
+        run: |
+          pip install --upgrade pip
+          python3.9 -m venv cairo_venv
+      - name: Install cairo-lang
+        run: |
+          source cairo_venv/bin/activate
+          pip install ecdsa fastecdsa sympy cairo-lang maturin patchelf
       - name: Compile Cairo files 
         run: |
+          source cairo_venv/bin/activate
           make clean
           make cairo-compile
       - name: Check formatting
-        run: make format-cairo-check
+        run: |
+          source cairo_venv/bin/activate
+          make format-cairo-check
+      - name: Install Protostar
+        run: |
+          curl -L https://raw.githubusercontent.com/software-mansion/protostar/master/install.sh | bash -s -- -v $PROTOSTAR_VERSION
+          sudo ln -s ~/.protostar/dist/protostar/protostar /usr/local/bin/protostar
+      - name: Build Rust Libs
+        run: |
+          source cairo_venv/bin/activate
+          make STARK_PARSER
+          make rust_hint_lib
+      - name: Run bridge node
+        run: |
+          source cairo_venv/bin/activate
+          nohup python src/utxo_set/bridge_node.py > /dev/null 2>&1 &
       - name: Run Unit Tests
-        run: source cairo_venv/bin/activate; make unit_test
-      # - name: Run Integration Tests
-      #   run: ../../../.protostar/dist/protostar/protostar test --cairo-path=./src tests
+        run: |
+          source cairo_venv/bin/activate
+          make unit_test
+          # - name: Run Integration Tests
+          #   run: ../../../.protostar/dist/protostar/protostar test --cairo-path=./src tests
