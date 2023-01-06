@@ -4,9 +4,9 @@ lib-path = "src"
 cairo_path = ["src"]
 
 [profile.unit.test]
-target = ["src/stark_verifier/crypto"]
+target = ["tests/unit"]
 cairo-path = ["src"]
 
 [profile.integration.test]
-target = ["tests"]
+target = ["tests/integration"]
 cairo-path = ["src"]

@@ -6,7 +6,7 @@ ARCH = $(shell uname -p)
 
 CAIRO_PROGRAM = $(BUILD_DIR)/zerosync_compiled.json
 STARK_PARSER = $(BIN_DIR)/stark_parser
-RUST_TEST_LIB = $(BIN_DIR)/libzerosync_tests.dylib
+RUST_HINT_LIB = $(BIN_DIR)/libzerosync_hints.dylib
 
 CAIRO_PROGRAM:
 	find src -type f \( -iname "*.cairo" -and -not -iname "test_*.cairo" \) \
@@ -14,53 +14,54 @@ CAIRO_PROGRAM:
 
 STARK_PARSER:
 	@echo "Building STARK proof parser..."
-	cd src/stark_verifier/parser; \
-	cargo build --target-dir ../../../build/parser
-	mkdir bin
-	cp build/parser/debug/parser bin/stark_parser
-
-RUST_TEST_LIB:
-	@echo "Building Rust testing library..."
-	cd tests/rust_tests; \
-	maturin develop
-	cp tests/rust_tests/target/debug/libzerosync_tests.dylib bin/libzerosync_tests.dylib
+	cd parser; \
+	cargo build; \
+	mkdir -p ../bin; \
+	cp target/debug/zerosync_parser ../bin/stark_parser
+RUST_HINT_LIB:
+	cd hints; \
+	maturin develop; \
+	cp target/debug/libzerosync_hints.dylib ../bin/libzerosync_hints.dylib | true
 ifeq ($(ARCH), arm)
 	# On Apple Silicon (ARM), replace the installed site-package binary with one targeting x86_64.
 	# This is required due to a lack of ARM support in Protostar.
-	cd tests/rust_tests; \
+	cd hints; \
 	maturin build --target x86_64-apple-darwin
-	cp tests/rust_tests/target/x86_64-apple-darwin/debug/libzerosync_tests.dylib \
-	   $$(python -c "import site; print(site.getsitepackages()[0])")/zerosync_tests/zerosync_tests.cpython-39-darwin.so
+	cp hints/target/x86_64-apple-darwin/debug/libzerosync_hints.dylib \
+	   $$(python -c "import site; print(site.getsitepackages()[0])")/zerosync_hints/zerosync_hints.cpython-39-darwin.so
 endif
 
-chain-proof:
+chain_proof:
 	python src/chain_proof/main.py
 
-bridge-node:
-	python src/utreexo/bridge_node.py
+bridge_node:
+	python src/utxo_set/bridge_node.py
 
-cairo-compile: CAIRO_PROGRAM
+cairo_compile: CAIRO_PROGRAM
 	@echo "Compiling cairo files..."
 
-format-cairo:
+format_cairo:
 	@echo "Formatting cairo files..."
 	cairo-format src/**/*.cairo -i
 
-format-cairo-check:
+format_cairo_check:
 	@echo "Checking format of cairo files..."
 	cairo-format src/**/*.cairo -c
 
-rust-test-lib: RUST_TEST_LIB
-	@echo "Building Rust testing library..."
+rust_hint_lib: RUST_HINT_LIB
+	@echo "Building Rust hint library..."
 
-unit-test:
+unit_test:
 	@echo "Running unit tests..."
 	PYTHONPATH=$$(python -c "import site; print(site.getsitepackages()[0])"):$$PYTHONPATH protostar -p unit test
 
+test:
+	@echo "Running test $(TEST_PATH)..."
+	PYTHONPATH=$$(python -c "import site; print(site.getsitepackages()[0])"):$$PYTHONPATH protostar test --cairo-path=./src target tests/unit/$(TEST_PATH)
 
-integration-test: STARK_PARSER
+integration_test: STARK_PARSER
 	@echo "Running integration tests..."
-	PYTHONPATH=$$(python -c "import site; print(site.getsitepackages()[0])"):$$PYTHONPATH protostar -p integration test
+	PYTHONPATH=$$(echo pwd)/tests:$$(python -c "import site; print(site.getsitepackages()[0])"):$$PYTHONPATH protostar -p integration test
 
 clean:
 	rm -rf build

@@ -4,3 +4,4 @@ build
 zerosync.egg-info
 .DS_Store
 tmp
+**/Cargo.lock

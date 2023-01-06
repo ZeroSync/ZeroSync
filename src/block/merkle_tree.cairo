@@ -9,7 +9,7 @@ from starkware.cairo.common.math import unsigned_div_rem
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from crypto.hash256 import hash256
 from crypto.hash_utils import copy_hash, assert_hashes_not_equal, HASH_FELT_SIZE
-from serialize.serialize import UINT32_SIZE
+from utils.serialize import UINT32_SIZE
 
 // Compute the Merkle root hash of a set of hashes
 // - https://github.com/bitcoin/bitcoin/issues/19598#issuecomment-693212439

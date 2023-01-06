@@ -2,7 +2,7 @@
 
 from starkware.cairo.common.memcpy import memcpy
 
-from serialize.serialize import UINT32_SIZE
+from utils.serialize import UINT32_SIZE
 
 const HASH_FELT_SIZE = 8;
 

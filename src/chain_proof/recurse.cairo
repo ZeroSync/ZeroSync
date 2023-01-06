@@ -7,7 +7,7 @@ from starkware.cairo.common.memcpy import memcpy
 from block.compute_median import TIMESTAMP_COUNT
 from block.block import State, ChainState
 from crypto.hash_utils import HASH_FELT_SIZE
-from utreexo.utreexo import UTREEXO_ROOTS_LEN
+from utxo_set.utreexo import UTREEXO_ROOTS_LEN
 
 from stark_verifier.air.pub_inputs import PublicInputs, read_public_inputs
 from stark_verifier.air.pub_inputs import read_mem_values
@@ -92,16 +92,14 @@ func compute_program_hash{pedersen_ptr: HashBuiltin*}(
 
 func parse_public_inputs() -> PublicInputs* {
     %{
-        import json
         import subprocess
-
         def parse_public_inputs():
             completed_process = subprocess.run([
                 'bin/stark_parser',
                 'tmp/proof.bin',
                 'public-inputs'],
                 capture_output=True)
-            return json.loads(completed_process.stdout)
+            return completed_process.stdout
         json_data = parse_public_inputs()
     %}
     return read_public_inputs();
@@ -109,16 +107,14 @@ func parse_public_inputs() -> PublicInputs* {
 
 func parse_proof() -> StarkProof* {
     %{
-        import json
         import subprocess
-
         def parse_proof():
             completed_process = subprocess.run([
                 'bin/stark_parser',
                 'tmp/proof.bin',
                 'proof'],
                 capture_output=True)
-            return json.loads(completed_process.stdout)
+            return completed_process.stdout
         json_data = parse_proof()
     %}
     return read_stark_proof();
