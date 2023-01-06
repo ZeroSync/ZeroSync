@@ -54,7 +54,7 @@ jobs:
       - name: Compile Cairo files 
         run: |
           make clean
-          make cairo-compile
+          make cairo_compile_programs
       - name: Check formatting
         run: make format-cairo-check
       - name: Run Unit Tests
