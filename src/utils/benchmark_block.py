@@ -5,6 +5,8 @@ import json
 from utxo_dummy_generator import generate_utxo_dummys, fetch_block
 import urllib3
 import time
+import datetime
+import resource
 
 P = 2**251 + 17 * 2**192 + 1
 
@@ -94,6 +96,18 @@ def setup_bridge_node(block_height):
     return json.loads(r.data)
 
 
+def bridge_node_running():
+    http = urllib3.PoolManager()
+
+    try:
+        # Send a reset.
+        url = 'http://localhost:2121/reset'
+        _ = http.request('GET', url)
+    except BaseException:
+        return False
+    return True
+
+
 if __name__ == '__main__':
 
     # The first Bitcoin TX ever occured in block 170. The second TX occured in
@@ -104,14 +118,20 @@ if __name__ == '__main__':
             f'Wrong number of arguments.\nUsage: python {sys.argv[0]} BLOCK_HEIGHT')
         exit(1)
     block_height = int(sys.argv[1])
+
+    # Before we do anything else check if the bridge node is running
+    if not bridge_node_running():
+        print("ERROR: Bridge node is not running. Required to initialize the utxo set.")
+        exit(2)
+
     output_dir = 'benchmark_tmp'
     os.system(f'mkdir -p {output_dir}')
 
-    print('Compiling the Cairo program...')
     # Run the Cairo compiler
     # Assume we are in the repository root directory.
+    print('Compiling the Cairo program...')
     cmd = f'cairo-compile src/chain_proof/main.cairo --cairo_path src --output {output_dir}/program.json'
-    print(os.popen(cmd).read())
+    print(os.popen(cmd).read())  # In case there are compilation issues
     print('Done.')
     print('Fetching utxos and setting up brige node and initial state...')
     # Copy genesis state.json into the output directory
@@ -145,28 +165,21 @@ if __name__ == '__main__':
     start_time = time.clock_gettime(time.CLOCK_REALTIME)
     program_output_string = os.popen(cmd).read()
     total_time = time.clock_gettime(time.CLOCK_REALTIME) - start_time
-    # TODO Parse this in a way to see info and program output.
-    print(program_output_string)
-    print(f'The runner took {total_time / 60} minutes.\n')
-    # program_output = parse_cairo_output(program_output_string)
 
-    # Parse outputs
-   # r = FeltsReader(program_output)
-   # chain_state = {
-   #     'block_height': r.read(),
-   #     'best_block_hash': felts_to_hash(r.read_n(8)),
-   #     'total_work': r.read(),
-   #     'current_target': r.read(),
-   #     'prev_timestamps': r.read_n(11),
-   #     'epoch_start_time': r.read(),
-   #     'utreexo_roots': felts_to_hex(r.read_n(27)),
-   #     'program_hash': hex(r.read()),
-   #     'program_length': r.read()
-   # }
+    print(program_output_string)  # User can check if everything worked
 
-   # print('block height:', chain_state['block_height'])
+    print(
+        f'RUNNER_TIME: {total_time} -> {str(datetime.timedelta(seconds=total_time))}\n')
 
     # Run Giza prover
     cmd = f'giza prove --trace={output_dir}/trace.bin --memory={output_dir}/memory.bin --program={output_dir}/program.json --output={output_dir}/proof.bin --num-outputs=50'
+    start_time = time.clock_gettime(time.CLOCK_REALTIME)
     program_output_string = os.popen(cmd).read()
-    # TODO Get amount of RAM used by giza
+    total_time = time.clock_gettime(time.CLOCK_REALTIME) - start_time
+
+    print(program_output_string)
+    print(
+        f'PROVER_TIME: {total_time} -> {str(datetime.timedelta(seconds=total_time))}\n')
+
+    print(
+        f'MAXIMUM_USED_RAM: {resource.getrusage(resource.RUSAGE_CHILDREN)[2]/10**6:.2f} GB')
