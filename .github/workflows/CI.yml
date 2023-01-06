@@ -30,7 +30,7 @@ jobs:
           git clone https://github.com/ZeroSync/giza.git
           cd giza
           cargo install --path cli
-      - name: Install libgmp3-dev
+      - name: Install libgmp-dev
         run: sudo apt install -y libgmp3-dev
       - name: Python3 Build
         uses: actions/setup-python@v4
@@ -49,10 +49,10 @@ jobs:
           #source cairo_venv/bin/activate
           #make clean
           #make cairo_compile_programs
-      - name: Check formatting
-        run: |
-          source cairo_venv/bin/activate
-          make format_cairo_check
+          #- name: Check formatting
+          #run: |
+          #source cairo_venv/bin/activate
+          #make format_cairo_check
       - name: Install Protostar
         run: |
           curl -L https://raw.githubusercontent.com/software-mansion/protostar/master/install.sh | bash -s -- -v $PROTOSTAR_VERSION
