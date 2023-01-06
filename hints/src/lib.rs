@@ -216,6 +216,7 @@ fn evaluation_data<'a>() -> Result<HashMap<&'a str, String>, WinterVerifierError
     }
 
     // build random coefficients for the composition polynomial
+    let constraint_coeffs_coin = public_coin.to_cairo_memory();
     let constraint_coeffs = air
         .get_constraint_composition_coefficients::<Felt, Blake2s_256<Felt>>(&mut public_coin)
         .map_err(|_| VerifierError::RandomCoinError)?;
@@ -267,15 +268,15 @@ fn evaluation_data<'a>() -> Result<HashMap<&'a str, String>, WinterVerifierError
     let last_step = air.context().trace_len() - 1;
     let random_elements = aux_trace_rand_elements.get_segment_elements(0);
     let mem = pub_inputs.clone().mem;
-    let z = random_elements[0];
+    let z0 = random_elements[0];
     let alpha = random_elements[1];
-    let num = z.exp((mem.0.len() as u64).into());
+    let num = z0.exp((mem.0.len() as u64).into());
 
     let den = mem
         .0
         .iter()
         .zip(&mem.1)
-        .map(|(a, v)| z - (Felt::from(*a as u64) + alpha * Felt::from(v.unwrap().word())))
+        .map(|(a, v)| z0 - (Felt::from(*a as u64) + alpha * Felt::from(v.unwrap().word())))
         .reduce(|a, b| a * b)
         .unwrap();
 
@@ -305,6 +306,7 @@ fn evaluation_data<'a>() -> Result<HashMap<&'a str, String>, WinterVerifierError
             group.evaluate_at(ood_aux_trace_frame.as_ref().unwrap().row(0), z, xp);
     }
 
+    let ood_constraint_evaluations = channel.read_ood_constraint_evaluations();
 
     // Evaluation data
     let mut data = HashMap::new();
@@ -322,6 +324,12 @@ fn evaluation_data<'a>() -> Result<HashMap<&'a str, String>, WinterVerifierError
     data.insert(
         "t_evaluations2",
         t_evaluations2
+            .iter()
+            .fold(String::new(), |a, x| a + ", " + &x.to_raw().to_string())
+    );
+    data.insert(
+        "ood_constraint_evaluations",
+        ood_constraint_evaluations
             .iter()
             .fold(String::new(), |a, x| a + ", " + &x.to_raw().to_string())
     );
@@ -345,6 +353,9 @@ fn evaluation_data<'a>() -> Result<HashMap<&'a str, String>, WinterVerifierError
     );
     data.insert(
         "constraint_coeffs", constraint_coeffs.to_cairo_memory()
+    );
+    data.insert(
+        "constraint_coeffs_coin", constraint_coeffs_coin
     );
     data.insert(
         "ood_main_trace_frame", ood_main_trace_frame.to_cairo_memory()

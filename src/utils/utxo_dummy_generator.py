@@ -3,6 +3,7 @@ import json
 import re
 import math
 import sys
+import os
 
 from starkware.cairo.lang.vm.crypto import pedersen_hash
 from starkware.cairo.common.hash_chain import compute_hash_chain
@@ -62,48 +63,56 @@ def fetch_tx_ins_and_outs(block_height):
     r = http.request('GET', url)
     txids = json.loads(r.data)
 
-    tx_ins = []
-    tx_outs = []
+    txs = {}
     # fetch all tx_in and tx_out per tx in txids
     for txid in txids:
         url = 'https://blockstream.info/api/tx/' + txid
         r = http.request('GET', url)
         tx = json.loads(r.data)
-        for tx_vin in tx['vin']:
-            tx_ins.append(tx_vin)
-        for tx_vout in tx['vout']:
-            tx_outs.append(tx_vout)
+        txs[txid] = tx
 
-    return tx_ins, tx_outs
+    return txs
 
 
-def hash_tx_ins(tx_ins, tx_outs):
+def hash_tx_ins(txs):
     hashes = []
-    for tx_vin in tx_ins:
-        if tx_vin['is_coinbase']:
-            continue
-        # this utxo is generated in the validated block and we should not add
-        # it to the utxo set manually
-        if tx_vin['prevout'] in tx_outs:
-            tx_outs.remove(tx_vin['prevout'])
-            continue
-        txid_list = hex_to_felt(little_endian(tx_vin['txid']))
-        vout = tx_vin['vout']
-        amount = tx_vin['prevout']['value']
-        script_pub_key = hex_to_felt(tx_vin['prevout']['scriptpubkey'])
-        utxo_hash = hash_output(txid_list, vout, amount, script_pub_key)
-        hashes.append(utxo_hash)
+    for tx in txs:
+        for tx_vin in txs[tx]['vin']:
+            if tx_vin['is_coinbase']:
+                continue
+            # this utxo is generated in the validated block and we should not add
+            # it to the utxo set manually
+            if tx_vin['txid'] in txs:
+                continue
+            txid_list = hex_to_felt(little_endian(tx_vin['txid']))
+            vout = tx_vin['vout']
+            amount = tx_vin['prevout']['value']
+            script_pub_key = hex_to_felt(tx_vin['prevout']['scriptpubkey'])
+            utxo_hash = hash_output(txid_list, vout, amount, script_pub_key)
+            hashes.append(utxo_hash)
     return hashes
 
 
 def generate_utxo_dummys(block_height):
-    tx_ins, tx_outs = fetch_tx_ins_and_outs(block_height)
-    output_hashes = hash_tx_ins(tx_ins, tx_outs)
-   # code_block = [
-   #     'dummy_utxo_insert{hash_ptr=pedersen_ptr, utreexo_roots=prev_utreexo_roots}(' +
-   #     hex(x) +
-   #     ');\n' for x in output_hashes]
+    # TODO add cache folder to gitignore
 
+    # Check if the current block exists in the cache directory
+    cache_dir = 'utxo_dummy_cache'
+    os.system(f'mkdir -p {cache_dir}')
+
+    if os.path.isfile(f'{cache_dir}/block_{block_height}.json'):
+        f = open(f'{cache_dir}/block_{block_height}.json', 'r')
+        output_hashes = json.load(f)
+    else:
+        # Fetch all required utxos
+        txs = fetch_tx_ins_and_outs(block_height)
+        output_hashes = hash_tx_ins(txs)
+
+        # Create new file as cache entry
+        f = open(f'{cache_dir}/block_{block_height}.json', 'w')
+        json.dump(output_hashes, f)
+
+    f.close()
     return output_hashes
 
 
@@ -116,7 +125,6 @@ if __name__ == "__main__":
     if block_height < 0:
         print("ERROR: Specify a block height above zero.")
         exit(2)
-    
-    dummys = generate_utxo_dummys(block_height)    
-    print(dummys)
 
+    dummys = generate_utxo_dummys(block_height)
+    print(dummys)
