@@ -140,14 +140,14 @@ if __name__ == '__main__':
 
     print('Next up is the cairo runner.')
     # Run the Cairo runner
-    cmd = f'cairo-run --program={output_dir}/program.json --layout=all --print_info --print_output --program_input={chain_state_file} --trace_file={output_dir}/trace.bin --memory_file={output_dir}/memory.bin'
+    cmd = f'cairo-run --program={output_dir}/program.json --layout=all --print_info --print_output --program_input={chain_state_file} --trace_file={output_dir}/trace.bin --memory_file={output_dir}/memory.bin --profile_output={output_dir}/profile.pb.gz'
 
     start_time = time.clock_gettime(time.CLOCK_REALTIME)
     program_output_string = os.popen(cmd).read()
     total_time = time.clock_gettime(time.CLOCK_REALTIME) - start_time
     # TODO Parse this in a way to see info and program output.
     print(program_output_string)
-    print(f'The runner took {total_time / 60} minutes.')
+    print(f'The runner took {total_time / 60} minutes.\n')
     # program_output = parse_cairo_output(program_output_string)
 
     # Parse outputs
@@ -167,6 +167,6 @@ if __name__ == '__main__':
    # print('block height:', chain_state['block_height'])
 
     # Run Giza prover
-    # cmd = f'giza prove --trace={output_dir}/trace.bin --memory={output_dir}/memory.bin --program={output_dir}/program.json --output={output_dir}/proof.bin --num-outputs=50'
-    # program_output_string = os.popen(cmd).read()
+    cmd = f'giza prove --trace={output_dir}/trace.bin --memory={output_dir}/memory.bin --program={output_dir}/program.json --output={output_dir}/proof.bin --num-outputs=50'
+    program_output_string = os.popen(cmd).read()
     # TODO Get amount of RAM used by giza
