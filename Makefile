@@ -4,13 +4,19 @@ BIN_DIR = ./bin
 BUILD_DIR = ./build
 ARCH = $(shell uname -p)
 
+CAIRO_FILES = $(shell find src -type f -iname "*.cairo" -and -not -iname "test_*.cairo")
 CAIRO_PROGRAM = $(BUILD_DIR)/zerosync_compiled.json
 STARK_PARSER = $(BIN_DIR)/stark_parser
 RUST_HINT_LIB = $(BIN_DIR)/libzerosync_hints.dylib
 
-CAIRO_PROGRAM:
-	find src -type f \( -iname "*.cairo" -and -not -iname "test_*.cairo" \) \
-		-exec cairo-compile {} --cairo_path src > build/zerosync_compiled.json \;
+CAIRO_PROGRAMS:
+	@echo "Compiling Cairo files..."
+	@find src -type d | sed 's/src/build/g' | xargs mkdir -p
+	@for file in ${CAIRO_FILES}; do \
+		target=$$(echo "$${file%.cairo}_compiled.json" | sed 's/src/build/g'); \
+		echo $$target...; \
+		cairo-compile $$file --cairo_path src --output $$target || exit 1; \
+	done
 
 STARK_PARSER:
 	@echo "Building STARK proof parser..."
@@ -37,8 +43,8 @@ chain_proof:
 bridge_node:
 	python src/utxo_set/bridge_node.py
 
-cairo_compile: CAIRO_PROGRAM
-	@echo "Compiling cairo files..."
+cairo-compile: clean
+	$(MAKE) CAIRO_PROGRAMS
 
 format_cairo:
 	@echo "Formatting cairo files..."
@@ -82,8 +88,7 @@ package:
 	set -f; \
 	cd package_build; \
 	mv src zerosync; \
-	CAIRO_FILES=$$(find zerosync -type f \( -iname '*.cairo' -and -not -iname 'test_*.cairo' \)); \
-	for FILE in $$CAIRO_FILES; do \
+	for FILE in ${CAIRO_FILES}; do \
 		echo $$FILE;\
 		IMPORTS=$$(grep -Po '(?<=from (?!starkware|zerosync))(.+?)(?=import)' $$FILE | tr '.' '/'); \
 		echo $$IMPORTS; \
