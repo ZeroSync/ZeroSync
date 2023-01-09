@@ -152,7 +152,7 @@ func read_varint{reader: Reader, bitwise_ptr: BitwiseBuiltin*}() -> (value: felt
         let uint8_lo = read_uint8();
         let uint8_hi = read_uint8();
         // Ensure that `uint16 > 252` which is equivalent to `uint16 + 3 > 255`
-		if ((uint8_lo - 253) * (uint8_lo - 254) * (uint8_lo - 255) == 0) {
+		if ((uint8_lo - 253) * (uint8_lo - 254) * (uint8_lo - 255) != 0) {
 			with_attr error_message("Expected canonical encoding") {
 				assert_not_zero(uint8_hi);
 			}
