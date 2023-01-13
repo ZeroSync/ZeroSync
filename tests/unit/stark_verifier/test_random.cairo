@@ -59,7 +59,7 @@ func test_merge_with_int{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
         from zerosync_hints import *
         a = get_hex(memory, ids.hash)
         b = merge_with_int()
-        print("test_merge_with_int", a, b)
+        # print("test_merge_with_int", a, b)
         assert a == b
     %} 
     finalize_blake2s(blake2s_ptr_start, blake2s_ptr);  
@@ -84,7 +84,7 @@ func test_merge{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
         from zerosync_hints import *
         a = get_hex(memory, ids.hash)
         b = merge()
-        print("test_merge", a, b)
+        # print("test_merge", a, b)
         assert a == b
     %} 
     finalize_blake2s(blake2s_ptr_start, blake2s_ptr);  
@@ -211,7 +211,7 @@ func test_pedersen_chain{
         from zerosync_hints import *
         a = hex(ids.out)[2:].zfill(64)
         b = pedersen_chain()
-        print("test_pedersen_chain", a, b)
+        # print("test_pedersen_chain", a, b)
         assert a == b
     %} 
     return ();
@@ -252,7 +252,7 @@ func test_hash_pub_inputs{
         from zerosync_hints import *
         a = ids.pub_mem_hash
         b = int(hash_pub_inputs(), 16)
-        print("test_hash_pub_inputs", a, b)
+        # print("test_hash_pub_inputs", a, b)
         assert a == b
     %} 
     return ();
@@ -282,7 +282,7 @@ func test_public_coin_seed{
         from zerosync_hints import *
         a = get_hex(memory, ids.public_coin_seed)
         b = seed_with_pub_inputs()
-        print("test_public_coin_seed", a, b)
+        # print("test_public_coin_seed", a, b)
         assert a == b
     %} 
     return ();
@@ -306,11 +306,8 @@ func test_hash_elements{
 
     let elements_hash: felt* = hash_elements{blake2s_ptr=blake2s_ptr}(n_elements, elements);
     %{ 
-        print(
-            'elements_hash',
-            hex(memory[ids.elements_hash]),
-            hex(memory[ids.elements_hash + 7]),
-            '\nexpected: 70012774 ... 66281d59')
+        # TODO: Use assert here
+        # print('elements_hash',hex(memory[ids.elements_hash]),hex(memory[ids.elements_hash + 7]),'\nexpected: 70012774 ... 66281d59')
     %}
     return ();
 }

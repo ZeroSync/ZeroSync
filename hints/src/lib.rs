@@ -4,7 +4,8 @@ use winter_air::EvaluationFrame;
 use winter_crypto::{hashers::Blake2s_256, Digest, ElementHasher, RandomCoin};
 use winter_math::FieldElement;
 use winter_utils::{Deserializable, Serializable, SliceReader};
-use winterfell::{evaluate_constraints, AuxTraceRandElements, VerifierChannel, VerifierError};
+use winterfell::{evaluate_constraints, AuxTraceRandElements, VerifierChannel, VerifierError, FriVerifier, DeepComposer};
+
 
 use giza_air::{AuxEvaluationFrame, MainEvaluationFrame};
 use giza_core::Felt;
@@ -12,7 +13,7 @@ use giza_core::Felt;
 use starknet_crypto::pedersen_hash;
 use starknet_ff::FieldElement as Fe;
 
-use blake2::blake2s::blake2s;
+use blake2::blake2s::blake2s;  
 
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
@@ -27,7 +28,7 @@ struct WinterVerifierError(VerifierError);
 
 impl From<WinterVerifierError> for PyErr {
     fn from(error: WinterVerifierError) -> Self {
-        PyValueError::new_err(print!("{}", error.0))
+        PyValueError::new_err(print!("{:?}", error.0))
     }
 }
 
@@ -252,6 +253,18 @@ fn evaluation_data<'a>() -> Result<HashMap<&'a str, String>, WinterVerifierError
         z,
     );
 
+    if let Some(ref aux_trace_frame) = ood_aux_trace_frame {
+        for i in 0..<ProcessorAir as Air>::Frame::<Felt>::num_rows() {
+            let mut row = ood_main_trace_frame.row(i).to_vec();
+            row.extend_from_slice(aux_trace_frame.row(i));
+            public_coin.reseed(Blake2s_256::<Felt>::hash_elements(&row));
+        }
+    } else {
+        for i in 0..<ProcessorAir as Air>::Frame::<Felt>::num_rows() {
+            public_coin.reseed(Blake2s_256::<Felt>::hash_elements(ood_main_trace_frame.row(i)));
+        }
+    }
+
     // Constraint evaluations
     let t_constraints = air.get_transition_constraints(&constraint_coeffs.transition);
     let mut t_evaluations1 = Felt::zeroed_vector(t_constraints.num_main_constraints());
@@ -308,6 +321,71 @@ fn evaluation_data<'a>() -> Result<HashMap<&'a str, String>, WinterVerifierError
     }
 
     let ood_constraint_evaluations = channel.read_ood_constraint_evaluations();
+    public_coin.reseed(Blake2s_256::<Felt>::hash_elements(&ood_constraint_evaluations));
+
+    
+    // 4 ----- FRI commitments --------------------------------------------------------------------
+    // draw coefficients for computing DEEP composition polynomial from the public coin; in the
+    // interactive version of the protocol, the verifier sends these coefficients to the prover
+    // and the prover uses them to compute the DEEP composition polynomial. the prover, then
+    // applies FRI protocol to the evaluations of the DEEP composition polynomial.
+    let deep_coefficients_coin = public_coin.to_cairo_memory();
+    let deep_coefficients = air
+        .get_deep_composition_coefficients::<Felt, Blake2s_256<Felt>>(&mut public_coin)
+        .map_err(|_| VerifierError::RandomCoinError)?;
+
+    // instantiates a FRI verifier with the FRI layer commitments read from the channel. From the
+    // verifier's perspective, this is equivalent to executing the commit phase of the FRI protocol.
+    // The verifier uses these commitments to update the public coin and draw random points alpha
+    // from them; in the interactive version of the protocol, the verifier sends these alphas to
+    // the prover, and the prover uses them to compute and commit to the subsequent FRI layers.
+    let fri_verifier = FriVerifier::new(
+        &mut channel,
+        &mut public_coin,
+        air.options().to_fri_options(),
+        air.trace_poly_degree(),
+    )
+    .map_err(VerifierError::FriVerificationFailed)?;
+
+    
+    // 5 ----- trace and constraint queries -------------------------------------------------------
+    // read proof-of-work nonce sent by the prover and update the public coin with it
+    let pow_nonce = channel.read_pow_nonce();
+    public_coin.reseed_with_int(pow_nonce);
+
+    // make sure the proof-of-work specified by the grinding factor is satisfied
+    if public_coin.leading_zeros() < air.options().grinding_factor() {
+        return Err(WinterVerifierError(VerifierError::QuerySeedProofOfWorkVerificationFailed));
+    }
+
+
+    // draw pseudo-random query positions for the LDE domain from the public coin; in the
+    // interactive version of the protocol, the verifier sends these query positions to the prover,
+    // and the prover responds with decommitments against these positions for trace and constraint
+    // composition polynomial evaluations.
+    let query_positions = public_coin
+        .draw_integers(air.options().num_queries(), air.lde_domain_size())
+        .map_err(|_| VerifierError::RandomCoinError)?;
+
+    // read evaluations of trace and constraint composition polynomials at the queried positions;
+    // this also checks that the read values are valid against trace and constraint commitments
+    let (queried_main_trace_states, queried_aux_trace_states) =
+        channel.read_queried_trace_states(&query_positions)?;
+    let queried_constraint_evaluations = channel.read_constraint_evaluations(&query_positions)?;
+
+    // 6 ----- DEEP composition -------------------------------------------------------------------
+    // compute evaluations of the DEEP composition polynomial at the queried positions
+    let composer = DeepComposer::new(&air, &query_positions, z, deep_coefficients.clone());
+    let t_composition = composer.compose_trace_columns(
+        queried_main_trace_states,
+        queried_aux_trace_states,
+        ood_main_trace_frame.clone(),
+        ood_aux_trace_frame.clone(),
+    );
+    let c_composition = composer
+        .compose_constraint_evaluations(queried_constraint_evaluations.clone(), ood_constraint_evaluations.clone());
+    let deep_evaluations = composer.combine_compositions(t_composition.clone(), c_composition.clone());
+
 
     // Evaluation data
     let mut data = HashMap::new();
@@ -369,6 +447,48 @@ fn evaluation_data<'a>() -> Result<HashMap<&'a str, String>, WinterVerifierError
         t_evaluations2
             .iter()
             .fold(String::new(), |a, x| a + ", " + &x.to_raw().to_string()),
+    );
+    data.insert(
+        "deep_coefficients",
+        deep_coefficients.to_cairo_memory(),
+    );
+    data.insert(
+        "deep_coefficients_coin",
+        deep_coefficients_coin,
+    );
+    data.insert(
+        "deep_coefficients_trace_len",
+        deep_coefficients.trace.len().to_string() 
+    );
+    data.insert(
+        "deep_coefficients_constraints_len",
+        deep_coefficients.constraints.len().to_string()
+    );
+    data.insert(
+        "composer", 
+        composer.to_cairo_memory()
+    );
+    data.insert(
+        "queried_constraint_evaluations",
+        queried_constraint_evaluations.to_cairo_memory()
+    );
+    data.insert(
+        "c_composition",
+        c_composition
+        .iter()
+        .fold(String::new(), |a, x| a + ", " + &x.to_raw().to_string()),
+    );
+    data.insert(
+        "t_composition",
+        t_composition
+        .iter()
+        .fold(String::new(), |a, x| a + ", " + &x.to_raw().to_string()),
+    );
+    data.insert(
+        "deep_evaluations",
+        deep_evaluations
+        .iter()
+        .fold(String::new(), |a, x| a + ", " + &x.to_raw().to_string()),
     );
     data.insert("z", z.to_raw().to_string());
     Ok(data)

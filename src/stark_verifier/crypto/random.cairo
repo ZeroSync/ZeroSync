@@ -164,8 +164,8 @@ func draw{
     range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*, public_coin: PublicCoin
 }() -> felt {
     alloc_locals;
-    tempvar public_coin = PublicCoin(public_coin.seed, public_coin.counter + 1);
-    let digest = merge_with_int(seed=public_coin.seed, value=public_coin.counter);
+    let digest = merge_with_int(seed=public_coin.seed, value=public_coin.counter+1);
+    let public_coin = PublicCoin(public_coin.seed, public_coin.counter + 1);
     
     let low = digest[0] + digest[1] * 2 ** 32 + digest[2] * 2 ** 64 + digest[3] * 2 ** 96;
     let high = digest[4] + digest[5] * 2 ** 32 + digest[6] * 2 ** 64 + digest[7] * 2 ** 96;

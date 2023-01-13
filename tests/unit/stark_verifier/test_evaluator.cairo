@@ -251,7 +251,7 @@ func test_reduce_evaluations{
     %{
         a = hex(ids.ood_constraint_evaluation_2)[2:]
         b = data['ood_constraint_evaluation']
-        print('test_reduce_evaluations', a, b)
+        # print('test_reduce_evaluations', a, b)
         assert int(a, 16) == int(b, 16), f"{a} != {b}"
     %}
 

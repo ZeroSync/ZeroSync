@@ -10,11 +10,11 @@ use winter_math::log2;
 use winter_air::proof::{Commitments, Context, OodFrame, Queries};
 use winter_air::{
     ConstraintCompositionCoefficients, DefaultEvaluationFrame, EvaluationFrame, ProofOptions,
-    Table, TraceLayout,
+    Table, TraceLayout, DeepCompositionCoefficients,
 };
 use winter_crypto::{hashers::Blake2s_256, Digest};
 pub use winterfell::{Air, AirContext, FieldExtension, HashFunction, StarkProof};
-use winterfell::{AuxTraceRandElements, ConstraintQueries, TraceQueries};
+use winterfell::{AuxTraceRandElements, ConstraintQueries, TraceQueries, DeepComposer};
 
 pub use giza_air::{AuxEvaluationFrame, MainEvaluationFrame, ProcessorAir, PublicInputs};
 use giza_core::{Felt, RegisterState, Word};
@@ -369,5 +369,26 @@ impl Writeable for RandomCoin<Felt, Blake2s_256<Felt>> {
     fn write_into(&self, target: &mut DynamicMemory) {
         self.seed.as_bytes().write_into(target);
         self.counter.write_into(target);
+    }
+}
+
+impl Writeable for DeepCompositionCoefficients<Felt> {
+    fn write_into(&self, target: &mut DynamicMemory) {
+        let mut child_target = target.alloc();
+        for elem in &self.trace{
+            child_target.write_sized_array(elem.to_vec());
+        }
+        target.write_array(self.constraints.clone());
+        self.degree.0.write_into(target);
+        self.degree.1.write_into(target);
+    }
+}
+
+impl Writeable for DeepComposer<Felt> {
+    fn write_into(&self, target: &mut DynamicMemory) {
+        self.cc.write_into(target);
+        target.write_array(self.x_coordinates.to_vec());
+        self.z[0].write_into(target);
+        self.z[1].write_into(target);
     }
 }

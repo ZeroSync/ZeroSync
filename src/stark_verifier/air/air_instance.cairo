@@ -140,13 +140,13 @@ func get_deep_composition_coefficients{
 
     let (t_coefficients: TraceCoefficients*) = alloc();
     set_trace_coefficients(
-        n_vec=air.eval_frame_size,
-        n_coefficients=air.main_segment_width,
+        n_vec= air.main_segment_width + air.aux_trace_width,
+        n_coefficients= air.eval_frame_size + 1, // TODO: Why +1 ???
         coefficients=t_coefficients,
     );
 
     let (c_coefficients: felt*) = alloc();
-    draw_elements(n_elements=air.ce_blowup_factor, elements=c_coefficients);
+    draw_elements(n_elements=air.ce_blowup_factor, elements=c_coefficients); 
 
     let (lambda, mu) = draw_pair();
 
