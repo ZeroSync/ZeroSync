@@ -18,10 +18,10 @@ jobs:
     name: Build and test
     runs-on: ubuntu-latest
     steps:
-      - name: Install Rust 1.62.1
+      - name: Install Rust 1.68.0
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: 1.62.1
+          toolchain: nightly-2023-01-12
           override: true
           components: rustfmt, clippy
       - uses: actions/checkout@v3
@@ -62,13 +62,14 @@ jobs:
           source cairo_venv/bin/activate
           make stark_parser
           make rust_hint_lib
-      - name: Run bridge node
-        run: |
-          source cairo_venv/bin/activate
-          nohup python src/utxo_set/bridge_node.py > /dev/null 2>&1 &
+          # - name: Run bridge node
+          #   run: |
+          #     source cairo_venv/bin/activate
+          #     python src/utxo_set/bridge_node.py &
       - name: Run Unit Tests
         run: |
           source cairo_venv/bin/activate
+          python src/utxo_set/bridge_node.py > /dev/null 2>& 1 &
           make unit_test
           # - name: Run Integration Tests
           #   run: ../../../.protostar/dist/protostar/protostar test --cairo-path=./src tests
