@@ -32,10 +32,10 @@ from stark_verifier.crypto.random import (
 
 @external
 func __setup__() {
-    %{
-        from tests.integration.utils import setup
-        path = ("tests/integration/cairo_programs/", "fibonacci")
-        setup(path)
+    %{ 
+        # Compile, run, and generate proof of a fibonnaci program
+        import os
+        os.system('make INTEGRATION_PROGRAM_NAME=fibonacci integration_proof')
     %}
     return ();
 }

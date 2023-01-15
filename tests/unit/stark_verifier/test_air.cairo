@@ -22,10 +22,8 @@ from stark_verifier.air.pub_inputs import read_public_inputs, PublicInputs
 func __setup__() {
     %{ 
         # Compile, run, and generate proof of a fibonnaci program
-        # TODO: Use cached compiler and prover artifacts if source code is unchanged
-        from tests.integration.utils import setup
-        path = ("tests/integration/cairo_programs/", "fibonacci")
-        setup(path)
+        import os
+        os.system('make INTEGRATION_PROGRAM_NAME=fibonacci integration_proof')
     %}
     return ();
 }
