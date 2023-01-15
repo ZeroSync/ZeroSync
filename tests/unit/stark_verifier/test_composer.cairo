@@ -16,6 +16,19 @@ from stark_verifier.air.table import Table
 from stark_verifier.composer import compose_constraint_evaluations, DeepComposer, combine_compositions
 from stark_verifier.utils import Vec
 
+
+@external
+func __setup__() {
+    %{ 
+        # Compile, run, and generate proof of a fibonnaci program
+        # TODO: Use cached compiler and prover artifacts if source code is unchanged
+        from tests.integration.utils import setup
+        path = ("tests/integration/cairo_programs/", "fibonacci")
+        setup(path)
+    %}
+    return ();
+}
+
 @external
 func test_get_deep_composition_coefficients{
     range_check_ptr,

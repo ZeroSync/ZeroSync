@@ -30,7 +30,7 @@ jobs:
           git clone https://github.com/ZeroSync/giza.git
           cd giza
           cargo install --path cli
-      - name: Install libgmp-dev
+      - name: Install libgmp3-dev
         run: sudo apt install -y libgmp3-dev
       - name: Python3 Build
         uses: actions/setup-python@v4
