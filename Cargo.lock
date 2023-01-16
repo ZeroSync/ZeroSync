@@ -1105,7 +1105,7 @@ checksum = "447660ad36a13288b1db4d4248e857b510e8c3a225c822ba4fb748c0aafecffd"
 [[package]]
 name = "winter-air"
 version = "0.4.0"
-source = "git+https://github.com/zerosync/winterfell#00d041954750ed7f9f7db915d959a108096e226d"
+source = "git+https://github.com/zerosync/winterfell#862f0d6d1d0fb7f2073fe72931b43d082553ff44"
 dependencies = [
  "winter-crypto",
  "winter-fri",
@@ -1116,7 +1116,7 @@ dependencies = [
 [[package]]
 name = "winter-crypto"
 version = "0.4.0"
-source = "git+https://github.com/zerosync/winterfell#00d041954750ed7f9f7db915d959a108096e226d"
+source = "git+https://github.com/zerosync/winterfell#862f0d6d1d0fb7f2073fe72931b43d082553ff44"
 dependencies = [
  "blake2-rfc",
  "blake3",
@@ -1128,7 +1128,7 @@ dependencies = [
 [[package]]
 name = "winter-fri"
 version = "0.4.0"
-source = "git+https://github.com/zerosync/winterfell#00d041954750ed7f9f7db915d959a108096e226d"
+source = "git+https://github.com/zerosync/winterfell#862f0d6d1d0fb7f2073fe72931b43d082553ff44"
 dependencies = [
  "winter-crypto",
  "winter-math",
@@ -1138,7 +1138,7 @@ dependencies = [
 [[package]]
 name = "winter-math"
 version = "0.4.0"
-source = "git+https://github.com/zerosync/winterfell#00d041954750ed7f9f7db915d959a108096e226d"
+source = "git+https://github.com/zerosync/winterfell#862f0d6d1d0fb7f2073fe72931b43d082553ff44"
 dependencies = [
  "winter-utils",
 ]
@@ -1146,12 +1146,12 @@ dependencies = [
 [[package]]
 name = "winter-utils"
 version = "0.4.0"
-source = "git+https://github.com/zerosync/winterfell#00d041954750ed7f9f7db915d959a108096e226d"
+source = "git+https://github.com/zerosync/winterfell#862f0d6d1d0fb7f2073fe72931b43d082553ff44"
 
 [[package]]
 name = "winter-verifier"
 version = "0.4.0"
-source = "git+https://github.com/zerosync/winterfell#00d041954750ed7f9f7db915d959a108096e226d"
+source = "git+https://github.com/zerosync/winterfell#862f0d6d1d0fb7f2073fe72931b43d082553ff44"
 dependencies = [
  "winter-air",
  "winter-crypto",
