@@ -12,7 +12,7 @@ use winter_air::{
     ConstraintCompositionCoefficients, DefaultEvaluationFrame, EvaluationFrame, ProofOptions,
     Table, TraceLayout, DeepCompositionCoefficients,
 };
-use winter_crypto::{hashers::Blake2s_256, Digest};
+use winter_crypto::{hashers::Blake2s_256, Digest, hash::ByteDigest};
 pub use winterfell::{Air, AirContext, FieldExtension, HashFunction, StarkProof};
 use winterfell::{AuxTraceRandElements, ConstraintQueries, TraceQueries, DeepComposer};
 
@@ -120,17 +120,17 @@ impl WriteableWith<&ProcessorAir> for Commitments {
         target.write_array(
             trace_commitments
                 .iter()
-                .map(|x| ByteDigest(x.as_bytes()))
+                .map(|x| ByteDigest::new(x.as_bytes()))
                 .collect::<Vec<_>>(),
         );
 
         let mut temp_memory = target.alloc();
-        ByteDigest(constraint_commitment.as_bytes()).write_into(&mut temp_memory);
+        ByteDigest::new(constraint_commitment.as_bytes()).write_into(&mut temp_memory);
 
         target.write_array(
             fri_commitments
                 .iter()
-                .map(|x| ByteDigest(x.as_bytes()))
+                .map(|x| ByteDigest::new(x.as_bytes()))
                 .collect::<Vec<_>>(),
         );
     }
@@ -173,7 +173,7 @@ impl WriteableWith<&ProcessorAir> for Queries {
     }
 }
 
-struct ByteDigest<const N: usize>([u8; N]);
+// struct ByteDigest<const N: usize>([u8; N]);
 
 impl Writeable for ByteDigest<32> {
     fn write_into(&self, target: &mut DynamicMemory) {
@@ -390,5 +390,17 @@ impl Writeable for DeepComposer<Felt> {
         target.write_array(self.x_coordinates.to_vec());
         self.z[0].write_into(target);
         self.z[1].write_into(target);
+    }
+}
+
+impl WriteableWith<&[usize]> for TraceQueries<Felt, Blake2s_256<Felt>> {
+    fn write_into(&self, target: &mut DynamicMemory, indices:&[usize]) {
+        for query_proof in &self.query_proofs{
+            let mut child_target = target.alloc();
+            let paths = query_proof.into_paths(indices).unwrap();
+            for path in paths{
+                child_target.write_sized_array(path);
+            }
+        }
     }
 }
