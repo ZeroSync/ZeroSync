@@ -1,6 +1,6 @@
 //
 // To run only this test suite use:
-// protostar test --cairo-path=./src target tests/unit/stark_verifier/test_random.cairo
+// make test TEST_PATH="stark_verifier/test_random.cairo"
 //
 
 %lang starknet
@@ -147,22 +147,25 @@ func test_draw_integers{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
 @external
 func test_reseed_with_int{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     alloc_locals;
+
     let (blake2s_ptr: felt*) = alloc();
     local blake2s_ptr_start: felt* = blake2s_ptr;
 
-    tempvar seed: felt* = new (0, 0, 0, 0, 0, 0, 0, 0);
+    tempvar seed: felt* = new (1, 2, 3, 4, 5, 6, 7, 8);
     with blake2s_ptr {
         let public_coin = random_coin_new(seed, 32);
     }
 
     with blake2s_ptr, public_coin  {
-        reseed_with_int(20);
-        let element = draw();
+        reseed_with_int(1337);
+        let reseed_coin_z = draw();
     }
 
     %{
-        assert hex(ids.element) == '0x6d5244e9586a0c28ef68425f09464a2e197a28d2476d0e86bc368516c63b506'
-    %} 
+        from zerosync_hints import *
+        expected_z = reseed_with_int()
+        assert int(expected_z, 16) == ids.reseed_coin_z, f"{expected_z} != {hex(ids.reseed_coin_z)[2:]}"
+    %}
 
     finalize_blake2s(blake2s_ptr_start, blake2s_ptr);
     return ();

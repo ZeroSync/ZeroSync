@@ -50,6 +50,16 @@ fn merge() -> Result<String, PyErr> {
 }
 
 #[pyfunction]
+fn reseed_with_int() -> Result<String, PyErr> {
+    let seed = vec![1,0,0,0, 2,0,0,0, 3,0,0,0, 4,0,0,0,
+                    5,0,0,0, 6,0,0,0, 7,0,0,0, 8,0,0,0];
+    let mut coin = RandomCoin::<Felt, Blake2s_256<Felt>>::new(&seed);
+    coin.reseed_with_int(1337);
+    let reseed_coin_z = coin.draw::<Felt>();
+    Ok(reseed_coin_z.unwrap().to_string())
+}
+    
+#[pyfunction]
 fn merge_with_int() -> Result<String, PyErr> {
     let value = 1u64;
     let mut data = [0; 40];
@@ -501,6 +511,7 @@ fn evaluation_data<'a>() -> Result<HashMap<&'a str, String>, WinterVerifierError
 fn zerosync_hints(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
     // Random coin
     m.add_function(wrap_pyfunction!(merge, m)?)?;
+    m.add_function(wrap_pyfunction!(reseed_with_int, m)?)?;
     m.add_function(wrap_pyfunction!(merge_with_int, m)?)?;
     m.add_function(wrap_pyfunction!(draw_felt, m)?)?;
     m.add_function(wrap_pyfunction!(draw_integers, m)?)?;
