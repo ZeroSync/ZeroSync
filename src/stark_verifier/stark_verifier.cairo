@@ -178,7 +178,7 @@ func perform_verification{
        n_elements=ood_constraint_evaluations.n_elements,
        elements=ood_constraint_evaluations.elements,
     );
-    reseed(value=value);
+    reseed_endian(value=value);
 
     // Finally, make sure the values are the same.
     with_attr error_message(
