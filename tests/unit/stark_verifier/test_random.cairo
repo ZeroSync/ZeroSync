@@ -183,9 +183,7 @@ func test_leading_zeros{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
         let public_coin = random_coin_new(seed, 32);
     }
 
-    with blake2s_ptr, public_coin {
-        let leading_zeros = get_leading_zeros();
-    }
+    let leading_zeros = get_leading_zeros(public_coin.seed);
 
     %{ assert ids.leading_zeros == 1 %}
     finalize_blake2s(blake2s_ptr_start, blake2s_ptr);

@@ -204,7 +204,7 @@ func perform_verification{
     reseed_with_int(pow_nonce);
 
     // Make sure the proof-of-work specified by the grinding factor is satisfied.
-    let leading_zeros = get_leading_zeros();
+    let leading_zeros = get_leading_zeros(public_coin.seed);
     assert_lt(leading_zeros, air.options.grinding_factor);
 
     // Draw pseudorandom query positions for the LDE domain from the public coin.

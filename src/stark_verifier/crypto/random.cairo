@@ -309,11 +309,10 @@ func seed_with_pub_inputs{
     return res;
 }
 
-func get_leading_zeros{range_check_ptr, public_coin: PublicCoin}() -> felt {
+func get_leading_zeros{range_check_ptr}(seed: felt*) -> felt {
     alloc_locals;
 
-    let seed = public_coin.seed + 4;
-    let high = seed[0] + seed[1] * 2 ** 32 + seed[2] * 2 ** 64 + seed[3] * 2 ** 96;
+    let high = seed[4] + seed[5] * 2 ** 32 + seed[6] * 2 ** 64 + seed[7] * 2 ** 96;
 
     local lzcnt;
     %{
@@ -328,9 +327,9 @@ func get_leading_zeros{range_check_ptr, public_coin: PublicCoin}() -> felt {
     // Verify leading zeros count
     let ceil_pow2 = pow2(128 - lzcnt);
 
-    // 2**(log2-1) < public_coin.seed.high <= 2**log2
+    // 2**(log2-1) < seed.high <= 2**log2
     with_attr error_message(
-            "Error in 2**(log2-1) < public_coin.seed.high <= 2**log2 verification.") {
+            "Error in 2**(log2-1) < seed.high <= 2**log2 verification.") {
         assert_le(high, ceil_pow2 - 1);
         assert_le(ceil_pow2 / 2, high);
     }
