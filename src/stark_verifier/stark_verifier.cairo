@@ -4,7 +4,7 @@ from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_blake2s.blake2s import finalize_blake2s, STATE_SIZE_FELTS
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.hash import HashBuiltin
-from starkware.cairo.common.math import assert_lt
+from starkware.cairo.common.math import assert_lt, assert_le
 from starkware.cairo.common.registers import get_fp_and_pc
 from starkware.cairo.common.uint256 import Uint256
 from starkware.cairo.common.pow import pow
@@ -53,9 +53,10 @@ from stark_verifier.crypto.random import (
     reseed_with_int,
     reseed_with_ood_frames,
     seed_with_pub_inputs,
+    reseed_endian,
 )
 from stark_verifier.evaluator import evaluate_constraints
-from stark_verifier.fri.fri_verifier import fri_verifier_new, fri_verify
+from stark_verifier.fri.fri_verifier import fri_verifier_new, fri_verify, to_fri_options
 from stark_verifier.utils import Vec
 
 from stark_verifier.air.pub_inputs import read_public_inputs
@@ -195,7 +196,10 @@ func perform_verification{
     // verifier's perspective, this is equivalent to executing the commit phase of the FRI protocol.
     // The verifier uses these commitments to update the public coin and draw random points alpha
     // from them.
-    let fri_verifier = fri_verifier_new(air=air);
+    let fri_context = to_fri_options(air.context.options);
+    let max_poly_degree = air.context.trace_length - 1;
+    let fri_verifier = fri_verifier_new(fri_context, max_poly_degree);
+
 
     // 5 ----- Trace and constraint queries -------------------------------------------------------
 

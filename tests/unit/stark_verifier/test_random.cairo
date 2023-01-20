@@ -168,14 +168,14 @@ func test_reseed_with_int{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     return ();
 }
 
-// TODO: Test for a grinded seed
+// TODO: Fix this test. Also test for a grinded seed
 @external
 func test_leading_zeros{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     alloc_locals;
     let (blake2s_ptr: felt*) = alloc();
     local blake2s_ptr_start: felt* = blake2s_ptr;
 
-    tempvar seed: felt* = new (1, 0, 0, 0, 0, 0, 0, 1);
+    tempvar seed: felt* = new (4, 0, 0, 0, 0, 0, 0, 1);
     with blake2s_ptr {
         let public_coin = random_coin_new(seed, 32);
     }

@@ -309,11 +309,15 @@ func seed_with_pub_inputs{
     return res;
 }
 
-func get_leading_zeros{range_check_ptr, public_coin: PublicCoin}() -> felt {
+func get_leading_zeros{range_check_ptr, public_coin: PublicCoin, bitwise_ptr: BitwiseBuiltin*}() -> felt {
     alloc_locals;
 
-    let seed = public_coin.seed + 4;
-    let high = seed[0] + seed[1] * 2 ** 32 + seed[2] * 2 ** 64 + seed[3] * 2 ** 96;
+    let seed = public_coin.seed;
+    let seed3 = byteswap32(seed[3]);
+    let seed2 = byteswap32(seed[2]);
+    let seed1 = byteswap32(seed[1]);
+    let seed0 = byteswap32(seed[0]);
+    let high = seed3 + seed2 * 2 ** 32 + seed1 * 2 ** 64 + seed0 * 2 ** 96;
 
     local lzcnt;
     %{

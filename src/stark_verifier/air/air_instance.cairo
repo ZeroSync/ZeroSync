@@ -9,7 +9,6 @@ from stark_verifier.crypto.random import (
     random_coin_new,
     hash_elements,
     reseed,
-    reseed_with_int,
     seed_with_pub_inputs,
 )
 from stark_verifier.air.pub_inputs import PublicInputs
