@@ -24,6 +24,7 @@ struct Channel {
     // Constraint queries
     constraint_root: felt*,
     // FRI proof
+    fri_roots_len: felt,
     fri_roots: felt*,
     // OOD frame
     ood_trace_frame: TraceOodFrame,
@@ -52,6 +53,7 @@ func channel_new{bitwise_ptr: BitwiseBuiltin*}(air: AirInstance, proof: StarkPro
     tempvar channel = Channel(
         trace_roots=trace_roots,
         constraint_root=constraint_root,
+        fri_roots_len=proof.commitments.fri_roots_len,
         fri_roots=fri_roots,
         ood_trace_frame=ood_trace_frame,
         ood_constraint_evaluations=ood_constraint_evaluations,

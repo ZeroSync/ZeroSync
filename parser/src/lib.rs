@@ -121,18 +121,17 @@ impl WriteableWith<&ProcessorAir> for Commitments {
             trace_commitments
                 .iter()
                 .map(|x| ByteDigest::new(x.as_bytes()))
-                .collect::<Vec<_>>(),
-        );
+                .collect::<Vec<_>>() );
 
         let mut temp_memory = target.alloc();
         ByteDigest::new(constraint_commitment.as_bytes()).write_into(&mut temp_memory);
 
+        fri_commitments.len().write_into(target);
         target.write_array(
             fri_commitments
                 .iter()
                 .map(|x| ByteDigest::new(x.as_bytes()))
-                .collect::<Vec<_>>(),
-        );
+                .collect::<Vec<_>>() );
     }
 }
 
@@ -395,11 +394,13 @@ impl Writeable for DeepComposer<Felt> {
 
 impl WriteableWith<&[usize]> for TraceQueries<Felt, Blake2s_256<Felt>> {
     fn write_into(&self, target: &mut DynamicMemory, indices:&[usize]) {
-        for query_proof in &self.query_proofs{
-            let mut child_target = target.alloc();
-            let paths = query_proof.into_paths(indices).unwrap();
-            for path in paths{
-                child_target.write_sized_array(path);
+        println!("nodes: {}, leaves: {}", self.query_proofs[0].nodes.len(), self.query_proofs[0].leaves.len());
+        
+        let paths = self.query_proofs[0].into_paths(indices).unwrap();
+        for path in paths{
+            target.write_sized_array(path);
+            for query_proof in &self.query_proofs{
+                let mut child_target = target.alloc();
             }
         }
     }
