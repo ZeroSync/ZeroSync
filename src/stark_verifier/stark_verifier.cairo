@@ -208,7 +208,7 @@ func perform_verification{
     reseed_with_int(pow_nonce);
 
     // Make sure the proof-of-work specified by the grinding factor is satisfied.
-    let leading_zeros = get_leading_zeros();
+    let leading_zeros = get_leading_zeros(public_coin.seed);
     with_attr error_message("Insufficient proof of work") {
         assert_le(air.options.grinding_factor, leading_zeros);
     }
