@@ -79,7 +79,6 @@ func read_public_key{reader: Reader, range_check_ptr, bitwise_ptr: BitwiseBuilti
 // - https://github.com/bitcoin/bitcoin/blob/c06cda3e48e9826043ebc5790a7bb505bfbf368c/src/secp256k1/src/ecdsa_impl.h
 // - https://github.com/bitcoin-core/secp256k1/blob/1e5d50fa93d71d751b95eec6a80f6732879a0071/src/scalar_8x32_impl.h#L95
 
-// TODO: implement DER encoding for ECDSA signatures
 // DER Signatur schwitzt nie.
 func read_der_signature{reader: Reader, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() -> (r_sig: BigInt3, s_sig: BigInt3) {
     alloc_locals;

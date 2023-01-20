@@ -402,7 +402,7 @@ func compose_trace_columns{
 
     // Compose columns of the aux segments
     let row = queried_aux_trace_states.elements;
-    tempvar n = 54; // TODO: double-check this value!
+    tempvar n = 54; // TODO: Don't hardcode the number of queries
     tempvar row_ptr = row;
     tempvar x_coord_ptr = composer.x_coordinates;
     tempvar result_ptr = result_ptr;
