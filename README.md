@@ -73,4 +73,4 @@ make chain_proof
 ```
 
 ## Roadmap
-The roadmap is available [here](roadmap.md).
+The roadmap is available [here](docs/roadmap.md).
