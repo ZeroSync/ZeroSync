@@ -39,6 +39,7 @@ struct ProofContext {
 struct ParsedCommitments {
     trace_roots: felt*,
     constraint_root: felt*,
+    fri_roots_len: felt,
     fri_roots: felt*,
 }
 
