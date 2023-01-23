@@ -194,6 +194,9 @@ func read_queried_trace_states{
     verify_merkle_proofs(trace_queries_proof_ptr[1].proofs, positions, channel.trace_roots + 8, num_queries);
     verify_merkle_proofs(trace_queries_proof_ptr[2].proofs, positions, channel.trace_roots + 8 * 2, num_queries);
 
+    // TODO: verify that the hash of each state is equal to the first hash of the corresponding path 
+    // See air/src/proof/queries.rs:125
+
     return (channel.trace_queries.main_states, channel.trace_queries.aux_states);
 }
 
