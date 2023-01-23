@@ -11,6 +11,19 @@ RUST_HINT_LIB = $(BIN_DIR)/libzerosync_hints.dylib
 
 # TODO: Create a recipe for $(CAIRO_PROGRAM) listing all prerequisites
 
+INTEGRATION_PROGRAM_NAME := fibonacci
+INTEGRATION_PROGRAM_SRC = tests/integration/cairo_programs/$(INTEGRATION_PROGRAM_NAME).cairo
+INTEGRATION_PROGRAM_COMPILED = tests/integration/cairo_programs_compiled/$(INTEGRATION_PROGRAM_NAME).json
+INTEGRATION_PROGRAM_TRACE = tests/integration/cairo_programs_trace/$(INTEGRATION_PROGRAM_NAME)
+INTEGRATION_PROGRAM_PROOF = tests/integration/stark_proofs/$(INTEGRATION_PROGRAM_NAME).bin
+
+
+$(INTEGRATION_PROGRAM_PROOF): $(INTEGRATION_PROGRAM_SRC)
+	mkdir -p $(INTEGRATION_PROGRAM_TRACE)
+	cairo-compile $< --cairo_path src --output $(INTEGRATION_PROGRAM_COMPILED)
+	cairo-run --layout all --program $(INTEGRATION_PROGRAM_COMPILED) --trace_file $(INTEGRATION_PROGRAM_TRACE)/trace.bin --memory_file $(INTEGRATION_PROGRAM_TRACE)/memory.bin
+	giza prove --program $(INTEGRATION_PROGRAM_COMPILED) --trace $(INTEGRATION_PROGRAM_TRACE)/trace.bin --memory $(INTEGRATION_PROGRAM_TRACE)/memory.bin --output $@
+
 $(STARK_PARSER): $(addprefix parser/src/,lib.rs main.rs memory.rs)
 	cargo build;
 	mkdir -p bin;
@@ -77,6 +90,12 @@ test:
 	@echo "Running test $(TEST_PATH)..."
 	PYTHONPATH=$$(python -c "import site; print(site.getsitepackages()[0])"):$$PYTHONPATH protostar test --cairo-path=./src target tests/unit/$(TEST_PATH)
 
+# Generate a proof for any program in tests/integration/cairo_programs/
+# Use make INTEGRATION_PROGRAM_NAME=fibonacci integration_proof
+integration_proof: $(INTEGRATION_PROGRAM_PROOF)
+	@echo "Generating proof for $(INTEGRATION_PROGRAM_NAME)..."
+	
+
 # To call benchmark block with a differnet block use: make BLOCK=12345 benchmark_block
 BLOCK := 100000
 benchmark_block:
@@ -86,6 +105,9 @@ clean:
 	rm -rf build
 	mkdir build
 	rm -rf package_build
+	rm -rf tests/integration/cairo_programs_compiled/*
+	rm -rf tests/integration/cairo_programs_trace/*
+	rm -rf tests/integration/stark_proofs/*
 	
 package:
 	@echo "Building pip package..."

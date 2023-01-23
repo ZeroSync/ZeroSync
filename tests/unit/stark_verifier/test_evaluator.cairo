@@ -15,6 +15,16 @@ from stark_verifier.stark_verifier import reduce_evaluations
 
 
 @external
+func __setup__() {
+    %{ 
+        # Compile, run, and generate proof of a fibonnaci program
+        import os
+        os.system('make INTEGRATION_PROGRAM_NAME=fibonacci integration_proof')
+    %}
+    return ();
+}
+
+@external
 func test_evaluate_transition{
     range_check_ptr
 }() {
@@ -251,7 +261,7 @@ func test_reduce_evaluations{
     %{
         a = hex(ids.ood_constraint_evaluation_2)[2:]
         b = data['ood_constraint_evaluation']
-        print('test_reduce_evaluations', a, b)
+        # print('test_reduce_evaluations', a, b)
         assert int(a, 16) == int(b, 16), f"{a} != {b}"
     %}
 

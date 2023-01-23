@@ -55,7 +55,7 @@ func utxo_set_extract{hash_ptr: HashBuiltin*, utreexo_roots: felt*}(txid: felt*,
         byte_size, felt_size = from_hex( tx_output["scriptpubkey"], ids.script_pub_key)
         ids.script_pub_key_len = felt_size
         ids.script_pub_key_size = byte_size
-        print('UTXOSET extract:', 'txid', txid, 'vout', ids.vout, 'amount', ids.amount, 'script_pub_key_size', ids.script_pub_key_size)
+        # print('UTXOSET extract:', 'txid', txid, 'vout', ids.vout, 'amount', ids.amount, 'script_pub_key_size', ids.script_pub_key_size)
     %}
 
     let prevout_hash = hash_output(txid, vout, amount, script_pub_key, script_pub_key_len);

@@ -139,7 +139,7 @@ func fetch_inclusion_proof(leaf) -> (leaf_index: felt, proof: felt*, proof_len: 
         import json
         response = json.loads(r.data)
 
-        print('UTREEXO: Inclusion proof:\n',response)
+        # print('UTREEXO: Inclusion proof:\n',response)
 
         ids.leaf_index = response['leaf_index']
         proof = list(map(lambda hash_hex: int(hash_hex, 16), response['proof']))

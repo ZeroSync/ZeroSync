@@ -17,6 +17,17 @@ from utils.endianness import byteswap32
 from stark_verifier.air.stark_proof import read_stark_proof, StarkProof
 from stark_verifier.air.pub_inputs import read_public_inputs, PublicInputs
 
+
+@external
+func __setup__() {
+    %{ 
+        # Compile, run, and generate proof of a fibonnaci program
+        import os
+        os.system('make INTEGRATION_PROGRAM_NAME=fibonacci integration_proof')
+    %}
+    return ();
+}
+
 @external
 func test_get_constraint_composition_coefficients{
     range_check_ptr,
