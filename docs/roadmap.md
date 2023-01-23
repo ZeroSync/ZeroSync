@@ -28,6 +28,7 @@ Measure the performance of *assumevalid* proofs and optimise them until we can f
 		| 1e614c1     | 328734       | 49      | 1,513,705    | 0:02:41     | 0:02:44     | 2.85 GB |
 		| 1e614c1     | 222224       | 108     | 3,557,542    | 0:05:42     | 0:05:37     | 5.82 GB |
 		|             | 383838       | 903     | 31,281,985   | 0:49:00     | 0:46:27     | 253.7GB |
+		| 079a79c     | 400000       | 1660    | 64,049,396   | 1:41:59     | 1:25:03     | 94.04GB |
 
 - 👷‍♂️ Identify the performance bottlenecks and see if there are any showstoppers
 - 👷‍♂️ Optimise the bottlenecks until we can start to add validation of Bitcoin Script
