@@ -394,14 +394,21 @@ impl Writeable for DeepComposer<Felt> {
 
 impl WriteableWith<&[usize]> for TraceQueries<Felt, Blake2s_256<Felt>> {
     fn write_into(&self, target: &mut DynamicMemory, indices:&[usize]) {
-        println!("nodes: {}, leaves: {}", self.query_proofs[0].nodes.len(), self.query_proofs[0].leaves.len());
-        
-        let paths = self.query_proofs[0].into_paths(indices).unwrap();
-        for path in paths{
-            target.write_sized_array(path);
-            for query_proof in &self.query_proofs{
-                let mut child_target = target.alloc();
+        for query_proof in &self.query_proofs{
+            let paths = query_proof.into_paths(indices).unwrap();
+            let mut child_target = target.alloc();
+            for path in paths{
+                // child_target.write_sized_array(path);
+                
+                path.len().write_into(&mut child_target);
+                let mut child_child_target = child_target.alloc();
+                for hash in path {
+                    for chunk in hash.0.array_chunks::<4>() {
+                        let int = u32::from_le_bytes(*chunk);
+                        int.write_into(&mut child_child_target);
+                    }
+                }
             }
-        }
+        } 
     }
 }
