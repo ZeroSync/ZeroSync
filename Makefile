@@ -84,7 +84,7 @@ unit_test:
 
 integration_test: $(STARK_PARSER)
 	@echo "Running integration tests..."
-	PYTHONPATH=$$(echo pwd)/tests:$$(python -c "import site; print(site.getsitepackages()[0])"):$$PYTHONPATH protostar -p integration test
+	PYTHONPATH=$$(echo pwd)/tests:$$(python -c "import site; print(site.getsitepackages()[0])"):$$PYTHONPATH protostar -p integration test --max-steps 100000000
 
 test:
 	@echo "Running test $(TEST_PATH)..."

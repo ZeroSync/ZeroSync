@@ -17,6 +17,9 @@ from stark_verifier.utils import Vec
 from crypto.hash_utils import assert_hashes_equal
 from utils.endianness import byteswap32
 
+from stark_verifier.crypto.random import hash_elements
+
+
 struct TraceOodFrame {
     main_frame: EvaluationFrame,
     aux_frame: EvaluationFrame,
@@ -149,12 +152,48 @@ func verify_merkle_proof{
 
 func verify_merkle_proofs{
     range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*
-}(proofs: QueriesProof*, positions: felt*, trace_roots: felt*, loop_counter){
+}(proofs: QueriesProof*, positions: felt*, trace_roots: felt*, loop_counter, rows: felt*, n_cols: felt){
     if(loop_counter == 0){
         return ();
     }
+    // Hash the row of the table at the current index and compare it to the leaf of the path
+    let digest = hash_elements(n_elements=n_cols, elements=rows);
+    assert_hashes_equal(digest, proofs[0].digests);
+
     verify_merkle_proof( proofs[0].length, proofs[0].digests, positions[0], trace_roots );
-    verify_merkle_proofs(&proofs[1], positions + 1, trace_roots, loop_counter - 1);
+    verify_merkle_proofs(&proofs[1], positions + 1, trace_roots, loop_counter - 1, rows + n_cols, n_cols);
+    return ();
+}
+
+// AUX TRACE (Memory)
+func verify_aux_merkle_proofs_1{
+    range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*
+}(proofs: QueriesProof*, positions: felt*, trace_roots: felt*, loop_counter, rows: felt*, n_cols: felt){
+    if(loop_counter == 0){
+        return ();
+    }
+    // Hash the row of the table at the current index and compare it to the leaf of the path
+    let digest = hash_elements(n_elements=12, elements=rows);
+    assert_hashes_equal(digest, proofs[0].digests);
+
+    verify_merkle_proof( proofs[0].length, proofs[0].digests, positions[0], trace_roots );
+    verify_aux_merkle_proofs_1(&proofs[1], positions + 1, trace_roots, loop_counter - 1, rows + n_cols, n_cols);
+    return ();
+}
+
+// AUX TRACE (Range check)
+func verify_aux_merkle_proofs_2{
+    range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*
+}(proofs: QueriesProof*, positions: felt*, trace_roots: felt*, loop_counter, rows: felt*, n_cols: felt){
+    if(loop_counter == 0){
+        return ();
+    }
+    // Hash the row of the table at the current index and compare it to the leaf of the path
+    let digest = hash_elements(n_elements=6, elements=rows + 12);
+    assert_hashes_equal(digest, proofs[0].digests);
+
+    verify_merkle_proof( proofs[0].length, proofs[0].digests, positions[0], trace_roots );
+    verify_aux_merkle_proofs_2(&proofs[1], positions + 1, trace_roots, loop_counter - 1, rows + n_cols, n_cols);
     return ();
 }
 
@@ -188,16 +227,20 @@ func read_queried_trace_states{
         write_into_memory(ids.trace_queries_proof_ptr, json_data, segments)
     %}
 
-    let num_queries = 4;  // TODO: this should be 54 but we get an OUT_OF_RESOURCES 
+    let num_queries = 4; // TODO: this should be 54, but it takes forever...
 
-    verify_merkle_proofs(trace_queries_proof_ptr[0].proofs, positions, channel.trace_roots, num_queries);
-    verify_merkle_proofs(trace_queries_proof_ptr[1].proofs, positions, channel.trace_roots + 8, num_queries);
-    verify_merkle_proofs(trace_queries_proof_ptr[2].proofs, positions, channel.trace_roots + 8 * 2, num_queries);
+    let main_states = channel.trace_queries.main_states;
+    let aux_states = channel.trace_queries.aux_states;
 
-    // TODO: verify that the hash of each state is equal to the first hash of the corresponding path 
-    // See air/src/proof/queries.rs:125
+    // Verify Merkle proofs of all states
+    verify_merkle_proofs(
+        trace_queries_proof_ptr[0].proofs, positions, channel.trace_roots, num_queries, main_states.elements, main_states.n_cols);
+    verify_aux_merkle_proofs_1(
+        trace_queries_proof_ptr[1].proofs, positions, channel.trace_roots + 8, num_queries, aux_states.elements, aux_states.n_cols);
+    verify_aux_merkle_proofs_2(
+        trace_queries_proof_ptr[2].proofs, positions, channel.trace_roots + 8 * 2, num_queries, aux_states.elements, aux_states.n_cols);
 
-    return (channel.trace_queries.main_states, channel.trace_queries.aux_states);
+    return (main_states, aux_states);
 }
 
 func read_constraint_evaluations{channel: Channel}(positions: felt*) -> Table {
