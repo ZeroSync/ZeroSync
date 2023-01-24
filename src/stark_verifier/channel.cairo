@@ -92,11 +92,11 @@ func read_pow_nonce{channel: Channel}() -> felt {
 }
 
 struct QueriesProof {
-    length : felt,
+    length : felt,  // TODO: this is unneccessary overhead. All paths of a BatchMerkleProof have the same length
     digests : felt*,
 }
 
-struct TraceQueriesProofs {
+struct QueriesProofs {
     proofs : QueriesProof*,
 }
 
@@ -203,7 +203,7 @@ func read_queried_trace_states{
     main_states: Table, aux_states: Table
 ) {
     alloc_locals;
-    let (local trace_queries_proof_ptr: TraceQueriesProofs*) = alloc();
+    let (local trace_queries_proof_ptr: QueriesProofs*) = alloc();
     %{
         import json
         import subprocess
@@ -217,7 +217,7 @@ func read_queried_trace_states{
 
         completed_process = subprocess.run([
             'bin/stark_parser',
-            'tests/integration/stark_proofs/fibonacci.bin',
+            'tests/integration/stark_proofs/fibonacci.bin', # TODO: this path shouldn't be hardcoded!
             'trace-queries',
             positions
             ],
@@ -232,7 +232,7 @@ func read_queried_trace_states{
     let main_states = channel.trace_queries.main_states;
     let aux_states = channel.trace_queries.aux_states;
 
-    // Verify Merkle proofs of all states
+    // Authenticate proof paths
     verify_merkle_proofs(
         trace_queries_proof_ptr[0].proofs, positions, channel.trace_roots, num_queries, main_states.elements, main_states.n_cols);
     verify_aux_merkle_proofs_1(
@@ -243,7 +243,42 @@ func read_queried_trace_states{
     return (main_states, aux_states);
 }
 
-func read_constraint_evaluations{channel: Channel}(positions: felt*) -> Table {
-    // TODO: Authenticate proof paths
-    return channel.constraint_queries.evaluations;
+
+
+func read_constraint_evaluations{
+    range_check_ptr, blake2s_ptr: felt*, channel: Channel, bitwise_ptr: BitwiseBuiltin*
+    }(positions: felt*) -> Table {
+
+    alloc_locals;
+    let (local constraint_queries_proof_ptr: QueriesProofs*) = alloc();
+    %{
+        import json
+        import subprocess
+        from src.stark_verifier.utils import write_into_memory
+
+        positions = []
+        for i in range(54):
+            positions.append( memory[ids.positions + i] )
+
+        positions = json.dumps( positions )
+
+        completed_process = subprocess.run([
+            'bin/stark_parser',
+            'tests/integration/stark_proofs/fibonacci.bin', # TODO: this path shouldn't be hardcoded!
+            'constraint-queries',
+            positions
+            ],
+            capture_output=True)
+        
+        json_data = completed_process.stdout
+        write_into_memory(ids.constraint_queries_proof_ptr, json_data, segments)
+    %}
+    let num_queries = 4; // TODO: this should be 54, but it takes forever...
+
+    // Authenticate proof paths
+    let evaluations = channel.constraint_queries.evaluations;
+    verify_merkle_proofs(
+        constraint_queries_proof_ptr[0].proofs, positions, channel.constraint_root, num_queries, evaluations.elements, evaluations.n_cols);
+
+    return evaluations;
 }

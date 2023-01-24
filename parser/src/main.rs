@@ -24,6 +24,7 @@ enum Commands {
     Proof,
     PublicInputs,
     TraceQueries{ indices:Option<String> },
+    ConstraintQueries{ indices:Option<String> },
 }
 
 fn main() { 
@@ -57,6 +58,22 @@ fn main() {
             >::new(&air, proof.clone()).unwrap();
 
             channel.trace_queries.unwrap().to_cairo_memory(&indexes)
+        },
+        Commands::ConstraintQueries { indices } => {
+            let air = ProcessorAir::new(
+                proof.get_trace_info(), pub_inputs.clone(),proof.options().clone(),
+            );
+
+            let indexes : Vec<usize> = from_str(&indices.clone().unwrap()).unwrap();
+        
+            let channel = VerifierChannel::<
+                Felt,
+                Blake2s_256<Felt>,
+                MainEvaluationFrame<Felt>,
+                AuxEvaluationFrame<Felt>,
+            >::new(&air, proof.clone()).unwrap();
+
+            channel.constraint_queries.unwrap().to_cairo_memory(&indexes)
         },
     };
 

@@ -399,7 +399,7 @@ impl WriteableWith<&[usize]> for TraceQueries<Felt, Blake2s_256<Felt>> {
             let mut child_target = target.alloc();
             for path in paths{
                 // child_target.write_sized_array(path);
-                
+
                 path.len().write_into(&mut child_target);
                 let mut child_child_target = child_target.alloc();
                 for hash in path {
@@ -410,5 +410,28 @@ impl WriteableWith<&[usize]> for TraceQueries<Felt, Blake2s_256<Felt>> {
                 }
             }
         } 
+    }
+}
+
+
+
+impl WriteableWith<&[usize]> for ConstraintQueries<Felt, Blake2s_256<Felt>> {
+    fn write_into(&self, target: &mut DynamicMemory, indices:&[usize]) {
+
+        let paths = self.query_proofs.into_paths(indices).unwrap();
+        let mut child_target = target.alloc();
+        for path in paths{
+            // child_target.write_sized_array(path);
+
+            path.len().write_into(&mut child_target);
+            let mut child_child_target = child_target.alloc();
+            for hash in path {
+                for chunk in hash.0.array_chunks::<4>() {
+                    let int = u32::from_le_bytes(*chunk);
+                    int.write_into(&mut child_child_target);
+                }
+            }
+        }
+    
     }
 }
