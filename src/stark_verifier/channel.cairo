@@ -135,17 +135,7 @@ func verify_merkle_proof{
     }(length: felt, path: felt*, position, root: felt*){
     alloc_locals;
 
-    let (be_root: felt*) = alloc();
-    assert be_root[0] = byteswap32(root[0]);
-    assert be_root[1] = byteswap32(root[1]);
-    assert be_root[2] = byteswap32(root[2]);
-    assert be_root[3] = byteswap32(root[3]);
-    assert be_root[4] = byteswap32(root[4]);
-    assert be_root[5] = byteswap32(root[5]);
-    assert be_root[6] = byteswap32(root[6]);
-    assert be_root[7] = byteswap32(root[7]);
-
-    _verify_merkle_proof(length - 1, path + 8, position, be_root, path);
+    _verify_merkle_proof(length - 1, path + 8, position, root, path);
 
     return ();
 }

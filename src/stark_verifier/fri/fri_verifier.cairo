@@ -42,7 +42,7 @@ func _fri_verifier_new{
     }
     alloc_locals;
 
-    reseed(layer_commitment_ptr);
+    reseed_endian(layer_commitment_ptr);
     let alpha = draw();
     assert [layer_alpha_ptr] = alpha;
 

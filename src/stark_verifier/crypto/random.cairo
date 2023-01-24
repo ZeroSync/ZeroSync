@@ -45,6 +45,7 @@ func merge{range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*}(
 
     memcpy(data, seed, 8);
     
+    // TODO: delete this and then delete `merge_endian` and `reseed_endian`
     let be_value = data + 8;
     assert be_value[0] = byteswap32(value[0]);
     assert be_value[1] = byteswap32(value[1]);

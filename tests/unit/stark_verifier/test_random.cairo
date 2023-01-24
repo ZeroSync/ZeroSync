@@ -171,7 +171,7 @@ func test_reseed_with_int{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     return ();
 }
 
-// TODO: Fix this test. Also test for a grinded seed
+// TODO: Test for a grinded seed
 @external
 func test_leading_zeros{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     alloc_locals;

@@ -93,7 +93,7 @@ func verify{range_check_ptr, pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBui
         perform_verification(air=air);
     }
 
-    finalize_blake2s(blake2s_ptr_start, blake2s_ptr);
+    // finalize_blake2s(blake2s_ptr_start, blake2s_ptr);
 
     return ();
 }
@@ -115,7 +115,7 @@ func perform_verification{
     let trace_commitments = read_trace_commitments();
 
     // Reseed the coin with the commitment to the main trace segment
-    reseed(value=trace_commitments);
+    reseed_endian(value=trace_commitments);
 
     // Process auxiliary trace segments to build a set of random elements for each segment,
     // and to reseed the coin.
@@ -138,7 +138,7 @@ func perform_verification{
     let constraint_commitment = read_constraint_commitment();
 
     // Update the public coin.
-    reseed(value=constraint_commitment);
+    reseed_endian(value=constraint_commitment);
 
     // Draw an out-of-domain point z from the coin.
     let z = draw();
@@ -273,7 +273,7 @@ func process_aux_segments{
     let (elements) = alloc();
     assert [aux_trace_rand_elements] = elements;
     draw_elements(n_elements=[aux_segment_rands], elements=elements);
-    reseed(value=trace_commitments);
+    reseed_endian(value=trace_commitments);
     process_aux_segments(
         trace_commitments=trace_commitments + STATE_SIZE_FELTS,
         trace_commitments_len=trace_commitments_len - 1,
