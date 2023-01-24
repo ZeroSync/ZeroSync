@@ -21,14 +21,16 @@ Measure the performance of *assumevalid* proofs and optimise them until we can f
 - 👷‍♂️ Benchmark the *assumevalid proof* with blocks full of transactions (e.g. up to 3500 TXs)
 	+ The largest block validated with the current Cairo program for now is [Block 383838](https://blockstream.info/block/00000000000000000e9b42248aa61593ccc4aa0a399b3cb6b50c650f45761c3a) which includes a total of 933 transactions. Generating the trace with [cairo-rs-py](https://github.com/lambdaclass/cairo-rs-py) took 50 minutes and 31 Million execution steps. 
 	+ Benchmarks for different block sizes 	
-		| Commit Hash | Block number | txs     | Steps        | Runner time | Prover time | Max RAM |
-		| ----------- | ------------ | ------- | ------------ | ----------- | ----------- | ------- |
-		| 1e614c1     | 100000       | 4       | 92,530       | 0:00:27     | 0:00:12     | 0.69 GB |
-		| 1e614c1     | 170000       | 27      | 967,717      | 0:01:48     | 0:01:26     | 1.99 GB |
-		| 1e614c1     | 328734       | 49      | 1,513,705    | 0:02:41     | 0:02:44     | 2.85 GB |
-		| 1e614c1     | 222224       | 108     | 3,557,542    | 0:05:42     | 0:05:37     | 5.82 GB |
-		|             | 383838       | 903     | 31,281,985   | 0:49:00     | 0:46:27     | 253.7GB |
-		| 079a79c     | 400000       | 1660    | 64,049,396   | 1:41:59     | 1:25:03     | 94.04GB |
+		| Commit Hash | Block number | txs     | Steps        | Runner time | Prover time | Max RAM  |
+		| ----------- | ------------ | ------- | ------------ | ----------- | ----------- | -------- |
+		| 1e614c1     | 100000       | 4       | 92,530       | 0:00:27     | 0:00:12     | 0.69 GB  |
+		| 1e614c1     | 170000       | 27      | 967,717      | 0:01:48     | 0:01:26     | 1.99 GB  |
+		| 1e614c1     | 328734       | 49      | 1,513,705    | 0:02:41     | 0:02:44     | 2.85 GB  |
+		| 1e614c1     | 222224       | 108     | 3,557,542    | 0:05:42     | 0:05:37     | 5.82 GB  |
+		|             | 383838       | 903     | 31,281,985   | 0:49:00     | 0:46:27     | 253.7 GB |
+		| 079a79c     | 400000       | 1660    | 64,049,396   | 1:41:59     | 1:25:03     | 94.04 GB |
+		| 079a79c     | 400002       | 2849    | 79,435,713   | 2:05:06     | 1:30:06     | 118.5 GB |
+
 
 - 👷‍♂️ Identify the performance bottlenecks and see if there are any showstoppers
 - 👷‍♂️ Optimise the bottlenecks until we can start to add validation of Bitcoin Script
