@@ -7,6 +7,8 @@ from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.math import assert_le, assert_not_zero
 from starkware.cairo.common.pow import pow
 from utils.pow2 import pow2
+from stark_verifier.channel import verify_merkle_proof, QueriesProofs, QueriesProof
+from stark_verifier.crypto.random import contains
 
 struct FriOptions {
     folding_factor: felt,
@@ -129,14 +131,96 @@ func log2(n) -> felt {
     %}
     let next_power_of_two = pow2(n_bits);
     with_attr error_message("n must be a power of two") {
-        assert n = next_power_of_two;
+        assert next_power_of_two = n;
     }
     return n_bits;
 }
 
-func fri_verify{channel: Channel}(
+
+func verify_fri_merkle_proofs {
+    range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*
+}(proofs: QueriesProof*, positions: felt*, trace_roots: felt*, loop_counter, evaluations: felt*, n_evaluations: felt){
+    if(loop_counter == 0){
+        return ();
+    }
+
+    // let digest = hash_elements(n_elements=n_evaluations, elements=evaluations);    // TODO: hash the evaluation correctly
+    // assert_hashes_equal(digest, proofs[0].digests);
+
+    verify_merkle_proof( proofs[0].length, proofs[0].digests, positions[0], trace_roots );
+    verify_fri_merkle_proofs(&proofs[1], positions + 1, trace_roots, loop_counter - 1, evaluations + n_evaluations, n_evaluations);
+    return ();
+}
+
+func verify_fri_proofs {
+    range_check_ptr, blake2s_ptr: felt*, channel: Channel, bitwise_ptr: BitwiseBuiltin*
+    }(evaluations: felt*, positions: felt*){
+    alloc_locals;
+
+    let (local next_positions: felt*) = alloc();
+    let new_len = fold_positions(positions, next_positions, 54, 0);
+
+    let (local fri_queries_proof_ptr: QueriesProofs*) = alloc();
+    %{
+        import json
+        import subprocess
+        from src.stark_verifier.utils import write_into_memory
+
+        positions = []
+        for i in range(ids.new_len):
+            positions.append( memory[ids.next_positions + i] )
+
+        positions = json.dumps( positions )
+
+        completed_process = subprocess.run([
+            'bin/stark_parser',
+            'tests/integration/stark_proofs/fibonacci.bin', # TODO: this path shouldn't be hardcoded here!
+            'fri-queries',
+            positions
+            ],
+            capture_output=True)
+        
+        json_data = completed_process.stdout
+        write_into_memory(ids.fri_queries_proof_ptr, json_data, segments)
+    %}
+    let n_cols = 1;
+    
+    // Authenticate proof paths
+    // TODO: loop folding here
+    verify_fri_merkle_proofs(
+        fri_queries_proof_ptr[0].proofs, next_positions, channel.fri_roots, new_len, evaluations, n_cols);
+    
+    return();
+}
+
+func fold_positions(positions: felt*, next_positions: felt*, loop_counter, elems_count) -> felt {
+    if (loop_counter == 0){
+        return elems_count;
+    }
+    alloc_locals;
+    let prev_position = [positions];
+    local next_position;
+    // TODO: this hint is an insecure hack. Replace it
+    %{ 
+        domain_size = 512
+        fri_folding_factor = 8
+        modulus = domain_size // fri_folding_factor
+        ids.next_position = ids.prev_position % modulus
+    %}
+    let is_contained = contains(next_position, next_positions - elems_count, elems_count);
+    if(is_contained == 1){
+        return fold_positions(positions + 1, next_positions, loop_counter - 1, elems_count);
+    } else {
+        assert next_positions[0] = next_position;
+        return fold_positions(positions + 1, next_positions + 1, loop_counter - 1, elems_count + 1);
+    }
+}
+
+func fri_verify{
+    range_check_ptr, blake2s_ptr: felt*, channel: Channel, bitwise_ptr: BitwiseBuiltin*}(
     fri_verifier: FriVerifier, evaluations: felt*, positions: felt*
 ) {
+    verify_fri_proofs(evaluations, positions);
     // TODO
     return ();
 }

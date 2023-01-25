@@ -5,7 +5,7 @@ use winter_utils::{Deserializable, SliceReader};
 use winterfell::VerifierChannel;
 use zerosync_parser::{
     memory::{Writeable, WriteableWith},
-    Air, BinaryProofData, ProcessorAir, PublicInputs, StarkProof, MainEvaluationFrame, AuxEvaluationFrame,
+    Air, BinaryProofData, ProcessorAir, PublicInputs, StarkProof, MainEvaluationFrame, AuxEvaluationFrame, FriProofParams
 };
 
 use clap::{Parser, Subcommand};
@@ -23,8 +23,9 @@ struct Cli {
 enum Commands {
     Proof,
     PublicInputs,
-    TraceQueries{ indices:Option<String> },
-    ConstraintQueries{ indices:Option<String> },
+    TraceQueries{ indexes:Option<String> },
+    ConstraintQueries{ indexes:Option<String> },
+    FriQueries{ indexes:Option<String> },
 }
 
 fn main() { 
@@ -43,12 +44,12 @@ fn main() {
             proof.to_cairo_memory(&air)
         }
         Commands::PublicInputs => pub_inputs.to_cairo_memory(), 
-        Commands::TraceQueries { indices } => {
+        Commands::TraceQueries { indexes } => {
             let air = ProcessorAir::new(
                 proof.get_trace_info(), pub_inputs.clone(),proof.options().clone(),
             );
 
-            let indexes : Vec<usize> = from_str(&indices.clone().unwrap()).unwrap();
+            let indexes : Vec<usize> = from_str(&indexes.clone().unwrap()).unwrap();
         
             let channel = VerifierChannel::<
                 Felt,
@@ -59,12 +60,12 @@ fn main() {
 
             channel.trace_queries.unwrap().to_cairo_memory(&indexes)
         },
-        Commands::ConstraintQueries { indices } => {
+        Commands::ConstraintQueries { indexes } => {
             let air = ProcessorAir::new(
                 proof.get_trace_info(), pub_inputs.clone(),proof.options().clone(),
             );
 
-            let indexes : Vec<usize> = from_str(&indices.clone().unwrap()).unwrap();
+            let indexes : Vec<usize> = from_str(&indexes.clone().unwrap()).unwrap();
         
             let channel = VerifierChannel::<
                 Felt,
@@ -75,7 +76,15 @@ fn main() {
 
             channel.constraint_queries.unwrap().to_cairo_memory(&indexes)
         },
-    };
+        Commands::FriQueries { indexes } => {
+            let air = ProcessorAir::new(
+                proof.get_trace_info(), pub_inputs.clone(),proof.options().clone(),
+            );
 
+            let indexes : Vec<usize> = from_str(&indexes.clone().unwrap()).unwrap();  
+            proof.fri_proof.to_cairo_memory(FriProofParams { air: &air, indexes: &indexes })
+        },
+    };
+ 
     println!("{}", json_arr);
 }
