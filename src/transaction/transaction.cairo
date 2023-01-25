@@ -234,7 +234,10 @@ func fetch_transaction(block_height, tx_index) -> felt* {
         url = f"https://blockstream.info/api/tx/{txid}/hex"
         r = http.request('GET', url)
         tx_hex = r.data.decode('utf-8')
-
+        
+        if r.status != 200:
+            print("ERROR: Fetch_transaction received a bad answer from the API: ", r.status, r.data.decode('utf-8'))
+            exit(-1)
         from_hex(tx_hex, ids.raw_transaction)
     %}
     return raw_transaction;

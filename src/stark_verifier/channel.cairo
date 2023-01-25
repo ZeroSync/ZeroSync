@@ -17,6 +17,9 @@ from stark_verifier.utils import Vec
 from crypto.hash_utils import assert_hashes_equal
 from utils.endianness import byteswap32
 
+from stark_verifier.crypto.random import hash_elements
+
+
 struct TraceOodFrame {
     main_frame: EvaluationFrame,
     aux_frame: EvaluationFrame,
@@ -89,11 +92,11 @@ func read_pow_nonce{channel: Channel}() -> felt {
 }
 
 struct QueriesProof {
-    length : felt,
+    length : felt,  // TODO: this is unneccessary overhead. All paths of a BatchMerkleProof have the same length
     digests : felt*,
 }
 
-struct TraceQueriesProofs {
+struct QueriesProofs {
     proofs : QueriesProof*,
 }
 
@@ -132,29 +135,55 @@ func verify_merkle_proof{
     }(length: felt, path: felt*, position, root: felt*){
     alloc_locals;
 
-    let (be_root: felt*) = alloc();
-    assert be_root[0] = byteswap32(root[0]);
-    assert be_root[1] = byteswap32(root[1]);
-    assert be_root[2] = byteswap32(root[2]);
-    assert be_root[3] = byteswap32(root[3]);
-    assert be_root[4] = byteswap32(root[4]);
-    assert be_root[5] = byteswap32(root[5]);
-    assert be_root[6] = byteswap32(root[6]);
-    assert be_root[7] = byteswap32(root[7]);
-
-    _verify_merkle_proof(length - 1, path + 8, position, be_root, path);
+    _verify_merkle_proof(length - 1, path + 8, position, root, path);
 
     return ();
 }
 
 func verify_merkle_proofs{
     range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*
-}(proofs: QueriesProof*, positions: felt*, trace_roots: felt*, loop_counter){
+}(proofs: QueriesProof*, positions: felt*, trace_roots: felt*, loop_counter, rows: felt*, n_cols: felt){
     if(loop_counter == 0){
         return ();
     }
+    // Hash the row of the table at the current index and compare it to the leaf of the path
+    let digest = hash_elements(n_elements=n_cols, elements=rows);
+    assert_hashes_equal(digest, proofs[0].digests);
+
     verify_merkle_proof( proofs[0].length, proofs[0].digests, positions[0], trace_roots );
-    verify_merkle_proofs(&proofs[1], positions + 1, trace_roots, loop_counter - 1);
+    verify_merkle_proofs(&proofs[1], positions + 1, trace_roots, loop_counter - 1, rows + n_cols, n_cols);
+    return ();
+}
+
+// AUX TRACE (Memory)
+func verify_aux_merkle_proofs_1{
+    range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*
+}(proofs: QueriesProof*, positions: felt*, trace_roots: felt*, loop_counter, rows: felt*, n_cols: felt){
+    if(loop_counter == 0){
+        return ();
+    }
+    // Hash the row of the table at the current index and compare it to the leaf of the path
+    let digest = hash_elements(n_elements=12, elements=rows);
+    assert_hashes_equal(digest, proofs[0].digests);
+
+    verify_merkle_proof( proofs[0].length, proofs[0].digests, positions[0], trace_roots );
+    verify_aux_merkle_proofs_1(&proofs[1], positions + 1, trace_roots, loop_counter - 1, rows + n_cols, n_cols);
+    return ();
+}
+
+// AUX TRACE (Range check)
+func verify_aux_merkle_proofs_2{
+    range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*
+}(proofs: QueriesProof*, positions: felt*, trace_roots: felt*, loop_counter, rows: felt*, n_cols: felt){
+    if(loop_counter == 0){
+        return ();
+    }
+    // Hash the row of the table at the current index and compare it to the leaf of the path
+    let digest = hash_elements(n_elements=6, elements=rows + 12);
+    assert_hashes_equal(digest, proofs[0].digests);
+
+    verify_merkle_proof( proofs[0].length, proofs[0].digests, positions[0], trace_roots );
+    verify_aux_merkle_proofs_2(&proofs[1], positions + 1, trace_roots, loop_counter - 1, rows + n_cols, n_cols);
     return ();
 }
 
@@ -164,7 +193,7 @@ func read_queried_trace_states{
     main_states: Table, aux_states: Table
 ) {
     alloc_locals;
-    let (local trace_queries_proof_ptr: TraceQueriesProofs*) = alloc();
+    let (local trace_queries_proof_ptr: QueriesProofs*) = alloc();
     %{
         import json
         import subprocess
@@ -178,7 +207,7 @@ func read_queried_trace_states{
 
         completed_process = subprocess.run([
             'bin/stark_parser',
-            'tests/integration/stark_proofs/fibonacci.bin',
+            'tests/integration/stark_proofs/fibonacci.bin', # TODO: this path shouldn't be hardcoded!
             'trace-queries',
             positions
             ],
@@ -188,16 +217,58 @@ func read_queried_trace_states{
         write_into_memory(ids.trace_queries_proof_ptr, json_data, segments)
     %}
 
-    let num_queries = 4;  // TODO: this should be 54 but we get an OUT_OF_RESOURCES 
+    let num_queries = 4; // TODO: this should be 54, but it takes forever...
 
-    verify_merkle_proofs(trace_queries_proof_ptr[0].proofs, positions, channel.trace_roots, num_queries);
-    verify_merkle_proofs(trace_queries_proof_ptr[1].proofs, positions, channel.trace_roots + 8, num_queries);
-    verify_merkle_proofs(trace_queries_proof_ptr[2].proofs, positions, channel.trace_roots + 8 * 2, num_queries);
+    let main_states = channel.trace_queries.main_states;
+    let aux_states = channel.trace_queries.aux_states;
 
-    return (channel.trace_queries.main_states, channel.trace_queries.aux_states);
+    // Authenticate proof paths
+    verify_merkle_proofs(
+        trace_queries_proof_ptr[0].proofs, positions, channel.trace_roots, num_queries, main_states.elements, main_states.n_cols);
+    verify_aux_merkle_proofs_1(
+        trace_queries_proof_ptr[1].proofs, positions, channel.trace_roots + 8, num_queries, aux_states.elements, aux_states.n_cols);
+    verify_aux_merkle_proofs_2(
+        trace_queries_proof_ptr[2].proofs, positions, channel.trace_roots + 8 * 2, num_queries, aux_states.elements, aux_states.n_cols);
+
+    return (main_states, aux_states);
 }
 
-func read_constraint_evaluations{channel: Channel}(positions: felt*) -> Table {
-    // TODO: Authenticate proof paths
-    return channel.constraint_queries.evaluations;
+
+
+func read_constraint_evaluations{
+    range_check_ptr, blake2s_ptr: felt*, channel: Channel, bitwise_ptr: BitwiseBuiltin*
+    }(positions: felt*) -> Table {
+
+    alloc_locals;
+    let (local constraint_queries_proof_ptr: QueriesProofs*) = alloc();
+    %{
+        import json
+        import subprocess
+        from src.stark_verifier.utils import write_into_memory
+
+        positions = []
+        for i in range(54):
+            positions.append( memory[ids.positions + i] )
+
+        positions = json.dumps( positions )
+
+        completed_process = subprocess.run([
+            'bin/stark_parser',
+            'tests/integration/stark_proofs/fibonacci.bin', # TODO: this path shouldn't be hardcoded!
+            'constraint-queries',
+            positions
+            ],
+            capture_output=True)
+        
+        json_data = completed_process.stdout
+        write_into_memory(ids.constraint_queries_proof_ptr, json_data, segments)
+    %}
+    let num_queries = 4; // TODO: this should be 54, but it takes forever...
+
+    // Authenticate proof paths
+    let evaluations = channel.constraint_queries.evaluations;
+    verify_merkle_proofs(
+        constraint_queries_proof_ptr[0].proofs, positions, channel.constraint_root, num_queries, evaluations.elements, evaluations.n_cols);
+
+    return evaluations;
 }
