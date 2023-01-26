@@ -161,8 +161,9 @@ func fri_verify{
     range_check_ptr, pedersen_ptr: HashBuiltin*, blake2s_ptr: felt*, channel: Channel, bitwise_ptr: BitwiseBuiltin*
     }(fri_verifier: FriVerifier, evaluations: felt*, positions: felt*
 ) {
+    let num_queries = 54;
     // Verify a round for each query
-    // verify_queries(fri_verifier, positions, evaluations);
+    verify_queries(fri_verifier, positions, evaluations, num_queries);
 
     // Check that a Merkle tree of the claimed remainders hash to the final layer commitment
     let domain_size = fri_verifier.domain_size;
@@ -180,7 +181,7 @@ func fri_verify{
     return ();
 }
 
-func verify_queries{channel: Channel}(
+func verify_queries{range_check_ptr, channel: Channel}(
     fri_verifier: FriVerifier,
     positions: felt*,
     query_evaluations: felt*,
@@ -206,7 +207,7 @@ func verify_queries{channel: Channel}(
     let MULTIPLICATIVE_GENERATOR = 42; // TODO: this is just a random number to fix the `Unknown identifier` error.
     let g = MULTIPLICATIVE_GENERATOR;
     let omega = fri_verifier.domain_generator;
-    let omega_i = pow(omega, position);
+    let (omega_i) = pow(omega, position);
 
     // Compute the remaining folded roots of unity
     let (omega_folded) = alloc();
@@ -228,29 +229,31 @@ func verify_queries{channel: Channel}(
     // TODO: Check that the claimed remainder is equal to the final evaluation.
 
     // Iterate over the remaining queries
-    verify_queries(
-        g,
-        omega_i,
-        alphas,
-        query_evaluations + 
-        positions + 1,
-        num_queries - 1
-    );
+    // verify_queries(
+    //     g,
+    //     omega_i,
+    //     alphas,
+    //     query_evaluations + positions + 1,
+    //     num_queries - 1
+    // );
     return ();
 }
 
-func compute_folded_roots(omega_folded: felt*, omega, log_degree: felt, folding_factor: felt, n: felt) {
+func compute_folded_roots{
+    range_check_ptr
+    }(omega_folded: felt*, omega, log_degree: felt, folding_factor: felt, n: felt) {
     if (n == folding_factor) {
         return ();
     }
     let (degree) = pow(2, log_degree);
     let new_domain_size = degree / folding_factor * n;
-    let res = pow(omega, new_domain_size);
+    let (res) = pow(omega, new_domain_size);
     assert [omega_folded] = res;
     compute_folded_roots(omega_folded + 1, omega, log_degree, folding_factor, n + 1);
+    return ();
 }
 
-func verify_layers{channel: Channel}(
+func verify_layers{range_check_ptr, channel: Channel}(
     g: felt,
     omega_i: felt,
     alphas: felt*,
@@ -264,12 +267,13 @@ func verify_layers{channel: Channel}(
     if (num_layers == 0) {
         return ();
     }
+    alloc_locals;
 
     let alpha = [alphas];
     let x = g * omega_i;
 
     // Swap the evaluation points if the folded point is in the second half of the domain
-    let (query_evaluations) = alloc();
+    let (local query_evaluations) = alloc();
     swap_evaluation_points(query_evaluations, query_evaluations_raw);
 
     // TODO: Verify that evaluations are consistent with the layer commitment
@@ -278,29 +282,31 @@ func verify_layers{channel: Channel}(
     if (previous_eval != 0) {
         assert previous_eval = [query_evaluations + 1];
     }
-    
     // TODO: Interpolate the evaluations at the x-coordinates, and evaluate at alpha.
-    let (eval) = evaluate_polynomial(query_evaluations, folding_factor, alpha);
-    let previous_eval = eval;
+    // let eval = evaluate_polynomial(query_evaluations, num_layer_evaluations, folding_factor, alpha); // TODO: check the parameters here! 
+    // let previous_eval = eval;
 
     // Update variables for the next layer
-    omega_i = pow(omega_i, folding_factor);
+    let (omega_i) = pow(omega_i, folding_factor);
 
-    verify_layers(
-        g,
-        omega_i,
-        alphas + 1,
-        position,
-        query_evaluations_raw + num_layer_evaluations,
-        num_layer_evaluations,
-        num_layers - 1,
-        folding_factor,
-        previous_eval
-    );
+    // verify_layers(
+    //     g,
+    //     omega_i,
+    //     alphas + 1,
+    //     position,
+    //     query_evaluations_raw + num_layer_evaluations,
+    //     num_layer_evaluations,
+    //     num_layers - 1,
+    //     folding_factor,
+    //     previous_eval
+    // );
+
+    return ();
 }
 
 func swap_evaluation_points(query_evaluations: felt*, query_evaluations_raw: felt*) {
     // TODO
+    return ();
 }
 
 func verify_remainder_degree{pedersen_ptr: HashBuiltin*}(
