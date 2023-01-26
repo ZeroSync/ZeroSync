@@ -1,12 +1,18 @@
-from stark_verifier.air.air_instance import AirInstance
-from stark_verifier.channel import Channel
-from stark_verifier.air.stark_proof import ProofOptions
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
-from stark_verifier.crypto.random import PublicCoin, reseed, draw, reseed_endian
 from starkware.cairo.common.alloc import alloc
-from starkware.cairo.common.math import assert_le, assert_not_zero
+from starkware.cairo.common.hash import HashBuiltin
+from starkware.cairo.common.math import assert_le, assert_not_zero, horner_eval
 from starkware.cairo.common.pow import pow
+
+from stark_verifier.air.air_instance import AirInstance
+from stark_verifier.air.stark_proof import ProofOptions
+from stark_verifier.channel import Channel
+from stark_verifier.crypto.random import PublicCoin, reseed, draw, reseed_endian
+from stark_verifier.fri.utils import evaluate_polynomial, lagrange_eval
 from utils.pow2 import pow2
+
+const TWO_ADICITY = 192;
+const TWO_ADIC_ROOT_OF_UNITY = 145784604816374866144131285430889962727208297722245411306711449302875041684;
 
 struct FriOptions {
     folding_factor: felt,
@@ -17,7 +23,11 @@ struct FriOptions {
 func to_fri_options(proof_options: ProofOptions) -> FriOptions {
     let folding_factor = proof_options.fri_folding_factor;
     let max_remainder_size = proof_options.fri_max_remainder_size; // stored as power of 2
-    let fri_options = FriOptions(proof_options.blowup_factor, folding_factor, max_remainder_size);
+    let fri_options = FriOptions(
+        proof_options.blowup_factor,
+        folding_factor,
+        max_remainder_size
+    );
     return fri_options;
 }
 
@@ -28,7 +38,6 @@ struct FriVerifier {
     layer_commitments: felt*,
     layer_alphas: felt*,
     options: FriOptions,
-    num_partitions: felt,
 }
 
 func _fri_verifier_new{
@@ -36,7 +45,13 @@ func _fri_verifier_new{
     blake2s_ptr: felt*,
     bitwise_ptr: BitwiseBuiltin*,
     public_coin: PublicCoin,
-}(options: FriOptions, max_degree_plus_1, layer_commitment_ptr: felt*, layer_alpha_ptr: felt*, count) {
+}(
+    options: FriOptions,
+    max_degree_plus_1,
+    layer_commitment_ptr: felt*,
+    layer_alpha_ptr: felt*,
+    count: felt,
+) {
     if (count == 0) {
         return ();
     }
@@ -46,8 +61,12 @@ func _fri_verifier_new{
     let alpha = draw();
     assert [layer_alpha_ptr] = alpha;
 
-
-    _fri_verifier_new(options, max_degree_plus_1 / options.folding_factor, layer_commitment_ptr + 8, layer_alpha_ptr + 1, count - 1);
+    _fri_verifier_new(
+        options,
+        max_degree_plus_1 / options.folding_factor,
+        layer_commitment_ptr + 8,
+        layer_alpha_ptr + 1,
+        count - 1);
     return ();
 }
 
@@ -57,7 +76,10 @@ func fri_verifier_new{
     bitwise_ptr: BitwiseBuiltin*,
     public_coin: PublicCoin,
     channel: Channel
-}(options: FriOptions, max_poly_degree) -> FriVerifier {
+}(
+    options: FriOptions,
+    max_poly_degree
+) -> FriVerifier {
 
     alloc_locals;
 
@@ -69,14 +91,17 @@ func fri_verifier_new{
     // air.trace_domain_generator ?
     // air.lde_domain_generator ?
 
-    let num_partitions = 1;
-    // channel.read_fri_num_partitions() ?
-
     // read layer commitments from the channel and use them to build a list of alphas
     let (layer_alphas) = alloc();
     let layer_commitments = channel.fri_roots;
     %{ print('fri_roots_len', ids.channel.fri_roots_len) %}
-    _fri_verifier_new(options, max_poly_degree + 1, layer_commitments, layer_alphas, channel.fri_roots_len);
+    _fri_verifier_new(
+        options,
+        max_poly_degree + 1,
+        layer_commitments,
+        layer_alphas,
+        channel.fri_roots_len
+    );
 
     let res = FriVerifier(
         max_poly_degree,
@@ -85,7 +110,6 @@ func fri_verifier_new{
         layer_commitments,
         layer_alphas,
         options,
-        num_partitions
     );
     return res;
 }
@@ -105,9 +129,6 @@ func next_power_of_two{range_check_ptr}(x) -> felt {
     }
     return next_power_of_two;
 }
-
-const TWO_ADICITY = 192;
-const TWO_ADIC_ROOT_OF_UNITY = 145784604816374866144131285430889962727208297722245411306711449302875041684;
 
 func get_root_of_unity{range_check_ptr}(n) -> felt {
     with_attr error_message("cannot get root of unity for n = 0") {
@@ -134,9 +155,183 @@ func log2(n) -> felt {
     return n_bits;
 }
 
-func fri_verify{channel: Channel}(
+func fri_verify{channel: Channel, pedersen_ptr: HashBuiltin*}(
     fri_verifier: FriVerifier, evaluations: felt*, positions: felt*
 ) {
-    // TODO
+    // Verify a round for each query
+    verify_queries(fri_verifier, positions, evaluations, )
+
+    // TODO: Check that a Merkle tree of the claimed remainders hash to the final layer commitment
+
+    // TODO: Ensure that the interpolated remainder polynomial is of degree <= max_remainder_degree
+    verify_remainder_degree(
+        remainders,
+        remainders_poly,
+        remainders_len,
+        fri_verifier.options.max_remainder_size
+    );
+
     return ();
+}
+
+func verify_queries{channel: Channel}(
+    fri_verifier: FriVerifier,
+    positions: felt*,
+    query_evaluations: felt*,
+    num_queries: felt
+) {
+    alloc_locals;
+    if num_queries == 0 {
+        return ();
+    }
+
+    tempvar log_degree = log2(fri_verifier.domain_size);
+    tempvar folding_factor = fri_verifier.options.folding_factor;
+    tempvar num_layer_evaluations = folding_factor * num_layers;
+    tempvar alphas = fri_verifier.layer_alphas;
+
+    let position = [positions];
+
+    // Compute the field element coordinate at the queried position
+    // g: domain offset
+    // omega: domain generator
+    // x: omega^position * g
+    let g = MULTIPLICATIVE_GENERATOR;
+    let omega = fri_verifier.domain_generator;
+    let omega_i = pow(omega, position);
+
+    // Compute the remaining folded roots of unity
+    let (omega_folded) = alloc();
+    compute_folded_roots(omega_folded, omega, log_degree, folding_factor, 1);
+
+    // Iterate over the layers within this query
+    verify_layers(
+        g,
+        omega_i,
+        alphas,
+        position,
+        query_evaluations,
+        num_layer_evaluations,
+        num_layers,
+        folding_factor,
+        0
+    );
+
+    // TODO: Check that the claimed remainder is equal to the final evaluation.
+
+    // Iterate over the remaining queries
+    verify_queries(
+        g,
+        omega_i,
+        alphas,
+        query_evaluations + 
+        positions + 1,
+        num_queries - 1
+    );
+    return ();
+}
+
+func compute_folded_roots(omega_folded: felt*, omega, log_degree: felt, folding_factor: felt, n: felt) {
+    if (n == folding_factor) {
+        return ();
+    }
+    let (degree) = pow(2, log_degree);
+    let new_domain_size = degree / folding_factor * n;;
+    let res = pow(omega, new_domain_size);
+    assert [omega_folded] = res;
+    compute_folded_roots(omega_folded + 1, omega, log_degree, folding_factor, n + 1);
+}
+
+func verify_layers{channel: Channel}(
+    g: felt,
+    omega_i: felt,
+    alphas: felt*,
+    position: felt,
+    query_evaluations_raw: felt*,
+    num_layer_evaluations: felt,
+    num_layers: felt,
+    folding_factor: felt,
+    previous_eval: felt
+) {
+    if (num_layers == 0) {
+        return ();
+    }
+
+    let alpha = [alphas];
+    let x = g * omega_i;
+
+    // Swap the evaluation points if the folded point is in the second half of the domain
+    let (query_evaluations) = alloc();
+    swap_evaluation_points(query_evaluations, query_evaluations_raw);
+
+    // TODO: Verify that evaluations are consistent with the layer commitment
+
+    // TODO: Compare previous polynomial evaluation with the current layer evaluation
+    if (previous_eval != 0) {
+        assert previous_eval = [query_evaluations + 1];
+    }
+    
+    // TODO: Interpolate the evaluations at the x-coordinates, and evaluate at alpha.
+    let (eval) = evaluate_polynomial(query_evaluations, folding_factor, alpha);
+    let previous_eval = eval;
+
+    // Update variables for the next layer
+    omega_i = pow(omega_i, folding_factor);
+
+    verify_layers(
+        g,
+        omega_i,
+        alphas + 1,
+        position,
+        query_evaluations_raw + num_layer_evaluations,
+        num_layer_evaluations,
+        num_layers - 1,
+        folding_factor,
+        previous_eval
+    );
+}
+
+func swap_evaluation_points(query_evaluations: felt*, query_evaluations_raw: felt*) {
+    // TODO
+}
+
+func verify_remainder_degree{pedersen_ptr: HashBuiltin*}(
+    remainders: felt*, remainders_poly: felt*, remainders_len: felt, max_degree: felt
+) {
+    // Use the commitment to the remainder polynomial and evaluations to draw a random
+    // field element tau
+    let (hash_state_ptr) = hash_init();
+    let (hash_state_ptr) = hash_update{hash_ptr=pedersen_ptr}(
+        hash_state_ptr=hash_state_ptr,
+        data_ptr=remainders,
+        data_length=remainders_len
+    );
+    let (hash_state_ptr) = hash_update{hash_ptr=pedersen_ptr}(
+        hash_state_ptr=hash_state_ptr,
+        data_ptr=remainders_poly,
+        data_length=remainders_len
+    );
+    let (tau) = hash_finalize{hash_ptr=pedersen_ptr}(hash_state_ptr=hash_state_ptr);
+
+    // Roots of unity for remainder evaluation domain
+    let (k) = log2(remainders_len);
+    let (omega_n) = get_root_of_unity(k);
+    let (omega_i) = alloc();
+    get_roots_of_unity(omega_i, omega_n, 0, remainders_len);
+
+    // Evaluate both polynomial representations at tau and confirm agreement
+    let (a) = horner_eval(max_degree, remainder_polynomial, tau);
+    let (b) = lagrange_eval(remainder_evaluations, omega_i, remainders_len, tau);
+    assert a = b;
+
+    // TODO: Check that all polynomial coefficients greater than 'max_degree' are zero
+}
+
+func get_roots_of_unity(omega_i: felt*, omega_n: felt, i: felt, len: felt) {
+    if (i == len) {
+        return ();
+    }
+    let (x) = pow(omega_n, i);
+    assert [omega_i] = x;
+    get_roots_of_unity(omega_i + 1, omega_n, i + 1, len);
 }

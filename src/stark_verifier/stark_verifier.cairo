@@ -103,6 +103,7 @@ func verify{range_check_ptr, pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBui
 func perform_verification{
     range_check_ptr,
     blake2s_ptr: felt*,
+    pedersen_ptr: HashBuiltin*, 
     bitwise_ptr: BitwiseBuiltin*,
     channel: Channel,
     public_coin: PublicCoin,
@@ -250,7 +251,7 @@ func perform_verification{
 
     //// Make sure that evaluations of the DEEP composition polynomial we computed in the previous
     //// step are in fact evaluations of a polynomial of degree equal to trace polynomial degree.
-    //fri_verify(fri_verifier, deep_evaluations, query_positions);
+    fri_verify(fri_verifier, deep_evaluations, query_positions);
 
     return ();
 }
