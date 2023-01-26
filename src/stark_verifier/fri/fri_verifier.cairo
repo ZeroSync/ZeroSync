@@ -12,6 +12,7 @@ from stark_verifier.fri.utils import evaluate_polynomial, lagrange_eval
 from utils.pow2 import pow2
 from stark_verifier.channel import verify_merkle_proof, QueriesProofs, QueriesProof
 from stark_verifier.crypto.random import contains
+from starkware.cairo.common.hash_state import hash_finalize, hash_init, hash_update
 
 const TWO_ADICITY = 192;
 const TWO_ADIC_ROOT_OF_UNITY = 145784604816374866144131285430889962727208297722245411306711449302875041684;
@@ -303,29 +304,29 @@ func swap_evaluation_points(query_evaluations: felt*, query_evaluations_raw: fel
 func verify_remainder_degree{pedersen_ptr: HashBuiltin*}(
     remainders: felt*, remainders_poly: felt*, remainders_len: felt, max_degree: felt
 ) {
-    // // Use the commitment to the remainder polynomial and evaluations to draw a random
-    // // field element tau
-    // let (hash_state_ptr) = hash_init();
-    // let (hash_state_ptr) = hash_update{hash_ptr=pedersen_ptr}(
-    //     hash_state_ptr=hash_state_ptr,
-    //     data_ptr=remainders,
-    //     data_length=remainders_len
-    // );
-    // let (hash_state_ptr) = hash_update{hash_ptr=pedersen_ptr}(
-    //     hash_state_ptr=hash_state_ptr,
-    //     data_ptr=remainders_poly,
-    //     data_length=remainders_len
-    // );
-    // let (tau) = hash_finalize{hash_ptr=pedersen_ptr}(hash_state_ptr=hash_state_ptr);
+    // Use the commitment to the remainder polynomial and evaluations to draw a random
+    // field element tau
+    let (hash_state_ptr) = hash_init();
+    let (hash_state_ptr) = hash_update{hash_ptr=pedersen_ptr}(
+        hash_state_ptr=hash_state_ptr,
+        data_ptr=remainders,
+        data_length=remainders_len
+    );
+    let (hash_state_ptr) = hash_update{hash_ptr=pedersen_ptr}(
+        hash_state_ptr=hash_state_ptr,
+        data_ptr=remainders_poly,
+        data_length=remainders_len
+    );
+    let (tau) = hash_finalize{hash_ptr=pedersen_ptr}(hash_state_ptr=hash_state_ptr);
 
-    // // Roots of unity for remainder evaluation domain
-    // let (k) = log2(remainders_len);
-    // let (omega_n) = get_root_of_unity(k);
-    // let (omega_i) = alloc();
-    // get_roots_of_unity(omega_i, omega_n, 0, remainders_len);
+    // Roots of unity for remainder evaluation domain
+    let (k) = log2(remainders_len);
+    let (omega_n) = get_root_of_unity(k);
+    let (omega_i) = alloc();
+    get_roots_of_unity(omega_i, omega_n, 0, remainders_len);
 
-    // // Evaluate both polynomial representations at tau and confirm agreement
-    // let (a) = horner_eval(max_degree, remainder_polynomial, tau);
+    // Evaluate both polynomial representations at tau and confirm agreement
+    let (a) = horner_eval(max_degree, remainders_poly, tau);
     // let (b) = lagrange_eval(remainder_evaluations, omega_i, remainders_len, tau);
     // assert a = b;
 
