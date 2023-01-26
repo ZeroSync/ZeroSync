@@ -148,7 +148,7 @@ func verify_merkle_proofs{
     }
     // Hash the row of the table at the current index and compare it to the leaf of the path
     let digest = hash_elements(n_elements=n_cols, elements=rows);
-    assert_hashes_equal(digest, proofs[0].digests);
+    assert_hashes_equal(digest, proofs[0].digests); 
 
     verify_merkle_proof( proofs[0].length, proofs[0].digests, positions[0], trace_roots );
     verify_merkle_proofs(&proofs[1], positions + 1, trace_roots, loop_counter - 1, rows + n_cols, n_cols);

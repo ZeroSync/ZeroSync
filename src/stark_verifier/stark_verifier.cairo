@@ -93,7 +93,7 @@ func verify{range_check_ptr, pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBui
         perform_verification(air=air);
     }
 
-    // finalize_blake2s(blake2s_ptr_start, blake2s_ptr);
+    // finalize_blake2s(blake2s_ptr_start, blake2s_ptr); // TODO: uncomment this line before deployment. Otherwise, the proof is INSECURE!
 
     return ();
 }
@@ -247,10 +247,10 @@ func perform_verification{
     );
     let deep_evaluations = combine_compositions(composer, t_composition, c_composition);
 
-    //// 7 ----- Verify low-degree proof -------------------------------------------------------------
+    // 7 ----- Verify low-degree proof -------------------------------------------------------------
 
-    //// Make sure that evaluations of the DEEP composition polynomial we computed in the previous
-    //// step are in fact evaluations of a polynomial of degree equal to trace polynomial degree.
+    // Make sure that evaluations of the DEEP composition polynomial we computed in the previous
+    // step are in fact evaluations of a polynomial of degree equal to trace polynomial degree.
     fri_verify(fri_verifier, deep_evaluations, query_positions);
 
     return ();

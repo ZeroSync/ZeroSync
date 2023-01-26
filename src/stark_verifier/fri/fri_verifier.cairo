@@ -10,6 +10,8 @@ from stark_verifier.channel import Channel
 from stark_verifier.crypto.random import PublicCoin, reseed, draw, reseed_endian
 from stark_verifier.fri.utils import evaluate_polynomial, lagrange_eval
 from utils.pow2 import pow2
+from stark_verifier.channel import verify_merkle_proof, QueriesProofs, QueriesProof
+from stark_verifier.crypto.random import contains
 
 const TWO_ADICITY = 192;
 const TWO_ADIC_ROOT_OF_UNITY = 145784604816374866144131285430889962727208297722245411306711449302875041684;
@@ -94,7 +96,6 @@ func fri_verifier_new{
     // read layer commitments from the channel and use them to build a list of alphas
     let (layer_alphas) = alloc();
     let layer_commitments = channel.fri_roots;
-    %{ print('fri_roots_len', ids.channel.fri_roots_len) %}
     _fri_verifier_new(
         options,
         max_poly_degree + 1,
@@ -150,26 +151,28 @@ func log2(n) -> felt {
     %}
     let next_power_of_two = pow2(n_bits);
     with_attr error_message("n must be a power of two") {
-        assert n = next_power_of_two;
+        assert next_power_of_two = n;
     }
     return n_bits;
 }
 
-func fri_verify{channel: Channel, pedersen_ptr: HashBuiltin*}(
-    fri_verifier: FriVerifier, evaluations: felt*, positions: felt*
+func fri_verify{
+    range_check_ptr, pedersen_ptr: HashBuiltin*, blake2s_ptr: felt*, channel: Channel, bitwise_ptr: BitwiseBuiltin*
+    }(fri_verifier: FriVerifier, evaluations: felt*, positions: felt*
 ) {
     // Verify a round for each query
-    verify_queries(fri_verifier, positions, evaluations, )
+    // verify_queries(fri_verifier, positions, evaluations);
 
-    // TODO: Check that a Merkle tree of the claimed remainders hash to the final layer commitment
+    // Check that a Merkle tree of the claimed remainders hash to the final layer commitment
+    verify_fri_proofs(evaluations, positions);
 
     // TODO: Ensure that the interpolated remainder polynomial is of degree <= max_remainder_degree
-    verify_remainder_degree(
-        remainders,
-        remainders_poly,
-        remainders_len,
-        fri_verifier.options.max_remainder_size
-    );
+    // verify_remainder_degree(
+    //     remainders,
+    //     remainders_poly,
+    //     remainders_len,
+    //     fri_verifier.options.max_remainder_size
+    // );
 
     return ();
 }
@@ -181,10 +184,11 @@ func verify_queries{channel: Channel}(
     num_queries: felt
 ) {
     alloc_locals;
-    if num_queries == 0 {
+    if (num_queries == 0) {
         return ();
     }
 
+    tempvar num_layers = 42; // TODO: this is just a random number to fix the `Unknown identifier` error.
     tempvar log_degree = log2(fri_verifier.domain_size);
     tempvar folding_factor = fri_verifier.options.folding_factor;
     tempvar num_layer_evaluations = folding_factor * num_layers;
@@ -196,6 +200,7 @@ func verify_queries{channel: Channel}(
     // g: domain offset
     // omega: domain generator
     // x: omega^position * g
+    let MULTIPLICATIVE_GENERATOR = 42; // TODO: this is just a random number to fix the `Unknown identifier` error.
     let g = MULTIPLICATIVE_GENERATOR;
     let omega = fri_verifier.domain_generator;
     let omega_i = pow(omega, position);
@@ -236,7 +241,7 @@ func compute_folded_roots(omega_folded: felt*, omega, log_degree: felt, folding_
         return ();
     }
     let (degree) = pow(2, log_degree);
-    let new_domain_size = degree / folding_factor * n;;
+    let new_domain_size = degree / folding_factor * n;
     let res = pow(omega, new_domain_size);
     assert [omega_folded] = res;
     compute_folded_roots(omega_folded + 1, omega, log_degree, folding_factor, n + 1);
@@ -298,31 +303,31 @@ func swap_evaluation_points(query_evaluations: felt*, query_evaluations_raw: fel
 func verify_remainder_degree{pedersen_ptr: HashBuiltin*}(
     remainders: felt*, remainders_poly: felt*, remainders_len: felt, max_degree: felt
 ) {
-    // Use the commitment to the remainder polynomial and evaluations to draw a random
-    // field element tau
-    let (hash_state_ptr) = hash_init();
-    let (hash_state_ptr) = hash_update{hash_ptr=pedersen_ptr}(
-        hash_state_ptr=hash_state_ptr,
-        data_ptr=remainders,
-        data_length=remainders_len
-    );
-    let (hash_state_ptr) = hash_update{hash_ptr=pedersen_ptr}(
-        hash_state_ptr=hash_state_ptr,
-        data_ptr=remainders_poly,
-        data_length=remainders_len
-    );
-    let (tau) = hash_finalize{hash_ptr=pedersen_ptr}(hash_state_ptr=hash_state_ptr);
+    // // Use the commitment to the remainder polynomial and evaluations to draw a random
+    // // field element tau
+    // let (hash_state_ptr) = hash_init();
+    // let (hash_state_ptr) = hash_update{hash_ptr=pedersen_ptr}(
+    //     hash_state_ptr=hash_state_ptr,
+    //     data_ptr=remainders,
+    //     data_length=remainders_len
+    // );
+    // let (hash_state_ptr) = hash_update{hash_ptr=pedersen_ptr}(
+    //     hash_state_ptr=hash_state_ptr,
+    //     data_ptr=remainders_poly,
+    //     data_length=remainders_len
+    // );
+    // let (tau) = hash_finalize{hash_ptr=pedersen_ptr}(hash_state_ptr=hash_state_ptr);
 
-    // Roots of unity for remainder evaluation domain
-    let (k) = log2(remainders_len);
-    let (omega_n) = get_root_of_unity(k);
-    let (omega_i) = alloc();
-    get_roots_of_unity(omega_i, omega_n, 0, remainders_len);
+    // // Roots of unity for remainder evaluation domain
+    // let (k) = log2(remainders_len);
+    // let (omega_n) = get_root_of_unity(k);
+    // let (omega_i) = alloc();
+    // get_roots_of_unity(omega_i, omega_n, 0, remainders_len);
 
-    // Evaluate both polynomial representations at tau and confirm agreement
-    let (a) = horner_eval(max_degree, remainder_polynomial, tau);
-    let (b) = lagrange_eval(remainder_evaluations, omega_i, remainders_len, tau);
-    assert a = b;
+    // // Evaluate both polynomial representations at tau and confirm agreement
+    // let (a) = horner_eval(max_degree, remainder_polynomial, tau);
+    // let (b) = lagrange_eval(remainder_evaluations, omega_i, remainders_len, tau);
+    // assert a = b;
 
     // TODO: Check that all polynomial coefficients greater than 'max_degree' are zero
 }
@@ -334,4 +339,84 @@ func get_roots_of_unity(omega_i: felt*, omega_n: felt, i: felt, len: felt) {
     let (x) = pow(omega_n, i);
     assert [omega_i] = x;
     get_roots_of_unity(omega_i + 1, omega_n, i + 1, len);
+}
+
+
+func verify_fri_merkle_proofs {
+    range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*
+}(proofs: QueriesProof*, positions: felt*, trace_roots: felt*, loop_counter, evaluations: felt*, n_evaluations: felt){
+    if(loop_counter == 0){
+        return ();
+    }
+
+    // let digest = hash_elements(n_elements=n_evaluations, elements=evaluations);    // TODO: hash the evaluation correctly
+    // assert_hashes_equal(digest, proofs[0].digests);
+
+    verify_merkle_proof( proofs[0].length, proofs[0].digests, positions[0], trace_roots );
+    verify_fri_merkle_proofs(&proofs[1], positions + 1, trace_roots, loop_counter - 1, evaluations + n_evaluations, n_evaluations);
+    return ();
+}
+
+func verify_fri_proofs {
+    range_check_ptr, blake2s_ptr: felt*, channel: Channel, bitwise_ptr: BitwiseBuiltin*
+    }(evaluations: felt*, positions: felt*){
+    alloc_locals;
+
+    let (local next_positions: felt*) = alloc();
+    let new_len = fold_positions(positions, next_positions, 54, 0);
+
+    let (local fri_queries_proof_ptr: QueriesProofs*) = alloc();
+    %{
+        import json
+        import subprocess
+        from src.stark_verifier.utils import write_into_memory
+
+        positions = []
+        for i in range(ids.new_len):
+            positions.append( memory[ids.next_positions + i] )
+
+        positions = json.dumps( positions )
+
+        completed_process = subprocess.run([
+            'bin/stark_parser',
+            'tests/integration/stark_proofs/fibonacci.bin', # TODO: this path shouldn't be hardcoded here!
+            'fri-queries',
+            positions
+            ],
+            capture_output=True)
+        
+        json_data = completed_process.stdout
+        write_into_memory(ids.fri_queries_proof_ptr, json_data, segments)
+    %}
+    let n_cols = 1;
+    
+    // Authenticate proof paths
+    // TODO: loop folding here
+    verify_fri_merkle_proofs(
+        fri_queries_proof_ptr[0].proofs, next_positions, channel.fri_roots, new_len, evaluations, n_cols);
+    
+    return();
+}
+
+func fold_positions(positions: felt*, next_positions: felt*, loop_counter, elems_count) -> felt {
+    if (loop_counter == 0){
+        return elems_count;
+    }
+    alloc_locals;
+    let prev_position = [positions];
+    local next_position;
+    // TODO: this hint is an insecure hack. Replace it
+    %{ 
+        domain_size = 512
+        fri_folding_factor = 8
+        modulus = domain_size // fri_folding_factor
+        ids.next_position = ids.prev_position % modulus
+    %}
+    let is_contained = contains(next_position, next_positions - elems_count, elems_count);
+    if(is_contained == 1){
+        return fold_positions(positions + 1, next_positions, loop_counter - 1, elems_count);
+    } else {
+        assert next_positions[0] = next_position;
+        return fold_positions(positions + 1, next_positions + 1, loop_counter - 1, elems_count + 1);
+    }
 }

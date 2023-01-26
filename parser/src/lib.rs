@@ -1,6 +1,7 @@
-#![feature(array_chunks)]
 
+#![feature(array_chunks)]
 use serde::{Deserialize, Serialize};
+use winter_fri::FriProof;
 use std::fs::File;
 use std::io::{BufReader, Read};
 use std::iter::zip;
@@ -391,9 +392,9 @@ impl Writeable for DeepComposer<Felt> {
 }
 
 impl WriteableWith<&[usize]> for TraceQueries<Felt, Blake2s_256<Felt>> {
-    fn write_into(&self, target: &mut DynamicMemory, indices:&[usize]) {
+    fn write_into(&self, target: &mut DynamicMemory, indexes:&[usize]) {
         for query_proof in &self.query_proofs{
-            let paths = query_proof.into_paths(indices).unwrap();
+            let paths = query_proof.into_paths(indexes).unwrap();
             let mut child_target = target.alloc();
             for path in paths{
                 child_target.write_sized_array(path);
@@ -403,11 +404,31 @@ impl WriteableWith<&[usize]> for TraceQueries<Felt, Blake2s_256<Felt>> {
 }
 
 impl WriteableWith<&[usize]> for ConstraintQueries<Felt, Blake2s_256<Felt>> {
-    fn write_into(&self, target: &mut DynamicMemory, indices:&[usize]) {
-        let paths = self.query_proofs.into_paths(indices).unwrap();
+    fn write_into(&self, target: &mut DynamicMemory, indexes:&[usize]) {
+        let paths = self.query_proofs.into_paths(indexes).unwrap();
         let mut child_target = target.alloc();
         for path in paths{
             child_target.write_sized_array(path);
+        }
+    }
+}
+
+pub struct FriProofParams<'a>{
+    pub air: &'a ProcessorAir,
+    pub indexes: &'a [usize]
+}
+
+impl WriteableWith<FriProofParams<'_>> for FriProof {
+    fn write_into(&self, target: &mut DynamicMemory, params:FriProofParams) {
+        let air = &params.air;
+        let folding_factor = air.options().to_fri_options().folding_factor();
+        let (_, proofs) = self.clone().parse_layers::<Blake2s_256<Felt>, Felt>(air.lde_domain_size(), folding_factor).unwrap();
+        for proof in proofs {            
+            let paths = proof.into_paths(&params.indexes).unwrap(); // TODO: fold the indexes here
+            let mut child_target = target.alloc();
+            for path in paths{
+                child_target.write_sized_array(path);
+            }
         }
     }
 }
