@@ -1,7 +1,7 @@
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.hash import HashBuiltin
-from starkware.cairo.common.math import assert_le, assert_not_zero, horner_eval
+from starkware.cairo.common.math import assert_le, assert_not_zero, horner_eval, unsigned_div_rem
 from starkware.cairo.common.pow import pow
 
 from stark_verifier.air.air_instance import AirInstance
@@ -165,7 +165,9 @@ func fri_verify{
     // verify_queries(fri_verifier, positions, evaluations);
 
     // Check that a Merkle tree of the claimed remainders hash to the final layer commitment
-    verify_fri_proofs(evaluations, positions);
+    let domain_size = fri_verifier.domain_size;
+    let folding_factor = fri_verifier.options.folding_factor;
+    verify_fri_proofs(evaluations, positions, domain_size, folding_factor);
 
     // TODO: Ensure that the interpolated remainder polynomial is of degree <= max_remainder_degree
     // verify_remainder_degree(
@@ -360,11 +362,12 @@ func verify_fri_merkle_proofs {
 
 func verify_fri_proofs {
     range_check_ptr, blake2s_ptr: felt*, channel: Channel, bitwise_ptr: BitwiseBuiltin*
-    }(evaluations: felt*, positions: felt*){
+    }(evaluations: felt*, positions: felt*, domain_size, folding_factor){
     alloc_locals;
 
     let (local next_positions: felt*) = alloc();
-    let new_len = fold_positions(positions, next_positions, 54, 0);
+    let modulus = 512/8; //domain_size / folding_factor;
+    let new_len = fold_positions(positions, next_positions, 54, 0, modulus);
 
     let (local fri_queries_proof_ptr: QueriesProofs*) = alloc();
     %{
@@ -399,25 +402,20 @@ func verify_fri_proofs {
     return();
 }
 
-func fold_positions(positions: felt*, next_positions: felt*, loop_counter, elems_count) -> felt {
+func fold_positions{
+    range_check_ptr
+}(positions: felt*, next_positions: felt*, loop_counter, elems_count, modulus) -> felt {
     if (loop_counter == 0){
         return elems_count;
     }
     alloc_locals;
     let prev_position = [positions];
-    local next_position;
-    // TODO: this hint is an insecure hack. Replace it
-    %{ 
-        domain_size = 512
-        fri_folding_factor = 8
-        modulus = domain_size // fri_folding_factor
-        ids.next_position = ids.prev_position % modulus
-    %}
+    let (_, next_position) = unsigned_div_rem(prev_position, modulus);
     let is_contained = contains(next_position, next_positions - elems_count, elems_count);
     if(is_contained == 1){
-        return fold_positions(positions + 1, next_positions, loop_counter - 1, elems_count);
+        return fold_positions(positions + 1, next_positions, loop_counter - 1, elems_count, modulus);
     } else {
         assert next_positions[0] = next_position;
-        return fold_positions(positions + 1, next_positions + 1, loop_counter - 1, elems_count + 1);
+        return fold_positions(positions + 1, next_positions + 1, loop_counter - 1, elems_count + 1, modulus);
     }
 }
