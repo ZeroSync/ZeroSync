@@ -165,7 +165,8 @@ func fri_verify{
 ) {
     let num_queries = 54;
     // Verify a round for each query
-    verify_queries(fri_verifier, positions, evaluations, num_queries);
+    let (__fp__, _) = get_fp_and_pc();
+    verify_queries(&fri_verifier, positions, evaluations, num_queries);
 
     // Check that a Merkle tree of the claimed remainders hash to the final layer commitment
     let domain_size = 512; // fri_verifier.domain_size;
@@ -184,7 +185,7 @@ func fri_verify{
 }
 
 func verify_queries{range_check_ptr, channel: Channel}(
-    fri_verifier: FriVerifier,
+    fri_verifier: FriVerifier*,
     positions: felt*,
     query_evaluations: felt*,
     num_queries: felt
@@ -194,12 +195,11 @@ func verify_queries{range_check_ptr, channel: Channel}(
         return ();
     }
     
-    let (__fp__, _) = get_fp_and_pc();
-    let num_layers = num_fri_layers(&fri_verifier, fri_verifier.domain_size); 
-    tempvar log_degree = log2(fri_verifier.domain_size);
-    tempvar folding_factor = fri_verifier.options.folding_factor;
-    tempvar num_layer_evaluations = folding_factor * num_layers;
-    tempvar alphas = fri_verifier.layer_alphas;
+    let num_layers = num_fri_layers(fri_verifier, fri_verifier.domain_size); 
+    let folding_factor = fri_verifier.options.folding_factor;
+    let num_layer_evaluations = folding_factor * num_layers;
+    let log_degree = log2(fri_verifier.domain_size);
+    let alphas = fri_verifier.layer_alphas;
 
     let position = [positions];
 
@@ -232,13 +232,12 @@ func verify_queries{range_check_ptr, channel: Channel}(
     // TODO: Check that the claimed remainder is equal to the final evaluation.
 
     // Iterate over the remaining queries
-    // verify_queries(
-    //     g,
-    //     omega_i,
-    //     alphas,
-    //     query_evaluations + positions + 1,
-    //     num_queries - 1
-    // );
+    verify_queries(
+        fri_verifier,
+        positions, // TODO this is just a random value to make the code compile
+        query_evaluations + 1, // TODO this is just a random value to make the code compile
+        num_queries - 1
+    );
     return ();
 }
 
@@ -303,17 +302,17 @@ func verify_layers{range_check_ptr, channel: Channel}(
     // Update variables for the next layer
     let (omega_i) = pow(omega_i, folding_factor);
 
-    // verify_layers(
-    //     g,
-    //     omega_i,
-    //     alphas + 1,
-    //     position,
-    //     query_evaluations_raw + num_layer_evaluations,
-    //     num_layer_evaluations,
-    //     num_layers - 1,
-    //     folding_factor,
-    //     previous_eval
-    // );
+    verify_layers(
+        g,
+        omega_i,
+        alphas + 1,
+        position,
+        query_evaluations_raw + num_layer_evaluations,
+        num_layer_evaluations,
+        num_layers - 1,
+        folding_factor,
+        previous_eval
+    );
 
     return ();
 }
