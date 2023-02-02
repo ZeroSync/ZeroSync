@@ -397,6 +397,7 @@ func verify_fri_proofs {
         import subprocess
         from src.stark_verifier.utils import write_into_memory
 
+        layer_index = "0"
         positions = []
         for i in range(ids.new_len):
             positions.append( memory[ids.next_positions + i] )
@@ -407,6 +408,7 @@ func verify_fri_proofs {
             'bin/stark_parser',
             'tests/integration/stark_proofs/fibonacci.bin', # TODO: this path shouldn't be hardcoded here!
             'fri-queries',
+            layer_index,
             positions
             ],
             capture_output=True)

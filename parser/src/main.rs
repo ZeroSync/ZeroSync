@@ -25,7 +25,7 @@ enum Commands {
     PublicInputs,
     TraceQueries{ indexes:Option<String> },
     ConstraintQueries{ indexes:Option<String> },
-    FriQueries{ indexes:Option<String> },
+    FriQueries{ layer_index:Option<String>, indexes:Option<String> },
 }
 
 fn main() { 
@@ -76,13 +76,13 @@ fn main() {
 
             channel.constraint_queries.unwrap().to_cairo_memory(&indexes)
         },
-        Commands::FriQueries { indexes } => {
+        Commands::FriQueries { layer_index, indexes } => {
             let air = ProcessorAir::new(
                 proof.get_trace_info(), pub_inputs.clone(),proof.options().clone(),
             );
-
+            let layer_index = from_str(&layer_index.clone().unwrap()).unwrap();
             let indexes : Vec<usize> = from_str(&indexes.clone().unwrap()).unwrap();  
-            proof.fri_proof.to_cairo_memory(FriProofParams { air: &air, indexes: &indexes })
+            proof.fri_proof.to_cairo_memory(FriProofParams { air: &air, layer_index: layer_index, indexes: &indexes })
         },
     };
  

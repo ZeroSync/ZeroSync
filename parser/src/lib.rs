@@ -415,6 +415,7 @@ impl WriteableWith<&[usize]> for ConstraintQueries<Felt, Blake2s_256<Felt>> {
 
 pub struct FriProofParams<'a>{
     pub air: &'a ProcessorAir,
+    pub layer_index: usize,
     pub indexes: &'a [usize]
 }
 
@@ -423,12 +424,21 @@ impl WriteableWith<FriProofParams<'_>> for FriProof {
         let air = &params.air;
         let folding_factor = air.options().to_fri_options().folding_factor();
         let (_, proofs) = self.clone().parse_layers::<Blake2s_256<Felt>, Felt>(air.lde_domain_size(), folding_factor).unwrap();
-        for proof in proofs {            
-            let paths = proof.into_paths(&params.indexes).unwrap(); // TODO: fold the indexes here
-            let mut child_target = target.alloc();
-            for path in paths{
-                child_target.write_sized_array(path);
-            }
+
+        let proof = &proofs[params.layer_index];
+        let paths = proof.into_paths(&params.indexes).unwrap(); // TODO: fold the indexes here
+        let mut child_target = target.alloc();
+        for path in paths{
+            child_target.write_sized_array(path);
         }
+
+
+        // for proof in proofs {            
+        //     let paths = proof.into_paths(&params.indexes).unwrap(); // TODO: fold the indexes here
+        //     let mut child_target = target.alloc();
+        //     for path in paths{
+        //         child_target.write_sized_array(path);
+        //     }
+        // }
     }
 }
