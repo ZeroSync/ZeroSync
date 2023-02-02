@@ -5,7 +5,7 @@ This is a rough writeup of the project's roadmap. Nothing here is set in stone. 
 
 ## Milestone 1: *"assumevalid"*
 
-Implement a chain proof that mimics the ["assumevalid" option of Bitcoin Core](https://bitcoincore.org/en/2017/03/08/release-0.14.0/#assumed-valid-blocks). It parses the blocks and its transactions, validates the chain's work, its chain of hashes, and correctly manages the UTXO set. It also validates the coin supply, the transaction amounts, and fees. It verifies mostly everything except for the signatures. (More precisely: it verifies no witness data.)
+Implement a chain proof that mimics the ["assumevalid" option of Bitcoin Core](https://bitcoincore.org/en/2017/03/08/release-0.14.0/#assumed-valid-blocks). It parses the blocks and it's transactions, validates the chain's work, it's chain of hashes, and correctly manages the UTXO set. It also validates the coin supply, the transaction amounts, and fees. It verifies mostly everything except for the signatures. (More precisely: it verifies no witness data.)
 
 - ✅ Parse headers, transactions, and blocks
 - ✅ Verify the chain of hashes (block hash, previous block hash, Merkle root, TXIDs)
