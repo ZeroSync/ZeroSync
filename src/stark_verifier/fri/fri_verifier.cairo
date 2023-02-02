@@ -2,9 +2,10 @@ from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.hash import HashBuiltin
 from starkware.cairo.common.math import assert_le, assert_not_zero, horner_eval, unsigned_div_rem
+from starkware.cairo.common.math_cmp import is_le
 from starkware.cairo.common.pow import pow
 
-from stark_verifier.air.air_instance import AirInstance
+from stark_verifier.air.air_instance import AirInstance, G, TWO_ADICITY
 from stark_verifier.air.stark_proof import ProofOptions
 from stark_verifier.channel import Channel
 from stark_verifier.crypto.random import PublicCoin, reseed, draw, reseed_endian
@@ -13,9 +14,9 @@ from utils.pow2 import pow2
 from stark_verifier.channel import verify_merkle_proof, QueriesProofs, QueriesProof
 from stark_verifier.crypto.random import contains
 from starkware.cairo.common.hash_state import hash_finalize, hash_init, hash_update
+from starkware.cairo.common.registers import get_fp_and_pc
 
-const TWO_ADICITY = 192;
-const TWO_ADIC_ROOT_OF_UNITY = 145784604816374866144131285430889962727208297722245411306711449302875041684;
+const TWO_ADIC_ROOT_OF_UNITY = G;
 
 struct FriOptions {
     folding_factor: felt,
@@ -69,7 +70,8 @@ func _fri_verifier_new{
         max_degree_plus_1 / options.folding_factor,
         layer_commitment_ptr + 8,
         layer_alpha_ptr + 1,
-        count - 1);
+        count - 1
+    );
     return ();
 }
 
@@ -166,14 +168,14 @@ func fri_verify{
     verify_queries(fri_verifier, positions, evaluations, num_queries);
 
     // Check that a Merkle tree of the claimed remainders hash to the final layer commitment
-    let domain_size = fri_verifier.domain_size;
-    let folding_factor = fri_verifier.options.folding_factor;
+    let domain_size = 512; // fri_verifier.domain_size;
+    let folding_factor = 8; // fri_verifier.options.folding_factor;
     verify_fri_proofs(evaluations, positions, domain_size, folding_factor);
 
     // TODO: Ensure that the interpolated remainder polynomial is of degree <= max_remainder_degree
     // verify_remainder_degree(
-    //     remainders,
-    //     remainders_poly,
+    //     remainders=evaluations,
+    //     remainders_poly=evaluations,
     //     remainders_len,
     //     fri_verifier.options.max_remainder_size
     // );
@@ -191,8 +193,9 @@ func verify_queries{range_check_ptr, channel: Channel}(
     if (num_queries == 0) {
         return ();
     }
-
-    tempvar num_layers = 42; // TODO: this is just a random number to fix the `Unknown identifier` error.
+    
+    let (__fp__, _) = get_fp_and_pc();
+    let num_layers = num_fri_layers(&fri_verifier, fri_verifier.domain_size); 
     tempvar log_degree = log2(fri_verifier.domain_size);
     tempvar folding_factor = fri_verifier.options.folding_factor;
     tempvar num_layer_evaluations = folding_factor * num_layers;
@@ -237,6 +240,17 @@ func verify_queries{range_check_ptr, channel: Channel}(
     //     num_queries - 1
     // );
     return ();
+}
+
+func num_fri_layers{
+        range_check_ptr
+    }(fri_verifier: FriVerifier*, domain_size) -> felt{
+    let is_leq = is_le(fri_verifier.options.max_remainder_size, domain_size);
+    if(is_leq == 0){
+        return 0;
+    }
+    let res = num_fri_layers(fri_verifier, domain_size/fri_verifier.options.folding_factor);
+    return 1 + res;
 }
 
 func compute_folded_roots{
@@ -339,6 +353,8 @@ func verify_remainder_degree{pedersen_ptr: HashBuiltin*}(
     // assert a = b;
 
     // TODO: Check that all polynomial coefficients greater than 'max_degree' are zero
+
+    return ();
 }
 
 func get_roots_of_unity(omega_i: felt*, omega_n: felt, i: felt, len: felt) {
@@ -348,6 +364,7 @@ func get_roots_of_unity(omega_i: felt*, omega_n: felt, i: felt, len: felt) {
     let (x) = pow(omega_n, i);
     assert [omega_i] = x;
     get_roots_of_unity(omega_i + 1, omega_n, i + 1, len);
+    return ();
 }
 
 
@@ -372,7 +389,7 @@ func verify_fri_proofs {
     alloc_locals;
 
     let (local next_positions: felt*) = alloc();
-    let modulus = 512/8; //domain_size / folding_factor;
+    let modulus = domain_size / folding_factor;
     let new_len = fold_positions(positions, next_positions, 54, 0, modulus);
 
     let (local fri_queries_proof_ptr: QueriesProofs*) = alloc();
