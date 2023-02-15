@@ -207,7 +207,7 @@ func verify_queries{range_check_ptr, channel: Channel}(
     // g: domain offset
     // omega: domain generator
     // x: omega^position * g
-    let MULTIPLICATIVE_GENERATOR = 42; // TODO: this is just a random number to fix the `Unknown identifier` error.
+    let MULTIPLICATIVE_GENERATOR = 3; // TODO: check if this is correct https://github.com/ZeroSync/giza/blob/master/core/src/field/f252/mod.rs#L28
     let g = MULTIPLICATIVE_GENERATOR;
     let omega = fri_verifier.domain_generator;
     let (omega_i) = pow(omega, position);
@@ -234,8 +234,8 @@ func verify_queries{range_check_ptr, channel: Channel}(
     // Iterate over the remaining queries
     verify_queries(
         fri_verifier,
-        positions, // TODO this is just a random value to make the code compile
-        query_evaluations + 1, // TODO this is just a random value to make the code compile
+        positions + 1, // TODO: this is just a random value to make the code compile
+        query_evaluations + 1, // TODO: this is just a random value to make the code compile
         num_queries - 1
     );
     return ();
@@ -387,10 +387,7 @@ func verify_fri_proofs {
     }(evaluations: felt*, positions: felt*, domain_size, folding_factor){
     alloc_locals;
 
-    let (local next_positions: felt*) = alloc();
-    let modulus = domain_size / folding_factor;
-    let new_len = fold_positions(positions, next_positions, 54, 0, modulus);
-
+    let num_queries = 54;
     let (local fri_queries_proof_ptr: QueriesProofs*) = alloc();
     %{
         import json
@@ -399,8 +396,8 @@ func verify_fri_proofs {
 
         layer_index = "0"
         positions = []
-        for i in range(ids.new_len):
-            positions.append( memory[ids.next_positions + i] )
+        for i in range(ids.num_queries):
+            positions.append( memory[ids.positions + i] )
 
         positions = json.dumps( positions )
 
@@ -408,7 +405,6 @@ func verify_fri_proofs {
             'bin/stark_parser',
             'tests/integration/stark_proofs/fibonacci.bin', # TODO: this path shouldn't be hardcoded here!
             'fri-queries',
-            layer_index,
             positions
             ],
             capture_output=True)
@@ -416,10 +412,12 @@ func verify_fri_proofs {
         json_data = completed_process.stdout
         write_into_memory(ids.fri_queries_proof_ptr, json_data, segments)
     %}
-    let n_cols = 1;
     
     // Authenticate proof paths
-    // TODO: loop folding here
+    let n_cols = 1;
+    let (local next_positions: felt*) = alloc();
+    let modulus = domain_size / folding_factor;
+    let new_len = fold_positions(positions, next_positions, num_queries, 0, modulus);
     verify_fri_merkle_proofs(
         fri_queries_proof_ptr[0].proofs, next_positions, channel.fri_roots, new_len, evaluations, n_cols);
     
@@ -435,6 +433,7 @@ func fold_positions{
     alloc_locals;
     let prev_position = [positions];
     let (_, next_position) = unsigned_div_rem(prev_position, modulus);
+    // make sure we don't record duplicated values
     let is_contained = contains(next_position, next_positions - elems_count, elems_count);
     if(is_contained == 1){
         return fold_positions(positions + 1, next_positions, loop_counter - 1, elems_count, modulus);
