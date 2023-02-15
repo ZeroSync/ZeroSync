@@ -105,7 +105,9 @@ func _verify_merkle_proof{
     }(depth: felt, path: felt*, position, root: felt*, accu: felt*){
     alloc_locals;
     if(depth == 0){
-        assert_hashes_equal(root, accu);
+        with_attr error_message("Merkle path authentication failed"){
+            assert_hashes_equal(root, accu);
+        }
         return ();
     }
 

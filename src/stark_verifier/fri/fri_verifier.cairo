@@ -163,16 +163,17 @@ func fri_verify{
     range_check_ptr, pedersen_ptr: HashBuiltin*, blake2s_ptr: felt*, channel: Channel, bitwise_ptr: BitwiseBuiltin*
     }(fri_verifier: FriVerifier, evaluations: felt*, positions: felt*
 ) {
+    alloc_locals;
+    // Read FRI Merkle proofs from a hint
+    let query_proofs = read_fri_proofs(positions);
+
     let num_queries = 54;
     // Verify a round for each query
     let (__fp__, _) = get_fp_and_pc();
-    verify_queries(&fri_verifier, positions, evaluations, num_queries);
+    verify_queries(&fri_verifier, positions, evaluations, num_queries, query_proofs.proofs);
 
-    // Check that a Merkle tree of the claimed remainders hash to the final layer commitment
-    let domain_size = 512; // fri_verifier.domain_size;
-    let folding_factor = 8; // fri_verifier.options.folding_factor;
-    verify_fri_proofs(evaluations, positions, domain_size, folding_factor);
-
+    // TODO: Check that a Merkle tree of the claimed remainders hash to the final layer commitment
+    
     // TODO: Ensure that the interpolated remainder polynomial is of degree <= max_remainder_degree
     // verify_remainder_degree(
     //     remainders=evaluations,
@@ -184,16 +185,23 @@ func fri_verify{
     return ();
 }
 
-func verify_queries{range_check_ptr, channel: Channel}(
+func verify_queries{
+    range_check_ptr, 
+    channel: Channel, 
+    blake2s_ptr:felt*,
+    bitwise_ptr: BitwiseBuiltin*
+}(
     fri_verifier: FriVerifier*,
     positions: felt*,
     query_evaluations: felt*,
-    num_queries: felt
+    num_queries: felt,
+    queries_proofs: QueriesProof*,
 ) {
     alloc_locals;
     if (num_queries == 0) {
         return ();
     }
+
     
     let num_layers = num_fri_layers(fri_verifier, fri_verifier.domain_size); 
     let folding_factor = fri_verifier.options.folding_factor;
@@ -216,6 +224,11 @@ func verify_queries{range_check_ptr, channel: Channel}(
     let (omega_folded) = alloc();
     compute_folded_roots(omega_folded, omega, log_degree, folding_factor, 1);
 
+
+    %{ print(f'verify_queries  -  num_queries: {ids.num_queries}, domain_size: {ids.fri_verifier.domain_size}, folding_factor: {ids.folding_factor}') %}
+
+    let modulus = fri_verifier.domain_size / folding_factor;
+
     // Iterate over the layers within this query
     verify_layers(
         g,
@@ -226,7 +239,9 @@ func verify_queries{range_check_ptr, channel: Channel}(
         num_layer_evaluations,
         num_layers,
         folding_factor,
-        0
+        0,
+        queries_proofs,
+        modulus
     );
 
     // TODO: Check that the claimed remainder is equal to the final evaluation.
@@ -236,7 +251,8 @@ func verify_queries{range_check_ptr, channel: Channel}(
         fri_verifier,
         positions + 1, // TODO: this is just a random value to make the code compile
         query_evaluations + 1, // TODO: this is just a random value to make the code compile
-        num_queries - 1
+        num_queries - 1,
+        queries_proofs
     );
     return ();
 }
@@ -266,7 +282,12 @@ func compute_folded_roots{
     return ();
 }
 
-func verify_layers{range_check_ptr, channel: Channel}(
+func verify_layers{
+    range_check_ptr, 
+    channel: Channel, 
+    blake2s_ptr: felt*,
+    bitwise_ptr: BitwiseBuiltin*
+}(
     g: felt,
     omega_i: felt,
     alphas: felt*,
@@ -275,12 +296,15 @@ func verify_layers{range_check_ptr, channel: Channel}(
     num_layer_evaluations: felt,
     num_layers: felt,
     folding_factor: felt,
-    previous_eval: felt
+    previous_eval: felt,
+    queries_proofs: QueriesProof*,
+    modulus: felt
 ) {
     if (num_layers == 0) {
         return ();
     }
     alloc_locals;
+    %{ print(f'verify_layers  -  num_layers: {ids.num_layers}, num_layer_evaluations: {ids.num_layer_evaluations},  position: {ids.position}, modulus: {ids.modulus}') %}
 
     let alpha = [alphas];
     let x = g * omega_i;
@@ -290,28 +314,33 @@ func verify_layers{range_check_ptr, channel: Channel}(
     swap_evaluation_points(query_evaluations, query_evaluations_raw);
 
     // TODO: Verify that evaluations are consistent with the layer commitment
+    let (_, folded_position) = unsigned_div_rem(position, modulus);
+    // verify_merkle_proof( queries_proofs.length, queries_proofs.digests, folded_position, channel.fri_roots );
 
     // TODO: Compare previous polynomial evaluation with the current layer evaluation
     if (previous_eval != 0) {
         assert previous_eval = [query_evaluations + 1];
     }
     // TODO: Interpolate the evaluations at the x-coordinates, and evaluate at alpha.
-    // let eval = evaluate_polynomial(query_evaluations, num_layer_evaluations, folding_factor, alpha); // TODO: check the parameters here! 
+    // let eval = evaluate_polynomial(query_evaluations_raw, num_layer_evaluations, folding_factor, alpha); // TODO: check the parameters here! 
     // let previous_eval = eval;
 
     // Update variables for the next layer
     let (omega_i) = pow(omega_i, folding_factor);
+    let modulus = modulus / folding_factor;
 
     verify_layers(
         g,
         omega_i,
         alphas + 1,
-        position,
+        folded_position,
         query_evaluations_raw + num_layer_evaluations,
         num_layer_evaluations,
         num_layers - 1,
         folding_factor,
-        previous_eval
+        previous_eval,
+        &queries_proofs[1],
+        modulus
     );
 
     return ();
@@ -382,9 +411,9 @@ func verify_fri_merkle_proofs {
     return ();
 }
 
-func verify_fri_proofs {
+func read_fri_proofs {
     range_check_ptr, blake2s_ptr: felt*, channel: Channel, bitwise_ptr: BitwiseBuiltin*
-    }(evaluations: felt*, positions: felt*, domain_size, folding_factor){
+    }(positions: felt*) -> QueriesProofs* {
     alloc_locals;
 
     let num_queries = 54;
@@ -412,16 +441,8 @@ func verify_fri_proofs {
         json_data = completed_process.stdout
         write_into_memory(ids.fri_queries_proof_ptr, json_data, segments)
     %}
-    
-    // Authenticate proof paths
-    let n_cols = 1;
-    let (local next_positions: felt*) = alloc();
-    let modulus = domain_size / folding_factor;
-    let new_len = fold_positions(positions, next_positions, num_queries, 0, modulus);
-    verify_fri_merkle_proofs(
-        fri_queries_proof_ptr[0].proofs, next_positions, channel.fri_roots, new_len, evaluations, n_cols);
-    
-    return();
+
+    return fri_queries_proof_ptr;
 }
 
 func fold_positions{
