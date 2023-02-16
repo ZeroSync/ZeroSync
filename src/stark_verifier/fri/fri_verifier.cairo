@@ -26,7 +26,7 @@ struct FriOptions {
 
 func to_fri_options(proof_options: ProofOptions) -> FriOptions {
     let folding_factor = proof_options.fri_folding_factor;
-    let max_remainder_size = proof_options.fri_max_remainder_size; // stored as power of 2
+    let max_remainder_size = proof_options.fri_max_remainder_size;
     let fri_options = FriOptions(
         folding_factor,
         max_remainder_size,
@@ -251,7 +251,7 @@ func verify_queries{
         positions + 1, // TODO: this is just a random value to make the code compile
         query_evaluations + 1, // TODO: this is just a random value to make the code compile
         num_queries - 1,
-        queries_proofs
+        &queries_proofs[1]
     );
     return ();
 }
@@ -313,8 +313,8 @@ func verify_layers{
     swap_evaluation_points(query_evaluations, query_evaluations_raw);
 
     // TODO: Verify that evaluations are consistent with the layer commitment
-    let (_, folded_position) = unsigned_div_rem(position, modulus);
-    // verify_merkle_proof( queries_proofs.length, queries_proofs.digests, folded_position, channel.fri_roots );
+    let (_, folded_position) = unsigned_div_rem(position, modulus );
+    verify_merkle_proof( queries_proofs.length, queries_proofs.digests, folded_position, channel.fri_roots );
 
     // TODO: Compare previous polynomial evaluation with the current layer evaluation
     if (previous_eval != 0) {
@@ -338,7 +338,7 @@ func verify_layers{
         num_layers - 1,
         folding_factor,
         previous_eval,
-        &queries_proofs[1],
+        queries_proofs, // TODO: jump to next layer here
         modulus
     );
 
