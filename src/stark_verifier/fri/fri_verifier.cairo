@@ -4,19 +4,19 @@ from starkware.cairo.common.hash import HashBuiltin
 from starkware.cairo.common.math import assert_le, assert_not_zero, horner_eval, unsigned_div_rem
 from starkware.cairo.common.math_cmp import is_le
 from starkware.cairo.common.pow import pow
-
-from stark_verifier.air.air_instance import AirInstance, G, TWO_ADICITY
-from stark_verifier.air.stark_proof import ProofOptions
-from stark_verifier.channel import Channel
-from stark_verifier.crypto.random import PublicCoin, reseed, draw, reseed_endian
-from stark_verifier.fri.utils import evaluate_polynomial, lagrange_eval
-from utils.pow2 import pow2
-from stark_verifier.channel import verify_merkle_proof, QueriesProofs, QueriesProof
-from stark_verifier.crypto.random import contains
+from starkware.cairo.common.memcpy import memcpy
 from starkware.cairo.common.hash_state import hash_finalize, hash_init, hash_update
 from starkware.cairo.common.registers import get_fp_and_pc
 
+from stark_verifier.air.air_instance import AirInstance, G, TWO_ADICITY
+from stark_verifier.air.stark_proof import ProofOptions
+from stark_verifier.crypto.random import PublicCoin, reseed, draw, reseed_endian, contains
+from stark_verifier.fri.utils import evaluate_polynomial, lagrange_eval
+from utils.pow2 import pow2
+from stark_verifier.channel import Channel, verify_merkle_proof, QueriesProofs, QueriesProof
+
 const TWO_ADIC_ROOT_OF_UNITY = G;
+const MULTIPLICATIVE_GENERATOR = 3; // TODO: double-check if this is actually correct https://github.com/ZeroSync/giza/blob/master/core/src/field/f252/mod.rs#L28
 
 struct FriOptions {
     folding_factor: felt,
@@ -163,13 +163,18 @@ func fri_verify{
     }(fri_verifier: FriVerifier, evaluations: felt*, positions: felt*
 ) {
     alloc_locals;
+    let num_queries = 54;
     // Read FRI Merkle proofs from a hint
     let query_proofs = read_fri_proofs(positions);
 
-    let num_queries = 54;
     // Verify a round for each query
     let (__fp__, _) = get_fp_and_pc();
-    verify_queries(&fri_verifier, positions, evaluations, num_queries, query_proofs.proofs);
+    // ----- TODO: remove this HACK. This works only for a single layer
+    let modulus = fri_verifier.domain_size / fri_verifier.options.folding_factor;
+    let (folded_positions) = alloc();
+    let num_queries = fold_positions(positions, folded_positions, num_queries, 0, modulus);
+    // -----
+    verify_queries(&fri_verifier, folded_positions, evaluations, num_queries, query_proofs.proofs);
 
     // TODO: Check that a Merkle tree of the claimed remainders hash to the final layer commitment
     
@@ -196,11 +201,10 @@ func verify_queries{
     num_queries: felt,
     queries_proofs: QueriesProof*,
 ) {
-    alloc_locals;
     if (num_queries == 0) {
         return ();
     }
-
+    alloc_locals;
     
     let num_layers = num_fri_layers(fri_verifier, fri_verifier.domain_size); 
     let folding_factor = fri_verifier.options.folding_factor;
@@ -214,7 +218,6 @@ func verify_queries{
     // g: domain offset
     // omega: domain generator
     // x: omega^position * g
-    let MULTIPLICATIVE_GENERATOR = 3; // TODO: check if this is correct https://github.com/ZeroSync/giza/blob/master/core/src/field/f252/mod.rs#L28
     let g = MULTIPLICATIVE_GENERATOR;
     let omega = fri_verifier.domain_generator;
     let (omega_i) = pow(omega, position);
@@ -248,7 +251,7 @@ func verify_queries{
     // Iterate over the remaining queries
     verify_queries(
         fri_verifier,
-        positions + 1, // TODO: this is just a random value to make the code compile
+        positions + 1,
         query_evaluations + 1, // TODO: this is just a random value to make the code compile
         num_queries - 1,
         &queries_proofs[1]
@@ -308,21 +311,21 @@ func verify_layers{
     let alpha = [alphas];
     let x = g * omega_i;
 
-    // Swap the evaluation points if the folded point is in the second half of the domain
+    // TODO: Swap the evaluation points if the folded point is in the second half of the domain
     let (local query_evaluations) = alloc();
-    swap_evaluation_points(query_evaluations, query_evaluations_raw);
+    swap_evaluation_points(query_evaluations, query_evaluations_raw, num_layer_evaluations);
 
     // TODO: Verify that evaluations are consistent with the layer commitment
-    let (_, folded_position) = unsigned_div_rem(position, modulus );
-    verify_merkle_proof( queries_proofs.length, queries_proofs.digests, folded_position, channel.fri_roots );
+    let (_, folded_position) = unsigned_div_rem(position, modulus);
+    verify_merkle_proof( queries_proofs.length, queries_proofs.digests, position, channel.fri_roots );
 
     // TODO: Compare previous polynomial evaluation with the current layer evaluation
     if (previous_eval != 0) {
         assert previous_eval = [query_evaluations + 1];
     }
-    // TODO: Interpolate the evaluations at the x-coordinates, and evaluate at alpha.
-    // let eval = evaluate_polynomial(query_evaluations_raw, num_layer_evaluations, folding_factor, alpha); // TODO: check the parameters here! 
-    // let previous_eval = eval;
+    // Interpolate the evaluations at the x-coordinates, and evaluate at alpha.
+    let eval = evaluate_polynomial(query_evaluations, num_layer_evaluations, folding_factor, alpha);
+    let previous_eval = eval;
 
     // Update variables for the next layer
     let (omega_i) = pow(omega_i, folding_factor);
@@ -345,8 +348,9 @@ func verify_layers{
     return ();
 }
 
-func swap_evaluation_points(query_evaluations: felt*, query_evaluations_raw: felt*) {
-    // TODO
+func swap_evaluation_points(query_evaluations: felt*, query_evaluations_raw: felt*, num_layer_evaluations) {
+    // TODO: Swap the evaluation points if the folded point is in the second half of the domain
+    memcpy(query_evaluations, query_evaluations_raw, num_layer_evaluations);
     return ();
 }
 
