@@ -3,6 +3,8 @@ from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.registers import get_fp_and_pc
 from starkware.cairo.common.memcpy import memcpy
 from starkware.cairo.common.cairo_blake2s.blake2s import blake2s_as_words
+from starkware.cairo.common.math import unsigned_div_rem
+from crypto.hash_utils import copy_hash, assert_hashes_not_equal, HASH_FELT_SIZE
 
 from stark_verifier.air.stark_proof import (
     ConstraintQueries,
@@ -42,22 +44,24 @@ struct Channel {
     trace_queries: TraceQueries*,
     // Queried constraint evaluations
     constraint_queries: ConstraintQueries*,
+    // Remainder
+    remainder: Vec,
 }
 
 func channel_new{bitwise_ptr: BitwiseBuiltin*}(air: AirInstance, proof: StarkProof*) -> Channel {
     // Parsed commitments
-    tempvar trace_roots = proof.commitments.trace_roots;
-    tempvar constraint_root = proof.commitments.constraint_root;
-    tempvar fri_roots = proof.commitments.fri_roots;
+    let trace_roots = proof.commitments.trace_roots;
+    let constraint_root = proof.commitments.constraint_root;
+    let fri_roots = proof.commitments.fri_roots;
 
     // Parsed ood_frame
-    tempvar ood_constraint_evaluations = proof.ood_frame.evaluations;
-    tempvar ood_trace_frame = TraceOodFrame(
+    let ood_constraint_evaluations = proof.ood_frame.evaluations;
+    let ood_trace_frame = TraceOodFrame(
         main_frame=proof.ood_frame.main_frame,
         aux_frame=proof.ood_frame.aux_frame,
     );
 
-    tempvar channel = Channel(
+    let channel = Channel(
         trace_roots=trace_roots,
         constraint_root=constraint_root,
         fri_roots_len=proof.commitments.fri_roots_len,
@@ -67,6 +71,7 @@ func channel_new{bitwise_ptr: BitwiseBuiltin*}(air: AirInstance, proof: StarkPro
         pow_nonce=proof.pow_nonce,
         trace_queries=&proof.trace_queries,
         constraint_queries=&proof.constraint_queries,
+        remainder=proof.remainder
     );
     return channel;
 }
@@ -273,4 +278,118 @@ func read_constraint_evaluations{
         constraint_queries_proof_ptr[0].proofs, positions, channel.constraint_root, num_queries, evaluations.elements, evaluations.n_cols);
 
     return evaluations;
+}
+
+
+
+func read_remainder{
+    range_check_ptr, channel: Channel, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*
+    }() -> Vec {
+    alloc_locals;
+    let N = 8; // TODO: this is should be a variable
+    let remainder = channel.remainder.elements;
+    let loop_counter = channel.remainder.n_elements / N; 
+    let (remainder_values: felt**) = alloc();
+    transpose_slice(remainder, remainder_values, loop_counter);
+
+    // build remainder Merkle tree
+    let (hashed_values: felt*) = alloc();
+    hash_values(remainder_values, hashed_values, loop_counter);
+
+    let root = compute_merkle_root(hashed_values, loop_counter);
+    let expected_root = channel.fri_roots + (channel.fri_roots_len-1) * HASH_FELT_SIZE;
+    assert_hashes_equal(root, expected_root);
+
+    return channel.remainder;
+}
+
+func transpose_slice(remainder: felt*, remainder_values: felt**, loop_counter){
+    if(loop_counter == 0){
+        return ();
+    }
+
+    let (row) = alloc();
+    assert [remainder_values] = row;
+
+    assert row[0] = remainder[0];
+    assert row[1] = remainder[8];
+    assert row[2] = remainder[16];
+    assert row[3] = remainder[24];
+    assert row[4] = remainder[32];
+    assert row[5] = remainder[40];
+    assert row[6] = remainder[48];
+    assert row[7] = remainder[56];
+
+    return transpose_slice(remainder + 1, remainder_values + 1, loop_counter - 1);
+}
+
+func hash_values{
+    range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*
+    }(values: felt**, hashes: felt*, loop_counter){
+    if(loop_counter == 0){
+        return ();
+    }
+    alloc_locals;
+    let N = 8; // TODO: this is should be a variable
+    let digest = hash_elements(n_elements=N, elements=[values]);
+    memcpy(hashes, digest, 8);
+    return hash_values(values + 1, hashes + 8, loop_counter - 1);
+}
+
+
+// Compute the Merkle root hash of a set of hashes
+func compute_merkle_root{
+    range_check_ptr, bitwise_ptr: BitwiseBuiltin*, blake2s_ptr: felt*}(
+    leaves: felt*, leaves_len: felt
+) -> felt* {
+    alloc_locals;
+
+    // The trivial case is a tree with a single leaf
+    if (leaves_len == 1) {
+        return leaves;
+    }
+
+    // If the number of leaves is odd then duplicate the last leaf
+    let (_, is_odd) = unsigned_div_rem(leaves_len, 2);
+    if (is_odd == 1) {
+        copy_hash(leaves + HASH_FELT_SIZE * (leaves_len - 1), leaves + HASH_FELT_SIZE * leaves_len);
+    } else {
+        // CVE-2012-2459 bug fix
+        with_attr error_message("unexpected node duplication in merkle tree") {
+            assert_hashes_not_equal(
+                leaves + (leaves_len - 1) * HASH_FELT_SIZE,
+                leaves + (leaves_len - 2) * HASH_FELT_SIZE,
+            );
+        }
+    }
+
+    // Compute the next generation of leaves one level higher up in the tree
+    let (next_leaves) = alloc();
+    let next_leaves_len = (leaves_len + is_odd) / 2;
+    _compute_merkle_root_loop(leaves, next_leaves, next_leaves_len);
+
+    // Ascend in the tree and recurse on the next generation one step closer to the root
+    return compute_merkle_root(next_leaves, next_leaves_len);
+}
+
+// Compute the next generation of leaves by pairwise hashing
+// the previous generation of leaves
+func _compute_merkle_root_loop{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, blake2s_ptr: felt*}(
+    prev_leaves: felt*, next_leaves: felt*, loop_counter
+) {
+    alloc_locals;
+
+    // We loop until we've completed the next generation
+    if (loop_counter == 0) {
+        return ();
+    }
+
+    // Hash two prev_leaves to get one leave of the next generation
+    let (digest) = blake2s_as_words(data=prev_leaves, n_bytes=HASH_FELT_SIZE * 8);
+    copy_hash(digest, next_leaves);
+
+    // Continue this loop with the next two prev_leaves
+    return _compute_merkle_root_loop(
+        prev_leaves + HASH_FELT_SIZE * 2, next_leaves + HASH_FELT_SIZE, loop_counter - 1
+    );
 }

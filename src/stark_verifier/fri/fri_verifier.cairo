@@ -10,10 +10,11 @@ from starkware.cairo.common.registers import get_fp_and_pc
 
 from stark_verifier.air.air_instance import AirInstance, G, TWO_ADICITY
 from stark_verifier.air.stark_proof import ProofOptions
-from stark_verifier.crypto.random import PublicCoin, reseed, draw, reseed_endian, contains
+from stark_verifier.crypto.random import PublicCoin, reseed, draw, reseed_endian, contains, hash_elements
 from stark_verifier.fri.utils import evaluate_polynomial, lagrange_eval
 from utils.pow2 import pow2
-from stark_verifier.channel import Channel, verify_merkle_proof, QueriesProofs, QueriesProof
+from stark_verifier.channel import Channel, verify_merkle_proof, QueriesProofs, QueriesProof, read_remainder
+from crypto.hash_utils import assert_hashes_equal
 
 const TWO_ADIC_ROOT_OF_UNITY = G;
 const MULTIPLICATIVE_GENERATOR = 3; // TODO: double-check if this is actually correct https://github.com/ZeroSync/giza/blob/master/core/src/field/f252/mod.rs#L28
@@ -176,15 +177,15 @@ func fri_verify{
     // -----
     verify_queries(&fri_verifier, folded_positions, evaluations, num_queries, query_proofs.proofs);
 
-    // TODO: Check that a Merkle tree of the claimed remainders hash to the final layer commitment
-    
+    // Check that a Merkle tree of the claimed remainders hash to the final layer commitment
+    let remainder = read_remainder();
+
     // TODO: Ensure that the interpolated remainder polynomial is of degree <= max_remainder_degree
-    // verify_remainder_degree(
-    //     remainders=evaluations,
-    //     remainders_poly=evaluations,
-    //     remainders_len,
-    //     fri_verifier.options.max_remainder_size
-    // );
+    verify_remainder_degree(
+        remainders=remainder.elements,
+        remainders_len=remainder.n_elements,
+        max_degree=fri_verifier.options.max_remainder_size
+    );
 
     return ();
 }
@@ -318,6 +319,9 @@ func verify_layers{
     // TODO: Verify that evaluations are consistent with the layer commitment
     let (_, folded_position) = unsigned_div_rem(position, modulus);
     verify_merkle_proof( queries_proofs.length, queries_proofs.digests, position, channel.fri_roots );
+    let leaf_hash = hash_elements(n_elements=2, elements=query_evaluations); // TODO: FIX ME
+    // assert_hashes_equal(leaf_hash, queries_proofs.digests); 
+
 
     // TODO: Compare previous polynomial evaluation with the current layer evaluation
     if (previous_eval != 0) {
@@ -354,9 +358,11 @@ func swap_evaluation_points(query_evaluations: felt*, query_evaluations_raw: fel
     return ();
 }
 
-func verify_remainder_degree{pedersen_ptr: HashBuiltin*}(
-    remainders: felt*, remainders_poly: felt*, remainders_len: felt, max_degree: felt
+func verify_remainder_degree{range_check_ptr, pedersen_ptr: HashBuiltin*}(
+    remainders: felt*, remainders_len: felt, max_degree: felt
 ) {
+    alloc_locals;
+    let (remainders_poly) = alloc(); // TODO: interpolate this from `remainders`
     // Use the commitment to the remainder polynomial and evaluations to draw a random
     // field element tau
     let (hash_state_ptr) = hash_init();
@@ -365,21 +371,21 @@ func verify_remainder_degree{pedersen_ptr: HashBuiltin*}(
         data_ptr=remainders,
         data_length=remainders_len
     );
-    let (hash_state_ptr) = hash_update{hash_ptr=pedersen_ptr}(
-        hash_state_ptr=hash_state_ptr,
-        data_ptr=remainders_poly,
-        data_length=remainders_len
-    );
-    let (tau) = hash_finalize{hash_ptr=pedersen_ptr}(hash_state_ptr=hash_state_ptr);
+    // let (hash_state_ptr) = hash_update{hash_ptr=pedersen_ptr}(
+    //     hash_state_ptr=hash_state_ptr,
+    //     data_ptr=remainders_poly,
+    //     data_length=remainders_len
+    // );
+    // let (tau) = hash_finalize{hash_ptr=pedersen_ptr}(hash_state_ptr=hash_state_ptr);
 
     // Roots of unity for remainder evaluation domain
-    let (k) = log2(remainders_len);
-    let (omega_n) = get_root_of_unity(k);
+    let k = log2(remainders_len);
+    let omega_n = get_root_of_unity(k);
     let (omega_i) = alloc();
     get_roots_of_unity(omega_i, omega_n, 0, remainders_len);
 
     // Evaluate both polynomial representations at tau and confirm agreement
-    let (a) = horner_eval(max_degree, remainders_poly, tau);
+    // let (a) = horner_eval(max_degree, remainders_poly, tau);
     // let (b) = lagrange_eval(remainder_evaluations, omega_i, remainders_len, tau);
     // assert a = b;
 
@@ -388,7 +394,7 @@ func verify_remainder_degree{pedersen_ptr: HashBuiltin*}(
     return ();
 }
 
-func get_roots_of_unity(omega_i: felt*, omega_n: felt, i: felt, len: felt) {
+func get_roots_of_unity{range_check_ptr}(omega_i: felt*, omega_n: felt, i: felt, len: felt) {
     if (i == len) {
         return ();
     }

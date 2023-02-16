@@ -85,6 +85,7 @@ impl WriteableWith<&ProcessorAir> for StarkProof {
         self.pow_nonce.write_into(target);
         self.trace_queries.write_into(target, air);
         self.constraint_queries.write_into(target, air);
+        target.write_sized_array(self.fri_proof.parse_remainder::<Felt>().unwrap());
     }
 }
 
