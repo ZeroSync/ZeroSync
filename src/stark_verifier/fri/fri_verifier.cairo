@@ -28,9 +28,9 @@ func to_fri_options(proof_options: ProofOptions) -> FriOptions {
     let folding_factor = proof_options.fri_folding_factor;
     let max_remainder_size = proof_options.fri_max_remainder_size; // stored as power of 2
     let fri_options = FriOptions(
-        proof_options.blowup_factor,
         folding_factor,
-        max_remainder_size
+        max_remainder_size,
+        proof_options.blowup_factor
     );
     return fri_options;
 }
@@ -124,8 +124,7 @@ func next_power_of_two{range_check_ptr}(x) -> felt {
     %{
         ids.n_bits = len( bin(ids.x - 1).replace('0b', '') )
     %}
-    let next_power_of_two = pow2(n_bits);
-    local next_power_of_two = next_power_of_two;
+    local next_power_of_two = pow2(n_bits);
     local x2_1 = x*2-1;
     with_attr error_message("{x} <= {next_power_of_two} <= {x2_1}") {
         assert_le(x, next_power_of_two);
