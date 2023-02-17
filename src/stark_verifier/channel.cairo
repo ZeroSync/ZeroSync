@@ -303,24 +303,24 @@ func read_remainder{
     return channel.remainder;
 }
 
-func transpose_slice(remainder: felt*, remainder_values: felt**, loop_counter){
+func transpose_slice(source: felt*, destination: felt**, loop_counter){
     if(loop_counter == 0){
         return ();
     }
 
     let (row) = alloc();
-    assert [remainder_values] = row;
+    assert [destination] = row;
 
-    assert row[0] = remainder[0];
-    assert row[1] = remainder[8];
-    assert row[2] = remainder[16];
-    assert row[3] = remainder[24];
-    assert row[4] = remainder[32];
-    assert row[5] = remainder[40];
-    assert row[6] = remainder[48];
-    assert row[7] = remainder[56];
+    assert row[0] = source[0];
+    assert row[1] = source[8];
+    assert row[2] = source[16];
+    assert row[3] = source[24];
+    assert row[4] = source[32];
+    assert row[5] = source[40];
+    assert row[6] = source[48];
+    assert row[7] = source[56];
 
-    return transpose_slice(remainder + 1, remainder_values + 1, loop_counter - 1);
+    return transpose_slice(source + 1, destination + 1, loop_counter - 1);
 }
 
 func hash_values{
@@ -349,6 +349,7 @@ func compute_merkle_root{
         return leaves;
     }
 
+    // TODO: compare this to the Winterfell implementation and ensure its correct
     // If the number of leaves is odd then duplicate the last leaf
     let (_, is_odd) = unsigned_div_rem(leaves_len, 2);
     if (is_odd == 1) {

@@ -423,7 +423,7 @@ impl WriteableWith<FriProofParams<'_>> for FriProof {
     fn write_into(&self, target: &mut DynamicMemory, params:FriProofParams) {
         let air = &params.air;
         let folding_factor = air.options().to_fri_options().folding_factor();
-        let (_, proofs) = self.clone().parse_layers::<Blake2s_256<Felt>, Felt>(air.lde_domain_size(), folding_factor).unwrap();
+        let (query_values, proofs) = self.clone().parse_layers::<Blake2s_256<Felt>, Felt>(air.lde_domain_size(), folding_factor).unwrap();
         let mut indices = params.indexes.clone();
         let mut source_domain_size = air.lde_domain_size();
 
@@ -436,6 +436,8 @@ impl WriteableWith<FriProofParams<'_>> for FriProof {
                 child_target.write_sized_array(path);
             }
         }
+
+        target.write_array(query_values[0].to_vec());
     }
 }
 

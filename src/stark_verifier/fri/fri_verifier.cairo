@@ -13,7 +13,7 @@ from stark_verifier.air.stark_proof import ProofOptions
 from stark_verifier.crypto.random import PublicCoin, reseed, draw, reseed_endian, contains, hash_elements
 from stark_verifier.fri.utils import evaluate_polynomial, lagrange_eval
 from utils.pow2 import pow2
-from stark_verifier.channel import Channel, verify_merkle_proof, QueriesProofs, QueriesProof, read_remainder
+from stark_verifier.channel import Channel, verify_merkle_proof, QueriesProof, read_remainder
 from crypto.hash_utils import assert_hashes_equal
 
 const TWO_ADIC_ROOT_OF_UNITY = G;
@@ -159,6 +159,7 @@ func log2(n) -> felt {
     return n_bits;
 }
 
+
 func fri_verify{
     range_check_ptr, pedersen_ptr: HashBuiltin*, blake2s_ptr: felt*, channel: Channel, bitwise_ptr: BitwiseBuiltin*
     }(fri_verifier: FriVerifier, evaluations: felt*, positions: felt*
@@ -166,7 +167,7 @@ func fri_verify{
     alloc_locals;
     let num_queries = 54;
     // Read FRI Merkle proofs from a hint
-    let query_proofs = read_fri_proofs(positions);
+    let merkle_proofs = read_fri_proofs(positions);
 
     // Verify a round for each query
     let (__fp__, _) = get_fp_and_pc();
@@ -175,7 +176,7 @@ func fri_verify{
     let (folded_positions) = alloc();
     let num_queries = fold_positions(positions, folded_positions, num_queries, 0, modulus);
     // -----
-    verify_queries(&fri_verifier, folded_positions, evaluations, num_queries, query_proofs.proofs);
+    verify_queries(&fri_verifier, folded_positions, evaluations, num_queries, merkle_proofs.queries_proofs, merkle_proofs.query_values);
 
     // Check that a Merkle tree of the claimed remainders hash to the final layer commitment
     let remainder = read_remainder();
@@ -190,6 +191,11 @@ func fri_verify{
     return ();
 }
 
+struct FriQueriesProof{
+    queries_proofs: QueriesProof*,
+    query_values: felt*,
+}
+
 func verify_queries{
     range_check_ptr, 
     channel: Channel, 
@@ -201,6 +207,7 @@ func verify_queries{
     query_evaluations: felt*,
     num_queries: felt,
     queries_proofs: QueriesProof*,
+    query_values: felt*
 ) {
     if (num_queries == 0) {
         return ();
@@ -244,6 +251,7 @@ func verify_queries{
         folding_factor,
         0,
         queries_proofs,
+        query_values,
         modulus
     );
 
@@ -253,9 +261,10 @@ func verify_queries{
     verify_queries(
         fri_verifier,
         positions + 1,
-        query_evaluations + 1, // TODO: this is just a random value to make the code compile
+        query_evaluations, // TODO: this is just a random value to make the code compile
         num_queries - 1,
-        &queries_proofs[1]
+        &queries_proofs[1],
+        &query_values[folding_factor],
     );
     return ();
 }
@@ -300,7 +309,8 @@ func verify_layers{
     num_layers: felt,
     folding_factor: felt,
     previous_eval: felt,
-    queries_proofs: QueriesProof*,
+    queries_proof: QueriesProof*,
+    query_values: felt*,
     modulus: felt
 ) {
     if (num_layers == 0) {
@@ -316,12 +326,14 @@ func verify_layers{
     let (local query_evaluations) = alloc();
     swap_evaluation_points(query_evaluations, query_evaluations_raw, num_layer_evaluations);
 
-    // TODO: Verify that evaluations are consistent with the layer commitment
+    // Verify that evaluations are consistent with the layer commitment
     let (_, folded_position) = unsigned_div_rem(position, modulus);
-    verify_merkle_proof( queries_proofs.length, queries_proofs.digests, position, channel.fri_roots );
-    let leaf_hash = hash_elements(n_elements=2, elements=query_evaluations); // TODO: FIX ME
-    // assert_hashes_equal(leaf_hash, queries_proofs.digests); 
-
+    verify_merkle_proof(queries_proof.length, queries_proof.digests, position, channel.fri_roots);
+    let leaf_hash = hash_elements(n_elements=folding_factor, elements=query_values);
+    assert_hashes_equal(leaf_hash, queries_proof.digests);
+    // TODO: verify that query_values are correct
+    let is_contained = contains([query_evaluations], query_values, folding_factor);
+    // assert_not_zero(is_contained);
 
     // TODO: Compare previous polynomial evaluation with the current layer evaluation
     if (previous_eval != 0) {
@@ -340,17 +352,19 @@ func verify_layers{
         omega_i,
         alphas + 1,
         folded_position,
-        query_evaluations_raw + num_layer_evaluations,
+        query_evaluations_raw + 1,
         num_layer_evaluations,
         num_layers - 1,
         folding_factor,
         previous_eval,
-        queries_proofs, // TODO: jump to next layer here
+        queries_proof, // TODO: jump to next layer here
+        query_values, // TODO: jump to next layer here
         modulus
     );
 
     return ();
 }
+
 
 func swap_evaluation_points(query_evaluations: felt*, query_evaluations_raw: felt*, num_layer_evaluations) {
     // TODO: Swap the evaluation points if the folded point is in the second half of the domain
@@ -405,28 +419,13 @@ func get_roots_of_unity{range_check_ptr}(omega_i: felt*, omega_n: felt, i: felt,
 }
 
 
-func verify_fri_merkle_proofs {
-    range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*
-}(proofs: QueriesProof*, positions: felt*, trace_roots: felt*, loop_counter, evaluations: felt*, n_evaluations: felt){
-    if(loop_counter == 0){
-        return ();
-    }
-
-    // let digest = hash_elements(n_elements=n_evaluations, elements=evaluations);    // TODO: hash the evaluation correctly
-    // assert_hashes_equal(digest, proofs[0].digests);
-
-    verify_merkle_proof( proofs[0].length, proofs[0].digests, positions[0], trace_roots );
-    verify_fri_merkle_proofs(&proofs[1], positions + 1, trace_roots, loop_counter - 1, evaluations + n_evaluations, n_evaluations);
-    return ();
-}
-
 func read_fri_proofs {
     range_check_ptr, blake2s_ptr: felt*, channel: Channel, bitwise_ptr: BitwiseBuiltin*
-    }(positions: felt*) -> QueriesProofs* {
+    }(positions: felt*) -> FriQueriesProof* {
     alloc_locals;
 
     let num_queries = 54;
-    let (local fri_queries_proof_ptr: QueriesProofs*) = alloc();
+    let (local fri_queries_proof_ptr: FriQueriesProof*) = alloc();
     %{
         import json
         import subprocess
