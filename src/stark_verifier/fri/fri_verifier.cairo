@@ -17,7 +17,7 @@ from stark_verifier.channel import Channel, verify_merkle_proof, QueriesProof, r
 from crypto.hash_utils import assert_hashes_equal
 
 const TWO_ADIC_ROOT_OF_UNITY = G;
-const MULTIPLICATIVE_GENERATOR = 3; // TODO: double-check if this is actually correct https://github.com/ZeroSync/giza/blob/master/core/src/field/f252/mod.rs#L28
+const MULTIPLICATIVE_GENERATOR = 3;
 
 struct FriOptions {
     folding_factor: felt,
@@ -322,7 +322,7 @@ func verify_layers{
     let alpha = [alphas];
     let x = g * omega_i;
 
-    // TODO: Swap the evaluation points if the folded point is in the second half of the domain
+    // Swap the evaluation points if the folded point is in the second half of the domain
     let (local query_evaluations) = alloc();
     swap_evaluation_points(query_evaluations, query_evaluations_raw, num_layer_evaluations);
 

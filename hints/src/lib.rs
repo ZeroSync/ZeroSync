@@ -377,8 +377,6 @@ fn evaluation_data<'a>() -> Result<HashMap<&'a str, String>, WinterVerifierError
         .draw_integers(air.options().num_queries(), air.lde_domain_size())
         .map_err(|_| VerifierError::RandomCoinError)?;
     
-    println!("RUST positions: {:?}", query_positions); 
-
     // read evaluations of trace and constraint composition polynomials at the queried positions;
     // this also checks that the read values are valid against trace and constraint commitments
     let (queried_main_trace_states, queried_aux_trace_states) =
@@ -397,7 +395,6 @@ fn evaluation_data<'a>() -> Result<HashMap<&'a str, String>, WinterVerifierError
     let c_composition = composer
         .compose_constraint_evaluations(queried_constraint_evaluations.clone(), ood_constraint_evaluations.clone());
     let deep_evaluations = composer.combine_compositions(t_composition.clone(), c_composition.clone());
-
 
     // Evaluation data
     let mut data = HashMap::new();
