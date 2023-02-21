@@ -387,8 +387,8 @@ fn evaluation_data<'a>() -> Result<HashMap<&'a str, String>, WinterVerifierError
     // compute evaluations of the DEEP composition polynomial at the queried positions
     let composer = DeepComposer::new(&air, &query_positions, z, deep_coefficients.clone());
     let t_composition = composer.compose_trace_columns(
-        queried_main_trace_states,
-        queried_aux_trace_states,
+        queried_main_trace_states.clone(),
+        queried_aux_trace_states.clone(),
         ood_main_trace_frame.clone(),
         ood_aux_trace_frame.clone(),
     );
@@ -500,6 +500,15 @@ fn evaluation_data<'a>() -> Result<HashMap<&'a str, String>, WinterVerifierError
         .fold(String::new(), |a, x| a + ", " + &x.to_raw().to_string()),
     );
     data.insert("z", z.to_raw().to_string());
+    data.insert(
+        "queried_main_trace_states",
+        queried_main_trace_states.to_cairo_memory()
+    );
+    data.insert(
+        "queried_aux_trace_states",
+        queried_aux_trace_states.as_ref().unwrap().to_cairo_memory()
+    );
+
     Ok(data)
 }
 

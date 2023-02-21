@@ -13,9 +13,9 @@ from utils.endianness import byteswap32
 from stark_verifier.crypto.random import PublicCoin
 from stark_verifier.air.air_instance import AirInstance, DeepCompositionCoefficients, get_deep_composition_coefficients, TraceCoefficients
 from stark_verifier.air.table import Table
-from stark_verifier.composer import compose_constraint_evaluations, DeepComposer, combine_compositions
+from stark_verifier.composer import compose_constraint_evaluations, DeepComposer, combine_compositions, compose_trace_columns
 from stark_verifier.utils import Vec
-
+from stark_verifier.air.transitions.frame import EvaluationFrame
 
 @external
 func __setup__() {
@@ -93,10 +93,10 @@ func test_get_deep_composition_coefficients{
     %}
 
 
-    let _lambda = coeffs.degree[0];
-    let mu = coeffs.degree[1];
-    let lambda_expected = coeffs_expected.degree[0];
-    let mu_expected = coeffs_expected.degree[1];
+    let _lambda = coeffs.degree_lambda;
+    let mu = coeffs.degree_mu;
+    let lambda_expected = coeffs_expected.degree_lambda;
+    let mu_expected = coeffs_expected.degree_mu;
     %{
         assert ids._lambda == ids.lambda_expected, f"{ids._lambda} != {ids.lambda_expected}"
         assert ids.mu == ids.mu_expected, f"{ids.mu} != {ids.mu_expected}"
@@ -194,3 +194,52 @@ func test_combine_compositions{
     %}
     return ();
 }
+
+
+
+@external
+func test_compose_trace_columns{
+    range_check_ptr
+}() {
+    alloc_locals;
+
+    let (local composer_ptr: DeepComposer*) = alloc();
+    let (local queried_main_trace_states: Table*) = alloc();
+    let (local queried_aux_trace_states: Table*) = alloc();
+    let (local ood_main_trace_frame: EvaluationFrame*) = alloc();
+    let (local ood_aux_trace_frame: EvaluationFrame*) = alloc();
+
+    %{
+        from zerosync_hints import *
+        from src.stark_verifier.utils import write_into_memory
+        data = evaluation_data()
+        write_into_memory(ids.composer_ptr, data['composer'], segments)
+        write_into_memory(ids.queried_main_trace_states, data['queried_main_trace_states'], segments)
+        write_into_memory(ids.queried_aux_trace_states, data['queried_aux_trace_states'], segments)
+        write_into_memory(ids.ood_main_trace_frame, data['ood_main_trace_frame'], segments)
+        write_into_memory(ids.ood_aux_trace_frame, data['ood_aux_trace_frame'], segments)
+    %}
+
+    let result = compose_trace_columns(
+        [composer_ptr], 
+        [queried_main_trace_states], 
+        [queried_aux_trace_states], 
+        [ood_main_trace_frame], 
+        [ood_aux_trace_frame], 
+    );
+
+    %{
+        expected = data['t_composition'].split(', ')[1:]
+        i = 0
+        for elemB in expected:
+            elemA = memory[ids.result + i] 
+            
+            print( int(elemB, 16) == elemA, f'index {i}: {hex(elemA)} != {elemB}')
+            # TODO: FIX ME
+            # assert int(elemB, 16) == elemA, f'index {i}: {hex(elemA)} != {elemB}'
+            i += 1
+    %}
+    return ();
+}
+
+

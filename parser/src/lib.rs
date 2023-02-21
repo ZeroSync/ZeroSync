@@ -385,10 +385,10 @@ impl Writeable for DeepCompositionCoefficients<Felt> {
 
 impl Writeable for DeepComposer<Felt> {
     fn write_into(&self, target: &mut DynamicMemory) {
-        self.cc.write_into(target);
         target.write_array(self.x_coordinates.to_vec());
         self.z[0].write_into(target);
         self.z[1].write_into(target);
+        self.cc.write_into(target);
     }
 }
 

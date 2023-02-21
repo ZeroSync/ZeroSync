@@ -7,10 +7,10 @@ from stark_verifier.channel import Table
 from stark_verifier.utils import Vec
 
 struct DeepComposer {
-    cc: DeepCompositionCoefficients,
     x_coordinates: felt*,
     z_curr: felt,
     z_next: felt,
+    cc: DeepCompositionCoefficients,
 }
 
 func deep_composer_new{
@@ -387,6 +387,9 @@ func compose_trace_columns{
         tempvar sum_curr = sum_curr + ([row_ptr + 32] - ood_main_frame.current[32]) * composer.cc.trace[32].values[0];
         tempvar sum_next = sum_next + ([row_ptr + 32] - ood_main_frame.next[32]) * composer.cc.trace[32].values[1];
         
+        tempvar sum_curr = sum_curr + ([row_ptr + 33] - ood_main_frame.current[33]) * composer.cc.trace[33].values[0];
+        tempvar sum_next = sum_next + ([row_ptr + 33] - ood_main_frame.next[33]) * composer.cc.trace[33].values[1];
+        
         tempvar x = [x_coord_ptr];
         tempvar sum = sum_curr / (x - z_curr) + sum_next / (x - z_next);
         assert [result_ptr] = sum;
@@ -402,7 +405,7 @@ func compose_trace_columns{
 
     // Compose columns of the aux segments
     let row = queried_aux_trace_states.elements;
-    tempvar n = 54; // TODO: Don't hardcode the number of queries
+    tempvar n = 54; // TODO: double-check this value!
     tempvar row_ptr = row;
     tempvar x_coord_ptr = composer.x_coordinates;
     tempvar result_ptr = result_ptr;
@@ -410,59 +413,59 @@ func compose_trace_columns{
         tempvar sum_curr = 0;
         tempvar sum_next = 0;
         
-        tempvar sum_curr = sum_curr + ([row_ptr + 33] - ood_aux_frame.current[33]) * composer.cc.trace[33].values[0];
-        tempvar sum_next = sum_next + ([row_ptr + 33] - ood_aux_frame.next[33]) * composer.cc.trace[33].values[1];
+        tempvar sum_curr = sum_curr + ([row_ptr + 0] - ood_aux_frame.current[0]) * composer.cc.trace[34].values[0];
+        tempvar sum_next = sum_next + ([row_ptr + 0] - ood_aux_frame.next[0]) * composer.cc.trace[34].values[1];
         
-        tempvar sum_curr = sum_curr + ([row_ptr + 34] - ood_aux_frame.current[34]) * composer.cc.trace[34].values[0];
-        tempvar sum_next = sum_next + ([row_ptr + 34] - ood_aux_frame.next[34]) * composer.cc.trace[34].values[1];
+        tempvar sum_curr = sum_curr + ([row_ptr + 1] - ood_aux_frame.current[1]) * composer.cc.trace[35].values[0];
+        tempvar sum_next = sum_next + ([row_ptr + 1] - ood_aux_frame.next[1]) * composer.cc.trace[35].values[1];
         
-        tempvar sum_curr = sum_curr + ([row_ptr + 35] - ood_aux_frame.current[35]) * composer.cc.trace[35].values[0];
-        tempvar sum_next = sum_next + ([row_ptr + 35] - ood_aux_frame.next[35]) * composer.cc.trace[35].values[1];
+        tempvar sum_curr = sum_curr + ([row_ptr + 2] - ood_aux_frame.current[2]) * composer.cc.trace[36].values[0];
+        tempvar sum_next = sum_next + ([row_ptr + 2] - ood_aux_frame.next[2]) * composer.cc.trace[36].values[1];
         
-        tempvar sum_curr = sum_curr + ([row_ptr + 36] - ood_aux_frame.current[36]) * composer.cc.trace[36].values[0];
-        tempvar sum_next = sum_next + ([row_ptr + 36] - ood_aux_frame.next[36]) * composer.cc.trace[36].values[1];
+        tempvar sum_curr = sum_curr + ([row_ptr + 3] - ood_aux_frame.current[3]) * composer.cc.trace[37].values[0];
+        tempvar sum_next = sum_next + ([row_ptr + 3] - ood_aux_frame.next[3]) * composer.cc.trace[37].values[1];
         
-        tempvar sum_curr = sum_curr + ([row_ptr + 37] - ood_aux_frame.current[37]) * composer.cc.trace[37].values[0];
-        tempvar sum_next = sum_next + ([row_ptr + 37] - ood_aux_frame.next[37]) * composer.cc.trace[37].values[1];
+        tempvar sum_curr = sum_curr + ([row_ptr + 4] - ood_aux_frame.current[4]) * composer.cc.trace[38].values[0];
+        tempvar sum_next = sum_next + ([row_ptr + 4] - ood_aux_frame.next[4]) * composer.cc.trace[38].values[1];
         
-        tempvar sum_curr = sum_curr + ([row_ptr + 38] - ood_aux_frame.current[38]) * composer.cc.trace[38].values[0];
-        tempvar sum_next = sum_next + ([row_ptr + 38] - ood_aux_frame.next[38]) * composer.cc.trace[38].values[1];
+        tempvar sum_curr = sum_curr + ([row_ptr + 5] - ood_aux_frame.current[5]) * composer.cc.trace[39].values[0];
+        tempvar sum_next = sum_next + ([row_ptr + 5] - ood_aux_frame.next[5]) * composer.cc.trace[39].values[1];
         
-        tempvar sum_curr = sum_curr + ([row_ptr + 39] - ood_aux_frame.current[39]) * composer.cc.trace[39].values[0];
-        tempvar sum_next = sum_next + ([row_ptr + 39] - ood_aux_frame.next[39]) * composer.cc.trace[39].values[1];
+        tempvar sum_curr = sum_curr + ([row_ptr + 6] - ood_aux_frame.current[6]) * composer.cc.trace[40].values[0];
+        tempvar sum_next = sum_next + ([row_ptr + 6] - ood_aux_frame.next[6]) * composer.cc.trace[40].values[1];
         
-        tempvar sum_curr = sum_curr + ([row_ptr + 40] - ood_aux_frame.current[40]) * composer.cc.trace[40].values[0];
-        tempvar sum_next = sum_next + ([row_ptr + 40] - ood_aux_frame.next[40]) * composer.cc.trace[40].values[1];
+        tempvar sum_curr = sum_curr + ([row_ptr + 7] - ood_aux_frame.current[7]) * composer.cc.trace[41].values[0];
+        tempvar sum_next = sum_next + ([row_ptr + 7] - ood_aux_frame.next[7]) * composer.cc.trace[41].values[1];
         
-        tempvar sum_curr = sum_curr + ([row_ptr + 41] - ood_aux_frame.current[41]) * composer.cc.trace[41].values[0];
-        tempvar sum_next = sum_next + ([row_ptr + 41] - ood_aux_frame.next[41]) * composer.cc.trace[41].values[1];
+        tempvar sum_curr = sum_curr + ([row_ptr + 8] - ood_aux_frame.current[8]) * composer.cc.trace[42].values[0];
+        tempvar sum_next = sum_next + ([row_ptr + 8] - ood_aux_frame.next[8]) * composer.cc.trace[42].values[1];
         
-        tempvar sum_curr = sum_curr + ([row_ptr + 42] - ood_aux_frame.current[42]) * composer.cc.trace[42].values[0];
-        tempvar sum_next = sum_next + ([row_ptr + 42] - ood_aux_frame.next[42]) * composer.cc.trace[42].values[1];
+        tempvar sum_curr = sum_curr + ([row_ptr + 9] - ood_aux_frame.current[9]) * composer.cc.trace[43].values[0];
+        tempvar sum_next = sum_next + ([row_ptr + 9] - ood_aux_frame.next[9]) * composer.cc.trace[43].values[1];
         
-        tempvar sum_curr = sum_curr + ([row_ptr + 43] - ood_aux_frame.current[43]) * composer.cc.trace[43].values[0];
-        tempvar sum_next = sum_next + ([row_ptr + 43] - ood_aux_frame.next[43]) * composer.cc.trace[43].values[1];
+        tempvar sum_curr = sum_curr + ([row_ptr + 10] - ood_aux_frame.current[10]) * composer.cc.trace[44].values[0];
+        tempvar sum_next = sum_next + ([row_ptr + 10] - ood_aux_frame.next[10]) * composer.cc.trace[44].values[1];
         
-        tempvar sum_curr = sum_curr + ([row_ptr + 44] - ood_aux_frame.current[44]) * composer.cc.trace[44].values[0];
-        tempvar sum_next = sum_next + ([row_ptr + 44] - ood_aux_frame.next[44]) * composer.cc.trace[44].values[1];
+        tempvar sum_curr = sum_curr + ([row_ptr + 11] - ood_aux_frame.current[11]) * composer.cc.trace[45].values[0];
+        tempvar sum_next = sum_next + ([row_ptr + 11] - ood_aux_frame.next[11]) * composer.cc.trace[45].values[1];
         
-        tempvar sum_curr = sum_curr + ([row_ptr + 45] - ood_aux_frame.current[45]) * composer.cc.trace[45].values[0];
-        tempvar sum_next = sum_next + ([row_ptr + 45] - ood_aux_frame.next[45]) * composer.cc.trace[45].values[1];
+        tempvar sum_curr = sum_curr + ([row_ptr + 12] - ood_aux_frame.current[12]) * composer.cc.trace[46].values[0];
+        tempvar sum_next = sum_next + ([row_ptr + 12] - ood_aux_frame.next[12]) * composer.cc.trace[46].values[1];
         
-        tempvar sum_curr = sum_curr + ([row_ptr + 46] - ood_aux_frame.current[46]) * composer.cc.trace[46].values[0];
-        tempvar sum_next = sum_next + ([row_ptr + 46] - ood_aux_frame.next[46]) * composer.cc.trace[46].values[1];
+        tempvar sum_curr = sum_curr + ([row_ptr + 13] - ood_aux_frame.current[13]) * composer.cc.trace[47].values[0];
+        tempvar sum_next = sum_next + ([row_ptr + 13] - ood_aux_frame.next[13]) * composer.cc.trace[47].values[1];
         
-        tempvar sum_curr = sum_curr + ([row_ptr + 47] - ood_aux_frame.current[47]) * composer.cc.trace[47].values[0];
-        tempvar sum_next = sum_next + ([row_ptr + 47] - ood_aux_frame.next[47]) * composer.cc.trace[47].values[1];
+        tempvar sum_curr = sum_curr + ([row_ptr + 14] - ood_aux_frame.current[14]) * composer.cc.trace[48].values[0];
+        tempvar sum_next = sum_next + ([row_ptr + 14] - ood_aux_frame.next[14]) * composer.cc.trace[48].values[1];
         
-        tempvar sum_curr = sum_curr + ([row_ptr + 48] - ood_aux_frame.current[48]) * composer.cc.trace[48].values[0];
-        tempvar sum_next = sum_next + ([row_ptr + 48] - ood_aux_frame.next[48]) * composer.cc.trace[48].values[1];
+        tempvar sum_curr = sum_curr + ([row_ptr + 15] - ood_aux_frame.current[15]) * composer.cc.trace[49].values[0];
+        tempvar sum_next = sum_next + ([row_ptr + 15] - ood_aux_frame.next[15]) * composer.cc.trace[49].values[1];
         
-        tempvar sum_curr = sum_curr + ([row_ptr + 49] - ood_aux_frame.current[49]) * composer.cc.trace[49].values[0];
-        tempvar sum_next = sum_next + ([row_ptr + 49] - ood_aux_frame.next[49]) * composer.cc.trace[49].values[1];
+        tempvar sum_curr = sum_curr + ([row_ptr + 16] - ood_aux_frame.current[16]) * composer.cc.trace[50].values[0];
+        tempvar sum_next = sum_next + ([row_ptr + 16] - ood_aux_frame.next[16]) * composer.cc.trace[50].values[1];
         
-        tempvar sum_curr = sum_curr + ([row_ptr + 50] - ood_aux_frame.current[50]) * composer.cc.trace[50].values[0];
-        tempvar sum_next = sum_next + ([row_ptr + 50] - ood_aux_frame.next[50]) * composer.cc.trace[50].values[1];
+        tempvar sum_curr = sum_curr + ([row_ptr + 17] - ood_aux_frame.current[17]) * composer.cc.trace[51].values[0];
+        tempvar sum_next = sum_next + ([row_ptr + 17] - ood_aux_frame.next[17]) * composer.cc.trace[51].values[1];
         
         tempvar x = [x_coord_ptr];
         tempvar sum = sum_curr / (x - z_curr) + sum_next / (x - z_next);
@@ -529,8 +532,8 @@ func combine_compositions(
 ) -> felt* {
     alloc_locals;
 
-    let cc_degree_0 = composer.cc.degree[0];
-    let cc_degree_1 = composer.cc.degree[1];
+    let cc_degree_0 = composer.cc.degree_lambda;
+    let cc_degree_1 = composer.cc.degree_mu;
     
     let (local result: felt*) = alloc();
     // TODO: Don't hardcode number of queries

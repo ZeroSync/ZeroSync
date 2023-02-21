@@ -60,7 +60,8 @@ struct DeepCompositionCoefficients {
     // Constraint column polynomial composition coefficients $\delta_j$
     constraints: felt*,
     // Degree adjustment composition coefficients $\lambda$ and $\mu$
-    degree: (felt, felt),
+    degree_lambda: felt,
+    degree_mu: felt,
 }
 
 func air_instance_new{
@@ -150,7 +151,7 @@ func get_deep_composition_coefficients{
     let (lambda, mu) = draw_pair();
 
     let res = DeepCompositionCoefficients(
-        trace=t_coefficients, constraints=c_coefficients, degree=(lambda, mu)
+        trace=t_coefficients, constraints=c_coefficients, degree_lambda=lambda, degree_mu=mu
     );
     return res;
 }
