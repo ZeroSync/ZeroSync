@@ -181,7 +181,7 @@ func fri_verify{
     // Check that a Merkle tree of the claimed remainders hash to the final layer commitment
     let remainder = read_remainder();
 
-    // TODO: Ensure that the interpolated remainder polynomial is of degree <= max_remainder_degree
+    // Ensure that the interpolated remainder polynomial is of degree <= max_remainder_degree
     verify_remainder_degree(
         remainders=remainder.elements,
         remainders_len=remainder.n_elements,
@@ -260,8 +260,8 @@ func verify_queries{
     // Iterate over the remaining queries
     verify_queries(
         fri_verifier,
-        positions + 1,
-        query_evaluations, // TODO: this is just a random value to make the code compile
+        &positions[1],
+        &query_evaluations[1],
         num_queries - 1,
         &queries_proofs[1],
         &query_values[folding_factor],
@@ -330,10 +330,9 @@ func verify_layers{
     let (_, folded_position) = unsigned_div_rem(position, modulus);
     verify_merkle_proof(queries_proof.length, queries_proof.digests, position, channel.fri_roots);
     let leaf_hash = hash_elements(n_elements=folding_factor, elements=query_values);
-    assert_hashes_equal(leaf_hash, queries_proof.digests);
-    // TODO: verify that query_values are correct
+    assert_hashes_equal(leaf_hash, queries_proof.digests);                                                                                                                                                        
     let is_contained = contains([query_evaluations], query_values, folding_factor);
-    // assert_not_zero(is_contained);
+    assert_not_zero(is_contained);
 
     // TODO: Compare previous polynomial evaluation with the current layer evaluation
     if (previous_eval != 0) {
