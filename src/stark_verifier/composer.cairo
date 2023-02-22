@@ -251,10 +251,10 @@ func deep_composer_new{
     let z_next = z * g;
 
     let res = DeepComposer(
-        cc,
         x_coordinates,
         z_curr,
         z_next,
+        cc,
     );
     return res;
 }
@@ -278,12 +278,12 @@ func compose_trace_columns{
 
     // Compose columns of the main segment
     let row = queried_main_trace_states.elements;
-    let (local result: felt*) = alloc();
+    let (local result_main: felt*) = alloc();
     // TODO: Don't hardcode the number of query and columns
     tempvar n = 54;
     tempvar row_ptr = row;
     tempvar x_coord_ptr = composer.x_coordinates;
-    tempvar result_ptr = result;
+    tempvar result_ptr = result_main;
     loop_main:
         tempvar sum_curr = 0;
         tempvar sum_next = 0;
@@ -403,12 +403,15 @@ func compose_trace_columns{
     // Aux trace coefficient rows
     let n_cols = queried_aux_trace_states.n_cols;
 
+    let (local result: felt*) = alloc();
+
     // Compose columns of the aux segments
     let row = queried_aux_trace_states.elements;
     tempvar n = 54; // TODO: double-check this value!
     tempvar row_ptr = row;
     tempvar x_coord_ptr = composer.x_coordinates;
-    tempvar result_ptr = result_ptr;
+    tempvar result_ptr = result;
+    tempvar result_main_ptr = result_main;
     loop_aux:
         tempvar sum_curr = 0;
         tempvar sum_next = 0;
@@ -469,12 +472,13 @@ func compose_trace_columns{
         
         tempvar x = [x_coord_ptr];
         tempvar sum = sum_curr / (x - z_curr) + sum_next / (x - z_next);
-        assert [result_ptr] = sum;
+        assert [result_ptr] = sum + [result_main_ptr];
 
         tempvar n = n - 1;
         tempvar row_ptr = row_ptr + n_cols;
         tempvar x_coord_ptr = x_coord_ptr + 1;
         tempvar result_ptr = result_ptr + 1;
+        tempvar result_main_ptr = result_main_ptr + 1;
     jmp loop_aux if n != 0;
 
     return result;

@@ -233,10 +233,7 @@ func test_compose_trace_columns{
         i = 0
         for elemB in expected:
             elemA = memory[ids.result + i] 
-            
-            print( int(elemB, 16) == elemA, f'index {i}: {hex(elemA)} != {elemB}')
-            # TODO: FIX ME
-            # assert int(elemB, 16) == elemA, f'index {i}: {hex(elemA)} != {elemB}'
+            assert int(elemB, 16) == elemA, f'index {i}: {hex(elemA)} != {elemB}'
             i += 1
     %}
     return ();
