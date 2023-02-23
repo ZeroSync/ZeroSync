@@ -427,15 +427,16 @@ impl WriteableWith<FriProofParams<'_>> for FriProof {
         let mut indices = params.indexes.clone();
         let mut source_domain_size = air.lde_domain_size();
 
-        for (proof, query_values) in proofs.into_iter().zip(queries_values) {            
+        for (proof, query_values) in proofs.into_iter().zip(queries_values) {
             indices = fold_positions(&indices, source_domain_size, folding_factor);
+            let mut child_target = target.alloc();
             source_domain_size /= folding_factor;
             let paths = proof.into_paths(&indices).unwrap();
-            let mut child_target = target.alloc();
-            for path in paths{
-                child_target.write_sized_array(path);
+            for (index, path) in paths.iter().enumerate() {
+                child_target.write_sized_array(path.to_vec());
+                let query_values = &query_values[index*folding_factor..(index+1)*folding_factor];
+                child_target.write_array(query_values.to_vec());
             }
-            target.write_array(query_values.to_vec());
         }
     }
 }

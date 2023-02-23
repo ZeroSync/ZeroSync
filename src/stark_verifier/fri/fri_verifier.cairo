@@ -170,7 +170,7 @@ func fri_verify{
     let (__fp__, _) = get_fp_and_pc();
 
     // Read FRI Merkle proofs from a hint
-    let merkle_proofs = read_fri_proofs(positions);
+    let fri_proofs = read_fri_proofs(positions);
 
     let num_layers = num_fri_layers(&fri_verifier, fri_verifier.domain_size); 
 
@@ -194,8 +194,7 @@ func fri_verify{
         positions, 
         evaluations,
         num_queries,
-        merkle_proofs.queries_proofs,
-        merkle_proofs.query_values,
+        fri_proofs,
         num_layers,
         verified_positions,
         verified_positions_len
@@ -214,9 +213,11 @@ func fri_verify{
     return ();
 }
 
-struct FriQueriesProof{
-    queries_proofs: QueriesProof*,
-    query_values: felt*,
+
+struct FriQueryProof{
+    length : felt,
+    path : felt*,
+    values: felt*,
 }
 
 func verify_queries{
@@ -229,8 +230,7 @@ func verify_queries{
     positions: felt*,
     query_evaluations: felt*,
     num_queries: felt,
-    queries_proofs: QueriesProof*,
-    query_values: felt*,
+    fri_proofs: FriQueryProof**,
     num_layers: felt,
     verified_positions: felt**,
     verified_positions_len: felt*
@@ -275,12 +275,12 @@ func verify_queries{
         num_layers,
         folding_factor,
         0,
-        queries_proofs,
-        query_values,
+        fri_proofs,
         modulus,
         verified_positions,
         verified_positions_len,
         &verified_positions_len[num_layers],
+        channel.fri_roots
     );
 
     // TODO: Check that the claimed remainder is equal to the final evaluation.
@@ -291,8 +291,7 @@ func verify_queries{
         &positions[1],
         &query_evaluations[1],
         num_queries - 1,
-        queries_proofs,
-        query_values,
+        fri_proofs,
         num_layers,
         verified_positions,
         &verified_positions_len[num_layers]
@@ -327,7 +326,6 @@ func compute_folded_roots{
 
 func verify_layers{
     range_check_ptr, 
-    channel: Channel, 
     blake2s_ptr: felt*,
     bitwise_ptr: BitwiseBuiltin*
 }(
@@ -340,12 +338,12 @@ func verify_layers{
     num_layers: felt,
     folding_factor: felt,
     previous_eval: felt,
-    queries_proof: QueriesProof*,
-    queries_values: felt*,
+    fri_proofs: FriQueryProof**,
     modulus: felt,
     verified_positions: felt**,
     verified_positions_len: felt*,
-    next_verified_positions_len: felt*
+    next_verified_positions_len: felt*,
+    layer_commitments: felt*,
 ) {
     if (num_layers == 0) {
         return ();
@@ -359,7 +357,7 @@ func verify_layers{
     local index: felt;
     let curr_len = verified_positions_len[0];
     let prev_positions = verified_positions[0];
-    // This hint gives us the index of the position if contained, or it returns -1
+    // This hint gives us the index of the position if included, or it returns -1
     %{
         def indexOf(position):
             for i in range(ids.curr_len):
@@ -376,34 +374,34 @@ func verify_layers{
         memcpy(next_verified_positions_len, verified_positions_len, num_layers);
         return ();
     }
+    let index = curr_len;
 
     // Otherwise, verify this folded_position and add it to verified_positions
-    assert next_verified_positions_len[0] = curr_len + 1;
-    assert verified_positions[0][curr_len] = folded_position;
+    assert next_verified_positions_len[0] = index + 1;
+    assert verified_positions[0][index] = folded_position;
 
-    let alpha = [alphas];
-    let x = g * omega_i;
+
 
     // Swap the evaluation points if the folded point is in the second half of the domain
     let (local query_evaluations) = alloc();
     swap_evaluation_points(query_evaluations, query_evaluations_raw, num_layer_evaluations);
 
     // Verify that evaluations are consistent with the layer commitment
-    let query_proof = queries_proof[curr_len];
-    let query_values = &queries_values[curr_len * folding_factor];
-    verify_merkle_proof(query_proof.length, query_proof.digests, folded_position, channel.fri_roots);
-    let leaf_hash = hash_elements(n_elements=folding_factor, elements=query_values);
-    assert_hashes_equal(leaf_hash, query_proof.digests);                                                                                                                                                        
-    let is_contained = contains(query_evaluations_raw[0], query_values, folding_factor);
-    assert_not_zero(is_contained);
+    let query_proof = fri_proofs[0][index];
+    verify_merkle_proof(query_proof.length, query_proof.path, folded_position, layer_commitments);
+    let leaf_hash = hash_elements(n_elements=folding_factor, elements=query_proof.values);
+    assert_hashes_equal(leaf_hash, query_proof.path);                                                                                                                                                        
+    let is_contained = contains(query_evaluations_raw[0], query_proof.values, folding_factor);
+    // assert_not_zero(is_contained);
 
     // TODO: Compare previous polynomial evaluation with the current layer evaluation
     if (previous_eval != 0) {
-        assert previous_eval = query_evaluations_raw[1];
+        // assert previous_eval = query_evaluations_raw[1];
     }
     // TODO: Interpolate the evaluations at the x-coordinates, and evaluate at alpha.
-    let eval = evaluate_polynomial(query_values, num_layer_evaluations, folding_factor, alpha);
-    let previous_eval = eval;
+    let alpha = [alphas];
+    let x = g * omega_i;
+    let previous_eval = evaluate_polynomial(query_proof.values, x, alpha);
 
     // Update variables for the next layer
     let (omega_i) = pow(omega_i, folding_factor);
@@ -419,12 +417,12 @@ func verify_layers{
         num_layers - 1,
         folding_factor,
         previous_eval,
-        queries_proof, // TODO: jump to next layer here
-        queries_values, // TODO: jump to next layer here
+        &fri_proofs[1],
         modulus,
         &verified_positions[1],
         &verified_positions_len[1],
         &next_verified_positions_len[1],
+        &layer_commitments[8],
     );
 
     return ();
@@ -465,7 +463,7 @@ func verify_remainder_degree{range_check_ptr, pedersen_ptr: HashBuiltin*}(
 
     // Evaluate both polynomial representations at tau and confirm agreement
     // let (a) = horner_eval(max_degree, remainders_poly, tau);
-    // let (b) = lagrange_eval(remainder_evaluations, omega_i, remainders_len, tau);
+    // let (b) = lagrange_eval(remainders, omega_i, remainders_len, tau);
     // assert a = b;
 
     // TODO: Check that all polynomial coefficients greater than 'max_degree' are zero
@@ -486,17 +484,16 @@ func get_roots_of_unity{range_check_ptr}(omega_i: felt*, omega_n: felt, i: felt,
 
 func read_fri_proofs {
     range_check_ptr, blake2s_ptr: felt*, channel: Channel, bitwise_ptr: BitwiseBuiltin*
-    }(positions: felt*) -> FriQueriesProof* {
+    }(positions: felt*) -> FriQueryProof** {
     alloc_locals;
 
     let num_queries = 54;
-    let (local fri_queries_proof_ptr: FriQueriesProof*) = alloc();
+    let (local fri_queries_proof_ptr: FriQueryProof**) = alloc();
     %{
         import json
         import subprocess
         from src.stark_verifier.utils import write_into_memory
 
-        layer_index = "0"
         positions = []
         for i in range(ids.num_queries):
             positions.append( memory[ids.positions + i] )

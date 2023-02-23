@@ -44,6 +44,6 @@ func lagrange_eval(evaluations_y: felt*, evaluations_x: felt*, evaluations_len, 
 
 // Evaluate the split and fold step of FRI commit for folding factor 2
 // https://aszepieniec.github.io/stark-anatomy/fri
-func evaluate_polynomial(evaluations_x : felt *, evaluations_len, x, alpha) -> felt {
+func evaluate_polynomial(evaluations_x : felt *, x, alpha) -> felt {
     return (1 / 2) * (evaluations_x[0] * (1 + alpha / x) + evaluations_x[1] * (1 - alpha / x));
 }
