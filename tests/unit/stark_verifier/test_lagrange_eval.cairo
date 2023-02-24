@@ -101,7 +101,7 @@ func test_evaluate_polynomial() {
     let x = 6;
     
     let expected_result = 1 / 2;
-    let result = evaluate_polynomial(evaluations_x, evaluations_len, x, alpha);
+    let result = evaluate_polynomial(evaluations_x, x, alpha);
 
     assert expected_result = result;
     return ();
