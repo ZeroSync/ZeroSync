@@ -15,7 +15,7 @@ from stark_verifier.crypto.random import PublicCoin, reseed, draw, reseed_endian
 from stark_verifier.fri.utils import evaluate_polynomial, lagrange_eval
 from utils.pow2 import pow2
 from stark_verifier.channel import Channel, verify_merkle_proof, QueriesProof, read_remainder
-from crypto.hash_utils import assert_hashes_equal
+from crypto.hash_utils import assert_hashes_equal, HASH_FELT_SIZE
 
 const TWO_ADIC_ROOT_OF_UNITY = G;
 const MULTIPLICATIVE_GENERATOR = 3;
@@ -70,7 +70,7 @@ func _fri_verifier_new{
     _fri_verifier_new(
         options,
         max_degree_plus_1 / options.folding_factor,
-        layer_commitment_ptr + 8,
+        layer_commitment_ptr + HASH_FELT_SIZE,
         layer_alpha_ptr + 1,
         count - 1
     );
@@ -260,7 +260,7 @@ func verify_queries{
     compute_folded_roots(omega_folded, omega, log_degree, folding_factor, 1);
 
 
-    %{ print(f'verify_queries  -  num_queries: {ids.num_queries}, domain_size: {ids.fri_verifier.domain_size}, folding_factor: {ids.folding_factor}') %}
+    %{ print(f'verify_queries  -  num_queries: {ids.num_queries}, domain_size: {ids.fri_verifier.domain_size}, folding_factor: {ids.folding_factor}, fri_roots_len: {ids.channel.fri_roots_len}, num_layers: {ids.num_layers}') %}
 
     let modulus = fri_verifier.domain_size / folding_factor;
 
@@ -302,7 +302,7 @@ func verify_queries{
 func num_fri_layers{
         range_check_ptr
     }(fri_verifier: FriVerifier*, domain_size) -> felt{
-    let is_leq = is_le(fri_verifier.options.max_remainder_size, domain_size);
+    let is_leq = is_le(fri_verifier.options.max_remainder_size + 1, domain_size);
     if(is_leq == 0){
         return 0;
     }
@@ -345,10 +345,10 @@ func verify_layers{
     next_verified_positions_len: felt*,
     layer_commitments: felt*,
 ) {
+    alloc_locals;
     if (num_layers == 0) {
         return ();
     }
-    alloc_locals;
 
     let (_, folded_position) = unsigned_div_rem(position, modulus);
     %{ print(f'verify_layers  -  num_layers: {ids.num_layers}, num_layer_evaluations: {ids.num_layer_evaluations},  position: {ids.position}, folded_position: {ids.folded_position}, modulus: {ids.modulus}') %}
@@ -376,9 +376,10 @@ func verify_layers{
     }
     let index = curr_len;
 
-    // Otherwise, verify this folded_position and add it to verified_positions
-    assert next_verified_positions_len[0] = index + 1;
+    // Otherwise, verify this folded_position 
     assert verified_positions[0][index] = folded_position;
+    // and add it to verified_positions
+    assert next_verified_positions_len[0] = index + 1;
 
 
 
@@ -422,7 +423,7 @@ func verify_layers{
         &verified_positions[1],
         &verified_positions_len[1],
         &next_verified_positions_len[1],
-        &layer_commitments[8],
+        &layer_commitments[HASH_FELT_SIZE],
     );
 
     return ();

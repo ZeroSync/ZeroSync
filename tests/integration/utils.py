@@ -26,7 +26,9 @@ def giza_prove(program_name):
         '--program', f'tests/integration/cairo_programs_compiled/{program_name}.json',
         '--trace', f'tests/integration/cairo_programs_trace/{program_name}/trace.bin',
         '--memory', f'tests/integration/cairo_programs_trace/{program_name}/memory.bin',
-        '--output', f'tests/integration/stark_proofs/{program_name}.bin'])
+        '--output', f'tests/integration/stark_proofs/{program_name}.bin',
+        '--fri-folding-factor', '8'
+        ])
 
 def parse_proof(program_name):
     completed_process = subprocess.run([
