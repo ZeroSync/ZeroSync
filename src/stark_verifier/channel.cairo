@@ -21,7 +21,7 @@ from crypto.hash_utils import assert_hashes_equal
 from utils.endianness import byteswap32
 from stark_verifier.crypto.random import hash_elements
 
-const FOLDING_FACTOR = 8;
+from stark_verifier.fri.fri_verifier import FOLDING_FACTOR
 
 struct TraceOodFrame {
     main_frame: EvaluationFrame,

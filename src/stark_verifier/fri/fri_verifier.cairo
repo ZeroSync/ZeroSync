@@ -19,6 +19,7 @@ from crypto.hash_utils import assert_hashes_equal, HASH_FELT_SIZE
 
 const TWO_ADIC_ROOT_OF_UNITY = G;
 const MULTIPLICATIVE_GENERATOR = 3;
+const FOLDING_FACTOR = 8;
 
 struct FriOptions {
     folding_factor: felt,
@@ -207,7 +208,9 @@ func fri_verify{
     verify_remainder_degree(
         remainders=remainder.elements,
         remainders_len=remainder.n_elements,
-        max_degree=fri_verifier.options.max_remainder_size
+        max_degree=fri_verifier.options.max_remainder_size,
+        domain_generator=fri_verifier.domain_generator,
+        domain_size=fri_verifier.domain_size 
     );
 
     return ();
@@ -437,10 +440,10 @@ func swap_evaluation_points(query_evaluations: felt*, query_evaluations_raw: fel
 }
 
 func verify_remainder_degree{range_check_ptr, pedersen_ptr: HashBuiltin*}(
-    remainders: felt*, remainders_len: felt, max_degree: felt
+    remainders: felt*, remainders_len: felt, max_degree: felt, domain_generator, domain_size
 ) {
     alloc_locals;
-    let (remainders_poly) = alloc(); // TODO: interpolate this from `remainders`
+    let remainders_poly = interpolate_remainder_polynomial(remainders, remainders_len, domain_generator, domain_size);
     // Use the commitment to the remainder polynomial and evaluations to draw a random
     // field element tau
     let (hash_state_ptr) = hash_init();
@@ -514,4 +517,88 @@ func read_fri_proofs {
     %}
 
     return fri_queries_proof_ptr;
+}
+
+
+
+
+func interpolate_remainder_polynomial{range_check_ptr}(
+    remainders: felt*, 
+    remainders_len: felt,
+    domain_generator: felt, 
+    domain_size: felt
+    ) -> felt* {
+    alloc_locals;
+    let inv_twiddles = get_inv_twiddles(remainders_len, domain_generator, domain_size);    
+    interpolate_poly(inv_twiddles, remainders, remainders_len);
+    let (result) = alloc();
+    return result;
+}
+
+func get_inv_twiddles{range_check_ptr}(n, domain_generator, domain_size) -> felt* {
+    alloc_locals;
+    let root = domain_generator;
+    let inv_root = 1 / root; // TODO: check if we can actually compute the inverse like that
+    let inv_twiddles_len = domain_size / 2;
+    let (inv_twiddles) = alloc();
+    get_power_series(inv_twiddles, inv_root, inv_twiddles_len, 1);
+    
+    let (result) = alloc();
+    permute(result, inv_twiddles, inv_twiddles_len, inv_twiddles_len);
+    return result;
+}
+
+func get_power_series(
+    result: felt*, 
+    base: felt, 
+    loop_counter: felt, 
+    accu: felt
+    ){
+    if (loop_counter == 0){
+        return ();
+    }
+    assert [result] = accu;
+    return get_power_series(result + 1, base, loop_counter - 1, accu * base);
+}
+
+func permute{range_check_ptr}(
+    result: felt*, 
+    values: felt*, 
+    values_len: felt, 
+    loop_counter: felt
+    ){
+    if(loop_counter == 0){
+        return ();
+    }
+    alloc_locals;
+    let i = values_len - loop_counter;
+    let j = permute_index(values_len, i);
+
+    let le = is_le(i, j);
+    if (le != 0){
+        assert result[i] = values[j];
+        assert result[j] = values[i];
+        return permute(result, values, values_len, loop_counter - 1);
+    }
+    return permute(result, values, values_len, loop_counter - 1);
+}
+
+func permute_index(size, index) -> felt{
+    alloc_locals;
+    local result: felt;
+    %{
+        import math
+        width = int(math.log2(ids.size))
+        b = '{:0{width}b}'.format(ids.index, width=width)
+        ids.result = int(b[::-1], 2)
+    %}
+    // TODO: verify this hint
+    return result;
+}
+
+
+func interpolate_poly(x_values:felt*, y_values:felt*, values_len) -> felt* {
+    let (result) = alloc();
+    // TODO: implement me
+    return result;
 }
