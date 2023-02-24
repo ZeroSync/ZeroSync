@@ -19,6 +19,47 @@ from crypto.hash_utils import assert_hashes_equal, HASH_FELT_SIZE
 from stark_verifier.parameters import TWO_ADIC_ROOT_OF_UNITY, TWO_ADICITY, FOLDING_FACTOR, MULTIPLICATIVE_GENERATOR
 
 
+struct FriQueryProof {
+    length : felt,
+    path : felt*,
+    values: felt*,
+}
+
+func read_fri_proofs {
+    range_check_ptr, blake2s_ptr: felt*, channel: Channel, bitwise_ptr: BitwiseBuiltin*
+    }(positions: felt*) -> FriQueryProof** {
+    alloc_locals;
+
+    let num_queries = 54;
+    let (local fri_queries_proof_ptr: FriQueryProof**) = alloc();
+    %{
+        import json
+        import subprocess
+        from src.stark_verifier.utils import write_into_memory
+
+        positions = []
+        for i in range(ids.num_queries):
+            positions.append( memory[ids.positions + i] )
+
+        positions = json.dumps( positions )
+
+        completed_process = subprocess.run([
+            'bin/stark_parser',
+            'tests/integration/stark_proofs/fibonacci.bin', # TODO: this path shouldn't be hardcoded here!
+            'fri-queries',
+            positions
+            ],
+            capture_output=True)
+        
+        json_data = completed_process.stdout
+        write_into_memory(ids.fri_queries_proof_ptr, json_data, segments)
+    %}
+
+    return fri_queries_proof_ptr;
+}
+
+
+
 struct FriOptions {
     folding_factor: felt,
     max_remainder_size: felt,
@@ -214,12 +255,6 @@ func fri_verify{
     return ();
 }
 
-
-struct FriQueryProof{
-    length : felt,
-    path : felt*,
-    values: felt*,
-}
 
 func verify_queries{
     range_check_ptr, 
@@ -482,41 +517,6 @@ func get_roots_of_unity{range_check_ptr}(omega_i: felt*, omega_n: felt, i: felt,
     get_roots_of_unity(omega_i + 1, omega_n, i + 1, len);
     return ();
 }
-
-
-func read_fri_proofs {
-    range_check_ptr, blake2s_ptr: felt*, channel: Channel, bitwise_ptr: BitwiseBuiltin*
-    }(positions: felt*) -> FriQueryProof** {
-    alloc_locals;
-
-    let num_queries = 54;
-    let (local fri_queries_proof_ptr: FriQueryProof**) = alloc();
-    %{
-        import json
-        import subprocess
-        from src.stark_verifier.utils import write_into_memory
-
-        positions = []
-        for i in range(ids.num_queries):
-            positions.append( memory[ids.positions + i] )
-
-        positions = json.dumps( positions )
-
-        completed_process = subprocess.run([
-            'bin/stark_parser',
-            'tests/integration/stark_proofs/fibonacci.bin', # TODO: this path shouldn't be hardcoded here!
-            'fri-queries',
-            positions
-            ],
-            capture_output=True)
-        
-        json_data = completed_process.stdout
-        write_into_memory(ids.fri_queries_proof_ptr, json_data, segments)
-    %}
-
-    return fri_queries_proof_ptr;
-}
-
 
 
 
