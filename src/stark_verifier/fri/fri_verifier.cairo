@@ -9,17 +9,15 @@ from starkware.cairo.common.memset import memset
 from starkware.cairo.common.hash_state import hash_finalize, hash_init, hash_update
 from starkware.cairo.common.registers import get_fp_and_pc
 
-from stark_verifier.air.air_instance import AirInstance, G, TWO_ADICITY
+from stark_verifier.air.air_instance import AirInstance
 from stark_verifier.air.stark_proof import ProofOptions
 from stark_verifier.crypto.random import PublicCoin, reseed, draw, reseed_endian, contains, hash_elements
 from stark_verifier.fri.utils import evaluate_polynomial, lagrange_eval
 from utils.pow2 import pow2
 from stark_verifier.channel import Channel, verify_merkle_proof, QueriesProof, read_remainder
 from crypto.hash_utils import assert_hashes_equal, HASH_FELT_SIZE
+from stark_verifier.parameters import TWO_ADIC_ROOT_OF_UNITY, TWO_ADICITY, FOLDING_FACTOR, MULTIPLICATIVE_GENERATOR
 
-const TWO_ADIC_ROOT_OF_UNITY = G;
-const MULTIPLICATIVE_GENERATOR = 3;
-const FOLDING_FACTOR = 8;
 
 struct FriOptions {
     folding_factor: felt,

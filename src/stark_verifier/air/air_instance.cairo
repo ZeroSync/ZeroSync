@@ -13,10 +13,7 @@ from stark_verifier.crypto.random import (
 )
 from stark_verifier.air.pub_inputs import PublicInputs
 from stark_verifier.air.stark_proof import ProofContext, ProofOptions, StarkProof
-
-// 2-adic root of unity for field with modulus $2^{251} + 17 \cdot 2^{192} + 1$
-const TWO_ADICITY = 192; 
-const G = 145784604816374866144131285430889962727208297722245411306711449302875041684;
+from stark_verifier.parameters import TWO_ADIC_ROOT_OF_UNITY, TWO_ADICITY
 
 struct AirInstance {
     // Layout
@@ -76,11 +73,11 @@ func air_instance_new{
     let (aux_segment_rands: felt*) = alloc();
 
     let (power) = pow(2, TWO_ADICITY - proof.context.log_trace_length);
-    let (trace_domain_generator) = pow(G, power);
+    let (trace_domain_generator) = pow(TWO_ADIC_ROOT_OF_UNITY, power);
     
     let log_lde_domain_size = options.log_blowup_factor + proof.context.log_trace_length;
     let (power) = pow(2, TWO_ADICITY - log_lde_domain_size);
-    let (lde_domain_generator) = pow(G, power);
+    let (lde_domain_generator) = pow(TWO_ADIC_ROOT_OF_UNITY, power);
 
     // TODO: Make configurable for other VMs and custom AIRs
     let res = AirInstance(
