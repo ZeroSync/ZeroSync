@@ -232,11 +232,29 @@ func read_queried_trace_states{
 
     // Authenticate proof paths
     verify_merkle_proofs(
-        trace_queries_proof_ptr[0].proofs, positions, channel.trace_roots, num_queries, main_states.elements, main_states.n_cols);
+        trace_queries_proof_ptr[0].proofs,
+        positions,
+        channel.trace_roots,
+        num_queries,
+        main_states.elements,
+        main_states.n_cols
+    );
     verify_aux_merkle_proofs_1(
-        trace_queries_proof_ptr[1].proofs, positions, channel.trace_roots + HASH_FELT_SIZE, num_queries, aux_states.elements, aux_states.n_cols);
+        trace_queries_proof_ptr[1].proofs,
+        positions,
+        channel.trace_roots + HASH_FELT_SIZE,
+        num_queries,
+        aux_states.elements,
+        aux_states.n_cols
+    );
     verify_aux_merkle_proofs_2(
-        trace_queries_proof_ptr[2].proofs, positions, channel.trace_roots + HASH_FELT_SIZE * 2, num_queries, aux_states.elements, aux_states.n_cols);
+        trace_queries_proof_ptr[2].proofs,
+        positions,
+        channel.trace_roots + HASH_FELT_SIZE * 2,
+        num_queries,
+        aux_states.elements,
+        aux_states.n_cols
+    );
 
     return (main_states, aux_states);
 }

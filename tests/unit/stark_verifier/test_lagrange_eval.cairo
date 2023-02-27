@@ -35,6 +35,46 @@ func test_lagrange_eval() {
 
 
 @external
+func test_lagrange_eval2() {
+    alloc_locals;
+    let (evaluations_x: felt*) = alloc();
+    let (evaluations_y: felt*) = alloc();
+    local degree;
+    %{
+        polynomial = [7, 13, 0, 23, 47, 17]
+        def f(x):
+            sum = 0
+            for (index, coefficient) in enumerate(polynomial):
+                sum += coefficient * pow(x, index, PRIME)
+            return sum % PRIME
+
+
+        ids.degree = len(polynomial) - 1
+        for i in range(20): # Make a few more evaluations 
+            x = 7*i**2 + 29  # evaluate at some random offset
+            memory[ids.evaluations_x + i] = x
+            memory[ids.evaluations_y + i] = f(x)
+    %}
+    
+    let result = lagrange_eval(evaluations_y, evaluations_x, degree+1, evaluations_x[10]);
+    assert result = evaluations_y[10];
+
+    let result = lagrange_eval(evaluations_y, evaluations_x, degree+1, evaluations_x[11]);
+    assert result = evaluations_y[11];
+
+    let result = lagrange_eval(evaluations_y, evaluations_x, degree+1, evaluations_x[12]);
+    assert result = evaluations_y[12];
+
+    let result = lagrange_eval(evaluations_y, evaluations_x, degree+1, evaluations_x[13]);
+    assert result = evaluations_y[13];
+
+    let result = lagrange_eval(evaluations_y, evaluations_x, degree+1, evaluations_x[19]);
+    assert result = evaluations_y[19];
+
+    return ();
+}
+
+@external
 func test_lagrange_basis_eval() {
     alloc_locals;
     let evaluations_len = 2;
