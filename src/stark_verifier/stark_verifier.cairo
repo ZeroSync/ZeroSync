@@ -1,5 +1,3 @@
-// %builtins pedersen range_check bitwise
-
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_blake2s.blake2s import finalize_blake2s, STATE_SIZE_FELTS
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
@@ -21,7 +19,6 @@ from stark_verifier.air.stark_proof import (
     TraceLayout,
     ProofOptions,
     StarkProof,
-    read_stark_proof,
 )
 from stark_verifier.air.trace_info import TraceInfo
 from stark_verifier.channel import (

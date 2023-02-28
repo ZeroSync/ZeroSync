@@ -7,7 +7,7 @@
 
 from starkware.cairo.common.alloc import alloc
 
-from stark_verifier.fri.utils import lagrange_eval, lagrange_basis_eval, lagrange_sum_eval, evaluate_polynomial, interpolate_poly
+from stark_verifier.fri.utils import lagrange_eval, lagrange_basis_eval, lagrange_sum_eval, interpolate_poly
 
 @external
 func test_lagrange_eval() {
@@ -123,30 +123,6 @@ func test_lagrange_sum_eval() {
     assert expected_sum = sum;
     return ();
 }
-
-@external
-func test_evaluate_polynomial() {
-    let evaluations_len = 2;
-    let (evaluations_x) = alloc();
-    let (evaluations_y) = alloc();
-
-    assert evaluations_x[0] = 0;
-    assert evaluations_x[1] = 2;
-    
-    // Unused - left here to reconstruct the polynomial.
-    assert evaluations_y[0] = 4;
-    assert evaluations_y[1] = 0;
-
-    let alpha = 3;
-    let x = 6;
-    
-    let expected_result = 1 / 2;
-    let result = evaluate_polynomial(evaluations_x, x, alpha);
-
-    assert expected_result = result;
-    return ();
-}
-
 
 
 @external

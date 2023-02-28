@@ -10,7 +10,7 @@ from stark_verifier.stark_verifier import verify
 @external
 func __setup__() {
     %{ 
-        # Compile, run, and generate proof of a fibonnaci program
+        # Compile, run, and generate proof of a Fibonacci program
         # TODO: Use cached compiler and prover artifacts if source code is unchanged
         from tests.integration.utils import setup
         path = ("tests/integration/cairo_programs/", "fibonacci")
@@ -22,10 +22,6 @@ func __setup__() {
 /// Test deserialization of StarkProof from file
 @external
 func test_read_stark_proof{}() {
-    %{ 
-        from tests.integration.utils import parse_proof
-        json_data = parse_proof('fibonacci')
-    %}
     let proof: StarkProof* = read_stark_proof();
 
     %{ 
@@ -41,10 +37,6 @@ func test_read_stark_proof{}() {
 /// Test deserialization of PublicInputs from file
 @external
 func test_read_pub_inputs{}() {
-    %{ 
-        from tests.integration.utils import parse_public_inputs
-        json_data = parse_public_inputs('fibonacci')
-    %}
     let pub_inputs: PublicInputs* = read_public_inputs();
 
     %{
@@ -62,16 +54,7 @@ func test_verify{
     range_check_ptr,
     bitwise_ptr: BitwiseBuiltin*,
 }() {
-    %{ 
-        from tests.integration.utils import parse_proof
-        json_data = parse_proof('fibonacci')
-    %}
     let proof: StarkProof* = read_stark_proof();
-
-    %{ 
-        from tests.integration.utils import parse_public_inputs
-        json_data = parse_public_inputs('fibonacci')
-    %}
     let pub_inputs: PublicInputs* = read_public_inputs();
  
     verify(proof, pub_inputs);

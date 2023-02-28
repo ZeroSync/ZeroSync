@@ -12,11 +12,11 @@ from starkware.cairo.common.registers import get_fp_and_pc
 from stark_verifier.air.air_instance import AirInstance
 from stark_verifier.air.stark_proof import ProofOptions
 from stark_verifier.crypto.random import PublicCoin, reseed, draw, reseed_endian, contains, hash_elements
-from stark_verifier.fri.utils import evaluate_polynomial, lagrange_eval, interpolate_poly
+from stark_verifier.fri.utils import lagrange_eval, interpolate_poly
 from utils.pow2 import pow2
 from stark_verifier.channel import Channel, verify_merkle_proof, QueriesProof, read_remainder
 from crypto.hash_utils import assert_hashes_equal, HASH_FELT_SIZE
-from stark_verifier.parameters import TWO_ADIC_ROOT_OF_UNITY, TWO_ADICITY, FOLDING_FACTOR, MULTIPLICATIVE_GENERATOR
+from stark_verifier.parameters import TWO_ADIC_ROOT_OF_UNITY, TWO_ADICITY, FOLDING_FACTOR, MULTIPLICATIVE_GENERATOR, NUM_QUERIES
 from stark_verifier.utils import Vec
 
 // g: domain offset
@@ -33,34 +33,14 @@ func read_fri_proofs {
     }(positions: felt*) -> FriQueryProof** {
     alloc_locals;
 
-    let num_queries = 54;
     let (local fri_queries_proof_ptr: FriQueryProof**) = alloc();
     %{
-        import json
-        import subprocess
-        from src.stark_verifier.utils import write_into_memory
-
-        positions = []
-        for i in range(ids.num_queries):
-            positions.append( memory[ids.positions + i] )
-
-        positions = json.dumps( positions )
-
-        completed_process = subprocess.run([
-            'bin/stark_parser',
-            'tests/integration/stark_proofs/fibonacci.bin', # TODO: this path shouldn't be hardcoded here!
-            'fri-queries',
-            positions
-            ],
-            capture_output=True)
-        
-        json_data = completed_process.stdout
-        write_into_memory(ids.fri_queries_proof_ptr, json_data, segments)
+        from src.stark_verifier.utils import read_fri_queries_proofs
+        read_fri_queries_proofs(ids.positions, ids.fri_queries_proof_ptr, ids.NUM_QUERIES, memory, segments)
     %}
 
     return fri_queries_proof_ptr;
 }
-
 
 
 struct FriOptions {
@@ -401,12 +381,8 @@ func verify_layers{
     let prev_positions = verified_positions[0];
     // This hint gives us the index of the position if included, or it returns -1
     %{
-        def indexOf(position):
-            for i in range(ids.curr_len):
-                if( memory[ids.prev_positions + i] == position):
-                    return i
-            return -1
-        ids.index = indexOf(ids.folded_position)
+        from src.stark_verifier.utils import index_of
+        ids.index = index_of(ids.prev_positions, ids.curr_len, ids.folded_position, memory)
     %}
     // If so, copy the previous verified_positions_len, and we're done
     if (index != -1){
@@ -559,12 +535,7 @@ func assert_contains(elements:felt*, n_elements, element){
     alloc_locals;
     local index: felt;
     %{
-        def indexOf(element):
-            for i in range(ids.n_elements):
-                if memory[ids.elements + i] == element:
-                    return i
-            return 0
-        ids.index = indexOf(ids.element)
+        ids.index = index_of(ids.elements, ids.n_elements, ids.element, memory)
     %}
     assert elements[index] = element;
     return ();

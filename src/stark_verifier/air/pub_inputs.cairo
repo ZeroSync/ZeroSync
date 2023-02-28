@@ -26,8 +26,8 @@ struct PublicInputs {
 func read_public_inputs() -> PublicInputs* {
     let (pub_inputs_ptr: PublicInputs*) = alloc();
     %{
-        from src.stark_verifier.utils import write_into_memory
-        write_into_memory(ids.pub_inputs_ptr, json_data, segments)
+        from src.stark_verifier.utils import read_public_inputs         
+        read_public_inputs(ids.pub_inputs_ptr, segments)
     %}
     return pub_inputs_ptr;
 }

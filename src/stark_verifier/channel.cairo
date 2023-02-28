@@ -21,7 +21,7 @@ from crypto.hash_utils import assert_hashes_equal
 from utils.endianness import byteswap32
 from stark_verifier.crypto.random import hash_elements
 
-from stark_verifier.parameters import FOLDING_FACTOR
+from stark_verifier.parameters import FOLDING_FACTOR, NUM_QUERIES
 
 struct TraceOodFrame {
     main_frame: EvaluationFrame,
@@ -203,29 +203,12 @@ func read_queried_trace_states{
     alloc_locals;
     let (local trace_queries_proof_ptr: QueriesProofs*) = alloc();
     %{
-        import json
-        import subprocess
-        from src.stark_verifier.utils import write_into_memory
-
-        positions = []
-        for i in range(54):
-            positions.append( memory[ids.positions + i] )
-
-        positions = json.dumps( positions )
-
-        completed_process = subprocess.run([
-            'bin/stark_parser',
-            'tests/integration/stark_proofs/fibonacci.bin', # TODO: this path shouldn't be hardcoded!
-            'trace-queries',
-            positions
-            ],
-            capture_output=True)
-        
-        json_data = completed_process.stdout
-        write_into_memory(ids.trace_queries_proof_ptr, json_data, segments)
+        from src.stark_verifier.utils import read_queried_trace_states
+        read_queried_trace_states(ids.positions, ids.trace_queries_proof_ptr, ids.NUM_QUERIES, memory, segments)
     %}
 
-    let num_queries = 4; // TODO: this should be 54, but it takes forever...
+    let num_queries = NUM_QUERIES;
+    let num_queries = 4; // TODO: this should be NUM_QUERIES, but it takes forever...
 
     let main_states = channel.trace_queries.main_states;
     let aux_states = channel.trace_queries.aux_states;
@@ -268,28 +251,11 @@ func read_constraint_evaluations{
     alloc_locals;
     let (local constraint_queries_proof_ptr: QueriesProofs*) = alloc();
     %{
-        import json
-        import subprocess
-        from src.stark_verifier.utils import write_into_memory
-
-        positions = []
-        for i in range(54):
-            positions.append( memory[ids.positions + i] )
-
-        positions = json.dumps( positions )
-
-        completed_process = subprocess.run([
-            'bin/stark_parser',
-            'tests/integration/stark_proofs/fibonacci.bin', # TODO: this path shouldn't be hardcoded!
-            'constraint-queries',
-            positions
-            ],
-            capture_output=True)
-        
-        json_data = completed_process.stdout
-        write_into_memory(ids.constraint_queries_proof_ptr, json_data, segments)
+        from src.stark_verifier.utils import read_constraint_evaluations
+        read_constraint_evaluations(ids.positions, ids.constraint_queries_proof_ptr, ids.NUM_QUERIES, memory, segments)
     %}
-    let num_queries = 4; // TODO: this should be 54, but it takes forever...
+    let num_queries = NUM_QUERIES;
+    let num_queries = 4; // TODO: this should be NUM_QUERIES, but it takes forever...
 
     // Authenticate proof paths
     let evaluations = channel.constraint_queries.evaluations;

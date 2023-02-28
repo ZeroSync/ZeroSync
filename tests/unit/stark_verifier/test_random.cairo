@@ -225,10 +225,6 @@ func test_hash_pub_inputs{
 }() {
     alloc_locals;
 
-    %{ 
-        from tests.integration.utils import parse_public_inputs
-        json_data = parse_public_inputs('fibonacci')
-    %}
     let pub_inputs: PublicInputs* = read_public_inputs();
 
     let (mem_values: felt*) = alloc();
@@ -271,10 +267,6 @@ func test_public_coin_seed{
     let (blake2s_ptr: felt*) = alloc();
     local blake2s_ptr_start: felt* = blake2s_ptr;
 
-    %{ 
-        from tests.integration.utils import parse_public_inputs
-        json_data = parse_public_inputs('fibonacci')
-    %}
     let pub_inputs: PublicInputs* = read_public_inputs();
 
     let public_coin_seed: felt* = seed_with_pub_inputs{blake2s_ptr=blake2s_ptr}(pub_inputs);

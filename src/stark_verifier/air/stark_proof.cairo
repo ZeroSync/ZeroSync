@@ -83,8 +83,8 @@ struct StarkProof {
 func read_stark_proof() -> StarkProof* {
     let (proof_ptr: StarkProof*) = alloc();
     %{
-        from src.stark_verifier.utils import write_into_memory
-        write_into_memory(ids.proof_ptr, json_data, segments)
+        from src.stark_verifier.utils import read_stark_proof         
+        read_stark_proof(ids.proof_ptr, segments)
     %}
     return proof_ptr;
 }

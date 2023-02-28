@@ -30,22 +30,6 @@ def giza_prove(program_name):
         '--fri-folding-factor', '8'
         ])
 
-def parse_proof(program_name):
-    completed_process = subprocess.run([
-        'bin/stark_parser',
-        f'tests/integration/stark_proofs/{program_name}.bin',
-        'proof'],
-        capture_output=True)
-    return completed_process.stdout
-
-def parse_public_inputs(program_name):
-    pwd = subprocess.run(['pwd'],capture_output=True).stdout[:-1]
-    completed_process = subprocess.run([
-        'bin/stark_parser',
-        f'tests/integration/stark_proofs/{program_name}.bin',
-        'public-inputs'],
-        capture_output=True)
-    return completed_process.stdout
 
 def setup(path):
     cairo_compile(path)

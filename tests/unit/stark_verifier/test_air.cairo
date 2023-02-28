@@ -115,17 +115,9 @@ func test_air_instance_new{
         write_into_memory(ids.air_ptr, data['air'], segments)
     %}
 
-    %{ 
-        from tests.integration.utils import parse_proof
-        json_data = parse_proof('fibonacci')
-    %}
     let proof: StarkProof* = read_stark_proof();
 
     
-    %{ 
-        from tests.integration.utils import parse_public_inputs
-        json_data = parse_public_inputs('fibonacci')
-    %}
     let pub_inputs: PublicInputs* = read_public_inputs();
     
     local air_expected:AirInstance = [air_ptr];
