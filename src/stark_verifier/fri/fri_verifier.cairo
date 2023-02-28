@@ -290,21 +290,18 @@ func verify_queries{
     // x: omega^position * g
     let g = MULTIPLICATIVE_GENERATOR;
     let omega = fri_verifier.domain_generator;
-    let (omega_i) = pow(omega, position);
 
     // Compute the remaining folded roots of unity
-    let (omega_folded) = alloc();
-    compute_folded_roots(omega_folded, omega, log_degree, folding_factor, 1);
+    let (folding_roots) = alloc(); // TODO: move this to fri_verify
+    compute_folding_roots(folding_roots, omega, log_degree, folding_factor, 0);
 
-
-    // %{ print(f'verify_queries  -  num_queries: {ids.num_queries}, domain_size: {ids.fri_verifier.domain_size}, folding_factor: {ids.folding_factor}, fri_roots_len: {ids.channel.fri_roots_len}, num_layers: {ids.num_layers}') %}
 
     let modulus = fri_verifier.domain_size / folding_factor;
 
     // Iterate over the layers within this query
     verify_layers(
         g,
-        omega_i,
+        omega,
         alphas,
         position,
         query_evaluations,
@@ -317,7 +314,8 @@ func verify_queries{
         verified_positions,
         verified_positions_len,
         &verified_positions_len[num_layers],
-        channel.fri_roots
+        channel.fri_roots,
+        folding_roots
     );
 
     // TODO: Check that the claimed remainder is equal to the final evaluation.
@@ -347,17 +345,18 @@ func num_fri_layers{
     return 1 + res;
 }
 
-func compute_folded_roots{
+// pre-compute roots of unity used in computing x coordinates in the folded domain
+func compute_folding_roots{
     range_check_ptr
-    }(omega_folded: felt*, omega, log_degree: felt, folding_factor: felt, n: felt) {
-    if (n == folding_factor) {
+    }(omega_folded: felt*, omega, log_degree: felt, folding_factor: felt, i: felt) {
+    if (i == folding_factor) {
         return ();
     }
     let (degree) = pow(2, log_degree);
-    let new_domain_size = degree / folding_factor * n;
+    let new_domain_size = degree / folding_factor * i;
     let (res) = pow(omega, new_domain_size);
     assert [omega_folded] = res;
-    compute_folded_roots(omega_folded + 1, omega, log_degree, folding_factor, n + 1);
+    compute_folding_roots(omega_folded + 1, omega, log_degree, folding_factor, i + 1);
     return ();
 }
 
@@ -381,6 +380,7 @@ func verify_layers{
     verified_positions_len: felt*,
     next_verified_positions_len: felt*,
     layer_commitments: felt*,
+    folding_roots: felt*
 ) {
     alloc_locals;
     if (num_layers == 0) {
@@ -388,7 +388,7 @@ func verify_layers{
     }
 
     let (_, folded_position) = unsigned_div_rem(position, modulus);
-    // %{ print(f'verify_layers  -  num_layers: {ids.num_layers}, num_layer_evaluations: {ids.num_layer_evaluations},  position: {ids.position}, folded_position: {ids.folded_position}, modulus: {ids.modulus}') %}
+
     
     // Check if we have already verified this folded_position
     local index: felt;
@@ -429,20 +429,32 @@ func verify_layers{
     let leaf_hash = hash_elements(n_elements=folding_factor, elements=query_proof.values);
     assert_hashes_equal(leaf_hash, query_proof.path);                                                                                                                                                        
     let is_contained = contains(query_evaluations_raw[0], query_proof.values, folding_factor);
-    // assert_not_zero(is_contained);
+    assert_not_zero(is_contained);
 
     // TODO: Compare previous polynomial evaluation with the current layer evaluation
-    if (previous_eval != 0) {
-        // assert previous_eval = query_evaluations_raw[1];
-    }
-    // TODO: Interpolate the evaluations at the x-coordinates, and evaluate at alpha.
+    // if (previous_eval != 0) {
+    //     assert previous_eval = query_evaluations_raw[1];
+    // }
+
+    // Interpolate the evaluations at the x-coordinates, and evaluate at alpha.
     let alpha = [alphas];
-    let x = g * omega_i;
-    let previous_eval = evaluate_polynomial(query_proof.values, x, alpha);
+    let (xe) = pow(omega_i, folded_position);
+    local xe = xe * g;
+    let (local x_values) = alloc();
+
+    tempvar i = FOLDING_FACTOR;
+    loop:
+        assert x_values[i-1] = folding_roots[i-1] * xe;
+        tempvar i = i - 1;
+    jmp loop if i != 0;
+
+    let previous_eval = lagrange_eval(query_proof.values, x_values, folding_factor, alpha);
 
     // Update variables for the next layer
     let (omega_i) = pow(omega_i, folding_factor);
     let modulus = modulus / folding_factor;
+    let (query_evaluations_raw) = alloc();
+    assert query_evaluations_raw[0] = previous_eval;
 
     verify_layers(
         g,
@@ -460,6 +472,7 @@ func verify_layers{
         &verified_positions_len[1],
         &next_verified_positions_len[1],
         &layer_commitments[HASH_FELT_SIZE],
+        folding_roots
     );
 
     return ();
