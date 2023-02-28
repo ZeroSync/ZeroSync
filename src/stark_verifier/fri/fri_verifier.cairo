@@ -135,8 +135,6 @@ func fri_verifier_new{
 
     let domain_size_log2 = log2(domain_size);
     let domain_generator = get_root_of_unity(domain_size_log2);
-    // air.trace_domain_generator ?
-    // air.lde_domain_generator ?
 
     // read layer commitments from the channel and use them to build a list of alphas
     let (layer_alphas) = alloc();
@@ -298,8 +296,9 @@ func verify_queries{
     let omega = fri_verifier.domain_generator;
 
     // Compute the remaining folded roots of unity
-    let (folding_roots) = alloc(); // TODO: move this to fri_verify
+    let (folding_roots) = alloc(); 
     compute_folding_roots(folding_roots, omega, log_degree, folding_factor, 0);
+    // TODO: move all of the above to fri_verify
 
 
     let modulus = fri_verifier.domain_size / folding_factor;
@@ -375,7 +374,7 @@ func verify_layers{
     omega_i: felt,
     alphas: felt*,
     position: felt,
-    query_evaluations_raw: felt*,
+    query_evaluations: felt*,
     num_layer_evaluations: felt,
     num_layers: felt,
     folding_factor: felt,
@@ -392,7 +391,7 @@ func verify_layers{
     alloc_locals;
     if (num_layers == 0) {
         // Check that the claimed remainder is equal to the final evaluation.
-        assert_contains(remainders.elements, remainders.n_elements, query_evaluations_raw[0]);
+        assert_contains(remainders.elements, remainders.n_elements, query_evaluations[0]);
         return ();
     }
 
@@ -428,21 +427,17 @@ func verify_layers{
     assert next_verified_positions_len[0] = index + 1;
 
 
-    // Swap the evaluation points if the folded point is in the second half of the domain
-    let (local query_evaluations) = alloc();
-    swap_evaluation_points(query_evaluations, query_evaluations_raw, num_layer_evaluations);
-
     // Verify that evaluations are consistent with the layer commitment
     let query_proof = fri_proofs[0][index];
     verify_merkle_proof(query_proof.length, query_proof.path, folded_position, layer_commitments);
     let leaf_hash = hash_elements(n_elements=folding_factor, elements=query_proof.values);
     assert_hashes_equal(leaf_hash, query_proof.path);                                                                                                                                                        
-    let is_contained = contains(query_evaluations_raw[0], query_proof.values, folding_factor);
+    let is_contained = contains(query_evaluations[0], query_proof.values, folding_factor);
     assert_not_zero(is_contained);
 
     // TODO: Compare previous polynomial evaluation with the current layer evaluation
     // if (previous_eval != 0) {
-    //     assert previous_eval = query_evaluations_raw[1];
+    //     assert previous_eval = query_evaluations[1];
     // }
 
     // Interpolate the evaluations at the x-coordinates, and evaluate at alpha.
@@ -462,15 +457,15 @@ func verify_layers{
     // Update variables for the next layer
     let (omega_i) = pow(omega_i, folding_factor);
     let modulus = modulus / folding_factor;
-    let (query_evaluations_raw) = alloc();
-    assert query_evaluations_raw[0] = previous_eval;
+    let (query_evaluations) = alloc();
+    assert query_evaluations[0] = previous_eval;
 
     return verify_layers(
         g,
         omega_i,
         alphas + 1,
         folded_position,
-        query_evaluations_raw,
+        query_evaluations,
         num_layer_evaluations,
         num_layers - 1,
         folding_factor,
@@ -484,13 +479,6 @@ func verify_layers{
         folding_roots,
         remainders
     );
-}
-
-
-func swap_evaluation_points(query_evaluations: felt*, query_evaluations_raw: felt*, num_layer_evaluations) {
-    // TODO: Swap the evaluation points if the folded point is in the second half of the domain
-    // memcpy(query_evaluations, query_evaluations_raw, num_layer_evaluations);
-    return ();
 }
 
 func verify_remainder_degree{range_check_ptr, pedersen_ptr: HashBuiltin*}(
