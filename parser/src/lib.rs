@@ -440,7 +440,7 @@ impl WriteableWith<FriProofParams<'_>> for FriProof {
         }
     }
 }
-
+ 
 pub fn fold_positions(
     positions: &[usize],
     source_domain_size: usize,

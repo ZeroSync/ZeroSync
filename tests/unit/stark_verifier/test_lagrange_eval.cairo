@@ -7,7 +7,7 @@
 
 from starkware.cairo.common.alloc import alloc
 
-from stark_verifier.fri.utils import lagrange_eval, lagrange_basis_eval, lagrange_sum_eval, evaluate_polynomial
+from stark_verifier.fri.utils import lagrange_eval, lagrange_basis_eval, lagrange_sum_eval, evaluate_polynomial, interpolate_poly
 
 @external
 func test_lagrange_eval() {
@@ -144,5 +144,45 @@ func test_evaluate_polynomial() {
     let result = evaluate_polynomial(evaluations_x, x, alpha);
 
     assert expected_result = result;
+    return ();
+}
+
+
+
+@external
+func test_interpolate_poly() {
+    alloc_locals;
+    local evaluations_len;
+    let (evaluations_x: felt*) = alloc();
+    let (evaluations_y: felt*) = alloc();
+    let (expected_polynomial: felt*) = alloc();
+    local degree;
+    %{
+        polynomial = [1,7,2,11]
+        def f(x):
+            sum = 0
+            for (index, coefficient) in enumerate(polynomial):
+                sum += coefficient * pow(x, index, PRIME)
+            return sum
+
+        ids.degree = len(polynomial) - 1
+        ids.evaluations_len = 20  # Make a few more evaluations 
+        for i in range(ids.evaluations_len):
+            x = i + 1 #7*i**2 + 29  # evaluate at some random offset
+            memory[ids.evaluations_x + i] = x
+            memory[ids.evaluations_y + i] = f(x)
+
+        for (index, coefficient) in enumerate(polynomial):
+            memory[ids.expected_polynomial + index] = coefficient
+    %}
+    
+    let polynomial = interpolate_poly(evaluations_x, evaluations_y, degree + 1);
+    
+    assert expected_polynomial[0] = polynomial[0];
+    assert expected_polynomial[1] = polynomial[1];
+    assert expected_polynomial[2] = polynomial[2];
+    assert expected_polynomial[3] = polynomial[3];
+  
+
     return ();
 }

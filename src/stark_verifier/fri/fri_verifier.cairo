@@ -12,14 +12,14 @@ from starkware.cairo.common.registers import get_fp_and_pc
 from stark_verifier.air.air_instance import AirInstance
 from stark_verifier.air.stark_proof import ProofOptions
 from stark_verifier.crypto.random import PublicCoin, reseed, draw, reseed_endian, contains, hash_elements
-from stark_verifier.fri.utils import evaluate_polynomial, lagrange_eval
+from stark_verifier.fri.utils import evaluate_polynomial, lagrange_eval, interpolate_poly
 from utils.pow2 import pow2
 from stark_verifier.channel import Channel, verify_merkle_proof, QueriesProof, read_remainder
 from crypto.hash_utils import assert_hashes_equal, HASH_FELT_SIZE
 from stark_verifier.parameters import TWO_ADIC_ROOT_OF_UNITY, TWO_ADICITY, FOLDING_FACTOR, MULTIPLICATIVE_GENERATOR
 
 
-struct FriQueryProof {
+struct FriQueryProof{
     length : felt,
     path : felt*,
     values: felt*,
@@ -476,7 +476,22 @@ func verify_remainder_degree{range_check_ptr, pedersen_ptr: HashBuiltin*}(
     remainders: felt*, remainders_len: felt, max_degree: felt, domain_generator, domain_size
 ) {
     alloc_locals;
-    let remainders_poly = interpolate_remainder_polynomial(remainders, remainders_len, domain_generator, domain_size);
+
+    // If the remainders length is less than the max_degree then we're done 
+    // TODO: Double-check if that's actually true!
+    let is_leq = is_le(remainders_len, max_degree);
+    if(is_leq != 0){
+        return ();
+    }
+
+    // Roots of unity for remainder evaluation domain
+    let k = log2(remainders_len);
+    let omega_n = get_root_of_unity(k);
+    let (omega_i) = alloc();
+    get_roots_of_unity(omega_i, omega_n, 0, remainders_len);
+    
+    let remainders_poly = interpolate_poly(omega_i, remainders, remainders_len);
+
     // Use the commitment to the remainder polynomial and evaluations to draw a random
     // field element tau
     let (hash_state_ptr) = hash_init();
@@ -485,26 +500,21 @@ func verify_remainder_degree{range_check_ptr, pedersen_ptr: HashBuiltin*}(
         data_ptr=remainders,
         data_length=remainders_len
     );
-    // let (hash_state_ptr) = hash_update{hash_ptr=pedersen_ptr}(
-    //     hash_state_ptr=hash_state_ptr,
-    //     data_ptr=remainders_poly,
-    //     data_length=remainders_len
-    // );
-    // let (tau) = hash_finalize{hash_ptr=pedersen_ptr}(hash_state_ptr=hash_state_ptr);
+    let (hash_state_ptr) = hash_update{hash_ptr=pedersen_ptr}(
+        hash_state_ptr=hash_state_ptr,
+        data_ptr=remainders_poly,
+        data_length=remainders_len
+    );
+    let (tau) = hash_finalize{hash_ptr=pedersen_ptr}(hash_state_ptr=hash_state_ptr);
 
-    // Roots of unity for remainder evaluation domain
-    let k = log2(remainders_len);
-    let omega_n = get_root_of_unity(k);
-    let (omega_i) = alloc();
-    get_roots_of_unity(omega_i, omega_n, 0, remainders_len);
 
     // Evaluate both polynomial representations at tau and confirm agreement
-    // let (a) = horner_eval(max_degree, remainders_poly, tau);
-    // let (b) = lagrange_eval(remainders, omega_i, remainders_len, tau);
-    // assert a = b;
+    let (a) = horner_eval(remainders_len, remainders_poly, tau);
+    let b = lagrange_eval(remainders, omega_i, remainders_len, tau);
+    assert a = b;
 
-    // TODO: Check that all polynomial coefficients greater than 'max_degree' are zero
-
+    // Check that all polynomial coefficients greater than 'max_degree' are zero
+    assert_zeroes(remainders_poly + max_degree, remainders_len - max_degree);
     return ();
 }
 
@@ -519,33 +529,6 @@ func get_roots_of_unity{range_check_ptr}(omega_i: felt*, omega_n: felt, i: felt,
 }
 
 
-
-func interpolate_remainder_polynomial{range_check_ptr}(
-    remainders: felt*, 
-    remainders_len: felt,
-    domain_generator: felt, 
-    domain_size: felt
-    ) -> felt* {
-    alloc_locals;
-    let inv_twiddles = get_inv_twiddles(remainders_len, domain_generator, domain_size);    
-    interpolate_poly(inv_twiddles, remainders, remainders_len);
-    let (result) = alloc();
-    return result;
-}
-
-func get_inv_twiddles{range_check_ptr}(n, domain_generator, domain_size) -> felt* {
-    alloc_locals;
-    let root = domain_generator;
-    let inv_root = 1 / root; // TODO: check if we can actually compute the inverse like that
-    let inv_twiddles_len = domain_size / 2;
-    let (inv_twiddles) = alloc();
-    get_power_series(inv_twiddles, inv_root, inv_twiddles_len, 1);
-    
-    let (result) = alloc();
-    permute(result, inv_twiddles, inv_twiddles_len, inv_twiddles_len);
-    return result;
-}
-
 func get_power_series(
     result: felt*, 
     base: felt, 
@@ -559,44 +542,12 @@ func get_power_series(
     return get_power_series(result + 1, base, loop_counter - 1, accu * base);
 }
 
-func permute{range_check_ptr}(
-    result: felt*, 
-    values: felt*, 
-    values_len: felt, 
-    loop_counter: felt
-    ){
-    if(loop_counter == 0){
+
+func assert_zeroes(array: felt*, array_len){
+    if(array_len == 0){
         return ();
     }
-    alloc_locals;
-    let i = values_len - loop_counter;
-    let j = permute_index(values_len, i);
-
-    let le = is_le(i, j);
-    if (le != 0){
-        assert result[i] = values[j];
-        assert result[j] = values[i];
-        return permute(result, values, values_len, loop_counter - 1);
-    }
-    return permute(result, values, values_len, loop_counter - 1);
-}
-
-func permute_index(size, index) -> felt{
-    alloc_locals;
-    local result: felt;
-    %{
-        import math
-        width = int(math.log2(ids.size))
-        b = '{:0{width}b}'.format(ids.index, width=width)
-        ids.result = int(b[::-1], 2)
-    %}
-    // TODO: verify this hint
-    return result;
-}
-
-
-func interpolate_poly(x_values:felt*, y_values:felt*, values_len) -> felt* {
-    let (result) = alloc();
-    // TODO: implement me
-    return result;
+    assert 0 = [array];
+    assert_zeroes(array + 1, array_len - 1);
+    return ();
 }
