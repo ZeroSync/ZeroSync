@@ -84,6 +84,7 @@ struct FriVerifier {
     layer_commitments: felt*,
     layer_alphas: felt*,
     options: FriOptions,
+    max_remainder_degree: felt,
 }
 
 func _fri_verifier_new{
@@ -97,9 +98,9 @@ func _fri_verifier_new{
     layer_commitment_ptr: felt*,
     layer_alpha_ptr: felt*,
     count: felt,
-) {
+) -> felt {
     if (count == 0) {
-        return ();
+        return max_degree_plus_1 * options.folding_factor + 1;
     }
     alloc_locals;
 
@@ -107,14 +108,13 @@ func _fri_verifier_new{
     let alpha = draw();
     assert [layer_alpha_ptr] = alpha;
 
-    _fri_verifier_new(
+    return _fri_verifier_new(
         options,
-        max_degree_plus_1 / options.folding_factor,
+        max_degree_plus_1 / options.folding_factor, // TODO: check if max_degree_plus_1 % options.folding_factor == 0
         layer_commitment_ptr + HASH_FELT_SIZE,
         layer_alpha_ptr + 1,
         count - 1
     );
-    return ();
 }
 
 func fri_verifier_new{
@@ -141,7 +141,7 @@ func fri_verifier_new{
     // read layer commitments from the channel and use them to build a list of alphas
     let (layer_alphas) = alloc();
     let layer_commitments = channel.fri_roots;
-    _fri_verifier_new(
+    let max_degree_plus_1 = _fri_verifier_new(
         options,
         max_poly_degree + 1,
         layer_commitments,
@@ -156,6 +156,7 @@ func fri_verifier_new{
         layer_commitments,
         layer_alphas,
         options,
+        max_degree_plus_1,
     );
     return res;
 }
@@ -247,7 +248,7 @@ func fri_verify{
     verify_remainder_degree(
         remainders=remainder.elements,
         remainders_len=remainder.n_elements,
-        max_degree=fri_verifier.options.max_remainder_size,
+        max_degree=fri_verifier.max_remainder_degree - 1,
         domain_generator=fri_verifier.domain_generator,
         domain_size=fri_verifier.domain_size 
     );
@@ -296,7 +297,7 @@ func verify_queries{
     compute_folded_roots(omega_folded, omega, log_degree, folding_factor, 1);
 
 
-    %{ print(f'verify_queries  -  num_queries: {ids.num_queries}, domain_size: {ids.fri_verifier.domain_size}, folding_factor: {ids.folding_factor}, fri_roots_len: {ids.channel.fri_roots_len}, num_layers: {ids.num_layers}') %}
+    // %{ print(f'verify_queries  -  num_queries: {ids.num_queries}, domain_size: {ids.fri_verifier.domain_size}, folding_factor: {ids.folding_factor}, fri_roots_len: {ids.channel.fri_roots_len}, num_layers: {ids.num_layers}') %}
 
     let modulus = fri_verifier.domain_size / folding_factor;
 
@@ -387,7 +388,7 @@ func verify_layers{
     }
 
     let (_, folded_position) = unsigned_div_rem(position, modulus);
-    %{ print(f'verify_layers  -  num_layers: {ids.num_layers}, num_layer_evaluations: {ids.num_layer_evaluations},  position: {ids.position}, folded_position: {ids.folded_position}, modulus: {ids.modulus}') %}
+    // %{ print(f'verify_layers  -  num_layers: {ids.num_layers}, num_layer_evaluations: {ids.num_layer_evaluations},  position: {ids.position}, folded_position: {ids.folded_position}, modulus: {ids.modulus}') %}
     
     // Check if we have already verified this folded_position
     local index: felt;
@@ -416,7 +417,6 @@ func verify_layers{
     assert verified_positions[0][index] = folded_position;
     // and add it to verified_positions
     assert next_verified_positions_len[0] = index + 1;
-
 
 
     // Swap the evaluation points if the folded point is in the second half of the domain
@@ -476,12 +476,9 @@ func verify_remainder_degree{range_check_ptr, pedersen_ptr: HashBuiltin*}(
     remainders: felt*, remainders_len: felt, max_degree: felt, domain_generator, domain_size
 ) {
     alloc_locals;
-
-    // If the remainders length is less than the max_degree then we're done 
-    // TODO: Double-check if that's actually true!
-    let is_leq = is_le(remainders_len, max_degree);
-    if(is_leq != 0){
-        return ();
+    
+    with_attr error_message("Remainder degree not valid"){
+        assert_le(max_degree + 1, remainders_len);
     }
 
     // Roots of unity for remainder evaluation domain
@@ -491,7 +488,6 @@ func verify_remainder_degree{range_check_ptr, pedersen_ptr: HashBuiltin*}(
     get_roots_of_unity(omega_i, omega_n, 0, remainders_len);
     
     let remainders_poly = interpolate_poly(omega_i, remainders, remainders_len);
-
     // Use the commitment to the remainder polynomial and evaluations to draw a random
     // field element tau
     let (hash_state_ptr) = hash_init();
@@ -514,7 +510,9 @@ func verify_remainder_degree{range_check_ptr, pedersen_ptr: HashBuiltin*}(
     assert a = b;
 
     // Check that all polynomial coefficients greater than 'max_degree' are zero
-    assert_zeroes(remainders_poly + max_degree, remainders_len - max_degree);
+    with_attr error_message("Remainder degree mismatch"){
+        assert_zeroes(remainders_poly + max_degree, remainders_len - max_degree);
+    }
     return ();
 }
 
