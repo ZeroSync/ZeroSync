@@ -19,6 +19,9 @@ from crypto.hash_utils import assert_hashes_equal, HASH_FELT_SIZE
 from stark_verifier.parameters import TWO_ADIC_ROOT_OF_UNITY, TWO_ADICITY, FOLDING_FACTOR, MULTIPLICATIVE_GENERATOR
 from stark_verifier.utils import Vec
 
+// g: domain offset
+const g = MULTIPLICATIVE_GENERATOR;
+
 struct FriQueryProof{
     length : felt,
     path : felt*,
@@ -288,11 +291,7 @@ func verify_queries{
 
     let position = [positions];
 
-    // Compute the field element coordinate at the queried position
-    // g: domain offset
     // omega: domain generator
-    // x: omega^position * g
-    let g = MULTIPLICATIVE_GENERATOR;
     let omega = fri_verifier.domain_generator;
 
     // Compute the remaining folded roots of unity
@@ -305,7 +304,6 @@ func verify_queries{
 
     // Iterate over the layers within this query
     verify_layers(
-        g,
         omega,
         alphas,
         position,
@@ -370,7 +368,6 @@ func verify_layers{
     blake2s_ptr: felt*,
     bitwise_ptr: BitwiseBuiltin*
 }(
-    g: felt,
     omega_i: felt,
     alphas: felt*,
     position: felt,
@@ -461,7 +458,6 @@ func verify_layers{
     assert query_evaluations[0] = previous_eval;
 
     return verify_layers(
-        g,
         omega_i,
         alphas + 1,
         folded_position,
