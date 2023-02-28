@@ -71,13 +71,6 @@ func verify{range_check_ptr, pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBui
 ) {
     alloc_locals;
 
-
-    let p= [proof];
-    %{
-        print('lde_domain_size', ids.p.context.lde_domain_size)
-        print('folding_factor', ids.p.context.options.fri_folding_factor)
-    %}
-
     let (__fp__, _) = get_fp_and_pc();
 
     // Initialize hasher
@@ -110,6 +103,7 @@ func verify{range_check_ptr, pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBui
 func perform_verification{
     range_check_ptr,
     blake2s_ptr: felt*,
+    pedersen_ptr: HashBuiltin*, 
     bitwise_ptr: BitwiseBuiltin*,
     channel: Channel,
     public_coin: PublicCoin,

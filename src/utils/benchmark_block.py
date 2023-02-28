@@ -179,7 +179,7 @@ if __name__ == '__main__':
         f'RUNNER_TIME: {total_time} -> {str(datetime.timedelta(seconds=total_time))}\n')
 
     # Run Giza prover
-    cmd = f'giza prove --trace={output_dir}/trace.bin --memory={output_dir}/memory.bin --program={output_dir}/program.json --output={output_dir}/proof.bin --num-outputs=50'
+    cmd = f'giza prove --trace={output_dir}/trace.bin --memory={output_dir}/memory.bin --program={output_dir}/program.json --output={output_dir}/proof.bin --num-outputs=50 --fri-folding-factor=8'
     start_time = time.clock_gettime(time.CLOCK_REALTIME)
     program_output_string = os.popen(cmd).read()
     total_time = time.clock_gettime(time.CLOCK_REALTIME) - start_time

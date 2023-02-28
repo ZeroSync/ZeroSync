@@ -7,10 +7,10 @@ from stark_verifier.channel import Table
 from stark_verifier.utils import Vec
 
 struct DeepComposer {
-    cc: DeepCompositionCoefficients,
     x_coordinates: felt*,
     z_curr: felt,
     z_next: felt,
+    cc: DeepCompositionCoefficients,
 }
 
 func deep_composer_new{
@@ -39,10 +39,10 @@ func deep_composer_new{
     let z_next = z * g;
 
     let res = DeepComposer(
-        cc,
         x_coordinates,
         z_curr,
         z_next,
+        cc,
     );
     return res;
 }
@@ -66,16 +66,16 @@ func compose_trace_columns{
 
     // Compose columns of the main segment
     let row = queried_main_trace_states.elements;
-    let (local result: felt*) = alloc();
+    let (local result_main: felt*) = alloc();
     // TODO: Don't hardcode the number of query and columns
     tempvar n = 54;
     tempvar row_ptr = row;
     tempvar x_coord_ptr = composer.x_coordinates;
-    tempvar result_ptr = result;
+    tempvar result_ptr = result_main;
     loop_main:
         tempvar sum_curr = 0;
         tempvar sum_next = 0;
-        <% for (var i=0; i<33; i++) { %>
+        <% for (var i=0; i<34; i++) { %>
         tempvar sum_curr = sum_curr + ([row_ptr + <%= i %>] - ood_main_frame.current[<%= i %>]) * composer.cc.trace[<%= i %>].values[0];
         tempvar sum_next = sum_next + ([row_ptr + <%= i %>] - ood_main_frame.next[<%= i %>]) * composer.cc.trace[<%= i %>].values[1];
         <% } %>
@@ -92,27 +92,31 @@ func compose_trace_columns{
     // Aux trace coefficient rows
     let n_cols = queried_aux_trace_states.n_cols;
 
+    let (local result: felt*) = alloc();
+
     // Compose columns of the aux segments
     let row = queried_aux_trace_states.elements;
     tempvar n = 54; // TODO: double-check this value!
     tempvar row_ptr = row;
     tempvar x_coord_ptr = composer.x_coordinates;
-    tempvar result_ptr = result_ptr;
+    tempvar result_ptr = result;
+    tempvar result_main_ptr = result_main;
     loop_aux:
         tempvar sum_curr = 0;
         tempvar sum_next = 0;
-        <% for (var i=33; i<51; i++) { %>
-        tempvar sum_curr = sum_curr + ([row_ptr + <%= i %>] - ood_aux_frame.current[<%= i %>]) * composer.cc.trace[<%= i %>].values[0];
-        tempvar sum_next = sum_next + ([row_ptr + <%= i %>] - ood_aux_frame.next[<%= i %>]) * composer.cc.trace[<%= i %>].values[1];
+        <% for (var i=0; i<18; i++) { %>
+        tempvar sum_curr = sum_curr + ([row_ptr + <%= i %>] - ood_aux_frame.current[<%= i %>]) * composer.cc.trace[<%= i + 34 %>].values[0];
+        tempvar sum_next = sum_next + ([row_ptr + <%= i %>] - ood_aux_frame.next[<%= i %>]) * composer.cc.trace[<%= i + 34 %>].values[1];
         <% } %>
         tempvar x = [x_coord_ptr];
         tempvar sum = sum_curr / (x - z_curr) + sum_next / (x - z_next);
-        assert [result_ptr] = sum;
+        assert [result_ptr] = sum + [result_main_ptr];
 
         tempvar n = n - 1;
         tempvar row_ptr = row_ptr + n_cols;
         tempvar x_coord_ptr = x_coord_ptr + 1;
         tempvar result_ptr = result_ptr + 1;
+        tempvar result_main_ptr = result_main_ptr + 1;
     jmp loop_aux if n != 0;
 
     return result;
@@ -167,8 +171,8 @@ func combine_compositions(
 ) -> felt* {
     alloc_locals;
 
-    let cc_degree_0 = composer.cc.degree[0];
-    let cc_degree_1 = composer.cc.degree[1];
+    let cc_degree_0 = composer.cc.degree_lambda;
+    let cc_degree_1 = composer.cc.degree_mu;
     
     let (local result: felt*) = alloc();
     // TODO: Don't hardcode number of queries

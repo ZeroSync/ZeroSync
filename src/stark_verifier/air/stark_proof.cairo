@@ -76,7 +76,8 @@ struct StarkProof {
     trace_queries: TraceQueries,
     // Queried constraint evaluations (no authentication paths)
     constraint_queries: ConstraintQueries,
-        
+    // A proof consists of zero or more layers and a remainder, which is an array of Felts
+    remainder: Vec,
 }
 
 func read_stark_proof() -> StarkProof* {

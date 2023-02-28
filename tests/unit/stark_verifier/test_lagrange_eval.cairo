@@ -7,7 +7,7 @@
 
 from starkware.cairo.common.alloc import alloc
 
-from stark_verifier.fri.utils import lagrange_eval, lagrange_basis_eval, lagrange_sum_eval, evaluate_polynomial
+from stark_verifier.fri.utils import lagrange_eval, lagrange_basis_eval, lagrange_sum_eval, evaluate_polynomial, interpolate_poly
 
 @external
 func test_lagrange_eval() {
@@ -33,6 +33,46 @@ func test_lagrange_eval() {
     return ();
 }
 
+
+@external
+func test_lagrange_eval2() {
+    alloc_locals;
+    let (evaluations_x: felt*) = alloc();
+    let (evaluations_y: felt*) = alloc();
+    local degree;
+    %{
+        polynomial = [7, 13, 0, 23, 47, 17]
+        def f(x):
+            sum = 0
+            for (index, coefficient) in enumerate(polynomial):
+                sum += coefficient * pow(x, index, PRIME)
+            return sum % PRIME
+
+
+        ids.degree = len(polynomial) - 1
+        for i in range(20): # Make a few more evaluations 
+            x = 7*i**2 + 29  # evaluate at some random offset
+            memory[ids.evaluations_x + i] = x
+            memory[ids.evaluations_y + i] = f(x)
+    %}
+    
+    let result = lagrange_eval(evaluations_y, evaluations_x, degree+1, evaluations_x[10]);
+    assert result = evaluations_y[10];
+
+    let result = lagrange_eval(evaluations_y, evaluations_x, degree+1, evaluations_x[11]);
+    assert result = evaluations_y[11];
+
+    let result = lagrange_eval(evaluations_y, evaluations_x, degree+1, evaluations_x[12]);
+    assert result = evaluations_y[12];
+
+    let result = lagrange_eval(evaluations_y, evaluations_x, degree+1, evaluations_x[13]);
+    assert result = evaluations_y[13];
+
+    let result = lagrange_eval(evaluations_y, evaluations_x, degree+1, evaluations_x[19]);
+    assert result = evaluations_y[19];
+
+    return ();
+}
 
 @external
 func test_lagrange_basis_eval() {
@@ -101,8 +141,48 @@ func test_evaluate_polynomial() {
     let x = 6;
     
     let expected_result = 1 / 2;
-    let result = evaluate_polynomial(evaluations_x, evaluations_len, x, alpha);
+    let result = evaluate_polynomial(evaluations_x, x, alpha);
 
     assert expected_result = result;
+    return ();
+}
+
+
+
+@external
+func test_interpolate_poly() {
+    alloc_locals;
+    local evaluations_len;
+    let (evaluations_x: felt*) = alloc();
+    let (evaluations_y: felt*) = alloc();
+    let (expected_polynomial: felt*) = alloc();
+    local degree;
+    %{
+        polynomial = [1,7,2,11]
+        def f(x):
+            sum = 0
+            for (index, coefficient) in enumerate(polynomial):
+                sum += coefficient * pow(x, index, PRIME)
+            return sum
+
+        ids.degree = len(polynomial) - 1
+        ids.evaluations_len = 20  # Make a few more evaluations 
+        for i in range(ids.evaluations_len):
+            x = i + 1 #7*i**2 + 29  # evaluate at some random offset
+            memory[ids.evaluations_x + i] = x
+            memory[ids.evaluations_y + i] = f(x)
+
+        for (index, coefficient) in enumerate(polynomial):
+            memory[ids.expected_polynomial + index] = coefficient
+    %}
+    
+    let polynomial = interpolate_poly(evaluations_x, evaluations_y, degree + 1);
+    
+    assert expected_polynomial[0] = polynomial[0];
+    assert expected_polynomial[1] = polynomial[1];
+    assert expected_polynomial[2] = polynomial[2];
+    assert expected_polynomial[3] = polynomial[3];
+  
+
     return ();
 }

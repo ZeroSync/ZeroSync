@@ -377,8 +377,6 @@ fn evaluation_data<'a>() -> Result<HashMap<&'a str, String>, WinterVerifierError
         .draw_integers(air.options().num_queries(), air.lde_domain_size())
         .map_err(|_| VerifierError::RandomCoinError)?;
     
-    println!("RUST positions: {:?}", query_positions); 
-
     // read evaluations of trace and constraint composition polynomials at the queried positions;
     // this also checks that the read values are valid against trace and constraint commitments
     let (queried_main_trace_states, queried_aux_trace_states) =
@@ -389,15 +387,14 @@ fn evaluation_data<'a>() -> Result<HashMap<&'a str, String>, WinterVerifierError
     // compute evaluations of the DEEP composition polynomial at the queried positions
     let composer = DeepComposer::new(&air, &query_positions, z, deep_coefficients.clone());
     let t_composition = composer.compose_trace_columns(
-        queried_main_trace_states,
-        queried_aux_trace_states,
+        queried_main_trace_states.clone(),
+        queried_aux_trace_states.clone(),
         ood_main_trace_frame.clone(),
         ood_aux_trace_frame.clone(),
     );
     let c_composition = composer
         .compose_constraint_evaluations(queried_constraint_evaluations.clone(), ood_constraint_evaluations.clone());
     let deep_evaluations = composer.combine_compositions(t_composition.clone(), c_composition.clone());
-
 
     // Evaluation data
     let mut data = HashMap::new();
@@ -503,6 +500,15 @@ fn evaluation_data<'a>() -> Result<HashMap<&'a str, String>, WinterVerifierError
         .fold(String::new(), |a, x| a + ", " + &x.to_raw().to_string()),
     );
     data.insert("z", z.to_raw().to_string());
+    data.insert(
+        "queried_main_trace_states",
+        queried_main_trace_states.to_cairo_memory()
+    );
+    data.insert(
+        "queried_aux_trace_states",
+        queried_aux_trace_states.as_ref().unwrap().to_cairo_memory()
+    );
+
     Ok(data)
 }
 

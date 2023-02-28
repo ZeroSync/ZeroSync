@@ -121,7 +121,9 @@ for i in range(start_block_height, end_block_height):
             --trace={output_dir}/trace.bin      \
             --memory={output_dir}/memory.bin    \
             --program={output_dir}/program.json \
-            --output={output_dir}/proof.bin --num-outputs=50'
+            --output={output_dir}/proof.bin \
+            --num-outputs=50 \
+            --fri-folding-factor=8'
     program_output_string = os.popen(cmd).read()
 
     # Write the chain state into a json file

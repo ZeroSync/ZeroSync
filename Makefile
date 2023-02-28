@@ -16,13 +16,13 @@ INTEGRATION_PROGRAM_SRC = tests/integration/cairo_programs/$(INTEGRATION_PROGRAM
 INTEGRATION_PROGRAM_COMPILED = tests/integration/cairo_programs_compiled/$(INTEGRATION_PROGRAM_NAME).json
 INTEGRATION_PROGRAM_TRACE = tests/integration/cairo_programs_trace/$(INTEGRATION_PROGRAM_NAME)
 INTEGRATION_PROGRAM_PROOF = tests/integration/stark_proofs/$(INTEGRATION_PROGRAM_NAME).bin
-
+FOLDING_FACTOR = 8
 
 $(INTEGRATION_PROGRAM_PROOF): $(INTEGRATION_PROGRAM_SRC)
 	mkdir -p $(INTEGRATION_PROGRAM_TRACE)
 	cairo-compile $< --cairo_path src --output $(INTEGRATION_PROGRAM_COMPILED)
 	cairo-run --layout all --program $(INTEGRATION_PROGRAM_COMPILED) --trace_file $(INTEGRATION_PROGRAM_TRACE)/trace.bin --memory_file $(INTEGRATION_PROGRAM_TRACE)/memory.bin
-	giza prove --program $(INTEGRATION_PROGRAM_COMPILED) --trace $(INTEGRATION_PROGRAM_TRACE)/trace.bin --memory $(INTEGRATION_PROGRAM_TRACE)/memory.bin --output $@
+	giza prove --program $(INTEGRATION_PROGRAM_COMPILED) --trace $(INTEGRATION_PROGRAM_TRACE)/trace.bin --memory $(INTEGRATION_PROGRAM_TRACE)/memory.bin --fri-folding-factor $(FOLDING_FACTOR) --output $@
 
 $(STARK_PARSER): $(addprefix parser/src/,lib.rs main.rs memory.rs)
 	cargo build;
