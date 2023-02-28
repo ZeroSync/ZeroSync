@@ -17,7 +17,7 @@ from utils.pow2 import pow2
 from stark_verifier.channel import Channel, verify_merkle_proof, QueriesProof, read_remainder
 from crypto.hash_utils import assert_hashes_equal, HASH_FELT_SIZE
 from stark_verifier.parameters import TWO_ADIC_ROOT_OF_UNITY, TWO_ADICITY, FOLDING_FACTOR, MULTIPLICATIVE_GENERATOR
-
+from stark_verifier.utils import Vec
 
 struct FriQueryProof{
     length : felt,
@@ -213,6 +213,12 @@ func fri_verify{
     // Read FRI Merkle proofs from a hint
     let fri_proofs = read_fri_proofs(positions);
 
+    // Read remainders from a hint 
+    // and check that a Merkle tree of the claimed remainders hash to the final layer commitment
+    let remainder: Vec = read_remainder();
+    let remainder_ptr: Vec* = &remainder;
+
+
     let num_layers = num_fri_layers(&fri_verifier, fri_verifier.domain_size); 
 
     // Initialize an empty array of verified positions for each layer
@@ -229,6 +235,7 @@ func fri_verify{
     let (verified_positions_len: felt*) = alloc();
     memset(verified_positions_len, 0, num_layers);
 
+
     // Verify a round for each query
     verify_queries(
         &fri_verifier, 
@@ -238,11 +245,9 @@ func fri_verify{
         fri_proofs,
         num_layers,
         verified_positions,
-        verified_positions_len
+        verified_positions_len,
+        remainder_ptr
     );
-
-    // Check that a Merkle tree of the claimed remainders hash to the final layer commitment
-    let remainder = read_remainder();
 
     // Ensure that the interpolated remainder polynomial is of degree <= max_remainder_degree
     verify_remainder_degree(
@@ -270,7 +275,8 @@ func verify_queries{
     fri_proofs: FriQueryProof**,
     num_layers: felt,
     verified_positions: felt**,
-    verified_positions_len: felt*
+    verified_positions_len: felt*,
+    remainders: Vec*
 ) {
     if (num_queries == 0) {
         return ();
@@ -315,10 +321,9 @@ func verify_queries{
         verified_positions_len,
         &verified_positions_len[num_layers],
         channel.fri_roots,
-        folding_roots
+        folding_roots,
+        remainders
     );
-
-    // TODO: Check that the claimed remainder is equal to the final evaluation.
 
     // Iterate over the remaining queries
     verify_queries(
@@ -329,7 +334,8 @@ func verify_queries{
         fri_proofs,
         num_layers,
         verified_positions,
-        &verified_positions_len[num_layers]
+        &verified_positions_len[num_layers],
+        remainders
     );
     return ();
 }
@@ -380,16 +386,19 @@ func verify_layers{
     verified_positions_len: felt*,
     next_verified_positions_len: felt*,
     layer_commitments: felt*,
-    folding_roots: felt*
+    folding_roots: felt*,
+    remainders: Vec*
 ) {
     alloc_locals;
     if (num_layers == 0) {
+        // Check that the claimed remainder is equal to the final evaluation.
+        assert_contains(remainders.elements, remainders.n_elements, query_evaluations_raw[0]);
         return ();
     }
 
     let (_, folded_position) = unsigned_div_rem(position, modulus);
 
-    
+
     // Check if we have already verified this folded_position
     local index: felt;
     let curr_len = verified_positions_len[0];
@@ -456,7 +465,7 @@ func verify_layers{
     let (query_evaluations_raw) = alloc();
     assert query_evaluations_raw[0] = previous_eval;
 
-    verify_layers(
+    return verify_layers(
         g,
         omega_i,
         alphas + 1,
@@ -472,10 +481,9 @@ func verify_layers{
         &verified_positions_len[1],
         &next_verified_positions_len[1],
         &layer_commitments[HASH_FELT_SIZE],
-        folding_roots
+        folding_roots,
+        remainders
     );
-
-    return ();
 }
 
 
@@ -560,5 +568,20 @@ func assert_zeroes(array: felt*, array_len){
     }
     assert 0 = [array];
     assert_zeroes(array + 1, array_len - 1);
+    return ();
+}
+
+func assert_contains(elements:felt*, n_elements, element){
+    alloc_locals;
+    local index: felt;
+    %{
+        def indexOf(element):
+            for i in range(ids.n_elements):
+                if memory[ids.elements + i] == element:
+                    return i
+            return 0
+        ids.index = indexOf(ids.element)
+    %}
+    assert elements[index] = element;
     return ();
 }
