@@ -1,8 +1,13 @@
 import json
 import subprocess
 
-PROOF_PATH = 'tests/integration/stark_proofs/fibonacci.bin'
-PARSER_PATH = 'bin/stark_parser'
+PWD = subprocess.run(['pwd'],capture_output=True).stdout[:-1].decode("utf-8")
+PROOF_PATH = f'{PWD}/tests/integration/stark_proofs/fibonacci.bin'
+PARSER_PATH = f'{PWD}/bin/stark_parser'
+
+def set_proof_path(proof_path):
+    global PROOF_PATH
+    PROOF_PATH = f'{PWD}/{proof_path}'
 
 def write_into_memory(ptr, json_data, segments):
     addr = ptr
@@ -80,7 +85,7 @@ def interpolate_poly(xs_ptr, ys_ptr, n_points, polynomial_ptr, memory):
     ys = json.dumps( ys )
 
     completed_process = subprocess.run(
-        [PARSER_PATH, PROOF_PATH, 'interpolate-poly', xs, ys],
+        [ PARSER_PATH, PROOF_PATH, 'interpolate-poly', xs, ys],
         capture_output = True)
     serialized_poly = str(completed_process.stdout).replace("\\n'", "")
     polynomial = serialized_poly.split(', ')[1:]
@@ -90,9 +95,8 @@ def interpolate_poly(xs_ptr, ys_ptr, n_points, polynomial_ptr, memory):
 
 def read_stark_proof(proof_ptr, segments):
     completed_process = subprocess.run(
-        [PARSER_PATH, PROOF_PATH, 'proof'],
+        [ PARSER_PATH, PROOF_PATH, 'proof'],
         capture_output=True)
-    
     json_data = completed_process.stdout
     write_into_memory(proof_ptr, json_data, segments)
 
@@ -101,5 +105,7 @@ def read_public_inputs(pub_inputs_ptr, segments):
     completed_process = subprocess.run(
         [ PARSER_PATH, PROOF_PATH, 'public-inputs'],
         capture_output=True)
+    if completed_process.returncode != 0:
+        raise Exception(completed_process)
     json_data = completed_process.stdout
     write_into_memory(pub_inputs_ptr, json_data, segments)

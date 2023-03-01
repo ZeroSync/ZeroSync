@@ -12,7 +12,7 @@ from starkware.cairo.common.registers import get_fp_and_pc
 from stark_verifier.air.air_instance import AirInstance
 from stark_verifier.air.stark_proof import ProofOptions
 from stark_verifier.crypto.random import PublicCoin, reseed, draw, reseed_endian, contains, hash_elements
-from stark_verifier.fri.utils import lagrange_eval, interpolate_poly
+from stark_verifier.fri.polynomials import lagrange_eval, interpolate_poly
 from utils.pow2 import pow2
 from stark_verifier.channel import Channel, verify_merkle_proof, QueriesProof, read_remainder
 from crypto.hash_utils import assert_hashes_equal, HASH_FELT_SIZE
@@ -537,6 +537,7 @@ func assert_contains(elements:felt*, n_elements, element){
     %{
         ids.index = index_of(ids.elements, ids.n_elements, ids.element, memory)
     %}
-    assert elements[index] = element;
+    // TODO: Do we have to verify that `0 < index < n_elements` here?
+    assert element = elements[index];
     return ();
 }

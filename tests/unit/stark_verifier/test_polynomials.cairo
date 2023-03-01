@@ -1,13 +1,13 @@
 //
 // To run only this test suite use:
-// make test TEST_PATH="stark_verifier/test_lagrange_eval.cairo"
+// make test TEST_PATH="stark_verifier/test_polynomials.cairo"
 // 
 
 %lang starknet
 
 from starkware.cairo.common.alloc import alloc
 
-from stark_verifier.fri.utils import lagrange_eval, lagrange_basis_eval, lagrange_sum_eval, interpolate_poly
+from stark_verifier.fri.polynomials import lagrange_eval, lagrange_basis_eval, lagrange_sum_eval, interpolate_poly
 
 @external
 func test_lagrange_eval() {
@@ -144,7 +144,7 @@ func test_interpolate_poly() {
         ids.degree = len(polynomial) - 1
         ids.evaluations_len = 20  # Make a few more evaluations 
         for i in range(ids.evaluations_len):
-            x = i + 1 #7*i**2 + 29  # evaluate at some random offset
+            x = 7*i**2 + 29  # evaluate at some random offset
             memory[ids.evaluations_x + i] = x
             memory[ids.evaluations_y + i] = f(x)
 

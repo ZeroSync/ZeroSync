@@ -26,33 +26,36 @@ func lagrange_basis_eval(x_i: felt*, x_i_len, x, j, m) -> felt  {
 
 
 // Evaluates L(x)
-func lagrange_sum_eval(evaluations_y: felt*, evaluations_x: felt*, evaluations_len, x, j) -> felt {
+func lagrange_sum_eval(y_values: felt*, x_values: felt*, n_points, x, j) -> felt {
     alloc_locals;
-    if (j + 1 == evaluations_len) {
-        let l_j = lagrange_basis_eval(evaluations_x, evaluations_len, x, j, 0);
-        return evaluations_y[j] * l_j;
+    if (j + 1 == n_points) {
+        let l_j = lagrange_basis_eval(x_values, n_points, x, j, 0);
+        return y_values[j] * l_j;
     }
     
     // Reduce to the sum of all l_j * y_j
-    let old_sum = lagrange_sum_eval(evaluations_y, evaluations_x, evaluations_len, x, j + 1);
-    let l_j = lagrange_basis_eval(evaluations_x, evaluations_len, x, j, 0);
-    return evaluations_y[j] * l_j + old_sum;
+    let old_sum = lagrange_sum_eval(y_values, x_values, n_points, x, j + 1);
+    let l_j = lagrange_basis_eval(x_values, n_points, x, j, 0);
+    return y_values[j] * l_j + old_sum;
 }
 
 // Evaluate with input x using Lagrange interpolation over evaluations.
-func lagrange_eval(evaluations_y: felt*, evaluations_x: felt*, evaluations_len, x) -> felt {   
-    return lagrange_sum_eval(evaluations_y, evaluations_x, evaluations_len, x, 0);
+func lagrange_eval(y_values: felt*, x_values: felt*, n_points, x) -> felt {   
+    return lagrange_sum_eval(y_values, x_values, n_points, x, 0);
 }
 
 
-
-func interpolate_poly(xs:felt*, ys:felt*, length) -> felt* {
+// Interpolate the Lagrange polynomial derived from `n_points` many points,
+// given as arrays of their `x_values` and `y_values`.
+func interpolate_poly(x_values:felt*, y_values:felt*, n_points) -> felt* {
     alloc_locals;
     let (local polynomial) = alloc();
     %{
         from src.stark_verifier.utils import interpolate_poly
-        interpolate_poly(ids.xs, ids.ys, ids.length, ids.polynomial, memory)
+        interpolate_poly(ids.x_values, ids.y_values, ids.n_points, ids.polynomial, memory)
     %}
     // TODO: move hint verification code here
     return polynomial;
 }
+
+
