@@ -70,8 +70,6 @@ func verify{range_check_ptr, pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBui
 ) {
     alloc_locals;
 
-    let (__fp__, _) = get_fp_and_pc();
-
     // Initialize hasher
     let (blake2s_ptr: felt*) = alloc();
     local blake2s_ptr_start: felt* = blake2s_ptr;
@@ -306,20 +304,23 @@ func read_and_verify_stark_proof{
         pedersen_ptr: HashBuiltin*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*
     }() -> (felt, felt*){
     alloc_locals;
+    // Read the parent proof from the location it was written to by main.py
     let pub_inputs_ptr = read_public_inputs();
+    let proof = read_stark_proof();
+
+
     let pub_inputs = [pub_inputs_ptr];
 
     let initial_pc = pub_inputs.init._pc;
     let initial_fp = pub_inputs.init._ap;
-    let memory = pub_inputs.mem + initial_pc;
+    let memory = &pub_inputs.mem[initial_pc];
     // Read the program from the public memory
     let (program: felt*) = alloc();
-    let program_end_pc = initial_fp - 2;
+    let program_end_pc = initial_fp - 8;
     let program_length = program_end_pc - initial_pc;
     read_mem_values(
-        mem=memory, address=6, length=program_length, output=program
+        mem=memory, address=initial_pc, length=program_length, output=program
     );
-
 
     // Compute the program hash
     let (hash_state_ptr) = hash_init();
@@ -328,19 +329,18 @@ func read_and_verify_stark_proof{
     );
     let (program_hash) = hash_finalize{hash_ptr=pedersen_ptr}(hash_state_ptr=hash_state_ptr);
 
-    // Read the parent proof from the location it was written to by main.py
-    let proof = read_stark_proof();
-
-    // Verify the proof with its public inputs using the verifier
-    verify(proof, pub_inputs_ptr);
 
     // Read the output values from the public memory    
     let (mem_values: felt*) = alloc();
-    let memory = memory + program_length;
+    let memory = &memory[program_length];
     let mem_values_len = pub_inputs.mem_length - program_length - initial_pc;
+    let address = pub_inputs.fin._ap;
     read_mem_values(
-        mem=memory, address=6+program_length, length=mem_values_len, output=mem_values
+        mem=memory, address=address, length=mem_values_len, output=mem_values
     );
+
+    // Verify the proof with its public inputs using the verifier
+    verify(proof, pub_inputs_ptr);
 
     return (program_hash, mem_values);
 }

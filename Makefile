@@ -88,7 +88,7 @@ integration_test: $(STARK_PARSER)
 
 test:
 	@echo "Running test $(TEST_PATH)..."
-	PYTHONPATH=$$(python -c "import site; print(site.getsitepackages()[0])"):$$PYTHONPATH protostar test --cairo-path=./src target tests/unit/$(TEST_PATH)
+	PYTHONPATH=$$(python -c "import site; print(site.getsitepackages()[0])"):$$PYTHONPATH protostar test --cairo-path=./src target tests/unit/$(TEST_PATH) --max-steps 100000000
 
 # Generate a proof for any program in tests/integration/cairo_programs/
 # Use make INTEGRATION_PROGRAM_NAME=fibonacci integration_proof

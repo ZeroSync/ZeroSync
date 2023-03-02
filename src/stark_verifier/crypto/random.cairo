@@ -18,7 +18,7 @@ from starkware.cairo.common.memset import memset
 from utils.pow2 import pow2
 from utils.endianness import byteswap32
 
-from stark_verifier.air.pub_inputs import MemEntry, PublicInputs, read_mem_values
+from stark_verifier.air.pub_inputs import MemEntry, PublicInputs, get_raw_memory
 from stark_verifier.air.transitions.frame import EvaluationFrame
 
 
@@ -270,12 +270,7 @@ func seed_with_pub_inputs{
 
     let (mem_values: felt*) = alloc();
     let mem_length = pub_inputs.mem_length;
-    read_mem_values(
-        mem=pub_inputs.mem,
-        address=0,
-        length=mem_length,
-        output=mem_values
-    );
+    get_raw_memory(pub_inputs.mem, pub_inputs.mem_length, mem_values);
 
     let (hash_state_ptr) = hash_init();
     let (hash_state_ptr) = hash_update{hash_ptr=pedersen_ptr}(

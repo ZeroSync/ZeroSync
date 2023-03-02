@@ -28,6 +28,10 @@ func test_read_and_verify_stark_proof{
     pedersen_ptr: HashBuiltin*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*
 }() {
     alloc_locals;
+    %{
+        from src.stark_verifier.utils import set_proof_path
+        set_proof_path('tmp/proof.bin')
+    %}
 
     let (program_hash, outputs) = read_and_verify_stark_proof();
 

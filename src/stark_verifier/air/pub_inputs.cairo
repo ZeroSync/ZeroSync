@@ -40,3 +40,13 @@ func read_mem_values(mem: MemEntry*, address: felt, length: felt, output: felt*)
     assert output[0] = mem.value;
     return read_mem_values(mem=&mem[1], address=address + 1, length=length - 1, output=&output[1]);
 }
+
+
+func get_raw_memory(mem: MemEntry*, mem_length, result: felt*){
+    if(mem_length == 0){
+        return ();
+    }
+    assert [result] = mem.value;
+    get_raw_memory(&mem[1], mem_length - 1, result + 1);
+    return ();
+}
