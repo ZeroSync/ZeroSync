@@ -2,6 +2,7 @@ import argparse
 import json
 import os
 import struct
+import urllib3
 
 parser = argparse.ArgumentParser(description='Generate a chain proof')
 parser.add_argument('--output_dir', type=str, default='tmp')
@@ -62,8 +63,13 @@ def parse_cairo_output(cairo_output, debug=False):
     lines = map(lambda x: x if x >= 0 else (x + P) % P, lines)
     return list(lines)
 
+
+
 output_dir = args.output_dir
 os.popen(f'mkdir -p {output_dir}')
+
+# Reset the bridge node to ensure we start with an empty UTXO set
+urllib3.PoolManager().request('GET', 'http://localhost:2121/reset')
 
 # Run the Cairo compiler
 cmd = f'cairo-compile src/chain_proof/main.cairo \
