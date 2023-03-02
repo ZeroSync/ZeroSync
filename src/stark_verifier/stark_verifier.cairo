@@ -6,6 +6,7 @@ from starkware.cairo.common.math import assert_lt, assert_le
 from starkware.cairo.common.registers import get_fp_and_pc
 from starkware.cairo.common.uint256 import Uint256
 from starkware.cairo.common.pow import pow
+from starkware.cairo.common.hash_state import hash_finalize, hash_init, hash_update
 
 from stark_verifier.air.air_instance import (
     AirInstance,
@@ -14,11 +15,12 @@ from stark_verifier.air.air_instance import (
     get_deep_composition_coefficients,
     ConstraintCompositionCoefficients
 )
-from stark_verifier.air.pub_inputs import PublicInputs
+from stark_verifier.air.pub_inputs import PublicInputs, read_public_inputs, read_mem_values
 from stark_verifier.air.stark_proof import (
     TraceLayout,
     ProofOptions,
     StarkProof,
+    read_stark_proof
 )
 from stark_verifier.air.trace_info import TraceInfo
 from stark_verifier.channel import (
@@ -56,7 +58,7 @@ from stark_verifier.evaluator import evaluate_constraints
 from stark_verifier.fri.fri_verifier import fri_verifier_new, fri_verify, to_fri_options
 from stark_verifier.utils import Vec
 
-from stark_verifier.air.pub_inputs import read_public_inputs
+
 
 // Verifies that the specified computation was executed correctly against the specified inputs.
 //
@@ -297,3 +299,49 @@ func reduce_evaluations{
     let (pow_z) = pow(z, index);
     return acc + pow_z * [evaluations];
 }
+
+
+
+func read_and_verify_stark_proof{
+        pedersen_ptr: HashBuiltin*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*
+    }() -> (felt, felt*){
+    alloc_locals;
+    let pub_inputs_ptr = read_public_inputs();
+    let pub_inputs = [pub_inputs_ptr];
+
+    let initial_pc = pub_inputs.init._pc;
+    let initial_fp = pub_inputs.init._ap;
+    let memory = pub_inputs.mem + initial_pc;
+    // Read the program from the public memory
+    let (program: felt*) = alloc();
+    let program_end_pc = initial_fp - 2;
+    let program_length = program_end_pc - initial_pc;
+    read_mem_values(
+        mem=memory, address=6, length=program_length, output=program
+    );
+
+
+    // Compute the program hash
+    let (hash_state_ptr) = hash_init();
+    let (hash_state_ptr) = hash_update{hash_ptr=pedersen_ptr}(
+        hash_state_ptr=hash_state_ptr, data_ptr=program, data_length=program_length
+    );
+    let (program_hash) = hash_finalize{hash_ptr=pedersen_ptr}(hash_state_ptr=hash_state_ptr);
+
+    // Read the parent proof from the location it was written to by main.py
+    let proof = read_stark_proof();
+
+    // Verify the proof with its public inputs using the verifier
+    verify(proof, pub_inputs_ptr);
+
+    // Read the output values from the public memory    
+    let (mem_values: felt*) = alloc();
+    let memory = memory + program_length;
+    let mem_values_len = pub_inputs.mem_length - program_length - initial_pc;
+    read_mem_values(
+        mem=memory, address=6+program_length, length=mem_values_len, output=mem_values
+    );
+
+    return (program_hash, mem_values);
+}
+

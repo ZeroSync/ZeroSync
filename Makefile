@@ -43,7 +43,7 @@ ifeq ($(ARCH), arm)
 endif
 
 chain_proof:
-	python src/chain_proof/main.py
+	PYTHONPATH=$$(python -c "import site; print(site.getsitepackages()[0])"):$$PYTHONPATH python src/chain_proof/main.py
 
 bridge_node:
 	python src/utxo_set/bridge_node.py

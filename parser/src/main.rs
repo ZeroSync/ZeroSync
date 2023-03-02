@@ -95,7 +95,7 @@ fn main() {
         },
     }; 
  
-    println!("{}", json_arr);
+    println!("{}", json_arr.to_string());
 }
 
 

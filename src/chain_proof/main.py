@@ -8,6 +8,7 @@ parser.add_argument('--output_dir', type=str, default='tmp')
 args = parser.parse_args()
 
 P = 2**251 + 17 * 2**192 + 1
+NUM_OUTPUTS = 52
 
 class FeltsReader:
     def __init__(self, program_output):
@@ -122,7 +123,7 @@ for i in range(start_block_height, end_block_height):
             --memory={output_dir}/memory.bin    \
             --program={output_dir}/program.json \
             --output={output_dir}/proof.bin \
-            --num-outputs=50 \
+            --num-outputs={NUM_OUTPUTS} \
             --fri-folding-factor=8'
     program_output_string = os.popen(cmd).read()
 

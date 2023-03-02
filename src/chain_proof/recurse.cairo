@@ -1,7 +1,6 @@
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.hash import HashBuiltin
-from starkware.cairo.common.hash_state import hash_finalize, hash_init, hash_update
 from starkware.cairo.common.memcpy import memcpy
 
 from block.compute_median import TIMESTAMP_COUNT
@@ -9,10 +8,7 @@ from block.block import State, ChainState
 from crypto.hash_utils import HASH_FELT_SIZE
 from utxo_set.utreexo import UTREEXO_ROOTS_LEN
 
-from stark_verifier.air.pub_inputs import PublicInputs, read_public_inputs
-from stark_verifier.air.pub_inputs import read_mem_values
-from stark_verifier.air.stark_proof import StarkProof, read_stark_proof
-from stark_verifier.stark_verifier import verify
+from stark_verifier.stark_verifier import read_and_verify_stark_proof
 
 func recurse{pedersen_ptr: HashBuiltin*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
     block_height, expected_program_hash, program_length, prev_state: State) {
@@ -24,30 +20,22 @@ func recurse{pedersen_ptr: HashBuiltin*, range_check_ptr, bitwise_ptr: BitwiseBu
     }
 
     // 1. Read the public inputs of the parent proof from a hint
-    let pub_inputs_ptr = parse_public_inputs();
-    let pub_inputs = [pub_inputs_ptr];
-    let (mem_values: felt*) = alloc();
-    let mem_length = pub_inputs.fin._pc;
-    read_mem_values(
-        mem=pub_inputs.mem, address=pub_inputs.init._pc, length=mem_length, output=mem_values
-    );
+    // and compute the program's hash
+    %{
+        from src.stark_verifier.utils import set_proof_path
+        set_proof_path('tmp/proof.bin')
+    %}
+    let (program_hash, mem_values) = read_and_verify_stark_proof();
 
-    // 2. Compute the program's hash and compare it to the `expected_program_hash` 
+    // 2. Compare the `program_hash` to the `expected_program_hash` 
     // given to us as a public input to the child proof. This is to resolve the hash cycle,
     // because a program cannot contain its own hash.
-    let program_hash = compute_program_hash(mem_values, program_length);
     assert expected_program_hash = program_hash;
 
-    // 3. Read the parent proof from the location it was written to by main.py
-    let proof = parse_proof();
 
-    // 4. Verify the proof with its public inputs using the verifier
-    verify(proof, pub_inputs_ptr);
-
-    // 5. Parse the `next_state` of the parent proof from its public inputs
+    // 3. Parse the `next_state` of the parent proof from its public inputs
     // and then verify it is equal to the child proof's `prev_state`
-    verify_prev_state(mem_values + program_length, prev_state, program_hash, program_length);
-
+    verify_prev_state(mem_values, prev_state, program_hash, program_length);
     return ();
 }
 
@@ -77,45 +65,3 @@ func verify_prev_state(mem_values: felt*, prev_state: State, program_hash, progr
     return ();
 }
 
-func compute_program_hash{pedersen_ptr: HashBuiltin*}(
-    mem_values:felt*, program_length) -> felt {
-    alloc_locals;
-
-    let (hash_state_ptr) = hash_init();
-    let (hash_state_ptr) = hash_update{hash_ptr=pedersen_ptr}(
-        hash_state_ptr=hash_state_ptr, data_ptr=mem_values, data_length=program_length
-    );
-    let (pub_mem_hash) = hash_finalize{hash_ptr=pedersen_ptr}(hash_state_ptr=hash_state_ptr);
-
-    return pub_mem_hash;
-}
-
-func parse_public_inputs() -> PublicInputs* {
-    %{
-        import subprocess
-        def parse_public_inputs():
-            completed_process = subprocess.run([
-                'bin/stark_parser',
-                'tmp/proof.bin',
-                'public-inputs'],
-                capture_output=True)
-            return completed_process.stdout
-        json_data = parse_public_inputs()
-    %}
-    return read_public_inputs();
-}
-
-func parse_proof() -> StarkProof* {
-    %{
-        import subprocess
-        def parse_proof():
-            completed_process = subprocess.run([
-                'bin/stark_parser',
-                'tmp/proof.bin',
-                'proof'],
-                capture_output=True)
-            return completed_process.stdout
-        json_data = parse_proof()
-    %}
-    return read_stark_proof();
-}
