@@ -305,11 +305,9 @@ func read_and_verify_stark_proof{
     }() -> (felt, felt*){
     alloc_locals;
     // Read the parent proof from the location it was written to by main.py
-    let pub_inputs_ptr = read_public_inputs();
+    let pub_inputs = read_public_inputs();
     let proof = read_stark_proof();
 
-
-    let pub_inputs = [pub_inputs_ptr];
 
     let initial_pc = pub_inputs.init._pc;
     let initial_fp = pub_inputs.init._ap;
@@ -340,7 +338,7 @@ func read_and_verify_stark_proof{
     );
 
     // Verify the proof with its public inputs using the verifier
-    verify(proof, pub_inputs_ptr);
+    verify(proof, pub_inputs);
 
     return (program_hash, mem_values);
 }

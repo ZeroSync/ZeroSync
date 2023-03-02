@@ -5,7 +5,7 @@ from starkware.cairo.common.hash import HashBuiltin
 
 from stark_verifier.air.stark_proof import read_stark_proof, StarkProof
 from stark_verifier.air.pub_inputs import read_public_inputs, PublicInputs
-from stark_verifier.stark_verifier import verify
+from stark_verifier.stark_verifier import verify, read_and_verify_stark_proof
 
 @external
 func __setup__() {
@@ -58,5 +58,21 @@ func test_verify{
     let pub_inputs: PublicInputs* = read_public_inputs();
  
     verify(proof, pub_inputs);
+    return ();
+}
+
+
+@external
+func test_read_and_verify_stark_proof{
+    pedersen_ptr: HashBuiltin*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*
+}() {
+    alloc_locals;
+    %{
+        from src.stark_verifier.utils import set_proof_path
+        set_proof_path('tmp/proof.bin')
+    %}
+
+    let (program_hash, outputs) = read_and_verify_stark_proof();
+
     return ();
 }

@@ -4,6 +4,8 @@ import subprocess
 PWD = subprocess.run(['pwd'],capture_output=True).stdout[:-1].decode("utf-8")
 PROOF_PATH = f'{PWD}/tests/integration/stark_proofs/fibonacci.bin'
 PARSER_PATH = f'{PWD}/bin/stark_parser'
+PRIME = 2**251 + 17 * 2**192 + 1
+
 
 def set_proof_path(proof_path):
     global PROOF_PATH
@@ -27,7 +29,7 @@ def index_of(elements_ptr, n_elements, element, memory):
     for i in range(n_elements):
         if( memory[elements_ptr + i] == element):
             return i
-    return -1
+    return PRIME-1
 
 
 def to_json_array(arr_ptr, arr_length, memory):
@@ -109,3 +111,10 @@ def read_public_inputs(pub_inputs_ptr, segments):
         raise Exception(completed_process)
     json_data = completed_process.stdout
     write_into_memory(pub_inputs_ptr, json_data, segments)
+
+
+
+def debug_print(string):
+    f = open("debug-log.txt", "a")
+    f.write(f"{string}\n")
+    f.close()
