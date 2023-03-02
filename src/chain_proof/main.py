@@ -3,6 +3,8 @@ import json
 import os
 import struct
 import urllib3
+import subprocess
+import time
 
 parser = argparse.ArgumentParser(description='Generate a chain proof')
 parser.add_argument('--output_dir', type=str, default='tmp')
@@ -96,7 +98,11 @@ chain_state_file = f'{output_dir}/chain_state.json'
 start_block_height = 0
 end_block_height = 100
 for i in range(start_block_height, end_block_height):
+    print(f'\n === Processing block height {i} ===')
+    
     # Run the Cairo runner
+    print(f'Running the Cairo runner...')
+    start_time = time.time()
     cmd = f'cairo-run                           \
             --program={output_dir}/program.json \
             --layout=all                        \
@@ -106,6 +112,7 @@ for i in range(start_block_height, end_block_height):
             --memory_file={output_dir}/memory.bin'
     program_output_string = os.popen(cmd).read()
     program_output = parse_cairo_output(program_output_string)
+    print(f'Running time: { int(time.time()-start_time) } seconds')
 
     # Parse outputs
     r = FeltsReader(program_output)
@@ -117,23 +124,28 @@ for i in range(start_block_height, end_block_height):
             'prev_timestamps' :  r.read_n(11),
             'epoch_start_time' : r.read(),
             'utreexo_roots' :    felts_to_hex( r.read_n(27) ),
-            'program_hash' :  	 hex( r.read() ),
-            'program_length' :   r.read()
+            'program_hash' :  	 hex( r.read() )
     }
-
-    print('block height:', chain_state['block_height'])
-
-    # Run Giza prover
-    cmd = f'giza prove                          \
-            --trace={output_dir}/trace.bin      \
-            --memory={output_dir}/memory.bin    \
-            --program={output_dir}/program.json \
-            --output={output_dir}/proof.bin \
-            --num-outputs={NUM_OUTPUTS} \
-            --fri-folding-factor=8'
-    program_output_string = os.popen(cmd).read()
-
     # Write the chain state into a json file
     f = open(f'{output_dir}/chain_state.json', 'w')
     f.write(json.dumps(chain_state, indent=2))
     f.close()
+
+
+    # Run Giza prover 
+    print(f"Running Giza...")
+    start_time = time.time()
+    cmd = f'giza prove                          \
+            --trace={output_dir}/trace.bin      \
+            --memory={output_dir}/memory.bin    \
+            --program={output_dir}/program.json \
+            --output={output_dir}/chain_proof-{i}.bin \
+            --num-outputs={NUM_OUTPUTS} \
+            --fri-folding-factor=8'
+    return_code = subprocess.call(cmd, shell=True)
+    if return_code == 0:
+        print(f'Proving time: { int(time.time()-start_time) } seconds')
+        print(f'Done proving chain_proof-{i}\n')
+    else:
+        print(f'Proving failed. Error code: {return_code}\n')
+

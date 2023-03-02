@@ -12,7 +12,7 @@ from crypto.hash_utils import assert_hashes_equal
 from stark_verifier.stark_verifier import read_and_verify_stark_proof
 
 func recurse{pedersen_ptr: HashBuiltin*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
-    block_height, expected_program_hash, program_length, prev_state: State) {
+    block_height, expected_program_hash, prev_state: State) {
     alloc_locals;
 
     // For the genesis block there is no parent proof to verify
@@ -23,24 +23,23 @@ func recurse{pedersen_ptr: HashBuiltin*, range_check_ptr, bitwise_ptr: BitwiseBu
     // 1. Read the public inputs of the parent proof from a hint
     // and compute the program's hash
     %{
-        from src.stark_verifier.utils import set_proof_path
-        set_proof_path('tmp/proof.bin')
+        from src.stark_verifier.utils import set_proof_path, debug_print
+        set_proof_path(f'tmp/chain_proof-{ids.prev_state.chain_state.block_height}.bin')
     %}
     let (program_hash, mem_values) = read_and_verify_stark_proof();
 
     // 2. Compare the `program_hash` to the `expected_program_hash` 
     // given to us as a public input to the child proof. This is to resolve the hash cycle,
     // because a program cannot contain its own hash.
-    // assert expected_program_hash = program_hash;
-
+    assert expected_program_hash = program_hash;
 
     // 3. Parse the `next_state` of the parent proof from its public inputs
     // and then verify it is equal to the child proof's `prev_state`
-    verify_prev_state(mem_values, prev_state, program_hash, program_length);
+    verify_prev_state(mem_values, prev_state, program_hash);
     return ();
 }
 
-func verify_prev_state(mem_values: felt*, prev_state: State, program_hash, program_length){
+func verify_prev_state(mem_values: felt*, prev_state: State, program_hash){
     let chain_state = prev_state.chain_state;
     
     assert chain_state.block_height = mem_values[0];
@@ -63,8 +62,9 @@ func verify_prev_state(mem_values: felt*, prev_state: State, program_hash, progr
     memcpy(prev_state.utreexo_roots, mem_values, UTREEXO_ROOTS_LEN);
     let mem_values = mem_values + UTREEXO_ROOTS_LEN;
 
+
+
     assert program_hash = mem_values[0];
-    // assert program_length = mem_values[1];
 
     return ();
 }

@@ -89,7 +89,6 @@ func main{
         segments.write_arg(ids.prev_timestamps, program_input["prev_timestamps"])
         segments.write_arg(ids.prev_utreexo_roots, felts_from_hex_strings( program_input["utreexo_roots"] ) )
         ids.program_hash = int( program_input["program_hash"], 16)
-        ids.program_length = program_input["program_length"]
     %}
 
     let prev_chain_state = ChainState(
@@ -104,13 +103,12 @@ func main{
     }
 
     // Validate the previous chain proof
-    recurse(next_state.chain_state.block_height, program_hash, program_length, prev_state);
+    recurse(next_state.chain_state.block_height, program_hash, prev_state);
 
     // Print the next state
     serialize_chain_state(next_state.chain_state);
     serialize_array(next_state.utreexo_roots, UTREEXO_ROOTS_LEN);
     serialize_word(program_hash);
-    serialize_word(program_length);
 
     // finalize sha256_ptr
     finalize_sha256(sha256_ptr_start, sha256_ptr);
