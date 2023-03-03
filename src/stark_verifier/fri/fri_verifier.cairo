@@ -6,13 +6,12 @@ from starkware.cairo.common.math_cmp import is_le
 from starkware.cairo.common.pow import pow
 from starkware.cairo.common.memcpy import memcpy
 from starkware.cairo.common.memset import memset
-from starkware.cairo.common.hash_state import hash_finalize, hash_init, hash_update
 from starkware.cairo.common.registers import get_fp_and_pc
 
 from stark_verifier.air.air_instance import AirInstance
 from stark_verifier.air.stark_proof import ProofOptions
 from stark_verifier.crypto.random import PublicCoin, reseed, draw, reseed_endian, contains, hash_elements
-from stark_verifier.fri.polynomials import lagrange_eval, interpolate_poly
+from stark_verifier.fri.polynomials import lagrange_eval, interpolate_poly_and_verify
 from utils.pow2 import pow2
 from stark_verifier.channel import Channel, verify_merkle_proof, QueriesProof, read_remainder
 from crypto.hash_utils import assert_hashes_equal, HASH_FELT_SIZE
@@ -468,27 +467,7 @@ func verify_remainder_degree{range_check_ptr, pedersen_ptr: HashBuiltin*}(
     let (omega_i) = alloc();
     get_roots_of_unity(omega_i, omega_n, 0, remainders_len);
     
-    let remainders_poly = interpolate_poly(omega_i, remainders, remainders_len);
-    // Use the commitment to the remainder polynomial and evaluations to draw a random
-    // field element tau
-    let (hash_state_ptr) = hash_init();
-    let (hash_state_ptr) = hash_update{hash_ptr=pedersen_ptr}(
-        hash_state_ptr=hash_state_ptr,
-        data_ptr=remainders,
-        data_length=remainders_len
-    );
-    let (hash_state_ptr) = hash_update{hash_ptr=pedersen_ptr}(
-        hash_state_ptr=hash_state_ptr,
-        data_ptr=remainders_poly,
-        data_length=remainders_len
-    );
-    let (tau) = hash_finalize{hash_ptr=pedersen_ptr}(hash_state_ptr=hash_state_ptr);
-
-
-    // Evaluate both polynomial representations at tau and confirm agreement
-    let (a) = horner_eval(remainders_len, remainders_poly, tau);
-    let b = lagrange_eval(remainders, omega_i, remainders_len, tau);
-    assert a = b;
+    let remainders_poly = interpolate_poly_and_verify(omega_i, remainders, remainders_len);
 
     // Check that all polynomial coefficients greater than 'max_degree' are zero
     with_attr error_message("Remainder degree mismatch"){

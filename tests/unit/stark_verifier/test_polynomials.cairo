@@ -6,8 +6,9 @@
 %lang starknet
 
 from starkware.cairo.common.alloc import alloc
+from starkware.cairo.common.hash import HashBuiltin
 
-from stark_verifier.fri.polynomials import lagrange_eval, lagrange_basis_eval, lagrange_sum_eval, interpolate_poly
+from stark_verifier.fri.polynomials import lagrange_eval, lagrange_basis_eval, lagrange_sum_eval, interpolate_poly_and_verify
 
 @external
 func test_lagrange_eval() {
@@ -126,7 +127,7 @@ func test_lagrange_sum_eval() {
 
 
 @external
-func test_interpolate_poly() {
+func test_interpolate_poly_and_verify{pedersen_ptr: HashBuiltin*}() {
     alloc_locals;
     local evaluations_len;
     let (evaluations_x: felt*) = alloc();
@@ -152,7 +153,7 @@ func test_interpolate_poly() {
             memory[ids.expected_polynomial + index] = coefficient
     %}
     
-    let polynomial = interpolate_poly(evaluations_x, evaluations_y, degree + 1);
+    let polynomial = interpolate_poly_and_verify(evaluations_x, evaluations_y, degree + 1);
     
     assert expected_polynomial[0] = polynomial[0];
     assert expected_polynomial[1] = polynomial[1];
