@@ -29,41 +29,33 @@ struct PublicCoin {
 }
 
 // Returns a new random coin instantiated with the provided `seed`.
-func random_coin_new{range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*}(seed: felt*, n_bytes: felt) -> PublicCoin {
+func random_coin_new{range_check_ptr, blake2s_ptr: felt*}(seed: felt*, n_bytes: felt) -> PublicCoin {
     let (digest) = blake2s_as_words(data=seed, n_bytes=n_bytes);
     let public_coin = PublicCoin(seed=digest, counter=0);
     return public_coin;
 }
 
+
 // Returns a hash of two digests. This method is intended for use in construction of
-// Merkle trees.
-func merge{range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*}(
+// Merkle trees. Preserves the endianness of value
+func merge{range_check_ptr, blake2s_ptr: felt*}(
     seed: felt*, value: felt*
 ) -> felt* {
     alloc_locals;
     let (data: felt*) = alloc();
 
     memcpy(data, seed, 8);
-    
-    // TODO: delete this and then delete `merge_endian` and `reseed_endian`
-    let be_value = data + 8;
-    assert be_value[0] = byteswap32(value[0]);
-    assert be_value[1] = byteswap32(value[1]);
-    assert be_value[2] = byteswap32(value[2]);
-    assert be_value[3] = byteswap32(value[3]);
-    assert be_value[4] = byteswap32(value[4]);
-    assert be_value[5] = byteswap32(value[5]);
-    assert be_value[6] = byteswap32(value[6]);
-    assert be_value[7] = byteswap32(value[7]);
-
+    memcpy(data+8, value, 8);
+   
     let (digest) = blake2s_as_words(data=data, n_bytes=64);
 
     return digest;
 }
 
+
 // Returns hash(`seed` || `value`). This method is intended for use in PRNG and PoW contexts.
 // This function does not ensure that value fits within a u64 integer.
-func merge_with_int{range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*}(
+func merge_with_int{range_check_ptr, blake2s_ptr: felt*}(
     seed: felt*, value: felt
 ) -> felt* {
     alloc_locals;
@@ -73,16 +65,17 @@ func merge_with_int{range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBui
     memcpy(data, seed, 8);
     let data = data + 8;
 
-    // Convert value : u64 -> (high: u32, low:u32)  
-    assert [bitwise_ptr].x = value;
-    assert [bitwise_ptr].y = 0xffffffff;
-    let low = [bitwise_ptr].x_and_y;
-    let high = (value - low) / 2**32;
-    let bitwise_ptr = bitwise_ptr + BitwiseBuiltin.SIZE;
-
     // Write high and low into data in little endian order
-    assert data[0] = low;
-    assert data[1] = high;
+    let low = data[0];
+    let high = data[1];
+    // Convert value : u64 -> (high: u32, low:u32)
+    %{
+        ids.low = ids.value & 0xFFFFFFFF
+        ids.high = ids.value - ids.low >> 32
+    %}
+    assert_nn_le(low, 0xFFFFFFFF);
+    assert_nn_le(high, 0xFFFFFFFF);
+    assert high * 2**32 + low = value;
 
     // Compute the blake2s hash
     let (digest) = blake2s_as_words(data=data_start, n_bytes=40);
@@ -104,23 +97,18 @@ func hash_elements{range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuil
 
 
 // Reseeds the coin with the specified data by setting the new seed to hash(`seed` || `value`).
-// where value is a U256 integer representing a hash digest
-func reseed{
-    range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*, public_coin: PublicCoin
-}(value: felt*) {
+// where value is a U256 integer representing a hash digest.
+func reseed{range_check_ptr, blake2s_ptr: felt*, public_coin: PublicCoin}(value: felt*) {
     let digest = merge(seed=public_coin.seed, value=value);
     let public_coin = PublicCoin(seed=digest, counter=0);
     return ();
 }
 
 
-
 // Reseeds the coin with the specified value by setting the new seed to hash(`seed` || `value`)
 // where value is a u64 integer.
 // This function ensures that value fits within a u64 integer.
-func reseed_with_int{
-    range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*, public_coin: PublicCoin
-}(value: felt) {
+func reseed_with_int{range_check_ptr, blake2s_ptr: felt*, public_coin: PublicCoin}(value: felt) {
     with_attr error_message("Value (${value}) is negative or greater than (2 ** 64 - 1).") {
         assert_nn_le(value, 2 ** 64 - 1);
     }
@@ -135,7 +123,6 @@ func reseed_with_ood_frames{
     alloc_locals;
 
 
-
     let (elements) = alloc();
     let elements_start = elements;
     memcpy(elements, ood_main_trace_frame.current, ood_main_trace_frame.current_len);
@@ -144,7 +131,7 @@ func reseed_with_ood_frames{
     let elements = elements + ood_aux_trace_frame.current_len;
     let n_elements = elements - elements_start;
     let elements_hash = hash_elements(n_elements, elements_start);
-    reseed_endian(elements_hash);
+    reseed(elements_hash);
 
 
     let (elements) = alloc();
@@ -155,18 +142,19 @@ func reseed_with_ood_frames{
     let elements = elements + ood_aux_trace_frame.next_len;
     let n_elements = elements - elements_start;
     let elements_hash = hash_elements(n_elements, elements_start);
-    reseed_endian(elements_hash);
+    reseed(elements_hash);
 
     return ();
 }
 
 // Returns the next pseudo-random field element
 func draw{
-    range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*, public_coin: PublicCoin
+    range_check_ptr, blake2s_ptr: felt*, public_coin: PublicCoin
 }() -> felt {
     alloc_locals;
-    let digest = merge_with_int(seed=public_coin.seed, value=public_coin.counter+1);
-    let public_coin = PublicCoin(public_coin.seed, public_coin.counter + 1);
+    let value = public_coin.counter + 1;
+    let digest = merge_with_int(public_coin.seed, value);
+    let public_coin = PublicCoin(public_coin.seed, value);
     
     let low = digest[0] + digest[1] * 2 ** 32 + digest[2] * 2 ** 64 + digest[3] * 2 ** 96;
     let high = digest[4] + digest[5] * 2 ** 32 + digest[6] * 2 ** 64 + digest[7] * 2 ** 96;
@@ -176,7 +164,7 @@ func draw{
 
 
 func draw_pair{
-    range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*, public_coin: PublicCoin
+    range_check_ptr, blake2s_ptr: felt*, public_coin: PublicCoin
 }() -> (res1: felt, res2: felt) {
     alloc_locals;
     let res1 = draw();
@@ -185,7 +173,7 @@ func draw_pair{
 }
 
 func draw_elements{
-    range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*, public_coin: PublicCoin
+    range_check_ptr, blake2s_ptr: felt*, public_coin: PublicCoin
 }(n_elements: felt, elements: felt*) {
     if (n_elements == 0) {
         return ();
@@ -210,7 +198,7 @@ func contains(element: felt, array: felt*, array_len: felt) -> felt {
 
 // Returns the next pseudo-random field element
 func draw_digest{
-    range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*, public_coin: PublicCoin
+    range_check_ptr, blake2s_ptr: felt*, public_coin: PublicCoin
 }() -> felt* {
     alloc_locals;
     tempvar public_coin = PublicCoin(public_coin.seed, public_coin.counter + 1);
@@ -340,33 +328,4 @@ func get_leading_zeros{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(seed: felt
     } else {
         return 64;
     }
-}
-
-
-
-
-// Reseeds the coin with the specified data by setting the new seed to hash(`seed` || `value`).
-// where value is a U256 integer representing a hash digest. Preserves the endianness of value
-func reseed_endian{
-    range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*, public_coin: PublicCoin
-}(value: felt*) {
-    let digest = merge_endian(seed=public_coin.seed, value=value);
-    let public_coin = PublicCoin(seed=digest, counter=0);
-    return ();
-}
-
-// Returns a hash of two digests. This method is intended for use in construction of
-// Merkle trees. Preserves the endianness of value
-func merge_endian{range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*}(
-    seed: felt*, value: felt*
-) -> felt* {
-    alloc_locals;
-    let (data: felt*) = alloc();
-
-    memcpy(data, seed, 8);
-    memcpy(data+8, value, 8);
-   
-    let (digest) = blake2s_as_words(data=data, n_bytes=64);
-
-    return digest;
 }

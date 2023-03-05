@@ -48,11 +48,10 @@ from stark_verifier.crypto.random import (
     get_leading_zeros,
     hash_elements,
     random_coin_new,
-    reseed,
     reseed_with_int,
     reseed_with_ood_frames,
     seed_with_pub_inputs,
-    reseed_endian,
+    reseed,
 )
 from stark_verifier.evaluator import evaluate_constraints
 from stark_verifier.fri.fri_verifier import fri_verifier_new, fri_verify, to_fri_options
@@ -113,7 +112,7 @@ func perform_verification{
     let trace_commitments = read_trace_commitments();
 
     // Reseed the coin with the commitment to the main trace segment
-    reseed_endian(value=trace_commitments);
+    reseed(value=trace_commitments);
 
     // Process auxiliary trace segments to build a set of random elements for each segment,
     // and to reseed the coin.
@@ -136,7 +135,7 @@ func perform_verification{
     let constraint_commitment = read_constraint_commitment();
 
     // Update the public coin.
-    reseed_endian(value=constraint_commitment);
+    reseed(value=constraint_commitment);
 
     // Draw an out-of-domain point z from the coin.
     let z = draw();
@@ -177,7 +176,7 @@ func perform_verification{
        n_elements=ood_constraint_evaluations.n_elements,
        elements=ood_constraint_evaluations.elements,
     );
-    reseed_endian(value=value);
+    reseed(value=value);
 
     // Finally, make sure the values are the same.
     with_attr error_message(
@@ -271,7 +270,7 @@ func process_aux_segments{
     let (elements) = alloc();
     assert [aux_trace_rand_elements] = elements;
     draw_elements(n_elements=[aux_segment_rands], elements=elements);
-    reseed_endian(value=trace_commitments);
+    reseed(value=trace_commitments);
     process_aux_segments(
         trace_commitments=trace_commitments + STATE_SIZE_FELTS,
         trace_commitments_len=trace_commitments_len - 1,

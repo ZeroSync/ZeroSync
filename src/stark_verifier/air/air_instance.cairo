@@ -2,17 +2,9 @@ from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.pow import pow
 
-from stark_verifier.crypto.random import (
-    PublicCoin,
-    draw_elements,
-    draw_pair,
-    random_coin_new,
-    hash_elements,
-    reseed,
-    seed_with_pub_inputs,
-)
 from stark_verifier.air.pub_inputs import PublicInputs
 from stark_verifier.air.stark_proof import ProofContext, ProofOptions, StarkProof
+from stark_verifier.crypto.random import PublicCoin, draw_elements, draw_pair
 from stark_verifier.parameters import TWO_ADIC_ROOT_OF_UNITY, TWO_ADICITY
 
 struct AirInstance {
@@ -104,7 +96,7 @@ func get_constraint_composition_coefficients{
     range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*, public_coin: PublicCoin
 }(air: AirInstance) -> ConstraintCompositionCoefficients {
     alloc_locals;
-
+    
     let (t_coefficients_a: felt*) = alloc();
     let (t_coefficients_b: felt*) = alloc();
     let num_constraints = air.num_transition_constraints;
