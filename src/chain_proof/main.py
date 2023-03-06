@@ -12,6 +12,7 @@ args = parser.parse_args()
 
 P = 2**251 + 17 * 2**192 + 1
 NUM_OUTPUTS = 52
+FOLDING_FACTOR = 8
 
 class FeltsReader:
     def __init__(self, program_output):
@@ -88,6 +89,7 @@ genesis_state = json.load(f)
 f = open(f'{output_dir}/program.json')
 program = json.load(f)
 genesis_state['program_length'] = len(program['data'])
+# TODO: compute program hash and write it into chain_state.json
 
 with open(f'{output_dir}/chain_state.json', 'w') as outfile:
     outfile.write( json.dumps(genesis_state) )
@@ -101,7 +103,7 @@ for i in range(start_block_height, end_block_height):
     print(f'\n === Processing block height {i} ===')
     
     # Run the Cairo runner
-    print(f'Running the Cairo runner...')
+    print(f'Step 1: Cairo runner...')
     start_time = time.time()
     cmd = f'cairo-run                           \
             --program={output_dir}/program.json \
@@ -112,7 +114,7 @@ for i in range(start_block_height, end_block_height):
             --memory_file={output_dir}/memory.bin'
     program_output_string = os.popen(cmd).read()
     program_output = parse_cairo_output(program_output_string)
-    print(f'Running time: { int(time.time()-start_time) } seconds')
+    print(f'Running time: { int(time.time()-start_time) } seconds\n')
 
     # Parse outputs
     r = FeltsReader(program_output)
@@ -133,7 +135,7 @@ for i in range(start_block_height, end_block_height):
 
 
     # Run Giza prover 
-    print(f"Running Giza...")
+    print(f"Step 2: Giza prover...")
     start_time = time.time()
     cmd = f'giza prove                          \
             --trace={output_dir}/trace.bin      \
@@ -141,7 +143,7 @@ for i in range(start_block_height, end_block_height):
             --program={output_dir}/program.json \
             --output={output_dir}/chain_proof-{i}.bin \
             --num-outputs={NUM_OUTPUTS} \
-            --fri-folding-factor=8'
+            --fri-folding-factor={FOLDING_FACTOR}'
     return_code = subprocess.call(cmd, shell=True)
     if return_code == 0:
         print(f'Proving time: { int(time.time()-start_time) } seconds')
