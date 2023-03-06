@@ -108,34 +108,30 @@ struct QueriesProofs {
 
 func _verify_merkle_proof{
     range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*
-    }(depth: felt, path: felt*, position, root: felt*, accu: felt*){
-    alloc_locals;
+    }(depth: felt, path: felt*, position, accu: felt*) -> felt* {
     if(depth == 0){
-        with_attr error_message("Merkle path authentication failed"){
-            assert_hashes_equal(root, accu);
-        }
-        return ();
+        return accu;
     }
-
-    local lowest_bit;
-    %{ ids.lowest_bit = ids.position & 1 %}
-    // TODO: verify the hint. Otherwise, the position becomes arbitrary
+    alloc_locals;
+    // Check if position is even or odd
+    assert [bitwise_ptr].x = position;
+    assert [bitwise_ptr].y = 1;
+    let lowest_bit = [bitwise_ptr].x_and_y;
+    let bitwise_ptr = bitwise_ptr + BitwiseBuiltin.SIZE;
 
     let (data: felt*) = alloc();
-    if(lowest_bit != 0){
-        memcpy(data + HASH_FELT_SIZE, accu, HASH_FELT_SIZE);
-        memcpy(data, path, HASH_FELT_SIZE);
-    } else {
-        memcpy(data, accu, HASH_FELT_SIZE);
-        memcpy(data + HASH_FELT_SIZE, path, HASH_FELT_SIZE);
-    }
+    // Hash next two nodes depending on position is even or odd
+    memcpy(data + HASH_FELT_SIZE * lowest_bit, accu, HASH_FELT_SIZE);
+    memcpy(data + HASH_FELT_SIZE * (1 - lowest_bit), path, HASH_FELT_SIZE);
 
     let (digest) = blake2s_as_words(data=data, n_bytes=64);
 
-    let position = (position - lowest_bit) / 2;
-    _verify_merkle_proof(depth - 1, path + HASH_FELT_SIZE, position, root, digest);
-
-    return ();
+    return _verify_merkle_proof(
+        depth = depth - 1,
+        path = path + HASH_FELT_SIZE,
+        position = (position - lowest_bit) / 2,
+        accu = digest
+    );
 }
 
 func verify_merkle_proof{
@@ -143,7 +139,11 @@ func verify_merkle_proof{
     }(length: felt, path: felt*, position, root: felt*){
     alloc_locals;
 
-    _verify_merkle_proof(length - 1, path + HASH_FELT_SIZE, position, root, path);
+    let digest = _verify_merkle_proof(length - 1, path + HASH_FELT_SIZE, position, path);
+    
+    with_attr error_message("Merkle path authentication failed"){
+        assert_hashes_equal(root, digest);
+    }
 
     return ();
 }
