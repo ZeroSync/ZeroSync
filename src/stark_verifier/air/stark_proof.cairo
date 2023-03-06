@@ -20,7 +20,6 @@ struct ProofOptions {
     grinding_factor: felt,
     hash_fn: felt,
     field_extension: felt,
-    fri_folding_factor: felt,
     fri_max_remainder_size: felt,  // stored as power of 2
 }
 

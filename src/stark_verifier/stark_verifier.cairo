@@ -77,7 +77,7 @@ func verify{range_check_ptr, pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBui
     let public_coin_seed: felt* = seed_with_pub_inputs{blake2s_ptr=blake2s_ptr}(pub_inputs);
 
     // Create an AIR instance for the computation specified in the proof.
-    let air = air_instance_new(proof, pub_inputs, proof.context.options);
+    let air = air_instance_new(proof, pub_inputs);
 
     // Create a public coin and channel struct
     with blake2s_ptr {
@@ -207,13 +207,13 @@ func perform_verification{
     // Make sure the proof-of-work specified by the grinding factor is satisfied.
     let leading_zeros = get_leading_zeros(public_coin.seed);
     with_attr error_message("Insufficient proof of work") {
-        assert_le(air.options.grinding_factor, leading_zeros);
+        assert_le(air.context.options.grinding_factor, leading_zeros);
     }
 
     // Draw pseudorandom query positions for the LDE domain from the public coin.
     let (query_positions: felt*) = alloc();
     draw_integers(
-       n_elements=air.options.num_queries,
+       n_elements=air.context.options.num_queries,
        elements=query_positions,
        domain_size=air.context.lde_domain_size,
     );

@@ -43,16 +43,13 @@ func read_fri_proofs {
 
 
 struct FriOptions {
-    folding_factor: felt,
     max_remainder_size: felt,
     blowup_factor: felt,
 }
 
 func to_fri_options(proof_options: ProofOptions) -> FriOptions {
-    let folding_factor = proof_options.fri_folding_factor;
     let max_remainder_size = proof_options.fri_max_remainder_size;
     let fri_options = FriOptions(
-        folding_factor,
         max_remainder_size,
         proof_options.blowup_factor
     );
@@ -79,18 +76,17 @@ func _fri_verifier_new{
     max_degree_plus_1,
     layer_commitment_ptr: felt*,
     layer_alpha_ptr: felt*,
-    folding_factor,
     count: felt,
 ) -> felt {
     if (count == 0) {
-        return max_degree_plus_1 * folding_factor + 1;
+        return max_degree_plus_1 * FOLDING_FACTOR + 1;
     }
     alloc_locals;
 
     reseed(layer_commitment_ptr);
     let alpha = draw();
     assert [layer_alpha_ptr] = alpha;
-    let max_degree_plus_1_div_folding_factor = max_degree_plus_1 / folding_factor;
+    let max_degree_plus_1_div_folding_factor = max_degree_plus_1 / FOLDING_FACTOR;
     with_attr error_message("max_degree_plus_1 must be divisible by folding_factor") {
         assert_nn_le(max_degree_plus_1_div_folding_factor, max_degree_plus_1);
     }
@@ -99,7 +95,6 @@ func _fri_verifier_new{
         max_degree_plus_1_div_folding_factor,
         layer_commitment_ptr + HASH_FELT_SIZE,
         layer_alpha_ptr + 1,
-        folding_factor,
         count - 1
     );
 }
@@ -130,7 +125,6 @@ func fri_verifier_new{
         max_poly_degree + 1,
         layer_commitments,
         layer_alphas,
-        options.folding_factor,
         channel.fri_roots_len
     );
     let res = FriVerifier(
@@ -226,7 +220,6 @@ func fri_verify{
         omega_folded = folding_roots,
         omega = fri_verifier.domain_generator,
         log_degree = log2_domain_size,
-        folding_factor = fri_verifier.options.folding_factor,
         i = 0
     );
 
@@ -279,20 +272,17 @@ func verify_queries{
     }
     alloc_locals;
 
-    let folding_factor = fri_verifier.options.folding_factor;
-
     // Iterate over the layers within this query
     verify_layers(
         omega = fri_verifier.domain_generator,
         alphas = fri_verifier.layer_alphas,
         position = [positions],
         query_evaluations = query_evaluations,
-        num_layer_evaluations = folding_factor * num_layers,
+        num_layer_evaluations = FOLDING_FACTOR * num_layers,
         num_layers = num_layers,
-        folding_factor = folding_factor,
         previous_eval = 0,
         fri_proofs = fri_proofs,
-        modulus = fri_verifier.domain_size / folding_factor,
+        modulus = fri_verifier.domain_size / FOLDING_FACTOR,
         verified_positions = verified_positions,
         verified_positions_len = verified_positions_len,
         next_verified_positions_len = &verified_positions_len[num_layers],
@@ -324,22 +314,22 @@ func num_fri_layers{
     if(is_leq == 0){
         return 0;
     }
-    let res = num_fri_layers(fri_verifier, domain_size/fri_verifier.options.folding_factor);
+    let res = num_fri_layers(fri_verifier, domain_size/FOLDING_FACTOR);
     return 1 + res;
 }
 
 // pre-compute roots of unity used in computing x coordinates in the folded domain
 func compute_folding_roots{
     range_check_ptr
-    }(omega_folded: felt*, omega, log_degree: felt, folding_factor: felt, i: felt) {
-    if (i == folding_factor) {
+    }(omega_folded: felt*, omega, log_degree: felt, i: felt) {
+    if (i == FOLDING_FACTOR) {
         return ();
     }
     let degree = pow2(log_degree);
-    let new_domain_size = degree / folding_factor * i;
+    let new_domain_size = degree / FOLDING_FACTOR * i;
     let (res) = pow(omega, new_domain_size);
     assert [omega_folded] = res;
-    compute_folding_roots(omega_folded + 1, omega, log_degree, folding_factor, i + 1);
+    compute_folding_roots(omega_folded + 1, omega, log_degree, i + 1);
     return ();
 }
 
@@ -354,7 +344,6 @@ func verify_layers{
     query_evaluations: felt*,
     num_layer_evaluations: felt,
     num_layers: felt,
-    folding_factor: felt,
     previous_eval: felt,
     fri_proofs: FriQueryProof**,
     modulus: felt,
@@ -403,9 +392,9 @@ func verify_layers{
     // Verify that evaluations are consistent with the layer commitment
     let query_proof = fri_proofs[0][index];
     verify_merkle_proof(query_proof.length, query_proof.path, folded_position, layer_commitments);
-    let leaf_hash = hash_elements(n_elements=folding_factor, elements=query_proof.values);
+    let leaf_hash = hash_elements(n_elements=FOLDING_FACTOR, elements=query_proof.values);
     assert_hashes_equal(leaf_hash, query_proof.path);                                                                                                                                                        
-    let is_contained = contains(query_evaluations[0], query_proof.values, folding_factor);
+    let is_contained = contains(query_evaluations[0], query_proof.values, FOLDING_FACTOR);
     assert_not_zero(is_contained);
 
     // TODO: Compare previous polynomial evaluation with the current layer evaluation
@@ -425,11 +414,11 @@ func verify_layers{
         tempvar i = i - 1;
     jmp loop if i != 0;
 
-    let previous_eval = lagrange_eval(query_proof.values, x_values, folding_factor, alpha);
+    let previous_eval = lagrange_eval(query_proof.values, x_values, FOLDING_FACTOR, alpha);
 
     // Update variables for the next layer
-    let (omega) = pow(omega, folding_factor);
-    let modulus = modulus / folding_factor;
+    let (omega) = pow(omega, FOLDING_FACTOR);
+    let modulus = modulus / FOLDING_FACTOR;
     let (query_evaluations) = alloc();
     assert query_evaluations[0] = previous_eval;
 
@@ -440,7 +429,6 @@ func verify_layers{
         query_evaluations,
         num_layer_evaluations,
         num_layers - 1,
-        folding_factor,
         previous_eval,
         &fri_proofs[1],
         modulus,

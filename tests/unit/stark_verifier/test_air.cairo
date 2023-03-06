@@ -121,7 +121,7 @@ func test_air_instance_new{
     let pub_inputs: PublicInputs* = read_public_inputs();
     
     local air_expected:AirInstance = [air_ptr];
-    let air = air_instance_new(proof, pub_inputs, proof.context.options);
+    let air = air_instance_new(proof, pub_inputs);
 
     %{ 
         assert ids.air_expected.main_segment_width == ids.air.main_segment_width

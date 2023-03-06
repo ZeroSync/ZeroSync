@@ -15,7 +15,6 @@ struct AirInstance {
     aux_segment_rands: felt*,
     num_aux_segments: felt,
     // Context
-    options: ProofOptions,
     context: ProofContext,
     num_transition_constraints: felt,
     num_assertions: felt,
@@ -57,8 +56,7 @@ func air_instance_new{
     range_check_ptr
 }(
     proof: StarkProof*,
-    pub_inputs: PublicInputs*,
-    options: ProofOptions
+    pub_inputs: PublicInputs*
 ) -> AirInstance {
     alloc_locals;
     let (aux_segment_widths: felt*) = alloc();
@@ -67,7 +65,7 @@ func air_instance_new{
     let (power) = pow(2, TWO_ADICITY - proof.context.log_trace_length);
     let (trace_domain_generator) = pow(TWO_ADIC_ROOT_OF_UNITY, power);
     
-    let log_lde_domain_size = options.log_blowup_factor + proof.context.log_trace_length;
+    let log_lde_domain_size = proof.context.options.log_blowup_factor + proof.context.log_trace_length;
     let (power) = pow(2, TWO_ADICITY - log_lde_domain_size);
     let (lde_domain_generator) = pow(TWO_ADIC_ROOT_OF_UNITY, power);
 
@@ -78,7 +76,6 @@ func air_instance_new{
         aux_segment_widths=aux_segment_widths,
         aux_segment_rands=aux_segment_rands,
         num_aux_segments=2,
-        options=options,
         context=proof.context,
         num_transition_constraints=49,
         num_assertions=7,

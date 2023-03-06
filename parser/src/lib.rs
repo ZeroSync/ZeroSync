@@ -210,9 +210,7 @@ impl Writeable for ProofOptions {
         self.hash_fn().write_into(target);
         self.field_extension().write_into(target);
 
-        let fri_options = self.to_fri_options();
-        fri_options.folding_factor().write_into(target);
-        fri_options.max_remainder_size().write_into(target);
+        self.to_fri_options().max_remainder_size().write_into(target);
     }
 }
 
@@ -313,7 +311,6 @@ impl WriteableWith<ProcessorAirParams<'_>> for ProcessorAir {
         self.trace_layout().num_aux_segments().write_into(target);
 
         // Context
-        self.options().write_into(target);
         params.proof.context.write_into(target);
 
         self.context()
