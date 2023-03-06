@@ -5,6 +5,7 @@ from stark_verifier.air.air_instance import AirInstance, DeepCompositionCoeffici
 from stark_verifier.air.transitions.frame import EvaluationFrame
 from stark_verifier.channel import Table
 from stark_verifier.utils import Vec
+from stark_verifier.parameters import NUM_QUERIES
 
 struct DeepComposer {
     x_coordinates: felt*,
@@ -279,8 +280,7 @@ func compose_trace_columns{
     // Compose columns of the main segment
     let row = queried_main_trace_states.elements;
     let (local result_main: felt*) = alloc();
-    // TODO: Don't hardcode the number of query and columns
-    tempvar n = 54;
+    tempvar n = NUM_QUERIES;
     tempvar row_ptr = row;
     tempvar x_coord_ptr = composer.x_coordinates;
     tempvar result_ptr = result_main;
@@ -407,7 +407,7 @@ func compose_trace_columns{
 
     // Compose columns of the aux segments
     let row = queried_aux_trace_states.elements;
-    tempvar n = 54; // TODO: double-check this value!
+    tempvar n = NUM_QUERIES;
     tempvar row_ptr = row;
     tempvar x_coord_ptr = composer.x_coordinates;
     tempvar result_ptr = result;
@@ -504,8 +504,7 @@ func compose_constraint_evaluations{
 
     local row: felt* = queried_evaluations.elements;
     let (local result: felt*) = alloc();
-    // TODO: Don't hardcode number of queries
-    tempvar n = 54;
+    tempvar n = NUM_QUERIES;
     tempvar row_ptr = row;
     tempvar x_coord_ptr = composer.x_coordinates;
     tempvar result_ptr = result;
@@ -540,8 +539,7 @@ func combine_compositions(
     let cc_degree_1 = composer.cc.degree_mu;
     
     let (local result: felt*) = alloc();
-    // TODO: Don't hardcode number of queries
-    tempvar n = 54;
+    tempvar n = NUM_QUERIES;
     tempvar t_ptr = t_composition;
     tempvar c_ptr = c_composition;
     tempvar x_coord_ptr = composer.x_coordinates;

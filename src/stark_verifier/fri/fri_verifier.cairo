@@ -192,7 +192,6 @@ func fri_verify{
     }(fri_verifier: FriVerifier, evaluations: felt*, positions: felt*
 ) {
     alloc_locals;
-    let num_queries = 54;
     let (__fp__, _) = get_fp_and_pc();
 
     // Read FRI Merkle proofs from a hint
@@ -236,7 +235,7 @@ func fri_verify{
         &fri_verifier, 
         positions, 
         evaluations,
-        num_queries,
+        NUM_QUERIES,
         fri_proofs,
         num_layers,
         verified_positions,
