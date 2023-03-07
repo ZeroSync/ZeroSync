@@ -73,26 +73,20 @@ func _fri_verifier_new{
     bitwise_ptr: BitwiseBuiltin*,
     public_coin: PublicCoin,
 }(
-    max_degree_plus_1,
     layer_commitment_ptr: felt*,
     layer_alpha_ptr: felt*,
     count: felt,
-) -> felt {
+) {
     if (count == 0) {
-        return max_degree_plus_1 * FOLDING_FACTOR + 1;
+        return ();
     }
     alloc_locals;
 
     reseed(layer_commitment_ptr);
     let alpha = draw();
     assert [layer_alpha_ptr] = alpha;
-    let max_degree_plus_1_div_folding_factor = max_degree_plus_1 / FOLDING_FACTOR;
-    with_attr error_message("max_degree_plus_1 must be divisible by folding_factor") {
-        assert_nn_le(max_degree_plus_1_div_folding_factor, max_degree_plus_1);
-    }
 
     return _fri_verifier_new(
-        max_degree_plus_1_div_folding_factor,
         layer_commitment_ptr + HASH_FELT_SIZE,
         layer_alpha_ptr + 1,
         count - 1
@@ -121,12 +115,21 @@ func fri_verifier_new{
     // read layer commitments from the channel and use them to build a list of alphas
     let (layer_alphas) = alloc();
     let layer_commitments = channel.fri_roots;
-    let max_degree_plus_1 = _fri_verifier_new(
-        max_poly_degree + 1,
-        layer_commitments,
-        layer_alphas,
-        channel.fri_roots_len
+    _fri_verifier_new(
+        layer_commitment_ptr = layer_commitments,
+        layer_alpha_ptr = layer_alphas,
+        count = channel.fri_roots_len
     );
+
+    let num_folding_bits = log2(FOLDING_FACTOR);
+    // This  log2  implementation verifies  max_poly_degree + 1  to be a power of two.
+    let num_max_degree_bits = log2(max_poly_degree + 1);
+    let (num_fri_roots, num_max_degree_bits) = unsigned_div_rem(num_max_degree_bits, num_folding_bits);
+    let max_degree = pow2(num_max_degree_bits + num_folding_bits);
+    let max_degree_plus_1 = max_degree + 1;
+    with_attr error_message("max_poly_degree does not match fri_roots_len") {
+        assert num_fri_roots = channel.fri_roots_len;
+    }
     let res = FriVerifier(
         max_poly_degree,
         domain_size,
