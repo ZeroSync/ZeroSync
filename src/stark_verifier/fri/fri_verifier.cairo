@@ -121,15 +121,12 @@ func fri_verifier_new{
         count = channel.fri_roots_len
     );
 
-    let num_folding_bits = log2(FOLDING_FACTOR);
+    let num_folding_factor_bits = log2(FOLDING_FACTOR);
     // This  log2  implementation verifies  max_poly_degree + 1  to be a power of two.
-    let num_max_degree_bits = log2(max_poly_degree + 1);
-    let (num_fri_roots, num_max_degree_bits) = unsigned_div_rem(num_max_degree_bits, num_folding_bits);
-    let max_degree = pow2(num_max_degree_bits + num_folding_bits);
+    let num_max_poly_degree_bits = log2(max_poly_degree + 1);
+    let max_degree = pow2(num_max_poly_degree_bits - (channel.fri_roots_len - 1) * num_folding_factor_bits);
     let max_degree_plus_1 = max_degree + 1;
-    with_attr error_message("max_poly_degree does not match fri_roots_len") {
-        assert num_fri_roots = channel.fri_roots_len;
-    }
+
     let res = FriVerifier(
         max_poly_degree,
         domain_size,
