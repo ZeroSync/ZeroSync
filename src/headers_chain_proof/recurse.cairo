@@ -11,7 +11,7 @@ from crypto.hash_utils import assert_hashes_equal
 from stark_verifier.stark_verifier import read_and_verify_stark_proof
 
 func recurse{pedersen_ptr: HashBuiltin*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
-    block_height, expected_program_hash, prev_state: State) {
+    block_height, expected_program_hash, prev_chain_state: ChainState, merkle_root) {
     alloc_locals;
 
     // For the genesis block there is no parent proof to verify
@@ -34,11 +34,24 @@ func recurse{pedersen_ptr: HashBuiltin*, range_check_ptr, bitwise_ptr: BitwiseBu
 
     // 3. Parse the `next_state` of the parent proof from its public inputs
     // and then verify it is equal to the child proof's `prev_state`
-    verify_prev_state(mem_values, prev_state, program_hash);
+    verify_prev_chain_state(mem_values, prev_chain_state, merkle_root, program_hash);
     return ();
 }
 
-func verify_prev_chain_state(mem_values: felt*, prev_chain_state: ChainState, program_hash){
+
+// PUBLIC INPUTS LAYOUT
+//      [0]         block_height
+//      [1..8]      best_block_hash 
+//      [9]         total_work
+//      [10]        current_target
+//      [11..21]    timestamps
+//      [22]        epoch_start_time
+//      [23]        merkle_root
+//      [24]        program_hash
+//
+//  ---> total: 25 public inputs
+//
+func verify_prev_chain_state(mem_values: felt*, prev_chain_state: ChainState, merkle_root, program_hash){
     assert prev_chain_state.block_height = mem_values[0];
     let mem_values = mem_values + 1;
 
@@ -56,6 +69,8 @@ func verify_prev_chain_state(mem_values: felt*, prev_chain_state: ChainState, pr
     assert prev_chain_state.epoch_start_time = mem_values[0];
     let mem_values = mem_values + 1;
 
+    assert merkle_root = mem_values[0];
+    let mem_values = mem_values + 1;
 
     assert program_hash = mem_values[0];
 

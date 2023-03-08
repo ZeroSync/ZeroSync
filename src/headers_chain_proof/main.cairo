@@ -93,12 +93,6 @@ func main{
     alloc_locals;
     setup_python_defs();
 
-    // Read the batch size from the program input
-    local batch_size: felt;
-    %{
-        ids.batch_size = program_input["batch_size"]
-    %}
-
     // Read the previous state from the program input
     local block_height: felt;
     local total_work: felt;
@@ -109,6 +103,8 @@ func main{
     let (prev_utreexo_roots) = alloc();
     local program_hash: felt;
     local program_length: felt;
+    local batch_size: felt;
+    local merkle_root: felt;
     %{
         ids.block_height = program_input["block_height"] if program_input["block_height"] != -1 else PRIME - 1
         ids.total_work = program_input["total_work"]
@@ -117,7 +113,8 @@ func main{
         ids.epoch_start_time = program_input["epoch_start_time"]
         segments.write_arg(ids.prev_timestamps, program_input["prev_timestamps"])
         ids.program_hash = int( program_input["program_hash"], 16)
-        //TODO: previous merkle root
+        ids.batch_size = program_input["batch_size"]
+        ids.merkle_root = int(program_input["merkle_root"], 16)
     %}
 
     let start_chain_state = ChainState(
@@ -127,22 +124,17 @@ func main{
     //Validate all blocks in this batch
     let (final_chain_state, block_header_pedersen_hashes) = validate_block_headers{hash_ptr = pedersen_ptr}(start_chain_state, batch_size);
 
+    //TODO: recurse - verifier then checks if the starting state = end state of previous batch
+    recurse(block_height, program_hash, start_chain_state, merkle_root);
 
-    // Print the starting state -  TOOD: do we need this if we recurse? No
-    serialize_chain_state(start_chain_state);
-    // Print the final state
-    serialize_chain_state(final_chain_state);
-    serialize_word(program_hash);
-    
-    //TODO: recurse - verifier then checks if the the starting state = end state of previous batch
-    // Print the batch size
-    serialize_word(batch_size);
-
-    // Calculate and print the Merkle root over all block headers of the batch
     // TODO think about how to accumulate and generate a (merkle) proof such that block X is in merkle_root without knowing the batch size in each step
    // let height = calculate_height(batch_size);
    // let (merkle_root) = create_merkle_tree(block_header_pedersen_hashes, 0, batch_size, height);
-   // serialize_word(merkle_root);
+
+    // Print the final state
+    serialize_chain_state(final_chain_state);
+    serialize_word(merkle_root);
+    serialize_word(program_hash);
 
     return ();
 }
