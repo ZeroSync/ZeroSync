@@ -124,7 +124,6 @@ func main{
     //Validate all blocks in this batch
     let (final_chain_state, block_header_pedersen_hashes) = validate_block_headers{hash_ptr = pedersen_ptr}(start_chain_state, batch_size);
 
-    //TODO: recurse - verifier then checks if the starting state = end state of previous batch
     recurse(block_height, program_hash, start_chain_state, merkle_root);
 
     // TODO think about how to accumulate and generate a (merkle) proof such that block X is in merkle_root without knowing the batch size in each step
