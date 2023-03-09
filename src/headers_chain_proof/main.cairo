@@ -4,11 +4,11 @@ from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin, HashBuiltin
 from starkware.cairo.common.serialize import serialize_word
 
-from serialize.serialize import init_reader
-from crypto.sha256d.sha256d import HASH_FELT_SIZE
+from crypto.hash_utils import HASH_FELT_SIZE
 from block.block_header import ChainState, validate_and_apply_block_header, read_block_header_validation_context, pedersen_hash_block_header
 from utils.python_utils import setup_python_defs
-from merkle.merkle import create_merkle_tree, calculate_height
+// from merkle.merkle import create_merkle_tree, calculate_height
+from crypto.sha256 import finalize_sha256
 from headers_chain_proof.recurse import recurse
 
 func serialize_chain_state{output_ptr: felt*}(chain_state: ChainState) {
@@ -30,7 +30,7 @@ func serialize_array{output_ptr: felt*}(array: felt*, array_len) {
     return ();
 }
 
-func fetch_block(block_height) -> (block_data: felt*) {
+func fetch_block(block_height) -> felt* {
     let (block_data) = alloc();
 
     %{
@@ -50,48 +50,55 @@ func fetch_block(block_height) -> (block_data: felt*) {
         from_hex(block_hex, ids.block_data)
     %}
     
-    return (block_data,);
+    return block_data;
 }
 
-func _validate_block_headers{hash_ptr: HashBuiltin*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(block_header_pedersen_hashes : felt*, prev_chain_state: ChainState, i, n) -> (next_chain_state: ChainState) {
+func _validate_block_headers{hash_ptr: HashBuiltin*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*, sha256_ptr : felt*}(block_header_pedersen_hashes : felt*, prev_chain_state: ChainState, i, n) -> ChainState {
     alloc_locals;
     if (i == n) {
-        return (next_chain_state=prev_chain_state);
+        return prev_chain_state;
     }
-    // Get the next block header
-    let (context) = read_block_header_validation_context(prev_chain_state);
+    
+    with sha256_ptr {
+        // Get the next block header
+        let context = read_block_header_validation_context(prev_chain_state);
 
-    // Validate the block header and get the new state
-    let (next_chain_state) = validate_and_apply_block_header(context);
+        // Validate the block header and get the new state
+        let next_chain_state = validate_and_apply_block_header(context);
+    }
 
     // Hash the block header with pedersen and store it for the merkelization later.
-    let (tmp) = pedersen_hash_block_header{hash_ptr=hash_ptr}(context.block_header);
+    let tmp = pedersen_hash_block_header{hash_ptr=hash_ptr}(context.block_header);
     assert block_header_pedersen_hashes[i] = tmp;
 
     return _validate_block_headers(block_header_pedersen_hashes, next_chain_state, i+1, n);
 }
 
-// Validates the next n block headers and returns a tuple of the final state and an array containing all raw block headers.
-// The raw block header can be used to create a merkle tree over all block headers of the batch.
-func validate_block_headers{hash_ptr: HashBuiltin*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(start_chain_state: ChainState, n) -> (end_chain_state: ChainState, block_header_pedersen_hashes: felt*) {
+// Validates the next n block headers and returns a tuple of the final state and an array containing all block header pedersen hashes.
+// The block header pedersen hashes can be used to create a merkle tree over all block headers of the batch.
+func validate_block_headers{hash_ptr: HashBuiltin*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*, sha256_ptr: felt*}(start_chain_state: ChainState, n) -> (end_chain_state: ChainState, block_header_pedersen_hashes: felt*) {
     alloc_locals;
     let (block_header_pedersen_hashes: felt*) = alloc();
 
-    let (end_chain_state) = _validate_block_headers(block_header_pedersen_hashes, start_chain_state, 0, n);
-    
+    let end_chain_state = _validate_block_headers(block_header_pedersen_hashes, start_chain_state, 0, n);
+
     return (end_chain_state, block_header_pedersen_hashes);
 }
 
 func main{
-    output_ptr: felt*,
-    pedersen_ptr: HashBuiltin*,
-    range_check_ptr,
-    ecdsa_ptr,
-    bitwise_ptr: BitwiseBuiltin*,
-    ec_op_ptr,
+output_ptr: felt*,
+                pedersen_ptr: HashBuiltin*,
+                range_check_ptr,
+                ecdsa_ptr,
+                bitwise_ptr: BitwiseBuiltin*,
+                ec_op_ptr,
 }() {
     alloc_locals;
     setup_python_defs();
+
+    // initialize sha256_ptr
+    let sha256_ptr: felt* = alloc();
+    let sha256_ptr_start = sha256_ptr;
 
     // Read the previous state from the program input
     local block_height: felt;
@@ -118,22 +125,27 @@ func main{
     %}
 
     let start_chain_state = ChainState(
-        block_height, total_work, best_block_hash, current_target, epoch_start_time, prev_timestamps
-    );
+            block_height, total_work, best_block_hash, current_target, epoch_start_time, prev_timestamps
+            );
 
-    //Validate all blocks in this batch
-    let (final_chain_state, block_header_pedersen_hashes) = validate_block_headers{hash_ptr = pedersen_ptr}(start_chain_state, batch_size);
+    with sha256_ptr {
+        //Validate all blocks in this batch
+        let (final_chain_state, block_header_pedersen_hashes) = validate_block_headers{hash_ptr = pedersen_ptr}(start_chain_state, batch_size);
+    }
 
     recurse(block_height, program_hash, start_chain_state, merkle_root);
 
     // TODO think about how to accumulate and generate a (merkle) proof such that block X is in merkle_root without knowing the batch size in each step
-   // let height = calculate_height(batch_size);
-   // let (merkle_root) = create_merkle_tree(block_header_pedersen_hashes, 0, batch_size, height);
+    // let height = calculate_height(batch_size);
+    //let (merkle_root) = create_merkle_tree(block_header_pedersen_hashes, 0, batch_size, height);
 
     // Print the final state
     serialize_chain_state(final_chain_state);
     serialize_word(merkle_root);
     serialize_word(program_hash);
+
+    // finalize sha256_ptr
+    finalize_sha256(sha256_ptr_start, sha256_ptr);
 
     return ();
 }
