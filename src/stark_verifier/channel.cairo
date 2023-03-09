@@ -360,7 +360,7 @@ func _compute_merkle_root_loop{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, bl
         return ();
     }
 
-    // Hash two prev_leaves to get one leave of the next generation
+    // Hash two prev_leaves to get one leaf of the next generation
     let (digest) = blake2s_as_words(data=prev_leaves, n_bytes=HASH_FELT_SIZE * 2 * UINT32_SIZE);
     copy_hash(digest, next_leaves);
 
