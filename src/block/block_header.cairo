@@ -4,7 +4,8 @@
 // - Reference: https://developer.bitcoin.org/reference/block_chain.html#block-headers
 // - Bitcoin Core: https://github.com/bitcoin/bitcoin/blob/7fcf53f7b4524572d1d0c9a5fdc388e87eb02416/src/primitives/block.h#L22
 
-from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
+from starkware.cairo.common.cairo_builtins import BitwiseBuiltin, HashBuiltin
+from starkware.cairo.common.hash import hash2
 from starkware.cairo.common.bitwise import bitwise_and
 from starkware.cairo.common.math import assert_le, unsigned_div_rem, assert_le_felt, split_felt
 from starkware.cairo.common.math_cmp import is_le_felt
@@ -519,4 +520,35 @@ func felt_to_uint256{range_check_ptr}(value) -> Uint256 {
     let (high, low) = split_felt(value);
     let value256 = Uint256(low, high);
     return value256;
+}
+
+// Create a pedersen hash of a block header to be used in a merkle tree
+//
+func pedersen_hash_block_header{hash_ptr: HashBuiltin*}(block_header: BlockHeader) -> felt {
+    const BASE = 2 ** 32;
+    let tmp1 = block_header.version * BASE ** 0 +
+                 block_header.prev_block_hash[0] * BASE ** 1 +
+                 block_header.prev_block_hash[1] * BASE ** 2 + 
+                 block_header.prev_block_hash[2] * BASE ** 3 + 
+                 block_header.prev_block_hash[3] * BASE ** 4 + 
+                 block_header.prev_block_hash[4] * BASE ** 5 + 
+                 block_header.prev_block_hash[5] * BASE ** 6; 
+
+    let tmp2 = block_header.prev_block_hash[6] * BASE ** 0 +
+                 block_header.prev_block_hash[7] * BASE ** 1 +
+                 block_header.merkle_root_hash[0] * BASE ** 2 +
+                 block_header.merkle_root_hash[1] * BASE ** 3 +
+                 block_header.merkle_root_hash[2] * BASE ** 4 +
+                 block_header.merkle_root_hash[3] * BASE ** 5 +
+                 block_header.merkle_root_hash[4] * BASE ** 6;
+
+    let tmp3 = block_header.merkle_root_hash[5] * BASE ** 0 +
+                 block_header.merkle_root_hash[6] * BASE ** 1 +
+                 block_header.merkle_root_hash[7] * BASE ** 2 +
+                 block_header.time * BASE ** 3 +
+                 block_header.bits * BASE ** 4 +
+                 block_header.nonce * BASE ** 5;
+    let (tmp_hash) = hash2(tmp1, tmp2);
+    let (pedersen_block_hash) = hash2(tmp_hash, tmp3);
+    return pedersen_block_hash; 
 }

@@ -15,7 +15,7 @@ func recurse{pedersen_ptr: HashBuiltin*, range_check_ptr, bitwise_ptr: BitwiseBu
     alloc_locals;
 
     // For the genesis block there is no parent proof to verify
-    if(block_height == 0){
+    if(block_height == -1){
         return ();
     }
 
@@ -23,7 +23,7 @@ func recurse{pedersen_ptr: HashBuiltin*, range_check_ptr, bitwise_ptr: BitwiseBu
     // and compute the program's hash
     %{
         from src.stark_verifier.utils import set_proof_path, debug_print
-        set_proof_path(f'tmp/chain_proof-{ids.prev_state.prev_chain_state.block_height}.bin')
+        set_proof_path(f'tmp/headers_chain_proof-{ids.prev_chain_state.block_height}.bin')
     %}
     let (program_hash, mem_values) = read_and_verify_stark_proof();
 
