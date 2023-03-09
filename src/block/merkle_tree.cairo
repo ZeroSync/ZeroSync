@@ -58,7 +58,7 @@ func _compute_merkle_root_loop{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, sh
         return ();
     }
 
-    // Hash two prev_leaves to get one leave of the next generation
+    // Hash two prev_leaves to get one leaf of the next generation
     let hash = hash256(prev_leaves, HASH_FELT_SIZE * UINT32_SIZE * 2);
     copy_hash(hash, next_leaves);
 

@@ -489,7 +489,7 @@ func get_power_series(
     return get_power_series(result + 1, base, loop_counter - 1, accu * base);
 }
 
-
+// Ensure that a given array contains only zeroes
 func assert_zeroes(array: felt*, array_len){
     if(array_len == 0){
         return ();
@@ -499,13 +499,14 @@ func assert_zeroes(array: felt*, array_len){
     return ();
 }
 
-func assert_contains(elements:felt*, n_elements, element){
+// Ensure that a given array contains a particular element
+func assert_contains(array:felt*, array_len, element){
     alloc_locals;
     local index: felt;
     %{
-        ids.index = index_of(ids.elements, ids.n_elements, ids.element, memory)
+        ids.index = index_of(ids.array, ids.array_len, ids.element, memory)
     %}
-    // TODO: Do we have to verify that `0 < index < n_elements` here?
-    assert element = elements[index];
+    // TODO: Do we have to verify that `0 < index < array_len` here?
+    assert element = array[index];
     return ();
 }
