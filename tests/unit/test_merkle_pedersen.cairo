@@ -2,7 +2,7 @@
 
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin, HashBuiltin
 from starkware.cairo.common.alloc import alloc
-from headers_chain_proof.pedersen_merkle_tree import append_merkle_tree_pedersen
+from headers_chain_proof.pedersen_merkle_tree import append_merkle_tree_pedersen, verify_merkle_path
 
 @external
 func test_create_merkle_tree{pedersen_ptr: HashBuiltin*, range_check_ptr}() {
@@ -81,3 +81,21 @@ func test_append_complete_merkle_tree{pedersen_ptr: HashBuiltin*, range_check_pt
     return ();
 }
 
+
+// Merkle tree consists of 1,2,3,4,5,6,7,8
+// Prove inclusion of 8
+@external
+func test_verify_merkle_path{pedersen_ptr: HashBuiltin*, range_check_ptr}() {
+
+    let merkle_root = 0x28015ba23dce0238feda181c0c2dd7a87e528721d96f71281d65c603263d0ca;
+    let (merkle_path) = alloc();
+
+    assert merkle_path[0] = 7;
+    assert merkle_path[1] = 0x1f680f4b3e66b11ac6b827ef46e7d2da4075e0dc83b7e322d590dbb7687f417; // hash of 5 and 6
+    assert merkle_path[2] = 0x6a27df2b1eaf16c77478b9c001cfdebe956b7ad878b141b0b4b24659fa59fde; // hash of 1-2 and 3-4
+    
+
+    verify_merkle_path{hash_ptr=pedersen_ptr}(8, merkle_path, 3, merkle_root);
+
+    return ();
+}
