@@ -1,6 +1,5 @@
-from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
+from starkware.cairo.common.cairo_builtins import BitwiseBuiltin, HashBuiltin
 from starkware.cairo.common.alloc import alloc
-from starkware.cairo.common.hash import HashBuiltin
 from starkware.cairo.common.math import assert_le, assert_nn_le, assert_not_zero, horner_eval, unsigned_div_rem
 from starkware.cairo.common.math_cmp import is_le
 from starkware.cairo.common.pow import pow
@@ -14,7 +13,6 @@ from stark_verifier.crypto.random import PublicCoin, draw, reseed, contains, has
 from stark_verifier.fri.polynomials import lagrange_eval, interpolate_poly_and_verify
 from utils.pow2 import pow2
 from stark_verifier.channel import Channel, verify_merkle_proof, QueriesProof, read_remainder
-from crypto.hash_utils import assert_hashes_equal, HASH_FELT_SIZE
 from stark_verifier.parameters import TWO_ADIC_ROOT_OF_UNITY, TWO_ADICITY, FOLDING_FACTOR, MULTIPLICATIVE_GENERATOR, NUM_QUERIES
 from stark_verifier.utils import Vec
 
@@ -28,7 +26,7 @@ struct FriQueryProof{
 }
 
 func read_fri_proofs {
-    range_check_ptr, blake2s_ptr: felt*, channel: Channel, bitwise_ptr: BitwiseBuiltin*
+    range_check_ptr, pedersen_ptr: HashBuiltin*, channel: Channel
     }(positions: felt*) -> FriQueryProof** {
     alloc_locals;
 
@@ -67,12 +65,7 @@ struct FriVerifier {
 }
 
 
-func _fri_verifier_new{
-    range_check_ptr,
-    blake2s_ptr: felt*,
-    bitwise_ptr: BitwiseBuiltin*,
-    public_coin: PublicCoin,
-}(
+func _fri_verifier_new{range_check_ptr, pedersen_ptr: HashBuiltin*, public_coin: PublicCoin}(
     layer_commitment_ptr: felt*,
     layer_alpha_ptr: felt*,
     count: felt,
@@ -82,12 +75,12 @@ func _fri_verifier_new{
     }
     alloc_locals;
 
-    reseed(layer_commitment_ptr);
+    reseed([layer_commitment_ptr]);
     let alpha = draw();
     assert [layer_alpha_ptr] = alpha;
 
     return _fri_verifier_new(
-        layer_commitment_ptr + HASH_FELT_SIZE,
+        layer_commitment_ptr + 1,
         layer_alpha_ptr + 1,
         count - 1
     );
@@ -95,8 +88,7 @@ func _fri_verifier_new{
 
 func fri_verifier_new{
     range_check_ptr,
-    blake2s_ptr: felt*,
-    bitwise_ptr: BitwiseBuiltin*,
+    pedersen_ptr: HashBuiltin*,
     public_coin: PublicCoin,
     channel: Channel
 }(
@@ -182,7 +174,7 @@ func log2(n) -> felt {
 
 
 func fri_verify{
-    range_check_ptr, pedersen_ptr: HashBuiltin*, blake2s_ptr: felt*, channel: Channel, bitwise_ptr: BitwiseBuiltin*
+    range_check_ptr, pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*, channel: Channel
     }(fri_verifier: FriVerifier, evaluations: felt*, positions: felt*
 ) {
     alloc_locals;
@@ -250,12 +242,7 @@ func fri_verify{
 }
 
 
-func verify_queries{
-    range_check_ptr, 
-    channel: Channel, 
-    blake2s_ptr:felt*,
-    bitwise_ptr: BitwiseBuiltin*
-}(
+func verify_queries{range_check_ptr, pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*, channel: Channel}(
     fri_verifier: FriVerifier*,
     positions: felt*,
     query_evaluations: felt*,
@@ -307,9 +294,7 @@ func verify_queries{
     return ();
 }
 
-func num_fri_layers{
-        range_check_ptr
-    }(fri_verifier: FriVerifier*, domain_size) -> felt{
+func num_fri_layers{range_check_ptr}(fri_verifier: FriVerifier*, domain_size) -> felt {
     let is_leq = is_le(fri_verifier.options.max_remainder_size + 1, domain_size);
     if(is_leq == 0){
         return 0;
@@ -319,9 +304,7 @@ func num_fri_layers{
 }
 
 // pre-compute roots of unity used in computing x coordinates in the folded domain
-func compute_folding_roots{
-    range_check_ptr
-    }(omega_folded: felt*, omega, log_degree: felt, i: felt) {
+func compute_folding_roots{range_check_ptr}(omega_folded: felt*, omega, log_degree: felt, i: felt) {
     if (i == FOLDING_FACTOR) {
         return ();
     }
@@ -333,11 +316,7 @@ func compute_folding_roots{
     return ();
 }
 
-func verify_layers{
-    range_check_ptr, 
-    blake2s_ptr: felt*,
-    bitwise_ptr: BitwiseBuiltin*
-}(
+func verify_layers{range_check_ptr, pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*}(
     omega: felt,
     alphas: felt*,
     position: felt,
@@ -391,9 +370,9 @@ func verify_layers{
 
     // Verify that evaluations are consistent with the layer commitment
     let query_proof = fri_proofs[0][index];
-    verify_merkle_proof(query_proof.length, query_proof.path, folded_position, layer_commitments);
+    verify_merkle_proof(query_proof.length, query_proof.path, folded_position, [layer_commitments]);
     let leaf_hash = hash_elements(n_elements=FOLDING_FACTOR, elements=query_proof.values);
-    assert_hashes_equal(leaf_hash, query_proof.path);                                                                                                                                                        
+    assert leaf_hash = [query_proof.path];                                                                                                                                                        
     let is_contained = contains(query_evaluations[0], query_proof.values, FOLDING_FACTOR);
     assert_not_zero(is_contained);
 
@@ -435,7 +414,7 @@ func verify_layers{
         &verified_positions[1],
         &verified_positions_len[1],
         &next_verified_positions_len[1],
-        &layer_commitments[HASH_FELT_SIZE],
+        layer_commitments + 1,
         folding_roots,
         remainders
     );

@@ -7,8 +7,7 @@
 
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.memset import memset
-from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
-from utils.endianness import byteswap32
+from starkware.cairo.common.cairo_builtins import HashBuiltin
 
 from stark_verifier.crypto.random import PublicCoin
 from stark_verifier.air.air_instance import AirInstance, DeepCompositionCoefficients, get_deep_composition_coefficients, TraceCoefficients
@@ -28,13 +27,8 @@ func __setup__() {
 }
 
 @external
-func test_get_deep_composition_coefficients{
-    range_check_ptr,
-    bitwise_ptr: BitwiseBuiltin*
-}() {
+func test_get_deep_composition_coefficients{range_check_ptr, pedersen_ptr: HashBuiltin*}() {
     alloc_locals;
-
-    let (blake2s_ptr: felt*) = alloc();
 
     // Initialize arguments
     let (local coin_ptr: PublicCoin*) = alloc();
@@ -52,24 +46,10 @@ func test_get_deep_composition_coefficients{
         ids.deep_coefficients_trace_len = int(data['deep_coefficients_trace_len'])
         ids.deep_coefficients_constraints_len = int(data['deep_coefficients_constraints_len'])
     %}
-
-
-    let (seed) = alloc();
-    assert seed[0] = byteswap32( [coin_ptr].seed[0] );
-    assert seed[1] = byteswap32( [coin_ptr].seed[1] );
-    assert seed[2] = byteswap32( [coin_ptr].seed[2] );
-    assert seed[3] = byteswap32( [coin_ptr].seed[3] );
-    assert seed[4] = byteswap32( [coin_ptr].seed[4] );
-    assert seed[5] = byteswap32( [coin_ptr].seed[5] );
-    assert seed[6] = byteswap32( [coin_ptr].seed[6] );
-    assert seed[7] = byteswap32( [coin_ptr].seed[7] );
     
-    let public_coin = PublicCoin(
-        seed = seed,
-        counter = [coin_ptr].counter
-    );
+    let public_coin = PublicCoin(seed = [coin_ptr].seed, counter = [coin_ptr].counter);
 
-    with blake2s_ptr, public_coin {
+    with pedersen_ptr, public_coin {
         let coeffs = get_deep_composition_coefficients([air_ptr]);
     }
 
@@ -108,9 +88,7 @@ func test_get_deep_composition_coefficients{
 
 
 @external
-func test_compose_constraint_evaluations{
-    range_check_ptr
-}() {
+func test_compose_constraint_evaluations{range_check_ptr}() {
     alloc_locals;
 
     let (local composer_ptr: DeepComposer*) = alloc();

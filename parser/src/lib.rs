@@ -13,7 +13,7 @@ use winter_air::{
     ConstraintCompositionCoefficients, DefaultEvaluationFrame, EvaluationFrame, ProofOptions,
     Table, TraceLayout, DeepCompositionCoefficients,
 };
-use winter_crypto::{hashers::Blake2s_256, Digest, hash::ByteDigest};
+use winter_crypto::{hashers::Pedersen_256, Digest, hash::ByteDigest};
 pub use winterfell::{Air, AirContext, FieldExtension, HashFunction, StarkProof};
 use winterfell::{AuxTraceRandElements, ConstraintQueries, TraceQueries, DeepComposer};
 
@@ -116,23 +116,22 @@ impl WriteableWith<&ProcessorAir> for Commitments {
 
         let (trace_commitments, constraint_commitment, fri_commitments) = self
             .clone()
-            .parse::<Blake2s_256<Felt>>(num_trace_segments, num_fri_layers)
+            .parse::<Pedersen_256<Felt>>(num_trace_segments, num_fri_layers)
             .unwrap();
 
         target.write_array(
             trace_commitments
                 .iter()
-                .map(|x| ByteDigest::new(x.as_bytes()))
+                .map(|x| x.clone())
                 .collect::<Vec<_>>() );
 
-        let mut temp_memory = target.alloc();
-        ByteDigest::new(constraint_commitment.as_bytes()).write_into(&mut temp_memory);
+        constraint_commitment.write_into(target);
 
         fri_commitments.len().write_into(target);
         target.write_array(
             fri_commitments
                 .iter()
-                .map(|x| ByteDigest::new(x.as_bytes()))
+                .map(|x| x.clone())
                 .collect::<Vec<_>>() );
     }
 }
@@ -160,7 +159,7 @@ impl WriteableWith<&ProcessorAir> for OodFrame {
 impl WriteableWith<&ProcessorAir> for Vec<Queries> {
     fn write_into(&self, target: &mut DynamicMemory, air: &ProcessorAir) {
         let trace_queries =
-            TraceQueries::<Felt, Blake2s_256<Felt>>::new(self.clone(), air).unwrap();
+            TraceQueries::<Felt, Pedersen_256<Felt>>::new(self.clone(), air).unwrap();
         trace_queries.main_states.write_into(target);
         trace_queries.aux_states.unwrap().write_into(target);
     }
@@ -169,17 +168,14 @@ impl WriteableWith<&ProcessorAir> for Vec<Queries> {
 impl WriteableWith<&ProcessorAir> for Queries {
     fn write_into(&self, target: &mut DynamicMemory, air: &ProcessorAir) {
         let constraint_queries =
-            ConstraintQueries::<Felt, Blake2s_256<Felt>>::new(self.clone(), air).unwrap();
+            ConstraintQueries::<Felt, Pedersen_256<Felt>>::new(self.clone(), air).unwrap();
         constraint_queries.evaluations.write_into(target);
     }
 }
 
 impl Writeable for ByteDigest<32> {
     fn write_into(&self, target: &mut DynamicMemory) {
-        for chunk in self.0.array_chunks::<4>() {
-            let int = u32::from_le_bytes(*chunk);
-            int.write_into(target);
-        }
+        Felt::from(self.0).write_into(target);
     }
 }
 
@@ -270,19 +266,7 @@ impl Writeable for Felt {
 impl Writeable for [u8; 32] {
     // Convert 32 x u8 to 8 x u32
     fn write_into(&self, target: &mut DynamicMemory) {
-        let mut uint32_array = Vec::new();
-        for i in 0..8 {
-            let mut uint32 = 0;
-            // Store as big endian
-            let mut base = 1 << 24;
-            for j in 0..4 {
-                let index = (i * 4 + j) as usize;
-                uint32 += base * self[index] as usize;
-                base >>= 8;
-            }
-            uint32_array.push(uint32);
-        }
-        target.write_array(uint32_array);
+        ByteDigest(*self).write_into(target);
     }
 }
 
@@ -361,7 +345,7 @@ impl Writeable for AuxTraceRandElements<Felt> {
     }
 }
 
-impl Writeable for RandomCoin<Felt, Blake2s_256<Felt>> {
+impl Writeable for RandomCoin<Felt, Pedersen_256<Felt>> {
     fn write_into(&self, target: &mut DynamicMemory) {
         self.seed.as_bytes().write_into(target);
         self.counter.write_into(target);
@@ -389,7 +373,7 @@ impl Writeable for DeepComposer<Felt> {
     }
 }
 
-impl WriteableWith<&[usize]> for TraceQueries<Felt, Blake2s_256<Felt>> {
+impl WriteableWith<&[usize]> for TraceQueries<Felt, Pedersen_256<Felt>> {
     fn write_into(&self, target: &mut DynamicMemory, indexes:&[usize]) {
         for query_proof in &self.query_proofs{
             let paths = query_proof.into_paths(indexes).unwrap();
@@ -401,7 +385,7 @@ impl WriteableWith<&[usize]> for TraceQueries<Felt, Blake2s_256<Felt>> {
     }
 }
 
-impl WriteableWith<&[usize]> for ConstraintQueries<Felt, Blake2s_256<Felt>> {
+impl WriteableWith<&[usize]> for ConstraintQueries<Felt, Pedersen_256<Felt>> {
     fn write_into(&self, target: &mut DynamicMemory, indexes:&[usize]) {
         let paths = self.query_proofs.into_paths(indexes).unwrap();
         let mut child_target = target.alloc();
@@ -420,7 +404,7 @@ impl WriteableWith<FriProofParams<'_>> for FriProof {
     fn write_into(&self, target: &mut DynamicMemory, params:FriProofParams) {
         let air = &params.air;
         let folding_factor = air.options().to_fri_options().folding_factor();
-        let (queries_values, proofs) = self.clone().parse_layers::<Blake2s_256<Felt>, Felt>(air.lde_domain_size(), folding_factor).unwrap();
+        let (queries_values, proofs) = self.clone().parse_layers::<Pedersen_256<Felt>, Felt>(air.lde_domain_size(), folding_factor).unwrap();
         let mut indices = params.indexes.clone();
         let mut source_domain_size = air.lde_domain_size();
 

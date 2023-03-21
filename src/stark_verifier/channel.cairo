@@ -1,11 +1,8 @@
 from starkware.cairo.common.alloc import alloc
-from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
+from starkware.cairo.common.cairo_builtins import BitwiseBuiltin, HashBuiltin
 from starkware.cairo.common.registers import get_fp_and_pc
 from starkware.cairo.common.memcpy import memcpy
-from starkware.cairo.common.cairo_blake2s.blake2s import blake2s_as_words
 from starkware.cairo.common.math import unsigned_div_rem
-from crypto.hash_utils import copy_hash, assert_hashes_not_equal, HASH_FELT_SIZE
-from utils.serialize import UINT32_SIZE
 
 from stark_verifier.air.stark_proof import (
     ConstraintQueries,
@@ -32,7 +29,7 @@ struct Channel {
     // Trace queries
     trace_roots: felt*,
     // Constraint queries
-    constraint_root: felt*,
+    constraint_root: felt,
     // FRI proof
     fri_roots_len: felt,
     fri_roots: felt*,
@@ -49,7 +46,7 @@ struct Channel {
     remainder: Vec,
 }
 
-func channel_new{bitwise_ptr: BitwiseBuiltin*}(air: AirInstance, proof: StarkProof*) -> Channel {
+func channel_new(air: AirInstance, proof: StarkProof*) -> Channel {
     // Parsed commitments
     let trace_roots = proof.commitments.trace_roots;
     let constraint_root = proof.commitments.constraint_root;
@@ -81,7 +78,7 @@ func read_trace_commitments{channel: Channel}() -> felt* {
     return channel.trace_roots;
 }
 
-func read_constraint_commitment{channel: Channel}() -> felt* {
+func read_constraint_commitment{channel: Channel}() -> felt {
     return channel.constraint_root;
 }
 
@@ -107,8 +104,8 @@ struct QueriesProofs {
 }
 
 func _verify_merkle_proof{
-    range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*
-    }(depth: felt, path: felt*, position, accu: felt*) -> felt* {
+    range_check_ptr, pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*
+    }(depth: felt, path: felt*, position, accu: felt) -> felt {
     if(depth == 0){
         return accu;
     }
@@ -121,42 +118,42 @@ func _verify_merkle_proof{
 
     let (data: felt*) = alloc();
     // Hash next two nodes depending on position is even or odd
-    memcpy(data + HASH_FELT_SIZE * lowest_bit, accu, HASH_FELT_SIZE);
-    memcpy(data + HASH_FELT_SIZE * (1 - lowest_bit), path, HASH_FELT_SIZE);
+    assert [data + lowest_bit] = accu;
+    assert [data + 1 - lowest_bit] = [path];
 
-    let (digest) = blake2s_as_words(data=data, n_bytes=64);
+    let digest = hash_elements(2, data);
 
     return _verify_merkle_proof(
         depth = depth - 1,
-        path = path + HASH_FELT_SIZE,
+        path = path + 1,
         position = (position - lowest_bit) / 2,
         accu = digest
     );
 }
 
 func verify_merkle_proof{
-    range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*
-    }(length: felt, path: felt*, position, root: felt*){
+    range_check_ptr, pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*
+    }(length: felt, path: felt*, position, root: felt){
     alloc_locals;
 
-    let digest = _verify_merkle_proof(length - 1, path + HASH_FELT_SIZE, position, path);
+    let digest = _verify_merkle_proof(length - 1, path + 1, position, [path]);
     
     with_attr error_message("Merkle path authentication failed"){
-        assert_hashes_equal(root, digest);
+        assert root = digest;
     }
 
     return ();
 }
 
 func verify_merkle_proofs{
-    range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*
-}(proofs: QueriesProof*, positions: felt*, trace_roots: felt*, loop_counter, rows: felt*, n_cols: felt){
+    range_check_ptr, pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*
+}(proofs: QueriesProof*, positions: felt*, trace_roots: felt, loop_counter, rows: felt*, n_cols: felt){
     if(loop_counter == 0){
         return ();
     }
     // Hash the row of the table at the current index and compare it to the leaf of the path
     let digest = hash_elements(n_elements=n_cols, elements=rows);
-    assert_hashes_equal(digest, proofs[0].digests); 
+    assert digest = [ proofs[0].digests ];
 
     verify_merkle_proof( proofs[0].length, proofs[0].digests, positions[0], trace_roots );
     verify_merkle_proofs(&proofs[1], positions + 1, trace_roots, loop_counter - 1, rows + n_cols, n_cols);
@@ -165,14 +162,14 @@ func verify_merkle_proofs{
 
 // AUX TRACE (Memory)
 func verify_aux_merkle_proofs_1{
-    range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*
-}(proofs: QueriesProof*, positions: felt*, trace_roots: felt*, loop_counter, rows: felt*, n_cols: felt){
+    range_check_ptr, pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*
+}(proofs: QueriesProof*, positions: felt*, trace_roots: felt, loop_counter, rows: felt*, n_cols: felt){
     if(loop_counter == 0){
         return ();
     }
     // Hash the row of the table at the current index and compare it to the leaf of the path
     let digest = hash_elements(n_elements=12, elements=rows);
-    assert_hashes_equal(digest, proofs[0].digests);
+    assert digest = [ proofs[0].digests ];
 
     verify_merkle_proof( proofs[0].length, proofs[0].digests, positions[0], trace_roots );
     verify_aux_merkle_proofs_1(&proofs[1], positions + 1, trace_roots, loop_counter - 1, rows + n_cols, n_cols);
@@ -181,14 +178,14 @@ func verify_aux_merkle_proofs_1{
 
 // AUX TRACE (Range check)
 func verify_aux_merkle_proofs_2{
-    range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*
-}(proofs: QueriesProof*, positions: felt*, trace_roots: felt*, loop_counter, rows: felt*, n_cols: felt){
+    range_check_ptr, pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*
+}(proofs: QueriesProof*, positions: felt*, trace_roots: felt, loop_counter, rows: felt*, n_cols: felt){
     if(loop_counter == 0){
         return ();
     }
     // Hash the row of the table at the current index and compare it to the leaf of the path
     let digest = hash_elements(n_elements=6, elements=rows + 12);
-    assert_hashes_equal(digest, proofs[0].digests);
+    assert digest = [ proofs[0].digests ];
 
     verify_merkle_proof( proofs[0].length, proofs[0].digests, positions[0], trace_roots );
     verify_aux_merkle_proofs_2(&proofs[1], positions + 1, trace_roots, loop_counter - 1, rows + n_cols, n_cols);
@@ -196,7 +193,7 @@ func verify_aux_merkle_proofs_2{
 }
 
 func read_queried_trace_states{
-    range_check_ptr, blake2s_ptr: felt*, channel: Channel, bitwise_ptr: BitwiseBuiltin*
+    range_check_ptr, pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*, channel: Channel
     }(positions: felt*) -> (
     main_states: Table, aux_states: Table
 ) {
@@ -217,7 +214,7 @@ func read_queried_trace_states{
     verify_merkle_proofs(
         trace_queries_proof_ptr[0].proofs,
         positions,
-        channel.trace_roots,
+        channel.trace_roots[0],
         num_queries,
         main_states.elements,
         main_states.n_cols
@@ -225,7 +222,7 @@ func read_queried_trace_states{
     verify_aux_merkle_proofs_1(
         trace_queries_proof_ptr[1].proofs,
         positions,
-        channel.trace_roots + HASH_FELT_SIZE,
+        channel.trace_roots[1],
         num_queries,
         aux_states.elements,
         aux_states.n_cols
@@ -233,7 +230,7 @@ func read_queried_trace_states{
     verify_aux_merkle_proofs_2(
         trace_queries_proof_ptr[2].proofs,
         positions,
-        channel.trace_roots + HASH_FELT_SIZE * 2,
+        channel.trace_roots[2],
         num_queries,
         aux_states.elements,
         aux_states.n_cols
@@ -243,9 +240,8 @@ func read_queried_trace_states{
 }
 
 
-
 func read_constraint_evaluations{
-    range_check_ptr, blake2s_ptr: felt*, channel: Channel, bitwise_ptr: BitwiseBuiltin*
+    range_check_ptr, pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*, channel: Channel
     }(positions: felt*) -> Table {
 
     alloc_locals;
@@ -272,9 +268,8 @@ func read_constraint_evaluations{
 }
 
 
-
 func read_remainder{
-    range_check_ptr, channel: Channel, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*
+    range_check_ptr, channel: Channel, pedersen_ptr: HashBuiltin*
     }() -> Vec {
     alloc_locals;
     let remainder = channel.remainder.elements;
@@ -288,8 +283,7 @@ func read_remainder{
     let root = compute_merkle_root(hashed_values, loop_counter);
 
     // Compare the root to the last fri_root
-    let expected_root = channel.fri_roots + (channel.fri_roots_len-1) * HASH_FELT_SIZE;
-    assert_hashes_equal(root, expected_root);
+    assert root = channel.fri_roots[channel.fri_roots_len-1];
 
     return channel.remainder;
 }
@@ -315,28 +309,28 @@ func transpose_slice(source: felt*, destination: felt**, loop_counter, destinati
 }
 
 func hash_values{
-    range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*
+    range_check_ptr, pedersen_ptr: HashBuiltin*
     }(values: felt**, hashes: felt*, loop_counter){
     if(loop_counter == 0){
         return ();
     }
     alloc_locals;
     let digest = hash_elements(n_elements=FOLDING_FACTOR, elements=[values]);
-    memcpy(hashes, digest, HASH_FELT_SIZE);
-    return hash_values(values + 1, hashes + HASH_FELT_SIZE, loop_counter - 1);
+    assert [hashes] = digest;
+    return hash_values(values + 1, hashes + 1, loop_counter - 1);
 }
 
 
 // Compute the Merkle root hash of a set of hashes
 func compute_merkle_root{
-    range_check_ptr, bitwise_ptr: BitwiseBuiltin*, blake2s_ptr: felt*}(
+    range_check_ptr, pedersen_ptr: HashBuiltin*}(
     leaves: felt*, leaves_len: felt
-) -> felt* {
+) -> felt {
     alloc_locals;
 
     // The trivial case is a tree with a single leaf
     if (leaves_len == 1) {
-        return leaves;
+        return [leaves];
     }
 
     // Compute the next generation of leaves one level higher up in the tree
@@ -350,7 +344,7 @@ func compute_merkle_root{
 
 // Compute the next generation of leaves by pairwise hashing
 // the previous generation of leaves
-func _compute_merkle_root_loop{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, blake2s_ptr: felt*}(
+func _compute_merkle_root_loop{range_check_ptr, pedersen_ptr: HashBuiltin*}(
     prev_leaves: felt*, next_leaves: felt*, loop_counter
 ) {
     alloc_locals;
@@ -361,11 +355,9 @@ func _compute_merkle_root_loop{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, bl
     }
 
     // Hash two prev_leaves to get one leaf of the next generation
-    let (digest) = blake2s_as_words(data=prev_leaves, n_bytes=HASH_FELT_SIZE * 2 * UINT32_SIZE);
-    copy_hash(digest, next_leaves);
+    let digest = hash_elements(n_elements=2, elements=prev_leaves);
+    assert [next_leaves] = digest;
 
     // Continue this loop with the next two prev_leaves
-    return _compute_merkle_root_loop(
-        prev_leaves + HASH_FELT_SIZE * 2, next_leaves + HASH_FELT_SIZE, loop_counter - 1
-    );
+    return _compute_merkle_root_loop(prev_leaves + 2, next_leaves + 1, loop_counter - 1);
 }

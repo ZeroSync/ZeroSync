@@ -15,7 +15,6 @@ from starkware.cairo.common.cairo_secp.signature import (
 )
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 
-from crypto.hash_utils import copy_hash, HASH_FELT_SIZE
 from utils.serialize import Reader, init_reader, read_uint8, read_bytes_endian, peek_uint8, peek_uint16, read_uint256_endian
 
 // Verifies a Secp256k1 ECDSA signature.

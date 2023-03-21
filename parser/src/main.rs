@@ -1,7 +1,7 @@
 use giza_core::Felt;
 use serde_json::from_str;
 use hex::FromHex;
-use winter_crypto::hashers::Blake2s_256;
+use winter_crypto::hashers::Pedersen_256;
 use winter_utils::{Deserializable, SliceReader};
 use winterfell::VerifierChannel;
 use zerosync_parser::{
@@ -56,7 +56,7 @@ fn main() {
         
             let channel = VerifierChannel::<
                 Felt,
-                Blake2s_256<Felt>,
+                Pedersen_256<Felt>,
                 MainEvaluationFrame<Felt>,
                 AuxEvaluationFrame<Felt>,
             >::new(&air, proof.clone()).unwrap();
@@ -72,7 +72,7 @@ fn main() {
         
             let channel = VerifierChannel::<
                 Felt,
-                Blake2s_256<Felt>,
+                Pedersen_256<Felt>,
                 MainEvaluationFrame<Felt>,
                 AuxEvaluationFrame<Felt>,
             >::new(&air, proof.clone()).unwrap();

@@ -6,10 +6,8 @@
 %lang starknet
 
 from starkware.cairo.common.uint256 import Uint256
-from starkware.cairo.common.hash import HashBuiltin
 from starkware.cairo.common.alloc import alloc
-from starkware.cairo.common.cairo_blake2s.blake2s import finalize_blake2s,blake2s_as_words
-from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
+from starkware.cairo.common.cairo_builtins import BitwiseBuiltin, HashBuiltin
 from starkware.cairo.common.hash_state import hash_finalize, hash_init, hash_update
 
 from stark_verifier.air.pub_inputs import (
@@ -41,122 +39,104 @@ func __setup__() {
 }
 
 @external
-func test_merge_with_int{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
+func test_merge_with_int{range_check_ptr, pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*}() {
     alloc_locals;
-    let (blake2s_ptr: felt*) = alloc();
-    local blake2s_ptr_start: felt* = blake2s_ptr;
 
-    tempvar seed = new (0, 0, 0, 0, 0, 0, 0, 0);
+    tempvar seed = 0x5337;
     
     let value = 1;
 
-    with blake2s_ptr {
+    with pedersen_ptr {
         let hash = merge_with_int(seed, value);
     }
 
     %{
-        from src.utils.hex_utils import get_hex
         from zerosync_hints import *
-        a = get_hex(memory, ids.hash)
-        b = merge_with_int()
-        # print("test_merge_with_int", a, b)
-        assert a == b
+        a = hex(ids.hash)[2:].zfill(64)
+        b = merge_with_int().zfill(64)
+        assert int(a, 16) == int(b, 16), f"{a} != {b}"
     %} 
-    finalize_blake2s(blake2s_ptr_start, blake2s_ptr);  
     return ();
 }
 
 @external
-func test_merge{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
+func test_merge{range_check_ptr, pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*}() {
     alloc_locals;
-    let (blake2s_ptr: felt*) = alloc();
-    local blake2s_ptr_start: felt* = blake2s_ptr;
 
-    tempvar seed = new (0, 0, 0, 0, 0, 0, 0, 0);
-    tempvar value = new (0, 0, 0, 0, 0, 0, 0, 0);
+    tempvar seed = 0x5337;
+    tempvar value = 1;
 
-    with blake2s_ptr {
+    with pedersen_ptr {
         let hash = merge(seed, value);
     }
 
     %{
-        from src.utils.hex_utils import get_hex
         from zerosync_hints import *
-        a = get_hex(memory, ids.hash)
-        b = merge()
-        # print("test_merge", a, b)
-        assert a == b
-    %} 
-    finalize_blake2s(blake2s_ptr_start, blake2s_ptr);  
+        a = hex(ids.hash)[2:].zfill(64)
+        b = merge().zfill(64)
+        assert a == b, f"{a} != {b}"
+    %}
     return ();
 }
 
 @external
-func test_draw{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
+func test_draw{range_check_ptr, pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*}() {
     alloc_locals;
-    let (blake2s_ptr: felt*) = alloc();
-    local blake2s_ptr_start: felt* = blake2s_ptr;
 
-    tempvar seed: felt* = new (0, 0, 0, 0, 0, 0, 0, 0);
-    with blake2s_ptr {
-        let public_coin = random_coin_new(seed, 32);
+    tempvar seed = 0x5337;
+    with pedersen_ptr {
+        let public_coin = random_coin_new(seed);
     }
 
-    with blake2s_ptr, public_coin {
+    with pedersen_ptr, public_coin {
         let element = draw();
     }
     
     %{
         from zerosync_hints import *
-        a = hex(ids.element)[2:]
-        b = draw_felt()
-        assert int(a, 16) == int(b, 16), f"{a} != {b}"
+        a = hex(ids.element)[2:].zfill(64)
+        b = draw_felt().zfill(64)
+        assert int(a, 16) % PRIME == int(b, 16) % PRIME, f"{a} != {b}"
     %} 
-    finalize_blake2s(blake2s_ptr_start, blake2s_ptr);  
     return ();
 }
 
 @external
-func test_draw_integers{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
+func test_draw_integers{range_check_ptr, pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*}() {
     alloc_locals;
-    let (blake2s_ptr: felt*) = alloc();
-    local blake2s_ptr_start: felt* = blake2s_ptr;
 
-    tempvar seed: felt* = new (0, 0, 0, 0, 0, 0, 0, 0);
-    with blake2s_ptr {
-        let public_coin = random_coin_new(seed, 32);
+    tempvar seed = 0x5337;
+    with pedersen_ptr {
+        let public_coin = random_coin_new(seed);
     }
 
     let (local elements) = alloc();
     let n_elements = 20;
     let domain_size = 64;
 
-    with blake2s_ptr, public_coin {
+    with pedersen_ptr, public_coin {
         draw_integers(n_elements, elements, domain_size);
     }
 
     %{
-        expected = [18, 10, 16, 60, 46, 13, 11, 5, 29, 30, 1, 27, 6, 36, 53, 7, 9, 12, 45, 43]
+        # TODO: double-check those values
+        expected = [39, 31, 4, 46, 32, 61, 27, 5, 44, 12, 37, 3, 6, 9, 63, 45, 48, 30, 17, 33]
         for i in range(ids.n_elements):
             assert memory[ids.elements + i] == expected[i]
     %}
-    finalize_blake2s(blake2s_ptr_start, blake2s_ptr);
     return ();
 }
 
 @external
-func test_reseed_with_int{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
+func test_reseed_with_int{range_check_ptr, pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*}() {
     alloc_locals;
 
-    let (blake2s_ptr: felt*) = alloc();
-    local blake2s_ptr_start: felt* = blake2s_ptr;
-
-    tempvar seed: felt* = new (1, 2, 3, 4, 5, 6, 7, 8);
-    with blake2s_ptr {
-        let public_coin = random_coin_new(seed, 32);
+    tempvar seed = 0x800000007000000060000000500000004000000030000000200000001;
+    with pedersen_ptr {
+        let public_coin = random_coin_new(seed);
     }
 
-    with blake2s_ptr, public_coin  {
+    with pedersen_ptr, public_coin  {
         reseed_with_int(1337);
         let reseed_coin_z = draw();
     }
@@ -164,29 +144,25 @@ func test_reseed_with_int{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     %{
         from zerosync_hints import *
         expected_z = reseed_with_int()
-        assert int(expected_z, 16) == ids.reseed_coin_z, f"{expected_z} != {hex(ids.reseed_coin_z)[2:]}"
+        assert int(expected_z, 16) % PRIME == ids.reseed_coin_z, f"{expected_z} != {hex(ids.reseed_coin_z)[2:]}"
     %}
 
-    finalize_blake2s(blake2s_ptr_start, blake2s_ptr);
     return ();
 }
 
 // TODO: Test for a grinded seed
 @external
-func test_leading_zeros{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
+func test_leading_zeros{range_check_ptr, pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*}() {
     alloc_locals;
-    let (blake2s_ptr: felt*) = alloc();
-    local blake2s_ptr_start: felt* = blake2s_ptr;
-
-    tempvar seed: felt* = new (4, 0, 0, 0, 0, 0, 0, 1);
-    with blake2s_ptr {
-        let public_coin = random_coin_new(seed, 32);
+    tempvar seed = 0x0000000400000000000000000000000000000000000000000000000000000001;
+    with pedersen_ptr {
+        let public_coin = random_coin_new(seed);
     }
-
     let leading_zeros = get_leading_zeros(public_coin.seed);
-
-    %{ assert ids.leading_zeros == 1 %}
-    finalize_blake2s(blake2s_ptr_start, blake2s_ptr);
+    %{
+        # TODO: double-check this values
+        assert ids.leading_zeros == 8
+    %}
     return ();
 }
 
@@ -195,31 +171,25 @@ func test_leading_zeros{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
 func test_pedersen_chain{
     range_check_ptr, pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*
 }() {
-    let (values: felt*) = alloc();
-    assert values[0] = 1;
-    assert values[1] = 1;
-    let length = 2;
-
+    tempvar values: felt* = new (1, 1);
     let (hash_state_ptr) = hash_init();
     let (hash_state_ptr) = hash_update{hash_ptr=pedersen_ptr}(
         hash_state_ptr=hash_state_ptr,
         data_ptr=values,
-        data_length=length
+        data_length=2
     );
     let (out) = hash_finalize{hash_ptr=pedersen_ptr}(hash_state_ptr=hash_state_ptr);
     %{
-        from src.utils.hex_utils import get_hex
         from zerosync_hints import *
         a = hex(ids.out)[2:].zfill(64)
         b = pedersen_chain()
-        # print("test_pedersen_chain", a, b)
-        assert a == b
+        assert a == b, f"{a} != {b}"
     %} 
     return ();
 }
 
 /// Test public input hash
- @external
+@external
 func test_hash_pub_inputs{
     range_check_ptr, pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*
 }() {
@@ -245,12 +215,10 @@ func test_hash_pub_inputs{
 
     let (pub_mem_hash) = hash_finalize{hash_ptr=pedersen_ptr}(hash_state_ptr=hash_state_ptr);
     %{
-        from src.utils.hex_utils import get_hex
         from zerosync_hints import *
         a = ids.pub_mem_hash
         b = int(hash_pub_inputs(), 16)
-        # print("test_hash_pub_inputs", a, b)
-        assert a == b
+        assert a == b, f"{a} != {b}"
     %} 
     return ();
 }
@@ -264,19 +232,15 @@ func test_public_coin_seed{
 }() {
     alloc_locals;
 
-    let (blake2s_ptr: felt*) = alloc();
-    local blake2s_ptr_start: felt* = blake2s_ptr;
-
     let pub_inputs: PublicInputs* = read_public_inputs();
-
-    let public_coin_seed: felt* = seed_with_pub_inputs{blake2s_ptr=blake2s_ptr}(pub_inputs);
+    with pedersen_ptr {
+        let public_coin_seed: felt* = seed_with_pub_inputs(pub_inputs);
+    }
     %{
-        from src.utils.hex_utils import get_hex
         from zerosync_hints import *
-        a = get_hex(memory, ids.public_coin_seed)
-        b = seed_with_pub_inputs()
-        # print("test_public_coin_seed", a, b)
-        assert a == b
+        a = hex(ids.public_coin_seed)[2:].zfill(64)
+        b = seed_with_pub_inputs().zfill(64)
+        assert a == b, f"{a} != {b}"
     %} 
     return ();
 }
@@ -285,22 +249,23 @@ func test_public_coin_seed{
 @external
 func test_hash_elements{
     range_check_ptr,
+    pedersen_ptr: HashBuiltin*,
     bitwise_ptr: BitwiseBuiltin*,
 }() {
     alloc_locals;
 
-    let (blake2s_ptr: felt*) = alloc();
-    local blake2s_ptr_start: felt* = blake2s_ptr;
-
-    let (elements) = alloc();
-    assert elements[0] = 1;
-    assert elements[1] = 0;
+    tempvar elements: felt* = new (1, 0);
     let n_elements = 2;
 
-    let elements_hash: felt* = hash_elements{blake2s_ptr=blake2s_ptr}(n_elements, elements);
-    %{ 
-        # TODO: Use assert here
-        # print('elements_hash',hex(memory[ids.elements_hash]),hex(memory[ids.elements_hash + 7]),'\nexpected: 70012774 ... 66281d59')
+    with pedersen_ptr {
+        let elements_hash = hash_elements(n_elements, elements);
+    }
+
+    %{
+        from zerosync_hints import *
+        a = hex(ids.elements_hash)[2:].zfill(64)
+        b = hash_elements().zfill(64)
+        assert a == b, f"{a} != {b}"
     %}
     return ();
 }

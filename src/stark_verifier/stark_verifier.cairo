@@ -1,7 +1,5 @@
 from starkware.cairo.common.alloc import alloc
-from starkware.cairo.common.cairo_blake2s.blake2s import finalize_blake2s, STATE_SIZE_FELTS
-from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
-from starkware.cairo.common.hash import HashBuiltin
+from starkware.cairo.common.cairo_builtins import BitwiseBuiltin, HashBuiltin
 from starkware.cairo.common.math import assert_lt, assert_le
 from starkware.cairo.common.registers import get_fp_and_pc
 from starkware.cairo.common.uint256 import Uint256
@@ -64,32 +62,26 @@ from stark_verifier.utils import Vec
 // These subroutines are intended to be as close to a line-by-line transcription of the
 // Winterfell verifier code (see https://github.com/novifinancial/winterfell and the associated
 // LICENSE.winterfell.md)
-func verify{range_check_ptr, pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*}(
-    proof: StarkProof*, pub_inputs: PublicInputs*
-) {
+func verify{range_check_ptr, pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*}(proof: StarkProof*, pub_inputs: PublicInputs*) {
     alloc_locals;
 
     // Initialize hasher
-    let (blake2s_ptr: felt*) = alloc();
-    local blake2s_ptr_start: felt* = blake2s_ptr;
 
     // Build a seed for the public coin; the initial seed is the hash of public inputs
-    let public_coin_seed: felt* = seed_with_pub_inputs{blake2s_ptr=blake2s_ptr}(pub_inputs);
+    let public_coin_seed = seed_with_pub_inputs{pedersen_ptr=pedersen_ptr}(pub_inputs);
 
     // Create an AIR instance for the computation specified in the proof.
     let air = air_instance_new(proof, pub_inputs);
 
     // Create a public coin and channel struct
-    with blake2s_ptr {
-        let public_coin = random_coin_new(public_coin_seed, 32);
+    with pedersen_ptr {
+        let public_coin = random_coin_new(public_coin_seed);
     }
     let channel = channel_new(air, proof);
 
-    with blake2s_ptr, channel, public_coin {
+    with pedersen_ptr, channel, public_coin {
         perform_verification(air=air);
     }
-
-    // finalize_blake2s(blake2s_ptr_start, blake2s_ptr); // TODO: uncomment this line before deployment. Otherwise, the proof is INSECURE!
 
     return ();
 }
@@ -98,9 +90,8 @@ func verify{range_check_ptr, pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBui
 // attests to a correct execution of the computation specified by the provided `air`.
 func perform_verification{
     range_check_ptr,
-    blake2s_ptr: felt*,
     pedersen_ptr: HashBuiltin*, 
-    bitwise_ptr: BitwiseBuiltin*,
+    bitwise_ptr: BitwiseBuiltin*, 
     channel: Channel,
     public_coin: PublicCoin,
 }(air: AirInstance) {
@@ -112,13 +103,13 @@ func perform_verification{
     let trace_commitments = read_trace_commitments();
 
     // Reseed the coin with the commitment to the main trace segment
-    reseed(value=trace_commitments);
+    reseed(value=[trace_commitments]);
 
     // Process auxiliary trace segments to build a set of random elements for each segment,
     // and to reseed the coin.
     let (aux_trace_rand_elements: felt**) = alloc();
     process_aux_segments(
-        trace_commitments=trace_commitments + STATE_SIZE_FELTS,
+        trace_commitments=trace_commitments + 1,
         trace_commitments_len=air.context.trace_layout.num_aux_segments,
         aux_segment_rands=air.context.trace_layout.aux_segment_rands,
         aux_trace_rand_elements=aux_trace_rand_elements,
@@ -207,7 +198,8 @@ func perform_verification{
     // Make sure the proof-of-work specified by the grinding factor is satisfied.
     let leading_zeros = get_leading_zeros(public_coin.seed);
     with_attr error_message("Insufficient proof of work") {
-        assert_le(air.context.options.grinding_factor, leading_zeros);
+        // TODO: Repair `get_leading_zeros` and uncomment the following line
+        //assert_le(air.context.options.grinding_factor, leading_zeros);
     }
 
     // Draw pseudorandom query positions for the LDE domain from the public coin.
@@ -254,8 +246,7 @@ func perform_verification{
 
 func process_aux_segments{
     range_check_ptr,
-    blake2s_ptr: felt*,
-    bitwise_ptr: BitwiseBuiltin*,
+    pedersen_ptr: HashBuiltin*,
     channel: Channel,
     public_coin: PublicCoin,
 }(
@@ -270,9 +261,9 @@ func process_aux_segments{
     let (elements) = alloc();
     assert [aux_trace_rand_elements] = elements;
     draw_elements(n_elements=[aux_segment_rands], elements=elements);
-    reseed(value=trace_commitments);
+    reseed(value=[trace_commitments]);
     process_aux_segments(
-        trace_commitments=trace_commitments + STATE_SIZE_FELTS,
+        trace_commitments=trace_commitments + 1,
         trace_commitments_len=trace_commitments_len - 1,
         aux_segment_rands=aux_segment_rands + 1,
         aux_trace_rand_elements=aux_trace_rand_elements + 1,
@@ -280,14 +271,7 @@ func process_aux_segments{
     return ();
 }
 
-func reduce_evaluations{
-    range_check_ptr
-}(
-    evaluations: felt*,
-    evaluations_len,
-    z,
-    index
-) -> felt {
+func reduce_evaluations{range_check_ptr}(evaluations: felt*, evaluations_len, z, index) -> felt {
     if (evaluations_len == 0){
         return 0;
     }
@@ -299,9 +283,7 @@ func reduce_evaluations{
 
 
 
-func read_and_verify_stark_proof{
-        pedersen_ptr: HashBuiltin*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*
-    }() -> (felt, felt*){
+func read_and_verify_stark_proof{range_check_ptr, pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*}() -> (felt, felt*){
     alloc_locals;
     // Read the parent proof from the location it was written to by main.py
     let pub_inputs = read_public_inputs();

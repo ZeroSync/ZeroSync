@@ -7,7 +7,7 @@
 
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.memset import memset
-from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
+from starkware.cairo.common.cairo_builtins import BitwiseBuiltin, HashBuiltin
 
 from stark_verifier.air.air_instance import get_constraint_composition_coefficients, ConstraintCompositionCoefficients
 from stark_verifier.crypto.random import PublicCoin
@@ -29,12 +29,8 @@ func __setup__() {
 }
 
 @external
-func test_get_constraint_composition_coefficients{
-    range_check_ptr,
-    bitwise_ptr: BitwiseBuiltin*
-}() {
+func test_get_constraint_composition_coefficients{range_check_ptr, pedersen_ptr: HashBuiltin*}() {
     alloc_locals;
-    let (blake2s_ptr: felt*) = alloc();
 
     // Initialize arguments
     let (air_ptr: AirInstance*) = alloc();
@@ -48,24 +44,14 @@ func test_get_constraint_composition_coefficients{
         write_into_memory(ids.coin_ptr, data['constraint_coeffs_coin'], segments)
         write_into_memory(ids.coeffs_expected, data['constraint_coeffs'], segments)
     %}
-    
-    let (seed) = alloc();
-    assert seed[0] = byteswap32( [coin_ptr].seed[0] );
-    assert seed[1] = byteswap32( [coin_ptr].seed[1] );
-    assert seed[2] = byteswap32( [coin_ptr].seed[2] );
-    assert seed[3] = byteswap32( [coin_ptr].seed[3] );
-    assert seed[4] = byteswap32( [coin_ptr].seed[4] );
-    assert seed[5] = byteswap32( [coin_ptr].seed[5] );
-    assert seed[6] = byteswap32( [coin_ptr].seed[6] );
-    assert seed[7] = byteswap32( [coin_ptr].seed[7] );
 
     local public_coin: PublicCoin = PublicCoin(
-        seed = seed,
+        seed = [coin_ptr].seed,
         counter = [coin_ptr].counter
     );
     local air: AirInstance = [air_ptr];
 
-    with blake2s_ptr, public_coin {
+    with pedersen_ptr, public_coin {
         let coeffs = get_constraint_composition_coefficients(air);
     }
 
@@ -96,12 +82,8 @@ func test_get_constraint_composition_coefficients{
     return ();
 }
 
-
-
 @external
-func test_air_instance_new{
-    range_check_ptr
-}() {
+func test_air_instance_new{range_check_ptr}() {
     alloc_locals;
 
     // Initialize arguments
@@ -116,7 +98,6 @@ func test_air_instance_new{
     %}
 
     let proof: StarkProof* = read_stark_proof();
-
     
     let pub_inputs: PublicInputs* = read_public_inputs();
     

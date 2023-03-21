@@ -1,16 +1,8 @@
 from starkware.cairo.common.alloc import alloc
-from starkware.cairo.common.cairo_blake2s.blake2s import (
-    blake2s_add_felt,
-    blake2s_bigend,
-    blake2s_felts,
-    blake2s_add_felts,
-    blake2s,
-    blake2s_as_words,
-)
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.hash import HashBuiltin
 from starkware.cairo.common.hash_state import hash_finalize, hash_init, hash_update
-from starkware.cairo.common.math import assert_nn_le, assert_le
+from starkware.cairo.common.math import assert_nn_le, assert_le, split_felt
 from starkware.cairo.common.math_cmp import is_le
 from starkware.cairo.common.bool import TRUE, FALSE
 from starkware.cairo.common.memcpy import memcpy
@@ -24,13 +16,21 @@ from stark_verifier.air.transitions.frame import EvaluationFrame
 
 // Pseudo-random element generator for finite fields.
 struct PublicCoin {
-    seed: felt*,
+    seed: felt,
     counter: felt,
 }
 
 // Returns a new random coin instantiated with the provided `seed`.
-func random_coin_new{range_check_ptr, blake2s_ptr: felt*}(seed: felt*, n_bytes: felt) -> PublicCoin {
-    let (digest) = blake2s_as_words(data=seed, n_bytes=n_bytes);
+func random_coin_new{range_check_ptr, pedersen_ptr: HashBuiltin*}(seed: felt) -> PublicCoin {
+    alloc_locals;
+    tempvar data: felt* = new (seed);
+    let (hash_state_ptr) = hash_init();
+    let (hash_state_ptr) = hash_update{hash_ptr=pedersen_ptr}(
+        hash_state_ptr=hash_state_ptr,
+        data_ptr=data,
+        data_length=1
+    );
+    let (digest) = hash_finalize{hash_ptr=pedersen_ptr}(hash_state_ptr=hash_state_ptr);
     let public_coin = PublicCoin(seed=digest, counter=0);
     return public_coin;
 }
@@ -38,67 +38,56 @@ func random_coin_new{range_check_ptr, blake2s_ptr: felt*}(seed: felt*, n_bytes: 
 
 // Returns a hash of two digests. This method is intended for use in construction of
 // Merkle trees. Preserves the endianness of value
-func merge{range_check_ptr, blake2s_ptr: felt*}(
-    seed: felt*, value: felt*
-) -> felt* {
+func merge{range_check_ptr, pedersen_ptr: HashBuiltin*}(
+    seed: felt, value: felt
+) -> felt {
     alloc_locals;
-    let (data: felt*) = alloc();
-
-    memcpy(data, seed, 8);
-    memcpy(data+8, value, 8);
-   
-    let (digest) = blake2s_as_words(data=data, n_bytes=64);
-
+    tempvar data: felt* = new (seed, value);
+    let (hash_state_ptr) = hash_init();
+    let (hash_state_ptr) = hash_update{hash_ptr=pedersen_ptr}(
+        hash_state_ptr=hash_state_ptr,
+        data_ptr=data,
+        data_length=2
+    );
+    let (digest) = hash_finalize{hash_ptr=pedersen_ptr}(hash_state_ptr=hash_state_ptr);
     return digest;
 }
 
 
 // Returns hash(`seed` || `value`). This method is intended for use in PRNG and PoW contexts.
 // This function does not ensure that value fits within a u64 integer.
-func merge_with_int{range_check_ptr, blake2s_ptr: felt*}(
-    seed: felt*, value: felt
-) -> felt* {
+func merge_with_int{range_check_ptr, pedersen_ptr: HashBuiltin*}(
+    seed: felt, value: felt
+) -> felt {
     alloc_locals;
-    let (data: felt*) = alloc();
-    let data_start = data;
-
-    memcpy(data, seed, 8);
-    let data = data + 8;
-
-    // Write high and low into data in little endian order
-    let low = data[0];
-    let high = data[1];
-    // Convert value : u64 -> (high: u32, low:u32)
-    %{
-        ids.low = ids.value & 0xFFFFFFFF
-        ids.high = ids.value - ids.low >> 32
-    %}
-    assert_nn_le(low, 0xFFFFFFFF);
-    assert_nn_le(high, 0xFFFFFFFF);
-    assert high * 2**32 + low = value;
-
-    // Compute the blake2s hash
-    let (digest) = blake2s_as_words(data=data_start, n_bytes=40);
+    tempvar data: felt* = new (seed, value);
+    let (hash_state_ptr) = hash_init();
+    let (hash_state_ptr) = hash_update{hash_ptr=pedersen_ptr}(
+        hash_state_ptr=hash_state_ptr,
+        data_ptr=data,
+        data_length=2
+    );
+    let (digest) = hash_finalize{hash_ptr=pedersen_ptr}(hash_state_ptr=hash_state_ptr);
     return digest;
 }
 
-func hash_elements{range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*}(
+func hash_elements{range_check_ptr, pedersen_ptr: HashBuiltin*}(
     n_elements: felt, elements: felt*
-) -> felt* {
-    alloc_locals;
-    let (data) = alloc();
-    let data_start = data;
-    with data {
-        blake2s_add_felts(n_elements=n_elements, elements=elements, bigend=0);
-    }
-    let (res) = blake2s_as_words(data=data_start, n_bytes = n_elements * 32);
+) -> felt {
+    let (hash_state_ptr) = hash_init();
+    let (hash_state_ptr) = hash_update{hash_ptr=pedersen_ptr}(
+        hash_state_ptr=hash_state_ptr,
+        data_ptr=elements,
+        data_length=n_elements
+    );
+    let (res) = hash_finalize{hash_ptr=pedersen_ptr}(hash_state_ptr=hash_state_ptr);
     return res;
 }
 
 
 // Reseeds the coin with the specified data by setting the new seed to hash(`seed` || `value`).
 // where value is a U256 integer representing a hash digest.
-func reseed{range_check_ptr, blake2s_ptr: felt*, public_coin: PublicCoin}(value: felt*) {
+func reseed{range_check_ptr, pedersen_ptr: HashBuiltin*, public_coin: PublicCoin}(value: felt) {
     let digest = merge(seed=public_coin.seed, value=value);
     let public_coin = PublicCoin(seed=digest, counter=0);
     return ();
@@ -108,7 +97,7 @@ func reseed{range_check_ptr, blake2s_ptr: felt*, public_coin: PublicCoin}(value:
 // Reseeds the coin with the specified value by setting the new seed to hash(`seed` || `value`)
 // where value is a u64 integer.
 // This function ensures that value fits within a u64 integer.
-func reseed_with_int{range_check_ptr, blake2s_ptr: felt*, public_coin: PublicCoin}(value: felt) {
+func reseed_with_int{range_check_ptr, pedersen_ptr: HashBuiltin*, public_coin: PublicCoin}(value: felt) {
     with_attr error_message("Value (${value}) is negative or greater than (2 ** 64 - 1).") {
         assert_nn_le(value, 2 ** 64 - 1);
     }
@@ -118,10 +107,9 @@ func reseed_with_int{range_check_ptr, blake2s_ptr: felt*, public_coin: PublicCoi
 }
 
 func reseed_with_ood_frames{
-    range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*, public_coin: PublicCoin
+    range_check_ptr, pedersen_ptr: HashBuiltin*, public_coin: PublicCoin
 }(ood_main_trace_frame: EvaluationFrame, ood_aux_trace_frame: EvaluationFrame) {
     alloc_locals;
-
 
     let (elements) = alloc();
     let elements_start = elements;
@@ -132,7 +120,6 @@ func reseed_with_ood_frames{
     let n_elements = elements - elements_start;
     let elements_hash = hash_elements(n_elements, elements_start);
     reseed(elements_hash);
-
 
     let (elements) = alloc();
     let elements_start = elements;
@@ -147,38 +134,51 @@ func reseed_with_ood_frames{
     return ();
 }
 
+func byteswap128{bitwise_ptr: BitwiseBuiltin*}(uint128) -> felt {
+    assert bitwise_ptr[0].x = uint128;
+    assert bitwise_ptr[0].y = 0xFF00FF00FF00FF00FF00FF00FF00FF00;
+    assert bitwise_ptr[1].x = bitwise_ptr[0].x_and_y / 2 ** 8 + (bitwise_ptr[0].x - bitwise_ptr[0].x_and_y) * 2 ** 8;
+    assert bitwise_ptr[1].y = 0xFFFF0000FFFF0000FFFF0000FFFF0000;
+    assert bitwise_ptr[2].x = bitwise_ptr[1].x_and_y / 2 ** 16 + (bitwise_ptr[1].x - bitwise_ptr[1].x_and_y) * 2 ** 16;
+    assert bitwise_ptr[2].y = 0xFFFFFFFF00000000FFFFFFFF00000000;
+    assert bitwise_ptr[3].x = bitwise_ptr[2].x_and_y / 2 ** 32 + (bitwise_ptr[2].x - bitwise_ptr[2].x_and_y) * 2 ** 32;
+    assert bitwise_ptr[3].y = 0xFFFFFFFFFFFFFFFF0000000000000000;
+    let uint128_endian = bitwise_ptr[3].x_and_y  / 2 ** 64 + (bitwise_ptr[3].x - bitwise_ptr[3].x_and_y) * 2 ** 64;
+    let bitwise_ptr = bitwise_ptr + BitwiseBuiltin.SIZE * 4;
+    return uint128;
+}
+
 // Returns the next pseudo-random field element
 func draw{
-    range_check_ptr, blake2s_ptr: felt*, public_coin: PublicCoin
+    range_check_ptr, pedersen_ptr: HashBuiltin*, public_coin: PublicCoin
 }() -> felt {
     alloc_locals;
     let value = public_coin.counter + 1;
     let digest = merge_with_int(public_coin.seed, value);
     let public_coin = PublicCoin(public_coin.seed, value);
-    
-    let low = digest[0] + digest[1] * 2 ** 32 + digest[2] * 2 ** 64 + digest[3] * 2 ** 96;
-    let high = digest[4] + digest[5] * 2 ** 32 + digest[6] * 2 ** 64 + digest[7] * 2 ** 96;
-
-    return high * 2**128 + low;
+    return digest;
 }
 
-
 func draw_pair{
-    range_check_ptr, blake2s_ptr: felt*, public_coin: PublicCoin
+    range_check_ptr, pedersen_ptr: HashBuiltin*, public_coin: PublicCoin
 }() -> (res1: felt, res2: felt) {
     alloc_locals;
-    let res1 = draw();
-    let res2 = draw();
+    with pedersen_ptr, public_coin {
+        let res1 = draw();
+        let res2 = draw();
+    }
     return (res1=res1, res2=res2);
 }
 
 func draw_elements{
-    range_check_ptr, blake2s_ptr: felt*, public_coin: PublicCoin
+    range_check_ptr, pedersen_ptr: HashBuiltin*, public_coin: PublicCoin
 }(n_elements: felt, elements: felt*) {
     if (n_elements == 0) {
         return ();
     }
-    let res = draw();
+    with pedersen_ptr, public_coin {
+        let res = draw();
+    }
     assert [elements] = res;
     draw_elements(n_elements=n_elements - 1, elements=&elements[1]);
     return ();
@@ -198,8 +198,8 @@ func contains(element: felt, array: felt*, array_len: felt) -> felt {
 
 // Returns the next pseudo-random field element
 func draw_digest{
-    range_check_ptr, blake2s_ptr: felt*, public_coin: PublicCoin
-}() -> felt* {
+    range_check_ptr, pedersen_ptr: HashBuiltin*, public_coin: PublicCoin
+}() -> felt {
     alloc_locals;
     tempvar public_coin = PublicCoin(public_coin.seed, public_coin.counter + 1);
     let digest = merge_with_int(seed=public_coin.seed, value=public_coin.counter);
@@ -208,7 +208,7 @@ func draw_digest{
 
 
 func _draw_integers_loop{
-    range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*, public_coin: PublicCoin
+    range_check_ptr, pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*, public_coin: PublicCoin
 }(n_elements: felt, elements: felt*, domain_size: felt, index: felt) {
     alloc_locals;
     if (n_elements == index) {
@@ -223,7 +223,7 @@ func _draw_integers_loop{
 
     // convert to integer and limit the integer to the number of bits which can fit
     // into the specified domain
-    assert [bitwise_ptr].x = element[0] + element[1] * 2**32;
+    assert [bitwise_ptr].x = element;
     assert [bitwise_ptr].y = v_mask;
     let value = [bitwise_ptr].x_and_y;
     let bitwise_ptr = bitwise_ptr + BitwiseBuiltin.SIZE;
@@ -246,14 +246,14 @@ func _draw_integers_loop{
 // /
 // /See also: https://github.com/ZeroSync/winterfell/blob/main/crypto/src/random/mod.rs#L252
 func draw_integers{
-    range_check_ptr, blake2s_ptr: felt*, bitwise_ptr: BitwiseBuiltin*, public_coin: PublicCoin
+    range_check_ptr, pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*, public_coin: PublicCoin
 }(n_elements: felt, elements: felt*, domain_size: felt) {
     return _draw_integers_loop(n_elements, elements, domain_size, 0);
 }
 
 func seed_with_pub_inputs{
-    range_check_ptr, blake2s_ptr: felt*, pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*
-}(pub_inputs: PublicInputs*) -> felt* {
+    range_check_ptr, pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*
+}(pub_inputs: PublicInputs*) -> felt {
     alloc_locals;
 
     let (mem_values: felt*) = alloc();
@@ -268,64 +268,50 @@ func seed_with_pub_inputs{
     );
     let (pub_mem_hash) = hash_finalize{hash_ptr=pedersen_ptr}(hash_state_ptr=hash_state_ptr);
 
-    let (data: felt*) = alloc();
-    let data_start = data;
-    with data {
-        blake2s_add_felt(num=pub_inputs.init._pc, bigend=0);
-        blake2s_add_felt(num=pub_inputs.init._ap, bigend=0);
-        blake2s_add_felt(num=pub_inputs.init._fp, bigend=0);
-
-        blake2s_add_felt(num=pub_inputs.fin._pc, bigend=0);
-        blake2s_add_felt(num=pub_inputs.fin._ap, bigend=0);
-        blake2s_add_felt(num=pub_inputs.fin._fp, bigend=0);
-
-        blake2s_add_felt(num=pub_inputs.rc_min, bigend=0);
-        blake2s_add_felt(num=pub_inputs.rc_max, bigend=0);
-
-        blake2s_add_felt(num=mem_length, bigend=0);
-        blake2s_add_felt(num=pub_mem_hash, bigend=0);
-
-        blake2s_add_felt(num=pub_inputs.num_steps, bigend=0);
-    }
-
-    let n_bytes = (data - data_start) * 4;
-    let (res) = blake2s_as_words(data=data_start, n_bytes=n_bytes);
+    let (hash_state_ptr) = hash_init();
+    let (hash_state_ptr) = hash_update{hash_ptr=pedersen_ptr}(
+        hash_state_ptr=hash_state_ptr,
+        data_ptr = new (
+            pub_inputs.init._pc,
+            pub_inputs.init._ap,
+            pub_inputs.init._fp,
+            pub_inputs.fin._pc,
+            pub_inputs.fin._ap,
+            pub_inputs.fin._fp,
+            pub_inputs.rc_min,
+            pub_inputs.rc_max,
+            mem_length,
+            pub_mem_hash,
+            pub_inputs.num_steps
+        ),
+        data_length = 11
+    );
+    let (res) = hash_finalize{hash_ptr=pedersen_ptr}(hash_state_ptr=hash_state_ptr);
     return res;
 }
 
-func get_leading_zeros{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(seed: felt*) -> felt {
+func get_leading_zeros{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(seed: felt) -> felt {
     alloc_locals;
-
-    let seed3 = byteswap32(seed[3]);
-    let seed2 = byteswap32(seed[2]);
-    let seed1 = byteswap32(seed[1]);
-    let seed0 = byteswap32(seed[0]);
-    let high = seed3 + seed2 * 2 ** 32 + seed1 * 2 ** 64 + seed0 * 2 ** 96;
 
     local lzcnt;
     %{
         # Count high bits in use
-        n_bits = len( bin(ids.high).replace('0b', '') )
-        assert 0 <= n_bits <= 128, "expected 128 bits"
+        n_bits = len( bin(ids.seed).replace('0b', '') )
+        assert 0 <= n_bits <= 256, "expected 256 bits"
 
         # Store leading zeros count
-        ids.lzcnt = 128 - n_bits
+        ids.lzcnt = 256 - n_bits
     %}
 
-    // Verify leading zeros count
-    let ceil_pow2 = pow2(128 - lzcnt);
+    // // Verify leading zeros count
+    // let ceil_pow2 = pow2(256 - lzcnt);
 
-    // 2**(log2-1) < seed.high <= 2**log2
-    with_attr error_message(
-            "Error in 2**(log2-1) < seed.high <= 2**log2 verification.") {
-        assert_le(high, ceil_pow2 - 1);
-        assert_le(ceil_pow2 / 2, high);
-    }
-    // Ensure that less or equal 64 leading zeros
-    let is_lzcnt_le_64 = is_le(lzcnt, 64);
-    if (is_lzcnt_le_64 == TRUE) {
-        return lzcnt;
-    } else {
-        return 64;
-    }
+    // // 2**(log2-1) < seed <= 2**log2
+    // with_attr error_message(
+    //         "Error in 2**(log2-1) < seed <= 2**log2 verification.") {
+    //     assert_le(seed, ceil_pow2 - 1);
+    //     assert_le(ceil_pow2 / 2, seed);
+    // }
+
+    return lzcnt;
 }
