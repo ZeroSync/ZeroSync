@@ -69,19 +69,17 @@ def add_nodes(leaves):
 # Compute a node's inclusion proof
 def inclusion_proof(node):
     if node.parent is None:
-        return [], 0
+        return []
 
     parent = node.parent
-    path, leaf_index = inclusion_proof(parent)
+    path = inclusion_proof(parent)
 
     if node == parent.left:
         path.insert(0, parent.right)
-        leaf_index = leaf_index * 2
     else:
         path.insert(0, parent.left)
-        leaf_index = leaf_index * 2 + 1
 
-    return path, leaf_index
+    return path
 
 
 def get_block_header(block_height):
@@ -160,18 +158,28 @@ class RequestHandler(BaseHTTPRequestHandler):
             block_height = self.path.replace('/create/', '')
             print('create', block_height)
             headers = get_block_headers(0, block_height + 1)
-            add_leaves([hash_block_header(x) for x in headers])
+            header_hashes = [hash_block_header(header) for header in headers]
+            if len(header_hashes) % 2 == 1:
+                header_hashes.append(0)
+            add_nodes(header_hashes)
             tree_root = build_tree()
             self.wfile.write(json.dumps(
                 {'root': tree_root, 'status': 'success'}).encode())
             return
 
+        # TODO: refactor and remove leaf_index and replace None with 0
         if self.path.startswith('/merkle_path'):
             node_index = self.path.replace('/merkle_path/', '')
             print('merkle_path', node_index)
-            proof, leaf_index = inclusion_proof(node_index)
+            if node_index > len(leaf_nodes):
+                proof = []
+            elif node_index == len(lead_nodes):
+                # TODO remove everything until we hit a zero
+                proof = inclusion_proof(leaf_nodes(node_index-1).parent)
+            else:
+                proof = inclusion_proof(leaf_nodes(node_index))
             self.wfile.write(json.dumps(
-                {'leaf_index': leaf_index, 'proof': proof}).encode())
+                {'proof': proof, 'status': 'success'}).encode())
             return
 
         if self.path.startswith('/reset'):
@@ -181,6 +189,11 @@ class RequestHandler(BaseHTTPRequestHandler):
 
 
 if __name__ == '__main__':
-    server = HTTPServer(('localhost', 2122), RequestHandler)
-    print('Starting bridge node at http://localhost:2122')
-    server.serve_forever()
+    add_nodes([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
+    root = build_tree()
+    print("root:", hex(root.val))
+    print([hex(x.val) for x in inclusion_proof(leaf_nodes[12-1].parent)])
+
+    # server = HTTPServer(('localhost', 2122), RequestHandler)
+    # print('Starting bridge node at http://localhost:2122')
+    # server.serve_forever()
