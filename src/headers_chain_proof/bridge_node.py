@@ -17,6 +17,9 @@ from starkware.cairo.lang.vm.crypto import pedersen_hash
 # The set of leaf nodes in the tree
 leaf_nodes = []
 
+lowest_null_node = None
+root = 0
+
 
 class Node:
     def __init__(self, key, left=None, right=None):
@@ -37,19 +40,26 @@ def parent_node(node1, node2):
 
 def build_tree():
     nodes = []
+    global lowest_null_node
+    lowest_null_node = None
     for leaf_node in leaf_nodes:
         nodes.append(leaf_node)
 
     while (len(nodes) > 1):
         next_nodes = []
         if len(nodes) % 2 != 0:
-            nodes.append(Node(0))
+            null_node = Node(0)
+            nodes.append(null_node)
+            if lowest_null_node == None:
+                lowest_null_node = null_node
         for i in range(0, len(nodes), 2):
             node1 = nodes[i]
             node2 = nodes[i + 1]
             next_nodes.append(parent_node(node1, node2))
         nodes = next_nodes
-    return nodes[0]
+    if len(nodes) > 0:
+        return nodes[0].val
+    return 0
 
 
 # Add an element to the accumulator
@@ -75,9 +85,9 @@ def inclusion_proof(node):
     path = inclusion_proof(parent)
 
     if node == parent.left:
-        path.insert(0, parent.right)
+        path.insert(0, parent.right.val)
     else:
-        path.insert(0, parent.left)
+        path.insert(0, parent.left.val)
 
     return path
 
@@ -92,17 +102,23 @@ def get_block_header(block_height):
 
     url = f'https://blockstream.info/api/block/{ block_hash }'
     r = http.request('GET', url)
-    return r.data
+    header = r.data.decode('utf-8')
+    return json.loads(header)
 
 
 def get_block_headers(start, end):
     headers = []
     for i in range(start, end):
-        headers[i] = get_block_header(block_height)
+        headers.append(get_block_header(i))
     return headers
 
 
 def hex_to_felt(hex_string):
+    splited = [str(hex_string)[i: i + 2]
+               for i in range(0, len(str(hex_string)), 2)]
+    splited.reverse()
+    hex_string = "".join(splited)
+
     # Seperate hex_string into chunks of 8 chars.
     felts = re.findall(".?.?.?.?.?.?.?.", hex_string)
     # Fill remaining space in last chunk with 0.
@@ -117,9 +133,9 @@ def hex_to_felt(hex_string):
 def hash_block_header(header):
     BASE = 2 ** 32
     prev_block_hash = hex_to_felt(
-        header.previousblockhash) if header.previousblockhash != null else 0
-    merkle_root_hash = hex_to_felt(header.merkle_root)
-    tmp1 = header.version * BASE ** 0 + \
+        header['previousblockhash']) if header['previousblockhash'] != None else [0] * 8
+    merkle_root_hash = hex_to_felt(header['merkle_root'])
+    tmp1 = header['version'] * BASE ** 0 + \
         prev_block_hash[0] * BASE ** 1 + \
         prev_block_hash[1] * BASE ** 2 + \
         prev_block_hash[2] * BASE ** 3 + \
@@ -136,9 +152,9 @@ def hash_block_header(header):
     tmp3 = merkle_root_hash[5] * BASE ** 0 + \
         merkle_root_hash[6] * BASE ** 1 + \
         merkle_root_hash[7] * BASE ** 2 + \
-        header.timestamp * BASE ** 3 + \
-        header.bits * BASE ** 4 + \
-        header.nonce * BASE ** 5
+        header['timestamp'] * BASE ** 3 + \
+        header['bits'] * BASE ** 4 + \
+        header['nonce'] * BASE ** 5
     tmp_hash = pedersen_hash(tmp1, tmp2)
     pedersen_block_hash = pedersen_hash(tmp_hash, tmp3)
     return pedersen_block_hash
@@ -153,31 +169,33 @@ class RequestHandler(BaseHTTPRequestHandler):
 
         global leaf_nodes
 
-        # Meant to be called in every
+        # Meant to be called before every new Cairo run
         if self.path.startswith('/create'):
-            block_height = self.path.replace('/create/', '')
+            block_height = int(self.path.replace('/create/', ''))
             print('create', block_height)
-            headers = get_block_headers(0, block_height + 1)
+            headers = get_block_headers(0, block_height)
             header_hashes = [hash_block_header(header) for header in headers]
-            if len(header_hashes) % 2 == 1:
-                header_hashes.append(0)
             add_nodes(header_hashes)
-            tree_root = build_tree()
+            global root
+            root = build_tree()
             self.wfile.write(json.dumps(
-                {'root': tree_root, 'status': 'success'}).encode())
+                {'root': root, 'status': 'success'}).encode())
             return
 
-        # TODO: refactor and remove leaf_index and replace None with 0
         if self.path.startswith('/merkle_path'):
-            node_index = self.path.replace('/merkle_path/', '')
+            node_index = int(self.path.replace('/merkle_path/', ''))
             print('merkle_path', node_index)
             if node_index > len(leaf_nodes):
                 proof = []
-            elif node_index == len(lead_nodes):
-                # TODO remove everything until we hit a zero
-                proof = inclusion_proof(leaf_nodes(node_index-1).parent)
+            elif node_index == len(leaf_nodes):
+                if lowest_null_node == None:
+                    proof = []
+                else:
+                    proof = inclusion_proof(lowest_null_node)
             else:
-                proof = inclusion_proof(leaf_nodes(node_index))
+                proof = inclusion_proof(leaf_nodes[node_index])
+            print("proof: ", proof)
+            print("root: ", root)
             self.wfile.write(json.dumps(
                 {'proof': proof, 'status': 'success'}).encode())
             return
@@ -189,11 +207,6 @@ class RequestHandler(BaseHTTPRequestHandler):
 
 
 if __name__ == '__main__':
-    add_nodes([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
-    root = build_tree()
-    print("root:", hex(root.val))
-    print([hex(x.val) for x in inclusion_proof(leaf_nodes[12-1].parent)])
-
-    # server = HTTPServer(('localhost', 2122), RequestHandler)
-    # print('Starting bridge node at http://localhost:2122')
-    # server.serve_forever()
+    server = HTTPServer(('localhost', 2122), RequestHandler)
+    print('Starting bridge node at http://localhost:2122')
+    server.serve_forever()

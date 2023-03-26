@@ -527,28 +527,28 @@ func felt_to_uint256{range_check_ptr}(value) -> Uint256 {
 func pedersen_hash_block_header{hash_ptr: HashBuiltin*}(block_header: BlockHeader) -> felt {
     const BASE = 2 ** 32;
     let tmp1 = block_header.version * BASE ** 0 +
-                 block_header.prev_block_hash[0] * BASE ** 1 +
-                 block_header.prev_block_hash[1] * BASE ** 2 + 
-                 block_header.prev_block_hash[2] * BASE ** 3 + 
-                 block_header.prev_block_hash[3] * BASE ** 4 + 
-                 block_header.prev_block_hash[4] * BASE ** 5 + 
-                 block_header.prev_block_hash[5] * BASE ** 6; 
+        block_header.prev_block_hash[0] * BASE ** 1 +
+        block_header.prev_block_hash[1] * BASE ** 2 +
+        block_header.prev_block_hash[2] * BASE ** 3 +
+        block_header.prev_block_hash[3] * BASE ** 4 +
+        block_header.prev_block_hash[4] * BASE ** 5 +
+        block_header.prev_block_hash[5] * BASE ** 6;
 
     let tmp2 = block_header.prev_block_hash[6] * BASE ** 0 +
-                 block_header.prev_block_hash[7] * BASE ** 1 +
-                 block_header.merkle_root_hash[0] * BASE ** 2 +
-                 block_header.merkle_root_hash[1] * BASE ** 3 +
-                 block_header.merkle_root_hash[2] * BASE ** 4 +
-                 block_header.merkle_root_hash[3] * BASE ** 5 +
-                 block_header.merkle_root_hash[4] * BASE ** 6;
+        block_header.prev_block_hash[7] * BASE ** 1 +
+        block_header.merkle_root_hash[0] * BASE ** 2 +
+        block_header.merkle_root_hash[1] * BASE ** 3 +
+        block_header.merkle_root_hash[2] * BASE ** 4 +
+        block_header.merkle_root_hash[3] * BASE ** 5 +
+        block_header.merkle_root_hash[4] * BASE ** 6;
 
     let tmp3 = block_header.merkle_root_hash[5] * BASE ** 0 +
-                 block_header.merkle_root_hash[6] * BASE ** 1 +
-                 block_header.merkle_root_hash[7] * BASE ** 2 +
-                 block_header.time * BASE ** 3 +
-                 block_header.bits * BASE ** 4 +
-                 block_header.nonce * BASE ** 5;
+        block_header.merkle_root_hash[6] * BASE ** 1 +
+        block_header.merkle_root_hash[7] * BASE ** 2 +
+        block_header.time * BASE ** 3 +
+        block_header.bits * BASE ** 4 +
+        block_header.nonce * BASE ** 5;
     let (tmp_hash) = hash2(tmp1, tmp2);
     let (pedersen_block_hash) = hash2(tmp_hash, tmp3);
-    return pedersen_block_hash; 
+    return pedersen_block_hash;
 }
