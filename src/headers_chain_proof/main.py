@@ -4,6 +4,7 @@ import os
 import struct
 import subprocess
 import time
+import urllib3
 
 parser = argparse.ArgumentParser(description='Generate a chain proof')
 parser.add_argument('--output_dir', type=str, default='tmp')
@@ -93,7 +94,7 @@ program = json.load(f)
 genesis_state['program_length'] = len(program['data'])
 # TODO: compute program hash and write it into chain_state.json
 
-batch_size = 20
+batch_size = 3
 genesis_state['batch_size'] = batch_size
 
 with open(f'{output_dir}/headers_chain_state.json', 'w') as outfile:
@@ -106,7 +107,16 @@ chain_state_file = f'{output_dir}/headers_chain_state.json'
 start_block_height = 0
 batches = 100
 for i in range(start_block_height, batches * batch_size, batch_size):
-    print(f'\n === Processing block height {i} ===')
+    print(f'\n === Processing block height {i} to {i + batch_size - 1} ===')
+    # Fill the bridge_node
+    print(f'Step 0: Setup headers bridge_node...')
+    http = urllib3.PoolManager()
+    url = 'http://localhost:2122/reset/'
+    r = http.request('GET', url)
+    url = f'http://localhost:2122/create/{i}'
+    r = http.request('GET', url)
+    response = json.loads(r.data)
+    assert response['status'] == 'success'
 
     # Run the Cairo runner
     print(f'Step 1: Cairo runner...')
@@ -123,22 +133,25 @@ for i in range(start_block_height, batches * batch_size, batch_size):
     print(f'Running time: { int(time.time()-start_time) } seconds\n')
 
     # Parse outputs
-    r = FeltsReader(program_output)
-    chain_state = {
-        'block_height': r.read(),
-        'best_block_hash': felts_to_hash(r.read_n(8)),
-        'total_work': r.read(),
-        'current_target': r.read(),
-        'prev_timestamps': r.read_n(11),
-        'epoch_start_time': r.read(),
-        'batch_size': batch_size,
-        'merkle_root': hex(r.read()),
-        'program_hash': hex(r.read())
-    }
-    # Write the chain state into a json file
-    f = open(f'{output_dir}/headers_chain_state.json', 'w')
-    f.write(json.dumps(chain_state, indent=2))
-    f.close()
+    try:
+        r = FeltsReader(program_output)
+        chain_state = {
+            'block_height': r.read(),
+            'best_block_hash': felts_to_hash(r.read_n(8)),
+            'total_work': r.read(),
+            'current_target': r.read(),
+            'prev_timestamps': r.read_n(11),
+            'epoch_start_time': r.read(),
+            'batch_size': batch_size,
+            'merkle_root': hex(r.read()),
+            'program_hash': hex(r.read())
+        }
+        # Write the chain state into a json file
+        f = open(f'{output_dir}/headers_chain_state.json', 'w')
+        f.write(json.dumps(chain_state, indent=2))
+        f.close()
+    except:
+        print(program_output_string)
 
     # Run Giza prover
     print(f"Step 2: Giza prover...")
