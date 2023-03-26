@@ -94,7 +94,7 @@ program = json.load(f)
 genesis_state['program_length'] = len(program['data'])
 # TODO: compute program hash and write it into chain_state.json
 
-batch_size = 121
+batch_size = 3
 genesis_state['batch_size'] = batch_size
 
 with open(f'{output_dir}/headers_chain_state.json', 'w') as outfile:

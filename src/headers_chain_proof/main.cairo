@@ -277,6 +277,8 @@ func main{
 
         // finalize sha256_ptr
         finalize_sha256(sha256_ptr_start, sha256_ptr);
+
+        recurse(block_height, program_hash, start_chain_state, merkle_root);
         tempvar output_ptr = output_ptr;
         tempvar pedersen_ptr = pedersen_ptr;
         tempvar range_check_ptr = range_check_ptr;
