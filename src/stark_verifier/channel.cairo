@@ -280,7 +280,7 @@ func read_remainder{
     let remainder = channel.remainder.elements;
     let loop_counter = channel.remainder.n_elements / FOLDING_FACTOR;
     let (remainder_values: felt**) = alloc();
-    transpose_slice(remainder, remainder_values, loop_counter);
+    transpose_slice(remainder, remainder_values, loop_counter, loop_counter);
 
     // build remainder Merkle tree
     let (hashed_values: felt*) = alloc();
@@ -294,7 +294,7 @@ func read_remainder{
     return channel.remainder;
 }
 
-func transpose_slice(source: felt*, destination: felt**, loop_counter){
+func transpose_slice(source: felt*, destination: felt**, loop_counter, destination_len){
     if(loop_counter == 0){
         return ();
     }
@@ -307,11 +307,11 @@ func transpose_slice(source: felt*, destination: felt**, loop_counter){
     transpose_loop:
         assert [row_ptr] = [src_ptr];
         tempvar row_ptr = row_ptr + 1;
-        tempvar src_ptr = src_ptr + FOLDING_FACTOR;
+        tempvar src_ptr = src_ptr + destination_len;
         tempvar n = n - 1;
     jmp transpose_loop if n != 0;
 
-    return transpose_slice(source + 1, destination + 1, loop_counter - 1);
+    return transpose_slice(source + 1, destination + 1, loop_counter - 1, destination_len);
 }
 
 func hash_values{
