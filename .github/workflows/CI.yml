@@ -45,7 +45,7 @@ jobs:
       - name: Install cairo-lang
         run: |
           source cairo_venv/bin/activate
-          pip install ecdsa fastecdsa sympy cairo-lang maturin patchelf
+          pip install ecdsa fastecdsa sympy cairo-lang==0.10.3 maturin patchelf
           #- name: Compile Cairo files 
           #run: |
           #source cairo_venv/bin/activate
