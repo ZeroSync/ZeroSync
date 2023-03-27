@@ -207,6 +207,9 @@ class RequestHandler(BaseHTTPRequestHandler):
 
 
 if __name__ == '__main__':
+    add_nodes(range(0, 251))
+    build_tree()
+    print(inclusion_proof(lowest_null_node))
     server = HTTPServer(('localhost', 2122), RequestHandler)
     print('Starting bridge node at http://localhost:2122')
     server.serve_forever()
