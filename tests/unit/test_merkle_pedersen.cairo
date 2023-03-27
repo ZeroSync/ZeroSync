@@ -2,7 +2,11 @@
 
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin, HashBuiltin
 from starkware.cairo.common.alloc import alloc
-from headers_chain_proof.pedersen_merkle_tree import append_merkle_tree_pedersen, verify_merkle_path
+from headers_chain_proof.pedersen_merkle_tree import (
+    append_merkle_tree_pedersen,
+    verify_merkle_path,
+    calculate_merkle_path_len,
+)
 
 @external
 func test_create_merkle_tree{pedersen_ptr: HashBuiltin*, range_check_ptr}() {
@@ -102,5 +106,25 @@ func test_verify_merkle_path{pedersen_ptr: HashBuiltin*, range_check_ptr}() {
 
     verify_merkle_path{hash_ptr=pedersen_ptr}(8, merkle_path, 3, merkle_root);
 
+    return ();
+}
+
+@external
+func test_calculate_merkle_path_len_19{pedersen_ptr: HashBuiltin*, range_check_ptr}() {
+    let leaves_len = 19;
+    let expected_path_len = 5;
+
+    let path_len = calculate_merkle_path_len(leaves_len);
+    assert expected_path_len = path_len;
+    return ();
+}
+
+@external
+func test_calculate_merkle_path_len_251{pedersen_ptr: HashBuiltin*, range_check_ptr}() {
+    let leaves_len = 251;
+    let expected_path_len = 8;
+
+    let path_len = calculate_merkle_path_len(leaves_len);
+    assert expected_path_len = path_len;
     return ();
 }

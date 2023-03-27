@@ -18,8 +18,9 @@ from crypto.sha256 import finalize_sha256
 from headers_chain_proof.recurse import recurse
 from headers_chain_proof.pedersen_merkle_tree import (
     append_merkle_tree_pedersen,
-    verify_merkle_path,
+    verify_merkle_path_zero,
     calculate_height,
+    calculate_merkle_path_len,
 )
 from utils.pow2 import pow2
 
@@ -166,7 +167,7 @@ func main{
     %}
 
     // TODO refactor the general flow of exeuction and spread over different functions
-    //      look into revoked reference and how to avoid using tempvars that often
+    //      look into revoked reference and how to avoid using so many tempvars
     if (block_height == -1) {
         // Block Header Validation
         let start_chain_state = ChainState(
@@ -202,8 +203,6 @@ func main{
         tempvar range_check_ptr = range_check_ptr;
     } else {
         // Merkle Path verification
-        // TODO CRITICAL SECURITY BUG: enforce that the provided merkle path corresponds to the lowest 0 node in the merkle tree
-        // (So the Node directly after the last actually verified header)
         let (local extended_merkle_path: felt*) = alloc();
         tempvar extended_merkle_path_len = 0;
         let old_height = calculate_height(block_height + 1);
@@ -215,20 +214,19 @@ func main{
             assert extended_merkle_path[old_height] = merkle_root;
             tempvar extended_merkle_path_len = old_height + 1;
             tempvar pedersen_ptr = pedersen_ptr;
+            tempvar range_check_ptr = range_check_ptr;
         } else {
-            // Old Merkle tree was not complete and hashed together with a 0
-            // %{
-            //     print('merkle_root: ', ids.merkle_root)
-            //     print('received_merkle_path: ', [memory[ids.merkle_path + x] for x in range(0, ids.merkle_path_len)])
-            // %}
-            assert 0 = 0;
-            verify_merkle_path{hash_ptr=pedersen_ptr}(0, merkle_path, merkle_path_len, merkle_root);
+            // Old Merkle tree was not complete and hashed together with 0 elements
+            verify_merkle_path_zero{hash_ptr=pedersen_ptr}(
+                merkle_path, merkle_path_len, merkle_root, block_height + 1
+            );
             fill_zeroes(extended_merkle_path, old_height - merkle_path_len);
             memcpy(
                 extended_merkle_path + old_height - merkle_path_len, merkle_path, merkle_path_len
             );
             tempvar extended_merkle_path_len = old_height;
             tempvar pedersen_ptr = pedersen_ptr;
+            tempvar range_check_ptr = range_check_ptr;
         }
         tempvar extended_merkle_path = extended_merkle_path;
         tempvar extended_merkle_path_len = extended_merkle_path_len;
@@ -251,11 +249,6 @@ func main{
             prev_timestamps,
         );
 
-        // %{
-        //     print('merkle_tree_size: ', ids.merkle_tree_size)
-        //     print('extended_merkle_path_len: ', ids.extended_merkle_path_len)
-        //     print('extended_merkle_path: ', [memory[ids.extended_merkle_path + x] for x in range(0, ids.extended_merkle_path_len)])
-        // %}
         with sha256_ptr {
             // Validate all blocks in this batch
             let final_chain_state = validate_block_headers{hash_ptr=pedersen_ptr}(
@@ -269,7 +262,6 @@ func main{
             extended_merkle_path + 1,
             extended_merkle_path_len - 1,
         );
-        // %{ print('new_root: ', ids.new_merkle_root) %}
         // Print the final state
         serialize_chain_state(final_chain_state);
         serialize_word(new_merkle_root);
