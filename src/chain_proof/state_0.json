@@ -3,7 +3,7 @@
 	"total_work" : 0,
 	"best_block_hash" : "0000000000000000000000000000000000000000000000000000000000000000",
 	"current_target" : 486604799,
-	"epoch_start_time" : 0,
+	"epoch_start_time" : 1231006505,
 	"prev_timestamps" : [ 0,0,0,0,0, 0,0,0,0,0, 0 ],
 	"utreexo_roots" : [ 
 		"0", "0", "0", "0", "0", 
@@ -13,5 +13,5 @@
 		"0", "0", "0", "0", "0", 
 		"0", "0"
 	],
-	"program_hash": "729c17e9efc30c60bcd6b42676dc0485f93ffa878423b0a9fea15c8915ad3ab"
+	"program_hash": "42add08c40b7a40670c7f0753d84745f91c13ddc11ccf42a3d66a30db1fcc16"
 }
