@@ -264,6 +264,82 @@ func test_adjust_current_target{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}()
     return ();
 }
 
+// Test a current_target adjustment
+// After this block the current_target gets adjusted because it is a last block of an epoch.
+//
+// Block at height 2015
+// - https://blockstream.info/block/00000000693067b0e6b440bc51450b9f3850561b07f6d3c021c54fbd6abb9763
+// - https://blockstream.info/api/block/00000000693067b0e6b440bc51450b9f3850561b07f6d3c021c54fbd6abb9763
+// - https://blockstream.info/api/block/00000000693067b0e6b440bc51450b9f3850561b07f6d3c021c54fbd6abb9763/header
+//
+// Block at height 2014:
+// - https://blockstream.info/block/000000004be8da201f34d6c8d2a0387cd5cde7e94f3e692ad0c307e7cd0955e2
+//
+@external
+func test_adjust_current_target_first_epoch{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
+    alloc_locals;
+    setup_python_defs();
+
+    // Create a dummy for the previous chain state
+    let (prev_block_hash) = alloc();
+    %{
+        hashes_from_hex([
+            "000000004be8da201f34d6c8d2a0387cd5cde7e94f3e692ad0c307e7cd0955e2"
+        ], ids.prev_block_hash)
+    %}
+
+    // The previous epoch started at the timestamp of the block at height = 201600 - 2016 = 199584
+    // https://blockstream.info/block/000000000000002e00a243fe9aa49c78f573091d17372c2ae0ae5e0f24f55b52
+    // https://blockstream.info/api/block/000000000000002e00a243fe9aa49c78f573091d17372c2ae0ae5e0f24f55b52
+    let epoch_start_time = 1231006505;
+
+    // The current_target of the previous epoch
+    let prev_current_target = 0x1d00ffff;
+
+    let prev_timestamps = dummy_prev_timestamps();
+
+    let prev_chain_state = ChainState(
+        block_height=2014,
+        total_work=0,
+        best_block_hash=prev_block_hash,
+        current_target=prev_current_target,
+        epoch_start_time=epoch_start_time,
+        prev_timestamps,
+    );
+
+    // initialize sha256_ptr
+    let sha256_ptr: felt* = alloc();
+
+    // Read a block header from the byte stream
+    // This is our next chain tip
+    with sha256_ptr {
+        let context = read_block_header_validation_context(prev_chain_state);
+    }
+
+    // Check if the block hash is correct
+    let (block_hash_expected) = alloc();
+    %{
+        hashes_from_hex([
+            "00000000693067b0e6b440bc51450b9f3850561b07f6d3c021c54fbd6abb9763"
+            ], ids.block_hash_expected)
+    %}
+
+    with_attr error_message("invalid block hash") {
+        assert_hashes_equal(context.block_hash, block_hash_expected);
+    }
+
+    // Try to validate the block header.
+    // This should succeed for valid block headers
+    let next_state = validate_and_apply_block_header(context);
+
+    // Verify that the current_target was correctly adjusted
+    with_attr error_message("The current_target wasn't adjusted correctly.") {
+        assert 0x1d00ffff = next_state.current_target;
+    }
+
+    return ();
+}
+
 @external
 func test_insufficient_pow{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     alloc_locals;
