@@ -18,6 +18,7 @@ from starkware.cairo.common.uint256 import (
     uint256_sub,
     uint256_mul,
     uint256_unsigned_div_rem,
+    uint256_le,
 )
 from utils.serialize import (
     Reader,
@@ -435,22 +436,25 @@ func adjust_difficulty{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
             }
         }
         let actual_timespan = felt_to_uint256(fe_actual_timespan);
-
         // Retarget
         let bn_pow_limit = felt_to_uint256(MAX_TARGET);
 
         let fe_target = bits_to_target(state.current_target);
         let bn_new = felt_to_uint256(fe_target);
-
         let (bn_new, _) = uint256_mul(bn_new, actual_timespan);
+        let UINT256_MAX_EPOCH_TIME = felt_to_uint256(EXPECTED_EPOCH_TIMESPAN);
+        let (bn_new, _) = uint256_unsigned_div_rem(bn_new, UINT256_MAX_EPOCH_TIME);
+        let next_bits = bn_new.low + bn_new.high * 2 ** 128;
 
-        let UINT256_MAX_TARGET = felt_to_uint256(EXPECTED_EPOCH_TIMESPAN);
-        let (bn_new, _) = uint256_unsigned_div_rem(bn_new, UINT256_MAX_TARGET);
-
-        let next_target = target_to_bits(bn_new.low + bn_new.high * 2 ** 128);
-
-        // Return next target and reset the epoch start time
-        return (next_target, context.block_header.time);
+        let (below_limit) = uint256_le(bn_new, bn_pow_limit);
+        if (below_limit == 1) {
+            let next_target = target_to_bits(bn_new.low + bn_new.high * 2 ** 128);
+            // Return next target and reset the epoch start time
+            return (next_target, context.block_header.time);
+        } else {
+            // Return MAX_BITS and reset the epoch start time
+            return (MAX_BITS, context.block_header.time);
+        }
     } else {
         return (current_target, context.prev_chain_state.epoch_start_time);
     }

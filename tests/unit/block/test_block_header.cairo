@@ -14,7 +14,6 @@ from crypto.hash_utils import assert_hashes_equal
 from block.block_header import (
     read_block_header,
     bits_to_target,
-    target_to_bits,
     BLOCK_HEADER_SIZE,
     BlockHeaderValidationContext,
     read_block_header_validation_context,
