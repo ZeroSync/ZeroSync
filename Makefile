@@ -109,6 +109,7 @@ benchmark_block:
 
 clean:
 	rm -rf build
+	rm -rf bin
 	mkdir build
 	rm -rf package_build
 	rm -rf tests/integration/cairo_programs_compiled/*

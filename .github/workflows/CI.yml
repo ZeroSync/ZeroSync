@@ -45,7 +45,7 @@ jobs:
       - name: Install cairo-lang
         run: |
           source cairo_venv/bin/activate
-          pip install ecdsa fastecdsa sympy cairo-lang==0.10.3 maturin patchelf
+          pip install ecdsa fastecdsa sympy typeguard==2.13.3 cairo-lang==0.10.3 maturin patchelf
           #- name: Compile Cairo files 
           #run: |
           #source cairo_venv/bin/activate
@@ -62,16 +62,20 @@ jobs:
       - name: Build Rust Libs
         run: |
           source cairo_venv/bin/activate
+          cd parser
+          cargo update
+          cd ../hints
+          cargo update
+          cd ..
+          cargo update
           make stark_parser
           make rust_hint_lib
-          # - name: Run bridge node
-          #   run: |
-          #     source cairo_venv/bin/activate
-          #     python src/utxo_set/bridge_node.py &
       - name: Run Unit Tests
         run: |
           source cairo_venv/bin/activate
           python src/utxo_set/bridge_node.py > /dev/null 2>& 1 &
+          python src/headers_chain_proof/bridge_node.py > /dev/null 2>& 1 &
           make unit_test
+          
           # - name: Run Integration Tests
           #   run: ../../../.protostar/dist/protostar/protostar test --cairo-path=./src tests
