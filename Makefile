@@ -124,7 +124,7 @@ package:
 	set -f; \
 	cd package_build; \
 	mv src zerosync; \
-	for FILE in ${CAIRO_FILES}; do \
+	for FILE in $$(find zerosync -type f -iname "*.cairo" -and -not -iname "test_*.cairo"); do \
 		echo $$FILE;\
 		IMPORTS=$$(grep -Po '(?<=from (?!starkware|zerosync))(.+?)(?=import)' $$FILE | tr '.' '/'); \
 		echo $$IMPORTS; \
