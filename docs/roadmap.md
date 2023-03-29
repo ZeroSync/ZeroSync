@@ -1,3 +1,7 @@
+# [THIS ROADMAP IS OUTDATED! HERE's THE NEW ONE](https://zerosync.org/#roadmap)
+
+
+
 # ZeroSync Roadmap
 
 This is a rough writeup of the project's roadmap. Nothing here is set in stone. Subgoals change frequently as we're still exploring the solution space. This document is probably not even up to date as you read it. However, it gives you an idea of where we're currently heading.
