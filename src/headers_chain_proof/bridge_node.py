@@ -107,7 +107,7 @@ def get_block_header(block_height):
         print('ERROR: get_block_header received a bad answer from the API:',
               r.status, r.data.decode('utf-8'))
         # Try again
-        r = http_request('GET', url)
+        r = http.request('GET', url)
     header = r.data.decode('utf-8')
     return json.loads(header)
 
