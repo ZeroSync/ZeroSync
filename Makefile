@@ -51,6 +51,9 @@ headers_chain_proof:
 bridge_node:
 	python src/utxo_set/bridge_node.py
 
+headers_bridge_node:
+	python src/headers_chain_proof/bridge_node.py
+
 stark_parser: $(STARK_PARSER)
 	@echo "Building STARK proof parser..."
 
