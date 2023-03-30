@@ -150,7 +150,7 @@ for i in range(start_block_height, batches * batch_size, batch_size):
         f = open(f'{output_dir}/headers_chain_state.json', 'w')
         f.write(json.dumps(chain_state, indent=2))
         f.close()
-    except:
+    except BaseException:
         print(program_output_string)
 
     # Run Giza prover
