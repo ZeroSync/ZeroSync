@@ -46,11 +46,12 @@ jobs:
         run: |
           source cairo_venv/bin/activate
           pip install ecdsa fastecdsa sympy typeguard==2.13.3 cairo-lang==0.10.3 maturin patchelf
-          #- name: Compile Cairo files 
-          #run: |
-          #source cairo_venv/bin/activate
-          #make clean
-          #make cairo_compile_programs
+      - name: Compile Cairo files 
+        run: |
+          source cairo_venv/bin/activate
+          make clean
+          make cairo_compile_chain_proof
+          make cairo_compile_headers_chain_proof
           #- name: Check formatting
           #run: |
           #source cairo_venv/bin/activate
