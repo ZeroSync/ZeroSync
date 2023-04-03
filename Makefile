@@ -1,15 +1,30 @@
 .PHONY: test package 
 
+
 BIN_DIR = ./bin
 BUILD_DIR = ./build
 ARCH = $(shell uname -p)
 
-CAIRO_FILES = $(shell find src -type f -iname "*.cairo" -and -not -iname "test_*.cairo")
-CAIRO_PROGRAM = $(BUILD_DIR)/zerosync_compiled.json
+CAIRO_FILES = $(shell find src -type f -iname "*.cairo" -and -not -iname "test_*.cairo" -not -path "./src/chain_proof/*" -not -path "./src/headers_chain_proof/*")
+CHAIN_PROOF_PROGRAM = $(BUILD_DIR)/chain_proof_compiled.json
+HEADERS_CHAIN_PROOF_PROGRAM = $(BUILD_DIR)/headers_chain_proof_compiled.json
 STARK_PARSER = $(BIN_DIR)/stark_parser
 RUST_HINT_LIB = $(BIN_DIR)/libzerosync_hints.dylib
 
-# TODO: Create a recipe for $(CAIRO_PROGRAM) listing all prerequisites
+.DELETE_ON_ERROR: $(CHAIN_PROOF_PROGRAM) $(HEADERS_CHAIN_PROOF_PROGRAM)
+
+# Recipe for header_chain_proof and chain_proof compilation
+$(CHAIN_PROOF_PROGRAM): $(CAIRO_FILES) src/chain_proof/*.cairo
+	cairo-compile src/chain_proof/main.cairo --cairo_path src --output $@
+
+compile_chain_proof: $(CHAIN_PROOF_PROGRAM)
+	@echo "Compiled src/chain_proof/main.cairo"
+
+$(HEADERS_CHAIN_PROOF_PROGRAM): $(CAIRO_FILES) src/headers_chain_proof/*.cairo
+	cairo-compile src/headers_chain_proof/main.cairo --cairo_path src --output $@
+
+compile_headers_chain_proof: $(HEADERS_CHAIN_PROOF_PROGRAM)
+	@echo "Compiled src/headers_chain_proof/main.cairo"
 
 INTEGRATION_PROGRAM_NAME := fibonacci
 INTEGRATION_PROGRAM_SRC = tests/integration/cairo_programs/$(INTEGRATION_PROGRAM_NAME).cairo
@@ -42,10 +57,10 @@ ifeq ($(ARCH), arm)
 	   $$(python -c "import site; print(site.getsitepackages()[0])")/zerosync_hints/zerosync_hints.cpython-39-darwin.so
 endif
 
-chain_proof:
+chain_proof: $(CHAIN_PROOF_PROGRAM)
 	PYTHONPATH=$$(python -c "import site; print(site.getsitepackages()[0])"):$$PYTHONPATH python src/chain_proof/main.py
 
-headers_chain_proof:
+headers_chain_proof: $(HEADERS_CHAIN_PROOF_PROGRAM)
 	PYTHONPATH=$$(python -c "import site; print(site.getsitepackages()[0])"):$$PYTHONPATH python src/headers_chain_proof/main.py
 
 bridge_node:
@@ -100,7 +115,7 @@ test:
 # Use make INTEGRATION_PROGRAM_NAME=fibonacci integration_proof
 integration_proof: $(INTEGRATION_PROGRAM_PROOF)
 	@echo "Generating proof for $(INTEGRATION_PROGRAM_NAME)..."
-	
+
 
 # To call benchmark block with a differnet block use: make BLOCK=12345 benchmark_block
 BLOCK := 100000

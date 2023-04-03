@@ -13,6 +13,7 @@ args = parser.parse_args()
 P = 2**251 + 17 * 2**192 + 1
 NUM_OUTPUTS = 51
 FOLDING_FACTOR = 8
+COMPILED_PROGRAM = "build/chain_proof_compiled.json"
 
 
 class FeltsReader:
@@ -79,19 +80,13 @@ os.popen(f'mkdir -p {output_dir}')
 # Reset the bridge node to ensure we start with an empty UTXO set
 urllib3.PoolManager().request('GET', 'http://localhost:2121/reset')
 
-# Run the Cairo compiler
-cmd = f'cairo-compile src/chain_proof/main.cairo \
-        --cairo_path=src                         \
-        --output={output_dir}/program.json'
-print(os.popen(cmd).read())
-
 # Copy genesis state.json into the output directory
 f = open('src/chain_proof/state_0.json')
 genesis_state = json.load(f)
 
-# Read the program_length from program.json and update
+# Read the program_length from COMPILED_PROGRAN and update
 # it in the genesis state
-f = open(f'{output_dir}/program.json')
+f = open(COMPILED_PROGRAM)
 program = json.load(f)
 genesis_state['program_length'] = len(program['data'])
 # TODO: compute program hash and write it into chain_state.json
@@ -111,7 +106,7 @@ for i in range(start_block_height, end_block_height):
     print(f'Step 1: Cairo runner...')
     start_time = time.time()
     cmd = f'cairo-run                           \
-            --program={output_dir}/program.json \
+            --program={COMPILED_PROGRAM}        \
             --layout=all                        \
             --print_output                      \
             --program_input={chain_state_file}  \
@@ -144,9 +139,9 @@ for i in range(start_block_height, end_block_height):
     cmd = f'giza prove                          \
             --trace={output_dir}/trace.bin      \
             --memory={output_dir}/memory.bin    \
-            --program={output_dir}/program.json \
+            --program={COMPILED_PROGRAM}        \
             --output={output_dir}/chain_proof-{i}.bin \
-            --num-outputs={NUM_OUTPUTS} \
+            --num-outputs={NUM_OUTPUTS}         \
             --fri-folding-factor={FOLDING_FACTOR}'
     return_code = subprocess.call(cmd, shell=True)
     if return_code == 0:

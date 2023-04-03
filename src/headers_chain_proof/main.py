@@ -13,6 +13,7 @@ args = parser.parse_args()
 P = 2**251 + 17 * 2**192 + 1
 NUM_OUTPUTS = 25
 FOLDING_FACTOR = 8
+COMPILED_PROGRAM = "build/headers_chain_proof_compiled.json"
 
 
 class FeltsReader:
@@ -76,20 +77,13 @@ def parse_cairo_output(cairo_output, debug=False):
 output_dir = args.output_dir
 os.popen(f'mkdir -p {output_dir}')
 
-
-# Run the Cairo compiler
-cmd = f'cairo-compile src/headers_chain_proof/main.cairo \
-        --cairo_path=src                         \
-        --output={output_dir}/program.json'
-print(os.popen(cmd).read())
-
 # Copy genesis state.json into the output directory
 f = open('src/headers_chain_proof/state_0.json')
 genesis_state = json.load(f)
 
-# Read the program_length from program.json and update
+# Read the program_length from COMPILED_PROGRAM and update
 # it in the genesis state
-f = open(f'{output_dir}/program.json')
+f = open(COMPILED_PROGRAM)
 program = json.load(f)
 genesis_state['program_length'] = len(program['data'])
 # TODO: compute program hash and write it into chain_state.json
@@ -122,7 +116,7 @@ for i in range(start_block_height, batches * batch_size, batch_size):
     print(f'Step 1: Cairo runner...')
     start_time = time.time()
     cmd = f'cairo-run                           \
-            --program={output_dir}/program.json \
+            --program={COMPILED_PROGRAM} \
             --layout=all                        \
             --print_output                      \
             --program_input={chain_state_file}  \
@@ -159,7 +153,7 @@ for i in range(start_block_height, batches * batch_size, batch_size):
     cmd = f'giza prove                          \
             --trace={output_dir}/trace.bin      \
             --memory={output_dir}/memory.bin    \
-            --program={output_dir}/program.json \
+            --program={COMPILED_PROGRAM} \
             --output={output_dir}/headers_chain_proof-{i + batch_size - 1}.bin \
             --num-outputs={NUM_OUTPUTS} \
             --fri-folding-factor={FOLDING_FACTOR}'
