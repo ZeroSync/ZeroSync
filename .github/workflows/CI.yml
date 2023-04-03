@@ -50,8 +50,8 @@ jobs:
         run: |
           source cairo_venv/bin/activate
           make clean
-          make cairo_compile_chain_proof
-          make cairo_compile_headers_chain_proof
+          make compile_chain_proof
+          make compile_headers_chain_proof
           #- name: Check formatting
           #run: |
           #source cairo_venv/bin/activate
