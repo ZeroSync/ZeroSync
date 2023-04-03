@@ -100,7 +100,7 @@ def get_block_header(block_height):
     r = http.request('GET', url)
     block_hash = str(r.data, 'utf-8')
 
-    url = f'https://blockstream.info/api/block/{block_hash}/header'
+    url = f'https://blockstream.info/api/block/{block_hash}'
     r = http.request('GET', url)
     tries = 0
     while r.status != 200 and tries < 10:
@@ -109,7 +109,7 @@ def get_block_header(block_height):
               r.status, r.data.decode('utf-8'))
         # Try again
         r = http.request('GET', url)
-        tries += 1 
+        tries += 1
     header = r.data.decode('utf-8')
     return json.loads(header)
 
