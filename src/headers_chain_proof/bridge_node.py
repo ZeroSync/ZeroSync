@@ -11,6 +11,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 import json
 import urllib3
 import re
+import time
 
 from starkware.cairo.lang.vm.crypto import pedersen_hash
 
@@ -104,7 +105,7 @@ def get_block_header(block_height):
     r = http.request('GET', url)
     tries = 0
     while r.status != 200 and tries < 10:
-        sleep(30)
+        time.sleep(30)
         print('ERROR: get_block_header received a bad answer from the API:',
               r.status, r.data.decode('utf-8'))
         # Try again
