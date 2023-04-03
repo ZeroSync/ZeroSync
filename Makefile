@@ -15,12 +15,14 @@ RUST_HINT_LIB = $(BIN_DIR)/libzerosync_hints.dylib
 
 # Recipe for header_chain_proof and chain_proof compilation
 $(CHAIN_PROOF_PROGRAM): $(CAIRO_FILES) src/chain_proof/*.cairo
+	mkdir -p $(BUILD_DIR)
 	cairo-compile src/chain_proof/main.cairo --cairo_path src --output $@
 
 compile_chain_proof: $(CHAIN_PROOF_PROGRAM)
 	@echo "Compiled src/chain_proof/main.cairo"
 
 $(HEADERS_CHAIN_PROOF_PROGRAM): $(CAIRO_FILES) src/headers_chain_proof/*.cairo
+	mkdir -p $(BUILD_DIR)
 	cairo-compile src/headers_chain_proof/main.cairo --cairo_path src --output $@
 
 compile_headers_chain_proof: $(HEADERS_CHAIN_PROOF_PROGRAM)
