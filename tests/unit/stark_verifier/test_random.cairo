@@ -19,7 +19,7 @@ from stark_verifier.air.pub_inputs import (
 from stark_verifier.crypto.random import (
     draw_integers,
     random_coin_new,
-    get_leading_zeros,
+    assert_le_lzcnt,
     draw,
     merge_with_int,
     merge,
@@ -150,21 +150,23 @@ func test_reseed_with_int{range_check_ptr, pedersen_ptr: HashBuiltin*, bitwise_p
     return ();
 }
 
-// TODO: Test for a grinded seed
 @external
-func test_leading_zeros{range_check_ptr, pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*}() {
+func test_assert_le_lzcnt{bitwise_ptr: BitwiseBuiltin*}() {
     alloc_locals;
-    tempvar seed = 0x0000000400000000000000000000000000000000000000000000000000000001;
-    with pedersen_ptr {
-        let public_coin = random_coin_new(seed);
-    }
-    let leading_zeros = get_leading_zeros(public_coin.seed);
-    %{
-        # TODO: double-check this values
-        assert ids.leading_zeros == 8
-    %}
+    assert_le_lzcnt(10, 0x07FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFAAAAAAAAAAAAAAAAAAAAAAAAFFFFF800);
+    assert_le_lzcnt(11, 0x07FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFAAAAAAAAAAAAAAAAAAAAAAAAFFFFF800);
+    %{ expect_revert() %}
+    assert_le_lzcnt(12, 0x07FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFAAAAAAAAAAAAAAAAAAAAAAAAFFFFF800);
+    
+    assert_le_lzcnt(16, 0x7FFFFFFFFFE0000);
+    assert_le_lzcnt(17, 0x7FFFFFFFFFE0000);
+    %{ expect_revert() %}
+    assert_le_lzcnt(18, 0x7FFFFFFFFFE0000);
     return ();
 }
+
+// TODO: Test for a grinded seed
+
 
 /// Test Pedersen hash chain
 @external
