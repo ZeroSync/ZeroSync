@@ -43,7 +43,7 @@ from stark_verifier.crypto.random import (
     draw,
     draw_elements,
     draw_integers,
-    get_leading_zeros,
+    assert_le_lzcnt,
     hash_elements,
     random_coin_new,
     reseed_with_int,
@@ -196,10 +196,8 @@ func perform_verification{
     reseed_with_int(pow_nonce);
 
     // Make sure the proof-of-work specified by the grinding factor is satisfied.
-    let leading_zeros = get_leading_zeros(public_coin.seed);
     with_attr error_message("Insufficient proof of work") {
-        // TODO: Repair `get_leading_zeros` and uncomment the following line
-        //assert_le(air.context.options.grinding_factor, leading_zeros);
+        assert_le_lzcnt(air.context.options.grinding_factor, public_coin.seed);
     }
 
     // Draw pseudorandom query positions for the LDE domain from the public coin.

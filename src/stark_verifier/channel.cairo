@@ -205,7 +205,6 @@ func read_queried_trace_states{
     %}
 
     let num_queries = NUM_QUERIES;
-    let num_queries = 4; // TODO: this should be NUM_QUERIES, but it takes forever...
 
     let main_states = channel.trace_queries.main_states;
     let aux_states = channel.trace_queries.aux_states;
@@ -251,7 +250,6 @@ func read_constraint_evaluations{
         read_constraint_evaluations(ids.positions, ids.constraint_queries_proof_ptr, ids.NUM_QUERIES, memory, segments)
     %}
     let num_queries = NUM_QUERIES;
-    let num_queries = 4; // TODO: this should be NUM_QUERIES, but it takes forever...
 
     // Authenticate proof paths
     let evaluations = channel.constraint_queries.evaluations;

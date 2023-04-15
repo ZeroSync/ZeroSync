@@ -2,7 +2,7 @@ from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.hash import HashBuiltin
 from starkware.cairo.common.hash_state import hash_finalize, hash_init, hash_update
-from starkware.cairo.common.math import assert_nn_le, assert_le, split_felt
+from starkware.cairo.common.math import assert_nn_le, assert_le_felt
 from starkware.cairo.common.math_cmp import is_le
 from starkware.cairo.common.bool import TRUE, FALSE
 from starkware.cairo.common.memcpy import memcpy
@@ -132,20 +132,6 @@ func reseed_with_ood_frames{
     reseed(elements_hash);
 
     return ();
-}
-
-func byteswap128{bitwise_ptr: BitwiseBuiltin*}(uint128) -> felt {
-    assert bitwise_ptr[0].x = uint128;
-    assert bitwise_ptr[0].y = 0xFF00FF00FF00FF00FF00FF00FF00FF00;
-    assert bitwise_ptr[1].x = bitwise_ptr[0].x_and_y / 2 ** 8 + (bitwise_ptr[0].x - bitwise_ptr[0].x_and_y) * 2 ** 8;
-    assert bitwise_ptr[1].y = 0xFFFF0000FFFF0000FFFF0000FFFF0000;
-    assert bitwise_ptr[2].x = bitwise_ptr[1].x_and_y / 2 ** 16 + (bitwise_ptr[1].x - bitwise_ptr[1].x_and_y) * 2 ** 16;
-    assert bitwise_ptr[2].y = 0xFFFFFFFF00000000FFFFFFFF00000000;
-    assert bitwise_ptr[3].x = bitwise_ptr[2].x_and_y / 2 ** 32 + (bitwise_ptr[2].x - bitwise_ptr[2].x_and_y) * 2 ** 32;
-    assert bitwise_ptr[3].y = 0xFFFFFFFFFFFFFFFF0000000000000000;
-    let uint128_endian = bitwise_ptr[3].x_and_y  / 2 ** 64 + (bitwise_ptr[3].x - bitwise_ptr[3].x_and_y) * 2 ** 64;
-    let bitwise_ptr = bitwise_ptr + BitwiseBuiltin.SIZE * 4;
-    return uint128;
 }
 
 // Returns the next pseudo-random field element
@@ -290,28 +276,14 @@ func seed_with_pub_inputs{
     return res;
 }
 
-func get_leading_zeros{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(seed: felt) -> felt {
+// Verify leading zeros / proof of work
+func assert_le_lzcnt{bitwise_ptr: BitwiseBuiltin*}(n_bits, bitfield) {
     alloc_locals;
-
-    local lzcnt;
-    %{
-        # Count high bits in use
-        n_bits = len( bin(ids.seed).replace('0b', '') )
-        assert 0 <= n_bits <= 256, "expected 256 bits"
-
-        # Store leading zeros count
-        ids.lzcnt = 256 - n_bits
-    %}
-
-    // // Verify leading zeros count
-    // let ceil_pow2 = pow2(256 - lzcnt);
-
-    // // 2**(log2-1) < seed <= 2**log2
-    // with_attr error_message(
-    //         "Error in 2**(log2-1) < seed <= 2**log2 verification.") {
-    //     assert_le(seed, ceil_pow2 - 1);
-    //     assert_le(ceil_pow2 / 2, seed);
-    // }
-
-    return lzcnt;
+    // In fact we are checking trailing zeros here to be at least n_bits many
+    let pow2_n = pow2(n_bits);
+    assert [bitwise_ptr].x = bitfield;
+    assert [bitwise_ptr].y = pow2_n - 1;
+    assert [bitwise_ptr].x_and_y = 0;
+    let bitwise_ptr = bitwise_ptr + BitwiseBuiltin.SIZE;
+    return ();
 }
