@@ -53,6 +53,7 @@ from stark_verifier.crypto.random import (
 )
 from stark_verifier.evaluator import evaluate_constraints
 from stark_verifier.fri.fri_verifier import fri_verifier_new, fri_verify, to_fri_options
+from stark_verifier.parameters import NUM_BUILTINS
 from stark_verifier.utils import Vec
 
 
@@ -293,7 +294,7 @@ func read_and_verify_stark_proof{range_check_ptr, pedersen_ptr: HashBuiltin*, bi
     let memory = &pub_inputs.mem[initial_pc];
     // Read the program from the public memory
     let (program: felt*) = alloc();
-    let program_end_pc = initial_fp - 8;
+    let program_end_pc = initial_fp - NUM_BUILTINS - 2;
     let program_length = program_end_pc - initial_pc;
     read_mem_values(
         mem=memory, address=initial_pc, length=program_length, output=program
