@@ -93,11 +93,24 @@ def inclusion_proof(node):
     return path
 
 
+# Also see https://github.com/bitcoin-sv-specs/merkle-proof-standard-example/blob/master/verifyMerkleProofJSON.js
+def verify_inclusion_proof(index, path):
+    current_hash = path[0]
+    current_parent = leaf_nodes[index].parent
+    for entry in path[1::]:
+        if index % 2 == 0:
+            current_hash = pedersen_hash(current_hash, entry)
+        else:
+            current_hash = pedersen_hash(entry, current_hash)
+        current_parent = current_parent.parent
+        index = index // 2
+    return current_hash == root
+
+
 def get_block_header(block_height):
     http = urllib3.PoolManager()
 
-    url = 'https://blockstream.info/api/block-height/' + \
-        str(block_height)
+    url = 'https://blockstream.info/api/block-height/' + str(block_height)
     r = http.request('GET', url)
     block_hash = str(r.data, 'utf-8')
 
