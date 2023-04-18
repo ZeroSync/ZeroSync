@@ -107,14 +107,34 @@ def verify_inclusion_proof(index, path):
     return current_hash == root
 
 
+def little_endian(string):
+    splited = [str(string)[i: i + 2] for i in range(0, len(str(string)), 2)]
+    splited.reverse()
+    return "".join(splited)
+
+
+def decode_block_header(header):
+    decoded_header = {
+        'version': int(little_endian(header[0:8]), 16),
+        'previousblockhash': little_endian(header[8:72]),
+        'merkle_root': little_endian(header[72:136]),
+        'timestamp': int(little_endian(header[136:144]), 16),
+        'bits': int(little_endian(header[144:152]), 16),
+        'nonce': int(little_endian(header[152:160]), 16),
+    }
+
+    return decoded_header
+
+
 def get_block_header(block_height):
     http = urllib3.PoolManager()
 
-    url = 'https://blockstream.info/api/block-height/' + str(block_height)
+    url = 'https://blockstream.info/api/block-height/' + \
+        str(block_height)
     r = http.request('GET', url)
     block_hash = str(r.data, 'utf-8')
 
-    url = f'https://blockstream.info/api/block/{block_hash}'
+    url = f'https://blockstream.info/api/block/{block_hash}/header'
     r = http.request('GET', url)
     tries = 0
     while r.status != 200 and tries < 10:
@@ -125,7 +145,7 @@ def get_block_header(block_height):
         r = http.request('GET', url)
         tries += 1
     header = r.data.decode('utf-8')
-    return json.loads(header)
+    return decode_block_header(header)
 
 
 def get_block_headers(start, end):
