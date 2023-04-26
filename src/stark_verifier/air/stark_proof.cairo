@@ -1,7 +1,6 @@
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.uint256 import Uint256
 
-from stark_verifier.air.pub_inputs import PublicInputs
 from stark_verifier.air.table import Table
 from stark_verifier.air.transitions.frame import EvaluationFrame
 from stark_verifier.utils import Vec, Digest

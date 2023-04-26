@@ -268,9 +268,10 @@ func seed_with_pub_inputs{
             pub_inputs.rc_max,
             mem_length,
             pub_mem_hash,
-            pub_inputs.num_steps
+            pub_inputs.num_steps,
+            pub_inputs.num_builtins
         ),
-        data_length = 11
+        data_length = 12
     );
     let (res) = hash_finalize{hash_ptr=pedersen_ptr}(hash_state_ptr=hash_state_ptr);
     return res;

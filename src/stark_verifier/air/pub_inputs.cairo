@@ -21,6 +21,7 @@ struct PublicInputs {
     mem: MemEntry*,
     mem_length: felt,
     num_steps: felt,  // number of execution steps
+    num_builtins: felt, // number of cairo builtins
 }
 
 func read_public_inputs() -> PublicInputs* {
