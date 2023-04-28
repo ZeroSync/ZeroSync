@@ -12,22 +12,50 @@ CACHE_SIZE_SMALL_DATA = 10**5
 # BIG_DATA: blocks, txs
 CACHE_SIZE_LARGE_DATA = 10**3
 
+def little_endian(string):
+    splited = [str(string)[i: i + 2] for i in range(0, len(str(string)), 2)]
+    splited.reverse()
+    return "".join(splited)
+
+
+def marshall_block_header(header):
+    marshalled_header = {
+        'version': int(little_endian(header[0:8]), 16),
+        'previousblockhash': little_endian(header[8:72]),
+        'merkle_root': little_endian(header[72:136]),
+        'timestamp': int(little_endian(header[136:144]), 16),
+        'bits': int(little_endian(header[144:152]), 16),
+        'nonce': int(little_endian(header[152:160]), 16),
+    }
+    return marshalled_header
+
+
 class BTCAPI:
     def __init__(self, base_url):
         self.base_url = base_url
     
-    @lru_cache(maxsize=32)
-    def get_block_header(self, block_height):
+    def get_block_header_raw(self, block_height):
         pass
     
-    @lru_cache(maxsize=32)
     def get_block(self, block_height):
         pass
     
-    @lru_cache(maxsize=32)
     def get_transaction(self, block_height, tx_index):
         pass
     
+
+    def get_block_header(self, block_height):
+        raw_header = self.get_block_header_raw(block_height)
+        return marshall_block_header(raw_header)
+
+
+    def get_block_headers(self, start, end):
+        headers = []
+        for i in range(start, end):
+            headers.append(self.get_block_header(i))
+        return headers
+
+
     @staticmethod
     def make_BTCAPI():
         # Since bitcoin-cli is the preferred way to retrieve blocks try to
@@ -43,6 +71,8 @@ class BTCAPI:
         return API
 
 
+
+
 class BitcoinCLI(BTCAPI):
     def __init__(self, rpc_auth):
         self.rpc = AuthServiceProxy(rpc_auth)
@@ -52,7 +82,7 @@ class BitcoinCLI(BTCAPI):
         block_hash = self.rpc.getblockhash(block_height)
         return block_hash
 
-    def get_block_header(self, block_height):
+    def get_block_header_raw(self, block_height):
         block_hash = self.get_block_hash(block_height)
         block_header = self.rpc.getblockheader(block_hash)
         return block_header
@@ -87,14 +117,14 @@ class EsplorerAPI(BTCAPI):
         return block_hash
     
     @lru_cache(maxsize=CACHE_SIZE_SMALL_DATA)
-    def get_block_header(self, block_height):
+    def get_block_header_raw(self, block_height):
         block_hash = self.get_block_hash(block_height)
         url = self.base_url + 'block/' + str(block_hash) + '/header'
         r = self.pool_manager.request('GET', url)
         # TODO error message
         block_header = r.data.decode('utf-8')
         return block_header
-
+    
     @lru_cache(maxsize=CACHE_SIZE_LARGE_DATA)
     def get_block(self, block_height):
         block_hash = self.get_block_hash(block_height)
@@ -124,5 +154,5 @@ if __name__ == '__main__':
     API = BTCAPI.make_BTCAPI()
     print(API.get_block_hash(0))
     print(API.get_block(0))
-    print(API.get_block_header(0))
+    print(API.get_block_header_raw(0))
     print(API.get_transaction(0,0))
