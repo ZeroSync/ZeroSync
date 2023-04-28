@@ -64,9 +64,10 @@ class BTCAPI:
         try:
             API = BitcoinCLI('http://mario:myrpcpsw@localhost:8332')
             # Check if bitcoin-cli serves the main net genesis hash
-            if API.get_block_hash(0) != '000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f' or API.get_block(0) == None or API.get_transaction(0, 0): #
+            if API.get_block_hash(0) != '000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f' or API.get_block(0) == None or API.get_transaction(170, 1): #
                 API = EsplorerAPI('https://blockstream.info/api/')
         except Exception:
+            print('[WARNING] No bitcoinrpc setup found. Falling back to blockstream API')
             API = EsplorerAPI('https://blockstream.info/api/')
         return API
 
