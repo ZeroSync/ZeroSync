@@ -1,6 +1,6 @@
 from functools import lru_cache
 import urllib3
-from authproxy import AuthServiceProxy
+from src.utils.authproxy import AuthServiceProxy
 import urllib3
 import json
 import asyncio
