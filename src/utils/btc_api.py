@@ -1,6 +1,6 @@
 from functools import lru_cache
 import urllib3
-from bitcoinrpc.authproxy import AuthServiceProxy, JSONRPCException # TODO has to be installed -> setup
+from authproxy import AuthServiceProxy
 import urllib3
 import json
 import asyncio
@@ -76,6 +76,7 @@ class BTCAPI:
 
 class BitcoinCLI(BTCAPI):
     def __init__(self, rpc_auth):
+        self.rpc_auth = rpc_auth
         self.rpc = AuthServiceProxy(rpc_auth)
 
 
