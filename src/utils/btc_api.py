@@ -77,10 +77,11 @@ class BTCAPI:
 class BitcoinCLI(BTCAPI):
     def __init__(self, rpc_auth):
         self.rpc_auth = rpc_auth
-        self.rpc = AuthServiceProxy(rpc_auth)
+        self.rpc = AuthServiceProxy(self.rpc_auth)
 
 
     def get_block_hash(self, block_height):
+        self.rpc = AuthServiceProxy(self.rpc_auth)
         block_hash = self.rpc.getblockhash(block_height)
         return block_hash
 
