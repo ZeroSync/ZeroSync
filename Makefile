@@ -5,17 +5,23 @@ BIN_DIR = ./bin
 BUILD_DIR = ./build
 ARCH = $(shell uname -p)
 
+CAIRO_PARAMETERS = src/stark_verifier/parameters/parameters.cairo
 CAIRO_FILES = $(shell find src -type f -iname "*.cairo" -and -not -iname "test_*.cairo" -not -path "./src/chain_proof/*" -not -path "./src/headers_chain_proof/*")
 CHAIN_PROOF_PROGRAM = $(BUILD_DIR)/chain_proof_compiled.json
 HEADERS_CHAIN_PROOF_PROGRAM = $(BUILD_DIR)/headers_chain_proof_compiled.json
 STARK_PARSER = $(BIN_DIR)/stark_parser
 RUST_HINT_LIB = $(BIN_DIR)/libzerosync_hints.dylib
 
-.DELETE_ON_ERROR: $(CHAIN_PROOF_PROGRAM) $(HEADERS_CHAIN_PROOF_PROGRAM)
+.DELETE_ON_ERROR: $(CAIRO_PARAMETERS) $(CHAIN_PROOF_PROGRAM) $(HEADERS_CHAIN_PROOF_PROGRAM)
+
+CHAIN_PROOF_PARAMETERS = src/chain_proof/parameters.json
+HEADERS_CHAIN_PROOF_PARAMETERS = src/headers_chain_proof/parameters.json
 
 # Recipe for header_chain_proof and chain_proof compilation
 $(CHAIN_PROOF_PROGRAM): $(CAIRO_FILES) src/chain_proof/*.cairo
 	mkdir -p $(BUILD_DIR)
+	$([ -e $(CAIRO_PARAMETERS) ] && rm $(CAIRO_PARAMETERS))
+	python ./src/stark_verifier/parameters/parameters.py $(CHAIN_PROOF_PARAMETERS)
 	cairo-compile src/chain_proof/main.cairo --cairo_path src --output $@
 
 compile_chain_proof: $(CHAIN_PROOF_PROGRAM)
@@ -23,12 +29,15 @@ compile_chain_proof: $(CHAIN_PROOF_PROGRAM)
 
 $(HEADERS_CHAIN_PROOF_PROGRAM): $(CAIRO_FILES) src/headers_chain_proof/*.cairo
 	mkdir -p $(BUILD_DIR)
+	$([ -e $(CAIRO_PARAMETERS) ] && rm $(CAIRO_PARAMETERS))
+	python ./src/stark_verifier/parameters/parameters.py $(HEADERS_CHAIN_PROOF_PARAMETERS)
 	cairo-compile src/headers_chain_proof/main.cairo --cairo_path src --output $@
 
 compile_headers_chain_proof: $(HEADERS_CHAIN_PROOF_PROGRAM)
 	@echo "Compiled src/headers_chain_proof/main.cairo"
 
 INTEGRATION_PROGRAM_NAME := fibonacci
+INTEGRATION_PARAMETERS = tests/integration/cairo_parameters/$(INTEGRATION_PROGRAM_NAME).json
 INTEGRATION_PROGRAM_SRC = tests/integration/cairo_programs/$(INTEGRATION_PROGRAM_NAME).cairo
 INTEGRATION_PROGRAM_COMPILED = tests/integration/cairo_programs_compiled/$(INTEGRATION_PROGRAM_NAME).json
 INTEGRATION_PROGRAM_TRACE = tests/integration/cairo_programs_trace/$(INTEGRATION_PROGRAM_NAME)
@@ -107,6 +116,8 @@ unit_test:
 
 integration_test: $(STARK_PARSER)
 	@echo "Running integration tests..."
+	$([ -e $(CAIRO_PARAMETERS) ] && rm $(CAIRO_PARAMETERS))
+	python ./src/stark_verifier/parameters/parameters.py $(INTEGRATION_PARAMETERS)
 	PYTHONPATH=$$(echo pwd)/tests:$$(python -c "import site; print(site.getsitepackages()[0])"):$$PYTHONPATH protostar -p integration test --max-steps 100000000
 
 test:

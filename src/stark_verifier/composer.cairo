@@ -5,7 +5,7 @@ from stark_verifier.air.air_instance import AirInstance, DeepCompositionCoeffici
 from stark_verifier.air.transitions.frame import EvaluationFrame
 from stark_verifier.channel import Table
 from stark_verifier.utils import Vec
-from stark_verifier.parameters import NUM_QUERIES
+from stark_verifier.parameters.parameters import NUM_QUERIES
 
 struct DeepComposer {
     x_coordinates: felt*,

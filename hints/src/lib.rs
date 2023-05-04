@@ -178,7 +178,6 @@ fn seed_with_pub_inputs() -> Result<String, PyErr> {
             Felt::from(pub_inputs.mem.0.len()),
             Felt::from(pub_mem_hash),
             Felt::from(pub_inputs.num_steps),
-            Felt::from(pub_inputs.builtins.len( ) as u8),
         ].iter().map(|x| Fe::from_bytes_be(&{
             let mut data = [0u8; 32];
             for (src, dst) in x.to_raw().to_le_bytes().iter().rev().zip(data.iter_mut()) {
@@ -186,7 +185,7 @@ fn seed_with_pub_inputs() -> Result<String, PyErr> {
             }
             data
         }).unwrap()).fold(Fe::from(0u8), |hash, item| pedersen_hash(&hash, &item)),
-        &Fe::from(12u8)
+        &Fe::from(11u8)
     );
 
     let hex_string = hex::encode(digest.to_bytes_be());

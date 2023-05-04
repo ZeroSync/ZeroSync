@@ -13,7 +13,7 @@ from stark_verifier.crypto.random import PublicCoin, draw, reseed, contains, has
 from stark_verifier.fri.polynomials import lagrange_eval, interpolate_poly_and_verify
 from utils.pow2 import pow2
 from stark_verifier.channel import Channel, verify_merkle_proof, QueriesProof, read_remainder
-from stark_verifier.parameters import TWO_ADIC_ROOT_OF_UNITY, TWO_ADICITY, FOLDING_FACTOR, MULTIPLICATIVE_GENERATOR, NUM_QUERIES
+from stark_verifier.parameters.parameters import TWO_ADIC_ROOT_OF_UNITY, TWO_ADICITY, FOLDING_FACTOR, MULTIPLICATIVE_GENERATOR, NUM_QUERIES
 from stark_verifier.utils import Vec
 
 // g: domain offset

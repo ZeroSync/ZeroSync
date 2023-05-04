@@ -5,7 +5,7 @@ from starkware.cairo.common.pow import pow
 from stark_verifier.air.pub_inputs import PublicInputs
 from stark_verifier.air.stark_proof import ProofContext, ProofOptions, StarkProof
 from stark_verifier.crypto.random import PublicCoin, draw_elements, draw_pair
-from stark_verifier.parameters import TWO_ADIC_ROOT_OF_UNITY, TWO_ADICITY
+from stark_verifier.parameters.parameters import TWO_ADIC_ROOT_OF_UNITY, TWO_ADICITY
 
 struct AirInstance {
     // Layout

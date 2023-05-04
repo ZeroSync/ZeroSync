@@ -69,7 +69,7 @@ func test_read_and_verify_stark_proof{
     alloc_locals;
     %{
         from src.stark_verifier.utils import set_proof_path
-        set_proof_path('tmp/proof.bin')
+        set_proof_path('tests/integration/stark_proofs/fibonacci.bin')
     %}
 
     let (program_hash, outputs) = read_and_verify_stark_proof();

@@ -49,7 +49,6 @@ impl Writeable for PublicInputs {
         self.mem.write_into(target);
         self.mem.0.len().write_into(target);
         self.num_steps.write_into(target);
-        self.builtins.len().write_into(target);
     }
 }
 
