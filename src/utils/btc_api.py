@@ -12,6 +12,7 @@ CACHE_SIZE_SMALL_DATA = 10**5
 # BIG_DATA: blocks, txs
 CACHE_SIZE_LARGE_DATA = 10**3
 
+
 def little_endian(string):
     splited = [str(string)[i: i + 2] for i in range(0, len(str(string)), 2)]
     splited.reverse()
@@ -33,28 +34,31 @@ def marshall_block_header(header):
 class BTCAPI:
     def __init__(self, base_url):
         self.base_url = base_url
-    
+
     def get_block_header_raw(self, block_height):
         pass
-    
+
     def get_block(self, block_height):
         pass
-    
+
+    def get_block_raw(self, block_height):
+        pass
+
+    def get_transaction_raw(self, block_height, tx_index):
+        pass
+
     def get_transaction(self, block_height, tx_index):
         pass
-    
 
     def get_block_header(self, block_height):
         raw_header = self.get_block_header_raw(block_height)
         return marshall_block_header(raw_header)
-
 
     def get_block_headers(self, start, end):
         headers = []
         for i in range(start, end):
             headers.append(self.get_block_header(i))
         return headers
-
 
     @staticmethod
     def make_BTCAPI():
@@ -64,21 +68,20 @@ class BTCAPI:
         try:
             API = BitcoinCLI('http://mario:myrpcpsw@localhost:8332')
             # Check if bitcoin-cli serves the main net genesis hash
-            if API.get_block_hash(0) != '000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f' or API.get_block(0) == None or API.get_transaction(170, 1) == None: #
+            if API.get_block_hash(0) != '000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f' or API.get_block(
+                    0) is None or API.get_transaction_raw(170, 1) is None:
                 API = EsplorerAPI('https://blockstream.info/api/')
         except Exception:
-            print('[WARNING] No bitcoinrpc setup found. Falling back to blockstream API')
+            print(
+                '[WARNING] No bitcoinrpc setup found. Falling back to blockstream API')
             API = EsplorerAPI('https://blockstream.info/api/')
         return API
-
-
 
 
 class BitcoinCLI(BTCAPI):
     def __init__(self, rpc_auth):
         self.rpc_auth = rpc_auth
         self.rpc = AuthServiceProxy(self.rpc_auth)
-
 
     def get_block_hash(self, block_height):
         self.rpc = AuthServiceProxy(self.rpc_auth)
@@ -95,17 +98,26 @@ class BitcoinCLI(BTCAPI):
         block = self.rpc.getblock(block_hash)
         return block
 
+    # TODO hard code the genesis block
     # Expecting bitcoind client with -txindex
     @lru_cache(maxsize=CACHE_SIZE_LARGE_DATA)
-    def get_transaction(self, block_height, tx_index):
+    def get_transaction_raw(self, block_height, tx_index):
         block_hash = self.get_block_hash(block_height)
         tx_id = self.rpc.getblock(block_hash)['tx'][tx_index]
         tx_hex = self.rpc.getrawtransaction(f'{tx_id}')
         return tx_hex
 
+    # Expecting bitcoind client with -txindex
+    @lru_cache(maxsize=CACHE_SIZE_LARGE_DATA)
+    def get_transaction(self, block_height, tx_index):
+        block_hash = self.get_block_hash(block_height)
+        tx_id = self.rpc.getblock(block_hash)['tx'][tx_index]
+        tx_json = self.rpc.getrawtransaction(f'{tx_id}', True)
+        return tx_json
+
 
 class EsplorerAPI(BTCAPI):
-    def __init__(self, base_url): 
+    def __init__(self, base_url):
         self.base_url = base_url
         self.pool_manager = urllib3.PoolManager()
 
@@ -114,11 +126,14 @@ class EsplorerAPI(BTCAPI):
         url = self.base_url + 'block-height/' + str(block_height)
         r = self.pool_manager.request('GET', url)
         if r.status != 200:
-            print(f'ERROR: get_block_hash({block_height}) received a bad answer from the remote API: ', r.status, r.data.decode('utf-8'))
+            print(
+                f'ERROR: get_block_hash({block_height}) received a bad answer from the remote API: ',
+                r.status,
+                r.data.decode('utf-8'))
             exit(-1)
         block_hash = str(r.data, 'utf-8')
         return block_hash
-    
+
     @lru_cache(maxsize=CACHE_SIZE_SMALL_DATA)
     def get_block_header_raw(self, block_height):
         block_hash = self.get_block_hash(block_height)
@@ -127,7 +142,7 @@ class EsplorerAPI(BTCAPI):
         # TODO error message
         block_header = r.data.decode('utf-8')
         return block_header
-    
+
     @lru_cache(maxsize=CACHE_SIZE_LARGE_DATA)
     def get_block(self, block_height):
         block_hash = self.get_block_hash(block_height)
@@ -138,7 +153,7 @@ class EsplorerAPI(BTCAPI):
         return block
 
     @lru_cache(maxsize=CACHE_SIZE_LARGE_DATA)
-    def get_transaction(self, block_height, tx_index):
+    def get_transaction_raw(self, block_height, tx_index):
         block_hash = self.get_block_hash(block_height)
         url = self.base_url + f'block/{block_hash}/txid/' + str(tx_index)
         r = self.pool_manager.request('GET', url)
@@ -148,14 +163,18 @@ class EsplorerAPI(BTCAPI):
         r = self.pool_manager.request('GET', url)
         tx_hex = r.data.decode('utf-8')
         if r.status != 200:
-            print("ERROR: Fetch_transaction received a bad answer from the API: ", r.status, r.data.decode('utf-8'))
+            print(
+                "ERROR: Fetch_transaction received a bad answer from the API: ",
+                r.status,
+                r.data.decode('utf-8'))
             exit(-1)
         return tx_hex
 
 
 if __name__ == '__main__':
     API = BTCAPI.make_BTCAPI()
-    print(API.get_block_hash(0))
-    print(API.get_block(0))
-    print(API.get_block_header_raw(0))
-    print(API.get_transaction(0,0))
+    print(API.get_block_hash(1))
+    print(API.get_block(1))
+    print(API.get_block_header_raw(1))
+    print(API.get_transaction_raw(1, 0))
+    print(API.get_transaction(1, 0))

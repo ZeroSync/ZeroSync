@@ -66,10 +66,10 @@ headers_chain_proof: $(HEADERS_CHAIN_PROOF_PROGRAM)
 	PYTHONPATH=$$(python -c "import site; print(site.getsitepackages()[0])"):$$PYTHONPATH python src/headers_chain_proof/main.py
 
 bridge_node:
-	PYTHONPATH=$$(python -c "import site; print(site.getsitepackages()[0])"):$$(pwd)$$PYTHONPATH python src/utxo_set/bridge_node.py
+	PYTHONPATH=$$(python -c "import site; print(site.getsitepackages()[0])"):$$(pwd):$$PYTHONPATH python src/utxo_set/bridge_node.py
 
 headers_bridge_node:
-	PYTHONPATH=$$(python -c "import site; print(site.getsitepackages()[0])"):$$(pwd)$$PYTHONPATH python src/headers_chain_proof/bridge_node.py
+	PYTHONPATH=$$(python -c "import site; print(site.getsitepackages()[0])"):$$(pwd):$$PYTHONPATH python src/headers_chain_proof/bridge_node.py
 
 stark_parser: $(STARK_PARSER)
 	@echo "Building STARK proof parser..."

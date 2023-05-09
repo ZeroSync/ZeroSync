@@ -1,6 +1,10 @@
 // Defines hashes_from_hex for tests
 func setup_python_defs() {
     %{
+        # Note: This import requires $PYTHONPATH to include the zerosync path.
+        #       Currently appended in Makefile.
+        from src.utils.btc_api import BTCAPI
+        global BTC_API = BTCAPI.makeBTCAPI()
         import re
         def hex_to_felt(hex_string):
             # Seperate hex_string into chunks of 8 chars.

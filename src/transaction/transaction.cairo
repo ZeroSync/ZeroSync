@@ -219,25 +219,8 @@ func fetch_transaction(block_height, tx_index) -> felt* {
     let (raw_transaction) = alloc();
 
     %{
-        import urllib3
-        import json
-        http = urllib3.PoolManager()
-
-        url = 'https://blockstream.info/api/block-height/' + str(ids.block_height)
-        r = http.request('GET', url)
-        block_hash = str(r.data, 'utf-8')
-
-        url = f'https://blockstream.info/api/block/{block_hash}/txid/' + str(ids.tx_index)
-        r = http.request('GET', url)
-        txid = r.data.decode('utf-8')
-
-        url = f"https://blockstream.info/api/tx/{txid}/hex"
-        r = http.request('GET', url)
-        tx_hex = r.data.decode('utf-8')
-        
-        if r.status != 200:
-            print("ERROR: Fetch_transaction received a bad answer from the API: ", r.status, r.data.decode('utf-8'))
-            exit(-1)
+        # BTC_API is defined in src/utils/python_utils.cairo
+        tx_hex = BTC_API.get_transaction(ids.block_height, ids.tx_index)
         from_hex(tx_hex, ids.raw_transaction)
     %}
     return raw_transaction;
