@@ -98,6 +98,11 @@ class BitcoinCLI(BTCAPI):
         block = self.rpc.getblock(block_hash)
         return block
 
+    def get_block_raw(self, block_height):
+        block_hash = self.get_block_hash(block_height)
+        block = self.rpc.getblock(block_hash, False)
+        return block
+
     # TODO hard code the genesis block
     # Expecting bitcoind client with -txindex
     @lru_cache(maxsize=CACHE_SIZE_LARGE_DATA)
@@ -163,6 +168,20 @@ class EsplorerAPI(BTCAPI):
         return block
 
     @lru_cache(maxsize=CACHE_SIZE_LARGE_DATA)
+    def get_block_raw(self, block_height):
+        block_hash = self.get_block_hash(block_height)
+        url = self.base_url + 'block/' + str(block_hash) + '/raw'
+        r = self.pool_manager.request('GET', url)
+        if r.status != 200:
+            print(
+                f'ERROR: get_block_raw({block_height}) received a bad answer from the remote API: ',
+                r.status,
+                r.data.decode('utf-8'))
+            exit(-1)
+        block_raw = r.data.hex()
+        return block_raw
+
+    @lru_cache(maxsize=CACHE_SIZE_LARGE_DATA)
     def get_transaction_raw(self, block_height, tx_index):
         block_hash = self.get_block_hash(block_height)
         url = self.base_url + f'block/{block_hash}/txid/' + str(tx_index)
@@ -211,8 +230,10 @@ class EsplorerAPI(BTCAPI):
 
 if __name__ == '__main__':
     API = BTCAPI.make_BTCAPI()
-    print(API.get_block_hash(1))
-    print(API.get_block(1))
-    print(API.get_block_header_raw(1))
-    print(API.get_transaction_raw(1, 0))
-    print(API.get_transaction(1, 0))
+    print("[BLOCK HASH]", API.get_block_hash(1))
+    print("[BLOCK]", API.get_block(1))
+    print("[BLOCK_RAW]", API.get_block_raw(1))
+    print("[BLOCK_HEADER]", API.get_block(1))
+    print("[BLOCK_HEADER_RAW]", API.get_block_header_raw(1))
+    print("[TRANSACTION]", API.get_transaction(1, 0))
+    print("[TRANSACTION_RAW]", API.get_transaction_raw(1, 0))
