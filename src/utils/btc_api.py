@@ -139,7 +139,12 @@ class EsplorerAPI(BTCAPI):
         block_hash = self.get_block_hash(block_height)
         url = self.base_url + 'block/' + str(block_hash) + '/header'
         r = self.pool_manager.request('GET', url)
-        # TODO error message
+        if r.status != 200:
+            print(
+                f'ERROR: get_block_header_raw({block_height}) received a bad answer from the remote API: ',
+                r.status,
+                r.data.decode('utf-8'))
+            exit(-1)
         block_header = r.data.decode('utf-8')
         return block_header
 
@@ -148,7 +153,12 @@ class EsplorerAPI(BTCAPI):
         block_hash = self.get_block_hash(block_height)
         url = self.base_url + 'block/' + str(block_hash)
         r = self.pool_manager.request('GET', url)
-        # TODO error message
+        if r.status != 200:
+            print(
+                f'ERROR: get_block({block_height}) received a bad answer from the remote API: ',
+                r.status,
+                r.data.decode('utf-8'))
+            exit(-1)
         block = json.loads(r.data)
         return block
 
@@ -158,17 +168,45 @@ class EsplorerAPI(BTCAPI):
         url = self.base_url + f'block/{block_hash}/txid/' + str(tx_index)
         r = self.pool_manager.request('GET', url)
         txid = r.data.decode('utf-8')
-        # TODO error message
+        if r.status != 200:
+            print(
+                f'ERROR: get_transaction_raw({block_height}, {tx_index}) could not retrieve tx_id from the remote API: ',
+                r.status,
+                r.data.decode('utf-8'))
+            exit(-1)
         url = self.base_url + f'tx/{txid}/hex'
         r = self.pool_manager.request('GET', url)
         tx_hex = r.data.decode('utf-8')
         if r.status != 200:
             print(
-                "ERROR: Fetch_transaction received a bad answer from the API: ",
+                    f'ERROR: get_transaction_raw({block_height}, {tx_index}) could not retrieve transaction data from the remote API',
                 r.status,
                 r.data.decode('utf-8'))
             exit(-1)
         return tx_hex
+
+    @lru_cache(maxsize=CACHE_SIZE_LARGE_DATA)
+    def get_transaction(self, block_height, tx_index):
+        block_hash = self.get_block_hash(block_height)
+        url = self.base_url + f'block/{block_hash}/txid/' + str(tx_index)
+        r = self.pool_manager.request('GET', url)
+        txid = r.data.decode('utf-8')
+        if r.status != 200:
+            print(
+                f'ERROR: get_transaction({block_height}, {tx_index}) could not retrieve tx_id from the remote API: ',
+                r.status,
+                r.data.decode('utf-8'))
+            exit(-1)
+        url = self.base_url + f'tx/{txid}'
+        r = self.pool_manager.request('GET', url)
+        tx = json.loads(r.data)
+        if r.status != 200:
+            print(
+                f'ERROR: get_transaction({block_height}, {tx_index}) could not retrieve tx_id from the remote API: ',
+                r.status,
+                r.data.decode('utf-8'))
+            exit(-1)
+        return tx
 
 
 if __name__ == '__main__':
