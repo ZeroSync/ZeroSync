@@ -113,10 +113,13 @@ class BitcoinCLI(BTCAPI):
         return tx_hex
 
     # Expecting bitcoind client with -txindex
-    @lru_cache(maxsize=CACHE_SIZE_LARGE_DATA)
     def get_transaction(self, block_height, tx_index):
         block_hash = self.get_block_hash(block_height)
         tx_id = self.rpc.getblock(block_hash)['tx'][tx_index]
+        tx_json = self.rpc.getrawtransaction(f'{tx_id}', True)
+        return tx_json
+
+    def get_transaction_by_id(self, txid):
         tx_json = self.rpc.getrawtransaction(f'{tx_id}', True)
         return tx_json
 
@@ -203,6 +206,20 @@ class EsplorerAPI(BTCAPI):
                 r.data.decode('utf-8'))
             exit(-1)
         return tx_hex
+    
+    @lru_cache(maxsize=CACHE_SIZE_LARGE_DATA)
+    def get_transaction_by_id(self, txid):
+        url = self.base_url + f'tx/{txid}'
+        r = self.pool_manager.request('GET', url)
+        tx = json.loads(r.data)
+        if r.status != 200:
+            print(
+                f'ERROR: get_transaction_by_id({txid}) could not retrieve tx_id from the remote API: ',
+                r.status,
+                r.data.decode('utf-8'))
+            exit(-1)
+        return tx
+
 
     @lru_cache(maxsize=CACHE_SIZE_LARGE_DATA)
     def get_transaction(self, block_height, tx_index):
@@ -216,17 +233,7 @@ class EsplorerAPI(BTCAPI):
                 r.status,
                 r.data.decode('utf-8'))
             exit(-1)
-        url = self.base_url + f'tx/{txid}'
-        r = self.pool_manager.request('GET', url)
-        tx = json.loads(r.data)
-        if r.status != 200:
-            print(
-                f'ERROR: get_transaction({block_height}, {tx_index}) could not retrieve tx_id from the remote API: ',
-                r.status,
-                r.data.decode('utf-8'))
-            exit(-1)
-        return tx
-
+        return self.get_transaction_by_id(txid)
 
 if __name__ == '__main__':
     API = BTCAPI.make_BTCAPI()

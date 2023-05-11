@@ -36,19 +36,7 @@ func fetch_block(block_height) -> felt* {
     let (block_data) = alloc();
 
     %{
-        import urllib3
-        import json
-        http = urllib3.PoolManager()
-
-        url = 'https://blockstream.info/api/block-height/' + str(ids.block_height)
-        r = http.request('GET', url)
-        block_hash = str(r.data, 'utf-8')
-
-        url = f'https://blockstream.info/api/block/{ block_hash }/raw'
-        r = http.request('GET', url)
-
-        block_hex = r.data.hex()
-
+        block_hex = BTC_API.get_bock_raw(ids.block_height)
         from_hex(block_hex, ids.block_data)
     %}
 

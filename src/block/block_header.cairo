@@ -139,7 +139,7 @@ func fetch_block_header(block_height) -> felt* {
     let (raw_block_header) = alloc();
 
     %{
-        block_hex = BTC_API.get_bock_header_raw(ids.block_height)
+        block_hex = BTC_API.get_block_header_raw(ids.block_height)
         from_hex(block_hex, ids.raw_block_header)
     %}
 

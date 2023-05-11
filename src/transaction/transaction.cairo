@@ -220,7 +220,7 @@ func fetch_transaction(block_height, tx_index) -> felt* {
 
     %{
         # BTC_API is defined in src/utils/python_utils.cairo
-        tx_hex = BTC_API.get_transaction(ids.block_height, ids.tx_index)
+        tx_hex = BTC_API.get_transaction_raw(ids.block_height, ids.tx_index)
         from_hex(tx_hex, ids.raw_transaction)
     %}
     return raw_transaction;
@@ -337,7 +337,9 @@ func validate_output{range_check_ptr, utreexo_roots: felt*, hash_ptr: HashBuilti
 // See also:
 // - https://developer.bitcoin.org/devguide/transactions.html#signature-hash-types
 //
-func write_transaction{writer: Writer, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(transaction: Transaction) {
+func write_transaction{writer: Writer, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
+    transaction: Transaction
+) {
     alloc_locals;
     write_uint32(transaction.version);
 
