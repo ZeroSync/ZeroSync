@@ -139,26 +139,7 @@ func fetch_block_header(block_height) -> felt* {
     let (raw_block_header) = alloc();
 
     %{
-        block_height = ids.block_height
-
-        import urllib3
-        import json
-        http = urllib3.PoolManager()
-
-        url = 'https://blockstream.info/api/block-height/' + str(block_height)
-        r = http.request('GET', url)
-        if r.status != 200:
-            print("ERROR: fetch_block_header received a bad answer from the API: ", r.status, r.data.decode('utf-8'))
-            exit(-1)
-        block_hash = str(r.data, 'utf-8')
-
-        url = f'https://blockstream.info/api/block/{ block_hash }/header'
-        r = http.request('GET', url)
-        if r.status != 200:
-            print("ERROR: fetch_block_header received a bad answer from the API: ", r.status, r.data.decode('utf-8'))
-            exit(-1)
-        block_hex = r.data.decode('utf-8')
-
+        block_hex = BTC_API.get_block_header_raw(ids.block_height)
         from_hex(block_hex, ids.raw_block_header)
     %}
 

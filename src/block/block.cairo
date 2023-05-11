@@ -49,25 +49,8 @@ func fetch_transaction_count(block_height) -> felt {
     local transaction_count;
 
     %{
-        import urllib3
-        import json
-        http = urllib3.PoolManager()
-
-        url = 'https://blockstream.info/api/block-height/' + str(ids.block_height)
-        r = http.request('GET', url)
-        if r.status != 200:
-            print("ERROR: fetch_transaction_count received a bad answer from the API: ", r.status, r.data.decode('utf-8'))
-            exit(-1)
-
-        block_hash = str(r.data, 'utf-8')
-
-        url = f'https://blockstream.info/api/block/{ block_hash }' 
-        r = http.request('GET', url)
-        if r.status != 200:
-            print("ERROR: fetch_transaction_count received a bad answer from the API: ", r.status, r.data.decode('utf-8'))
-            exit(-1)
-        block = json.loads(r.data)
-
+        # BTC_API is defined in src/utils/python_utils.cairo
+        block = BTC_API.get_block(ids.block_height)
         ids.transaction_count = block["tx_count"]
     %}
     return transaction_count;

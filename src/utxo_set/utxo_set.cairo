@@ -40,17 +40,7 @@ func utxo_set_extract{hash_ptr: HashBuiltin*, utreexo_roots: felt*}(txid: felt*,
     setup_python_defs();
     %{
         txid = hash_from_memory(ids.txid) 
-
-        import urllib3
-        http = urllib3.PoolManager()
-        url = 'https://blockstream.info/api/tx/' + txid
-        r = http.request('GET', url)
-        if r.status != 200:
-            print("ERROR: Utxo_set_extract received a bad answer from the API: ", r.status, r.data.decode('utf-8'))
-            exit(-1)
-
-        import json
-        tx = json.loads(r.data)
+        tx = BTC_API.get_transaction_by_id(txid)
         tx_output = tx["vout"][ids.vout]
 
         ids.amount = tx_output["value"]

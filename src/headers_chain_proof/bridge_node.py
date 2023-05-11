@@ -13,6 +13,10 @@ import urllib3
 import re
 import time
 
+# Note: This import requires $PYTHONPATH to include the zerosync path.
+#       Currently appended in Makefile.
+from src.utils.btc_api import BTCAPI
+
 from starkware.cairo.lang.vm.crypto import pedersen_hash
 
 # The set of leaf nodes in the tree
@@ -113,48 +117,6 @@ def little_endian(string):
     return "".join(splited)
 
 
-def decode_block_header(header):
-    decoded_header = {
-        'version': int(little_endian(header[0:8]), 16),
-        'previousblockhash': little_endian(header[8:72]),
-        'merkle_root': little_endian(header[72:136]),
-        'timestamp': int(little_endian(header[136:144]), 16),
-        'bits': int(little_endian(header[144:152]), 16),
-        'nonce': int(little_endian(header[152:160]), 16),
-    }
-
-    return decoded_header
-
-
-def get_block_header(block_height):
-    http = urllib3.PoolManager()
-
-    url = 'https://blockstream.info/api/block-height/' + \
-        str(block_height)
-    r = http.request('GET', url)
-    block_hash = str(r.data, 'utf-8')
-
-    url = f'https://blockstream.info/api/block/{block_hash}/header'
-    r = http.request('GET', url)
-    tries = 0
-    while r.status != 200 and tries < 10:
-        time.sleep(30)
-        print('ERROR: get_block_header received a bad answer from the API:',
-              r.status, r.data.decode('utf-8'))
-        # Try again
-        r = http.request('GET', url)
-        tries += 1
-    header = r.data.decode('utf-8')
-    return decode_block_header(header)
-
-
-def get_block_headers(start, end):
-    headers = []
-    for i in range(start, end):
-        headers.append(get_block_header(i))
-    return headers
-
-
 def hex_to_felt(hex_string):
     splited = [str(hex_string)[i: i + 2]
                for i in range(0, len(str(hex_string)), 2)]
@@ -210,12 +172,12 @@ class RequestHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
         global leaf_nodes
-
+        global API
         # Meant to be called before every new Cairo run
         if self.path.startswith('/create'):
             block_height = int(self.path.replace('/create/', ''))
             print('create', block_height)
-            headers = get_block_headers(len(leaf_nodes), block_height)
+            headers = API.get_block_headers(len(leaf_nodes), block_height)
             header_hashes = [hash_block_header(header) for header in headers]
             add_nodes(header_hashes)
             global root
@@ -249,6 +211,8 @@ class RequestHandler(BaseHTTPRequestHandler):
 
 
 if __name__ == '__main__':
+    global API
+    API = BTCAPI.make_BTCAPI()
     server = HTTPServer(('localhost', 2122), RequestHandler)
     print('Starting bridge node at http://localhost:2122')
     server.serve_forever()
