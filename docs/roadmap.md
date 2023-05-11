@@ -23,7 +23,6 @@ Implement a chain proof that mimics the ["assumevalid" option of Bitcoin Core](h
 Measure the performance of *assumevalid* proofs and optimise them until we can further extend them with the validation of Bitcoin Scripts.
 
 - 👷‍♂️ Benchmark the *assumevalid proof* with blocks full of transactions (e.g. up to 3500 TXs)
-	+ The largest block validated with the current Cairo program for now is [Block 383838](https://blockstream.info/block/00000000000000000e9b42248aa61593ccc4aa0a399b3cb6b50c650f45761c3a) which includes a total of 933 transactions. Generating the trace with [cairo-rs-py](https://github.com/lambdaclass/cairo-rs-py) took 50 minutes and 31 Million execution steps. 
 	+ Benchmarks for different block sizes 	
 		| Commit Hash | Block number | txs     | Steps        | Runner time | Prover time | Max RAM  |
 		| ----------- | ------------ | ------- | ------------ | ----------- | ----------- | -------- |

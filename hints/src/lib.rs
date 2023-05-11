@@ -177,7 +177,7 @@ fn seed_with_pub_inputs() -> Result<String, PyErr> {
             Felt::from(pub_inputs.rc_max),
             Felt::from(pub_inputs.mem.0.len()),
             Felt::from(pub_mem_hash),
-            Felt::from(pub_inputs.num_steps)
+            Felt::from(pub_inputs.num_steps),
         ].iter().map(|x| Fe::from_bytes_be(&{
             let mut data = [0u8; 32];
             for (src, dst) in x.to_raw().to_le_bytes().iter().rev().zip(data.iter_mut()) {

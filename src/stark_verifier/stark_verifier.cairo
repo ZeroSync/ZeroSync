@@ -53,8 +53,8 @@ from stark_verifier.crypto.random import (
 )
 from stark_verifier.evaluator import evaluate_constraints
 from stark_verifier.fri.fri_verifier import fri_verifier_new, fri_verify, to_fri_options
-from stark_verifier.parameters import NUM_BUILTINS
 from stark_verifier.utils import Vec
+from stark_verifier.parameters.parameters import NUM_BUILTINS
 
 
 
