@@ -74,32 +74,47 @@ def parse_cairo_output(cairo_output, debug=False):
     return list(lines)
 
 
+#############################
+# CONFIGURE PARAMETER HERE
+# start_bklock_height is overwritten by block_height in
+# headers_chain_state.json if it exists
+start_block_height = 0
+batches = 100
+batch_size = 4      # Will overwrite batch_size in headers_chain_state.json
+#############################
+
 output_dir = args.output_dir
 os.popen(f'mkdir -p {output_dir}')
 
-# Copy genesis state.json into the output directory
-f = open('src/headers_chain_proof/state_0.json')
-genesis_state = json.load(f)
+# Check if output_dir includes a heades_chain_state.json already
+if os.path.isfile(f'{output_dir}/headers_chain_state.json'):
+    f = open(f'{output_dir}/headers_chain_state.json')
+    state = json.load(f)
+    start_block_height = state['block_height'] + 1
+    state['batch_size'] = batch_size
+    f.close()
+    with open(f'{output_dir}/headers_chain_state.json', 'w') as outfile:
+        outfile.write(json.dumps(state))
+else:
+    # Copy genesis state.json into the output directory
+    f = open('src/headers_chain_proof/state_0.json')
+    genesis_state = json.load(f)
 
-# Read the program_length from COMPILED_PROGRAM and update
-# it in the genesis state
-f = open(COMPILED_PROGRAM)
-program = json.load(f)
-genesis_state['program_length'] = len(program['data'])
-# TODO: compute program hash and write it into chain_state.json
-
-batch_size = 4
-genesis_state['batch_size'] = batch_size
-
-with open(f'{output_dir}/headers_chain_state.json', 'w') as outfile:
-    outfile.write(json.dumps(genesis_state))
+    # Read the program_length from COMPILED_PROGRAM and update
+    # it in the genesis state
+    f = open(COMPILED_PROGRAM)
+    program = json.load(f)
+    genesis_state['program_length'] = len(program['data'])
+    # TODO: compute program hash and write it into chain_state.json
+    #genesis_state['program_hash'] = SOMECALCULATEDVALUE
+    genesis_state['batch_size'] = batch_size
+    with open(f'{output_dir}/headers_chain_state.json', 'w') as outfile:
+        outfile.write(json.dumps(genesis_state))
 
 chain_state_file = f'{output_dir}/headers_chain_state.json'
 
 # The first Bitcoin TX ever occured in block 170. The second TX occured in
 # block 181.
-start_block_height = 0
-batches = 100
 for i in range(start_block_height, batches * batch_size, batch_size):
     print(f'\n === Processing block height {i} to {i + batch_size - 1} ===')
     # Fill the bridge_node
@@ -160,6 +175,6 @@ for i in range(start_block_height, batches * batch_size, batch_size):
     return_code = subprocess.call(cmd, shell=True)
     if return_code == 0:
         print(f'Proving time: { int(time.time()-start_time) } seconds')
-        print(f'Done proving chain_proof-{i}\n')
+        print(f'Done proving chain_proof-{i + batch_size - 1}\n')
     else:
         print(f'Proving failed. Error code: {return_code}\n')
