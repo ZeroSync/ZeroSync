@@ -479,13 +479,15 @@ func assert_zeroes(array: felt*, array_len){
 }
 
 // Ensure that a given array contains a particular element
-func assert_contains(array:felt*, array_len, element){
+func assert_contains{range_check_ptr}(array:felt*, array_len, element){
     alloc_locals;
     local index: felt;
     %{
         ids.index = index_of(ids.array, ids.array_len, ids.element, memory)
     %}
-    // TODO: Do we have to verify that `0 < index < array_len` here?
+    with_attr error_message("0 < {index} < {array_len}") {
+        assert_nn_le(index, array_len - 1);
+    }
     assert element = array[index];
     return ();
 }

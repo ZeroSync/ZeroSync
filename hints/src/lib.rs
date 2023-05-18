@@ -98,8 +98,14 @@ fn draw_integers() -> Result<String, WinterVerifierError> {
     let z = public_coin
         .draw_integers(20, 64)
         .map_err(|_| VerifierError::RandomCoinError)?;
-
-    let hex_string = z[0].to_string(); // TODO: serialize all ints to hex
+    
+    let hex_string = hex::encode({
+        let mut z_as_u8 = [0u8; 20];
+        for (as_usize, as_u8) in z.iter().zip(z_as_u8.iter_mut()) {
+            *as_u8 = *as_usize as u8;
+        }
+        z_as_u8
+    });
     Ok(hex_string)
 }
 

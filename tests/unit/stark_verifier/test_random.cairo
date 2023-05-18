@@ -119,8 +119,9 @@ func test_draw_integers{range_check_ptr, pedersen_ptr: HashBuiltin*, bitwise_ptr
     }
 
     %{
-        # TODO: double-check those values
-        expected = [39, 31, 4, 46, 32, 61, 27, 5, 44, 12, 37, 3, 6, 9, 63, 45, 48, 30, 17, 33]
+        from zerosync_hints import *
+        integers = draw_integers()
+        expected = [int(integers[i:i+2], 16) for i in range(0, 2*ids.n_elements, 2)]
         for i in range(ids.n_elements):
             assert memory[ids.elements + i] == expected[i]
     %}
