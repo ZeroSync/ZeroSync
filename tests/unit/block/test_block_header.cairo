@@ -266,6 +266,85 @@ func test_adjust_current_target{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}()
 // Test a current_target adjustment
 // After this block the current_target gets adjusted because it is a last block of an epoch.
 //
+// Block at height 32255 ( because 201599 % 2016 == 2015 )
+// - https://blockstream.info/block/00000000984f962134a7291e3693075ae03e521f0ee33378ec30a334d860034b
+// Block at height 32254
+// - https://blockstream.info/block/000000006baebaa74cecde6c6787c26ee0a616a3c333261bff36653babdac149:
+//
+@external
+func test_adjust_current_target_first_change{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
+    alloc_locals;
+    setup_python_defs();
+
+    // Create a dummy for the previous chain state
+    let (prev_block_hash) = alloc();
+    %{
+        hashes_from_hex([
+            "000000006baebaa74cecde6c6787c26ee0a616a3c333261bff36653babdac149"
+        ], ids.prev_block_hash)
+    %}
+
+    // The previous epoch started at the timestamp of the block at height = 32256 - 2016 = 30240
+    // https://blockstream.info/block/000000000fa8bfa0f0dd32f956b874b2c7f1772c5fbedcb1b35e03335c7fb0a8
+    let epoch_start_time = 1261130161;   // timestamp of block 30240
+
+    // The current_target of the previous epoch
+    let prev_current_target = 0x1d00ffff;
+
+    let prev_timestamps = dummy_prev_timestamps();
+
+    let prev_chain_state = ChainState(
+        block_height=32254,
+        total_work=0,
+        best_block_hash=prev_block_hash,
+        current_target=prev_current_target,
+        epoch_start_time=epoch_start_time,
+        prev_timestamps,
+    );
+
+    // initialize sha256_ptr
+    let sha256_ptr: felt* = alloc();
+
+    // Read a block header from the byte stream
+    // This is our next chain tip
+    with sha256_ptr {
+        let context = read_block_header_validation_context(prev_chain_state);
+    }
+
+    // Sanity check: block version should be 1
+    with_attr error_message("Invalid block version.") {
+        assert 0x01 = context.block_header.version;
+    }
+
+    // Check if the target was computed correctly
+    assert context.target = 0x00000000ffff0000000000000000000000000000000000000000000000000000;
+
+    // Check if the block hash is correct
+    let (block_hash_expected) = alloc();
+    %{
+        hashes_from_hex([
+            "00000000984f962134a7291e3693075ae03e521f0ee33378ec30a334d860034b"
+            ], ids.block_hash_expected)
+    %}
+
+    with_attr error_message("invalid block hash") {
+        assert_hashes_equal(context.block_hash, block_hash_expected);
+    }
+
+    // Try to validate the block header.
+    // This should succeed for valid block headers
+    let next_state = validate_and_apply_block_header(context);
+
+    // Verify that the current_target was correctly adjusted
+    with_attr error_message("The current_target wasn't adjusted correctly.") {
+        assert 0x1d00d86a = next_state.current_target;
+    }
+
+    return ();
+}
+// Test a current_target adjustment
+// After this block the current_target gets adjusted because it is a last block of an epoch.
+//
 // Block at height 2015
 // - https://blockstream.info/block/00000000693067b0e6b440bc51450b9f3850561b07f6d3c021c54fbd6abb9763
 // - https://blockstream.info/api/block/00000000693067b0e6b440bc51450b9f3850561b07f6d3c021c54fbd6abb9763

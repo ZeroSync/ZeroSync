@@ -61,6 +61,10 @@
         {
             "expected_output": "0x1707a429",
             "input": "0x00000000000000000007a4290000000000000000000000000000000000000000"
+        },
+        {
+            "expected_output": "0x1d00d86a",
+            "input": "0xd86a528bc8bc8bc8bc8bc8bc8bc8bc8bc8bc8bc8bc8bc8bc8bc8bc8b"
         }
     ]
 }
