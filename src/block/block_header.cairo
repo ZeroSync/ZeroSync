@@ -469,7 +469,7 @@ func target_to_bits{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(target) -> fe
         ids.bits = target_to_bits(ids.target)
     %}
 
-    // / Compute the `exponent` which is the most significant byte of `bits`.
+    /// Compute the `exponent` which is the most significant byte of `bits`.
 
     // To do so, first we need a mask with the first 8 bits:
     const MASK_BITS_TO_SHIFT = 0xFF000000;

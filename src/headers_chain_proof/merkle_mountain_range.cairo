@@ -4,14 +4,8 @@ from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.memcpy import memcpy
 from starkware.cairo.common.memset import memset
 
-const MMR_ROOTS_LEN = 27;  // ~ log2( 100,000,000 UTXOs )
+const MMR_ROOTS_LEN = 27;  // ~ log2( 100,000,000 headers )
 
-func mmr_init() -> felt* {
-    alloc_locals;
-    let (mmr_roots) = alloc();
-    memset(mmr_roots, 0, MMR_ROOTS_LEN);
-    return mmr_roots;
-}
 
 func mmr_add{hash_ptr: HashBuiltin*, mmr_roots: felt*}(leaf) {
     alloc_locals;
@@ -42,17 +36,10 @@ func _mmr_add_loop{hash_ptr: HashBuiltin*}(roots_in: felt*, roots_out: felt*, n,
 
 
 func mmr_add_leaves{hash_ptr: HashBuiltin*, mmr_roots: felt*}(leaves: felt*, n_leaves) {
-    alloc_locals;
-    _mmr_add_leaves_loop(leaves, n_leaves);
-    return ();
-}
-
-
-func _mmr_add_leaves_loop{hash_ptr: HashBuiltin*, mmr_roots: felt*}(leaves: felt*, n_leaves) {
     if (n_leaves == 0) {
         return ();
     }
     alloc_locals;
     mmr_add([leaves]);
-    return _mmr_add_leaves_loop(leaves + 1, n_leaves-1);
+    return mmr_add_leaves(leaves + 1, n_leaves-1);
 }

@@ -3,8 +3,6 @@
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin, HashBuiltin
 from starkware.cairo.common.serialize import serialize_word
-from starkware.cairo.common.memcpy import memcpy
-from starkware.cairo.common.math import unsigned_div_rem
 
 from crypto.hash_utils import HASH_FELT_SIZE
 from block.block_header import (
@@ -15,15 +13,7 @@ from block.block_header import (
 from utils.python_utils import setup_python_defs
 from crypto.sha256 import finalize_sha256
 from headers_chain_proof.recurse import recurse
-from headers_chain_proof.pedersen_merkle_tree import (
-    append_merkle_tree_pedersen,
-    verify_merkle_path_zero,
-    calculate_height,
-    calculate_merkle_path_len,
-)
-from utils.pow2 import pow2
-
-from headers_chain_proof.merkle_mountain_range import (mmr_add_leaves, MMR_ROOTS_LEN, mmr_init)
+from headers_chain_proof.merkle_mountain_range import (mmr_add_leaves, MMR_ROOTS_LEN)
 
 func serialize_chain_state{output_ptr: felt*}(chain_state: ChainState) {
     serialize_word(chain_state.block_height);
@@ -44,22 +34,13 @@ func serialize_array{output_ptr: felt*}(array: felt*, array_len) {
     return ();
 }
 
-func fetch_block(block_height) -> felt* {
-    let (block_data) = alloc();
-
-    %{
-        block_hex = BTC_API.get_block_header_raw(ids.block_height)
-        from_hex(block_hex, ids.block_data)
-    %}
-
-    return block_data;
-}
-
-func _validate_block_headers{
+// Validates the next n block headers and returns a tuple of the final state and an array containing all block header pedersen hashes.
+// The block header pedersen hashes can be used to create a merkle tree over all block headers of the batch.
+func validate_block_headers{
     hash_ptr: HashBuiltin*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*, sha256_ptr: felt*
-}(block_hashes: felt*, prev_chain_state: ChainState, i, n) -> ChainState {
+}(prev_chain_state: ChainState, n, block_hashes: felt*) -> ChainState {
     alloc_locals;
-    if (i == n) {
+    if (n == 0) {
         return prev_chain_state;
     }
 
@@ -89,21 +70,9 @@ func _validate_block_headers{
                      context.block_hash[5] * BASE ** 5 +
                      context.block_hash[6] * BASE ** 6;
     // Add that felt to the list of block hashes
-    assert block_hashes[i] = block_hash;
+    assert [block_hashes] = block_hash;
 
-    return _validate_block_headers(block_hashes, next_chain_state, i + 1, n);
-}
-
-// Validates the next n block headers and returns a tuple of the final state and an array containing all block header pedersen hashes.
-// The block header pedersen hashes can be used to create a merkle tree over all block headers of the batch.
-func validate_block_headers{
-    hash_ptr: HashBuiltin*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*, sha256_ptr: felt*
-}(start_chain_state: ChainState, n, block_hashes: felt*) -> ChainState {
-    let end_chain_state = _validate_block_headers(
-        block_hashes, start_chain_state, 0, n
-    );
-
-    return end_chain_state;
+    return validate_block_headers(next_chain_state, n - 1, block_hashes + 1);
 }
 
 
@@ -146,8 +115,8 @@ func main{
     %}
 
 
-    // Block Header Validation
-    let start_chain_state = ChainState(
+    // The ChainState of the previous state
+    let prev_chain_state = ChainState(
         block_height,
         total_work,
         best_block_hash,
@@ -155,22 +124,21 @@ func main{
         epoch_start_time,
         prev_timestamps,
     );
-    
+
+    // Verify the previous state proof
     recurse(program_hash, start_chain_state, mmr_roots);
 
-    let (local block_hashes: felt*) = alloc();
-
+    // Validate all blocks in this batch and update the state
+    let (block_hashes) = alloc();
     with sha256_ptr {
-        // Validate all blocks in this batch
-        let final_chain_state = validate_block_headers{hash_ptr=pedersen_ptr}(
-            start_chain_state, batch_size, block_hashes
-        );
+        let next_chain_state = validate_block_headers{hash_ptr=pedersen_ptr}(
+            prev_chain_state, batch_size, block_hashes);
     }
     finalize_sha256(sha256_ptr_start, sha256_ptr);
+    mmr_add_leaves{hash_ptr=pedersen_ptr, mmr_roots=mmr_roots}(block_hashes, batch_size);
 
-    mmr_add_leaves{ hash_ptr=pedersen_ptr, mmr_roots=mmr_roots}(block_hashes, batch_size);
-
-    serialize_chain_state(final_chain_state);
+    // Output the next state
+    serialize_chain_state(next_chain_state);
     serialize_array(mmr_roots, MMR_ROOTS_LEN);
     serialize_word(program_hash);
     
