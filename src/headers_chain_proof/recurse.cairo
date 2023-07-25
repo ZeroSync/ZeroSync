@@ -9,13 +9,15 @@ from crypto.hash_utils import HASH_FELT_SIZE
 from crypto.hash_utils import assert_hashes_equal
 
 from stark_verifier.stark_verifier import read_and_verify_stark_proof
+from headers_chain_proof.merkle_mountain_range import MMR_ROOTS_LEN
+
 
 func recurse{pedersen_ptr: HashBuiltin*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
-    block_height, expected_program_hash, prev_chain_state: ChainState, merkle_root) {
+    expected_program_hash, prev_chain_state: ChainState, mmr_roots: felt*) {
     alloc_locals;
 
     // For the genesis block there is no parent proof to verify
-    if(block_height == -1){
+    if(prev_chain_state.block_height == -1){
         return ();
     }
 
@@ -34,7 +36,7 @@ func recurse{pedersen_ptr: HashBuiltin*, range_check_ptr, bitwise_ptr: BitwiseBu
 
     // 3. Parse the `next_state` of the parent proof from its public inputs
     // and then verify it is equal to the child proof's `prev_state`
-    verify_prev_chain_state(mem_values, prev_chain_state, merkle_root, program_hash);
+    verify_prev_chain_state(mem_values, prev_chain_state, mmr_roots, program_hash);
     return ();
 }
 
@@ -46,12 +48,12 @@ func recurse{pedersen_ptr: HashBuiltin*, range_check_ptr, bitwise_ptr: BitwiseBu
 //      [10]        current_target
 //      [11..21]    timestamps
 //      [22]        epoch_start_time
-//      [23]        merkle_root
-//      [24]        program_hash
+//      [23..50]    mmr_roots
+//      [51]        program_hash
 //
-//  ---> total: 25 public inputs
+//  ---> total: 51 public inputs
 //
-func verify_prev_chain_state(mem_values: felt*, prev_chain_state: ChainState, merkle_root, program_hash){
+func verify_prev_chain_state(mem_values: felt*, prev_chain_state: ChainState, mmr_roots:felt*, program_hash){
     assert prev_chain_state.block_height = mem_values[0];
     let mem_values = mem_values + 1;
 
@@ -69,8 +71,8 @@ func verify_prev_chain_state(mem_values: felt*, prev_chain_state: ChainState, me
     assert prev_chain_state.epoch_start_time = mem_values[0];
     let mem_values = mem_values + 1;
 
-    assert merkle_root = mem_values[0];
-    let mem_values = mem_values + 1;
+    memcpy(mmr_roots, mem_values, MMR_ROOTS_LEN);
+    let mem_values = mem_values + MMR_ROOTS_LEN;
 
     assert program_hash = mem_values[0];
 

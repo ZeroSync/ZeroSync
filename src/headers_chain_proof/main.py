@@ -11,7 +11,7 @@ parser.add_argument('--output_dir', type=str, default='tmp')
 args = parser.parse_args()
 
 P = 2**251 + 17 * 2**192 + 1
-NUM_OUTPUTS = 25
+NUM_OUTPUTS = 51
 FOLDING_FACTOR = 8
 COMPILED_PROGRAM = "build/headers_chain_proof_compiled.json"
 
@@ -152,7 +152,7 @@ for i in range(start_block_height, batches * batch_size, batch_size):
             'prev_timestamps': r.read_n(11),
             'epoch_start_time': r.read(),
             'batch_size': batch_size,
-            'merkle_root': hex(r.read()),
+            'mmr_roots': felts_to_hex(r.read_n(27)),
             'program_hash': hex(r.read())
         }
         # Write the chain state into a json file
