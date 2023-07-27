@@ -31,7 +31,7 @@ $(HEADERS_CHAIN_PROOF_PROGRAM): $(CAIRO_FILES) src/headers_chain_proof/*.cairo
 	mkdir -p $(BUILD_DIR)
 	$([ -e $(CAIRO_PARAMETERS) ] && rm $(CAIRO_PARAMETERS))
 	python ./src/stark_verifier/parameters/parameters.py $(HEADERS_CHAIN_PROOF_PARAMETERS)
-	cairo-compile src/headers_chain_proof/main.cairo --cairo_path src --output $@
+	cairo-compile src/headers_chain_proof/main.cairo --cairo_path src --output $@ --proof_mode
 
 compile_headers_chain_proof: $(HEADERS_CHAIN_PROOF_PROGRAM)
 	@echo "Compiled src/headers_chain_proof/main.cairo"

@@ -14,6 +14,7 @@ P = 2**251 + 17 * 2**192 + 1
 NUM_OUTPUTS = 51
 FOLDING_FACTOR = 8
 COMPILED_PROGRAM = "build/headers_chain_proof_compiled.json"
+SANDSTORM = "../sandstorm-mirror/target/release/sandstorm"
 
 
 class FeltsReader:
@@ -50,7 +51,7 @@ def felt_to_hex(felt):
     Remove leading "0x", pad leading zeros to 32 bytes
     """
     hex_felt = hex(felt).replace('0x', '').zfill(64)
-    if(int(hex_felt, 16) == 0):
+    if (int(hex_felt, 16) == 0):
         return "0"
     return hex_felt
 
@@ -106,7 +107,7 @@ else:
     program = json.load(f)
     genesis_state['program_length'] = len(program['data'])
     # TODO: compute program hash and write it into chain_state.json
-    #genesis_state['program_hash'] = SOMECALCULATEDVALUE
+    # genesis_state['program_hash'] = SOMECALCULATEDVALUE
     genesis_state['batch_size'] = batch_size
     with open(f'{output_dir}/headers_chain_state.json', 'w') as outfile:
         outfile.write(json.dumps(genesis_state))
@@ -118,31 +119,35 @@ chain_state_file = f'{output_dir}/headers_chain_state.json'
 for i in range(start_block_height, batches * batch_size, batch_size):
     print(f'\n === Processing block height {i} to {i + batch_size - 1} ===')
     # Fill the bridge_node
-    print(f'Step 0: Setup headers bridge_node...')
-    http = urllib3.PoolManager()
-    url = 'http://localhost:2122/reset/'
-    r = http.request('GET', url)
-    url = f'http://localhost:2122/create/{i}'
-    r = http.request('GET', url)
-    response = json.loads(r.data)
-    assert response['status'] == 'success'
+   # print(f'Step 0: Setup headers bridge_node...')
+   # http = urllib3.PoolManager()
+   # url = 'http://localhost:2122/reset/'
+   # r = http.request('GET', url)
+   # url = f'http://localhost:2122/create/{i}'
+   # r = http.request('GET', url)
+   # response = json.loads(r.data)
+   # assert response['status'] == 'success'
 
     # Run the Cairo runner
     print(f'Step 1: Cairo runner...')
     start_time = time.time()
     cmd = f'cairo-run                           \
             --program={COMPILED_PROGRAM} \
-            --layout=all                        \
+            --layout=recursive                  \
             --print_output                      \
             --program_input={chain_state_file}  \
             --trace_file={output_dir}/trace.bin \
-            --memory_file={output_dir}/memory.bin'
+            --memory_file={output_dir}/memory.bin \
+            --air_private_input {output_dir}/air-private-input.json \
+            --air_public_input {output_dir}/air-public-input.json \
+            --proof_mode \
+            --print_info'
     program_output_string = os.popen(cmd).read()
-    program_output = parse_cairo_output(program_output_string, True)
     print(f'Running time: { int(time.time()-start_time) } seconds\n')
-
+    stop_after_proving = False
     # Parse outputs
     try:
+        program_output = parse_cairo_output(program_output_string, True)
         r = FeltsReader(program_output)
         chain_state = {
             'block_height': r.read(),
@@ -161,20 +166,23 @@ for i in range(start_block_height, batches * batch_size, batch_size):
         f.close()
     except BaseException:
         print(program_output_string)
+        print("[ERROR] Unable to parse the next state from the program output (above).")
+        stop_after_proving = True
 
-    # Run Giza prover
-    print(f"Step 2: Giza prover...")
+    # Run with sandstorm prover
+    print(f"Step 2: Sandstorm prover...")
     start_time = time.time()
-    cmd = f'giza prove                          \
-            --trace={output_dir}/trace.bin      \
-            --memory={output_dir}/memory.bin    \
-            --program={COMPILED_PROGRAM} \
-            --output={output_dir}/headers_chain_proof-{i + batch_size - 1}.bin \
-            --num-outputs={NUM_OUTPUTS} \
-            --fri-folding-factor={FOLDING_FACTOR}'
+    # TODO get memory value with resources
+    cmd = f'\\time -f "%E %M" {SANDSTORM} --program {COMPILED_PROGRAM} \
+            --air-public-input {output_dir}/air-public-input.json \
+            prove --air-private-input {output_dir}/air-private-input.json \
+            --output {output_dir}/headers_chain_proof-{str(i + batch_size - 1)}.bin'
+    print(cmd)
     return_code = subprocess.call(cmd, shell=True)
     if return_code == 0:
         print(f'Proving time: { int(time.time()-start_time) } seconds')
         print(f'Done proving chain_proof-{i + batch_size - 1}\n')
     else:
         print(f'Proving failed. Error code: {return_code}\n')
+    if stop_after_proving:
+        break
