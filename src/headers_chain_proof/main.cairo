@@ -126,7 +126,7 @@ func main{
     );
 
     // Verify the previous state proof
-    recurse(program_hash, start_chain_state, mmr_roots);
+    recurse(program_hash, prev_chain_state, mmr_roots);
 
     // Validate all blocks in this batch and update the state
     let (block_hashes) = alloc();
