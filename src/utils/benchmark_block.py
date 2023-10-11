@@ -110,7 +110,7 @@ def bridge_node_running():
 
 if __name__ == '__main__':
 
-    # The first Bitcoin TX ever occured in block 170. The second TX occured in
+    # The first Bitcoin TX ever occurred in block 170. The second TX occurred in
     # block 181.
 
     if len(sys.argv) < 2:
