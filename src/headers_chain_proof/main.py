@@ -113,7 +113,7 @@ else:
 
 chain_state_file = f'{output_dir}/headers_chain_state.json'
 
-# The first Bitcoin TX ever occured in block 170. The second TX occured in
+# The first Bitcoin TX ever occurred in block 170. The second TX occurred in
 # block 181.
 for i in range(start_block_height, batches * batch_size, batch_size):
     print(f'\n === Processing block height {i} to {i + batch_size - 1} ===')

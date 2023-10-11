@@ -96,7 +96,7 @@ with open(f'{output_dir}/chain_state.json', 'w') as outfile:
 
 chain_state_file = f'{output_dir}/chain_state.json'
 
-# The first Bitcoin TX ever occured in block 170. The second TX occured in block 181.
+# The first Bitcoin TX ever occurred in block 170. The second TX occurred in block 181.
 start_block_height = 0
 end_block_height = 100
 for i in range(start_block_height, end_block_height):
