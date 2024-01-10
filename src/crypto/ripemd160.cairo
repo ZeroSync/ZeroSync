@@ -203,7 +203,7 @@ func _pad_input{range_check_ptr, input_ptr: felt*}(input: felt*, n_bytes, n_felt
         // The rest of the input data is less than a message block (remaining input is < 448 bits)
 
         memcpy(input_ptr, input, n_felts - 1);
-        // Padding '1'-bit fits into the current block (current mesage block is < 448)
+        // Padding '1'-bit fits into the current block (current message block is < 448)
         let input_ptr = input_ptr + n_felts - 1;
         let appended_felts = append_one_bit{input_ptr=input_ptr}(
             input[n_felts - 1], n_bytes - ((n_felts - 1) * 4)
