@@ -130,7 +130,7 @@ integration_proof: $(INTEGRATION_PROGRAM_PROOF)
 	@echo "Generating proof for $(INTEGRATION_PROGRAM_NAME)..."
 
 
-# To call benchmark block with a differnet block use: make BLOCK=12345 benchmark_block
+# To call benchmark block with a different block use: make BLOCK=12345 benchmark_block
 BLOCK := 100000
 benchmark_block:
 	python src/utils/benchmark_block.py $(BLOCK)

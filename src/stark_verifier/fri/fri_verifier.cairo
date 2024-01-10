@@ -356,7 +356,7 @@ func verify_layers{range_check_ptr, pedersen_ptr: HashBuiltin*, bitwise_ptr: Bit
     if (index != -1){
         // Verify the index given by the hint
         assert folded_position = verified_positions[0][index];
-        // Copy previous lenghts
+        // Copy previous lengths
         memcpy(next_verified_positions_len, verified_positions_len, num_layers);
         return ();
     }
