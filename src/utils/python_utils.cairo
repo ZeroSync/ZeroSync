@@ -8,7 +8,7 @@ func setup_python_defs() {
         BTC_API = BTCAPI.make_BTCAPI()
         import re
         def hex_to_felt(hex_string):
-            # Seperate hex_string into chunks of 8 chars.
+            # Separate hex_string into chunks of 8 chars.
             felts = re.findall(".?.?.?.?.?.?.?.", hex_string)
             # Fill remaining space in last chunk with 0.
             while len(felts[-1]) < 8:
@@ -32,7 +32,7 @@ func setup_python_defs() {
             return (1 + len(hex_string))// 2, len(felts)
 
         # Writes a string of any length into the given destination array.
-        # String is seperated into uint32 chunks.
+        # String is separated into uint32 chunks.
         # Last chunk is filled with zeros after the last string byte.
         def from_string(string, destination):
             hex_list = [hex(ord(x)).replace("0x","") for x in string]
