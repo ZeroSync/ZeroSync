@@ -12,7 +12,7 @@ HASH_FELT_SIZE = 8
 
 
 def hex_to_felt(hex_string):
-    # Seperate hex_string into chunks of 8 chars.
+    # Separate hex_string into chunks of 8 chars.
     felts = re.findall(".?.?.?.?.?.?.?.", hex_string)
     # Fill remaining space in last chunk with 0.
     while len(felts[-1]) < 8:
