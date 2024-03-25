@@ -93,3 +93,36 @@ func test_read_der_signature{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
 
     return ();
 }
+
+
+@external
+func test_read_00_padding_der_signature{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
+
+    alloc_locals;
+
+    setup_python_defs();
+
+    let (local der_signature: felt*) = alloc();
+
+    %{ from_hex("3044022100b961b021dae244cee853f6facf07a78331f974eb75854c57415750594379f8a9021f2ba06a8262d4b6875fbaa74a4179fd7cdfacd4274d657c870177db6e9fe425", ids.der_signature) %}
+
+    let reader = init_reader(der_signature);
+
+    with reader {
+        let (sig_r, sig_s) = read_der_signature();
+    }
+
+    let (r) = uint256_to_bigint( Uint256(0x31f974eb75854c57415750594379f8a9,
+                                         0xb961b021dae244cee853f6facf07a783) );
+    assert r.d0 = sig_r.d0;
+    assert r.d1 = sig_r.d1;
+    assert r.d2 = sig_r.d2;
+
+    let (s) = uint256_to_bigint( Uint256(0x7cdfacd4274d657c870177db6e9fe425,
+                                         0x2ba06a8262d4b6875fbaa74a4179fd) );
+    assert s.d0 = sig_s.d0;
+    assert s.d1 = sig_s.d1;
+    assert s.d2 = sig_s.d2;
+
+    return ();
+}
