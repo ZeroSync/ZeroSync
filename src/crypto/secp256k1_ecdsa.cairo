@@ -15,7 +15,16 @@ from starkware.cairo.common.cairo_secp.signature import (
 )
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 
-from utils.serialize import Reader, init_reader, read_uint8, read_bytes_endian, peek_uint8, peek_uint16, read_uint256_endian
+from utils.serialize import (
+    Reader,
+    init_reader,
+    read_uint8,
+    read_bytes_endian,
+    peek_uint8,
+    peek_uint16,
+    read_uint256_endian,
+    read_bytes32_endian_fill_zero
+)
 
 // Verifies a Secp256k1 ECDSA signature.
 // Soundness assumptions:
@@ -169,7 +178,7 @@ func secp256k1_der_parse_integer{reader: Reader, range_check_ptr, bitwise_ptr: B
         // Excessive 0x00 padding.
         assert [bitwise_ptr].x = uint16;
         assert [bitwise_ptr].y = 0xFF80;
-        assert 0x0000 = [bitwise_ptr].x_and_y;
+        assert_not_equal([bitwise_ptr].x_and_y, 0x0000);
         tempvar bitwise_ptr = bitwise_ptr + BitwiseBuiltin.SIZE;
     } else {
         tempvar bitwise_ptr = bitwise_ptr;
@@ -180,7 +189,7 @@ func secp256k1_der_parse_integer{reader: Reader, range_check_ptr, bitwise_ptr: B
         // Excessive 0xFF padding.
         assert [bitwise_ptr].x = uint16;
         assert [bitwise_ptr].y = 0xFF80;
-        assert 0xFF80 = [bitwise_ptr].x_and_y;
+        assert_not_equal([bitwise_ptr].x_and_y, 0xFF80);
         tempvar bitwise_ptr = bitwise_ptr + BitwiseBuiltin.SIZE;
     } else {
         tempvar bitwise_ptr = bitwise_ptr;
@@ -250,9 +259,7 @@ func secp256k1_scalar_set_b32{reader: Reader, range_check_ptr, bitwise_ptr: Bitw
     rlen
 ) -> felt* {
     alloc_locals;
-    let b32: felt* = read_bytes_endian(rlen);
-    let (n_words, _) = unsigned_div_rem(rlen + 4 - 1, 4);
-    memset(b32 + n_words, 0x00000000, 8 - n_words);
+    let b32: felt* = read_bytes32_endian_fill_zero(rlen);
     let (secp256k1_scalar) = alloc();
     assert [secp256k1_scalar + 0] = [b32 + 7];
     assert [secp256k1_scalar + 1] = [b32 + 6];

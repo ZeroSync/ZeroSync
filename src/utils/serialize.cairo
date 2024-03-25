@@ -9,7 +9,7 @@
 // - https://github.com/mimblewimble/grin/blob/master/core/src/ser.rs
 
 from starkware.cairo.common.alloc import alloc
-from starkware.cairo.common.math import assert_not_zero, assert_le, assert_le_felt
+from starkware.cairo.common.math import assert_not_zero, assert_le, assert_le_felt, assert_nn_le
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.uint256 import Uint256
 
@@ -249,6 +249,29 @@ func read_bytes{reader: Reader, bitwise_ptr: BitwiseBuiltin*}(size) -> felt* {
 	return ptr;
 }
 
+func read_bytes32_endian_fill_zero{reader: Reader, bitwise_ptr: BitwiseBuiltin*, range_check_ptr}(size) -> felt* {
+    alloc_locals;
+    let (ptr) = alloc();
+    let writer: Writer = init_writer(ptr);
+
+    assert_nn_le(size, 32);
+
+    assert [bitwise_ptr].x = size;
+    assert [bitwise_ptr].y = 0xFFFFFFFC;
+    let n_words = [bitwise_ptr].x_and_y / UINT32_SIZE;
+    let n_bytes = size - [bitwise_ptr].x_and_y;
+    let bitwise_ptr = bitwise_ptr + BitwiseBuiltin.SIZE;
+
+    with writer, reader {
+        write_nbytes(0, 32 - size);
+        read_write_words_endian(n_words);
+        read_write_bytes(n_bytes);
+    }
+
+    flush_writer(writer);
+    return ptr;
+}
+
 func read_bytes_endian{reader: Reader, bitwise_ptr: BitwiseBuiltin*}(size) -> felt* {
 	alloc_locals;
 	let (ptr) = alloc();
@@ -314,6 +337,14 @@ func flush_writer(writer: Writer) {
 	}
 	assert [writer.ptr] = writer.buf;
 	return ();
+}
+
+func write_nbytes{writer: Writer}(value: felt, bytes: felt) {
+    if (bytes == 0) {
+        return();
+    }
+    write_uint8(value);
+    return write_nbytes(value, bytes - 1);
 }
 
 // Write one byte
