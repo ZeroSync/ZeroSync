@@ -30,7 +30,7 @@ WARNING: THIS CODE IS STILL FULL OF CRITICAL SECURITY BUGS!
 ## Requirements
 - Python 3.9 (Activate environment: `source ~/cairo_venv/bin/activate`)
 - Cairo. [Installation Guide](https://www.cairo-lang.org/docs/quickstart.html) (Programming language for provable programs)
-- [Protostar](https://docs.swmansion.com/protostar/docs/tutorials/installation) (Automated testing)
+- [Protostar](https://docs.swmansion.com/protostar/docs/cairo-1/installation) (Automated testing)
 - [Giza](https://github.com/zerosync/giza) (Required for prover. Not necessary for development and testing)
 - [EJS](https://ejs.co/) (Required for compiling)
 
