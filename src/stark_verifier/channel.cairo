@@ -95,7 +95,7 @@ func read_pow_nonce{channel: Channel}() -> felt {
 }
 
 struct QueriesProof {
-    length : felt,  // TODO: this is unneccessary overhead. All paths of a BatchMerkleProof have the same length
+    length : felt,  // TODO: this is unnecessary overhead. All paths of a BatchMerkleProof have the same length
     digests : felt*,
 }
 
