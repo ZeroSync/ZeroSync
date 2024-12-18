@@ -207,7 +207,7 @@ class RequestHandler(BaseHTTPRequestHandler):
         if self.path.startswith('/reset'):
             print('>>>>>>>>>> RESET >>>>>>>>>>')
             leaf_nodes = []
-            return
+          
 
 
 if __name__ == '__main__':
