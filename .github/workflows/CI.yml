@@ -26,7 +26,7 @@ jobs:
           toolchain: nightly-2023-01-12
           override: true
           components: rustfmt, clippy
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Install Giza
         run: |
           git clone https://github.com/ZeroSync/giza.git
