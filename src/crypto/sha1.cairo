@@ -81,7 +81,7 @@ func sha1_prepare_chunk{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
             chunk_ptr, data_ptr, n_bytes, WORDS_PER_INPUT - SIZEOF_UINT64 / SIZEOF_UINT32
         );
         // concat bit length
-        // NOTE: We limit the bit length to 32 bits here
+        // We intentionally limit the bit length to 32 bits to match the Cairo VM constraints.
         assert [chunk_ptr + WORDS_PER_INPUT - SIZEOF_UINT64 / SIZEOF_UINT32 + 0] = 0;
         assert [chunk_ptr + WORDS_PER_INPUT - SIZEOF_UINT64 / SIZEOF_UINT32 + 1] = n_bits;
         return chunk_ptr;
